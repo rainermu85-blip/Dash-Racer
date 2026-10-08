@@ -98,6 +98,67 @@ module.exports = async function runMechanics(browser, baseUrl) {
         ctx.createLinearGradient = createGradient;
         ctx.fillRect = fillRect;
       }
+
+      // The exit climbs over a crest. Glass ribs above the hidden road must
+      // already be painted while the camera is still inside the opaque tunnel.
+      reset(3); opponents.length = 0;
+      player.z = 2330 * SEGMENT_LENGTH; player.pitch = 32;
+      const drawRoad = drawRoadSegment;
+      const curve = ctx.bezierCurveTo;
+      const hiddenRoadArches = [];
+      let drawingSegment = null;
+      window.drawRoadSegment = (...args) => {
+        drawingSegment = { index: args[12], roadVisible: args[13] };
+        try { return drawRoad(...args); }
+        finally { drawingSegment = null; }
+      };
+      ctx.bezierCurveTo = function (...args) {
+        if (drawingSegment && drawingSegment.index >= 2350 && drawingSegment.index < 2400 && !drawingSegment.roadVisible) {
+          hiddenRoadArches.push(drawingSegment.index);
+        }
+        return curve.apply(this, args);
+      };
+      try {
+        render(ts);
+        record('underwater-glass-visible-over-exit-crest', hiddenRoadArches.length > 0 && player.z < 2350 * SEGMENT_LENGTH, { cameraSegment: player.z / SEGMENT_LENGTH, hiddenRoadArches });
+      } finally {
+        window.drawRoadSegment = drawRoad;
+        ctx.bezierCurveTo = curve;
+      }
+
+      // Observe the white checker cells and the finish label actually painted,
+      // rather than merely checking a flag on the final segment.
+      const paintedFinishes = [];
+      for (const level of [1, 2, 3, 4]) {
+        reset(level); opponents.length = 0;
+        player.z = TRACK_LENGTH - 10 * SEGMENT_LENGTH;
+        const drawStrip = trapezoid, drawLabel = ctx.fillText;
+        let whiteCells = 0, finishLabels = 0;
+        window.drawRoadSegment = (...args) => {
+          drawingSegment = { index: args[12], roadVisible: args[13] };
+          try { return drawRoad(...args); }
+          finally { drawingSegment = null; }
+        };
+        window.trapezoid = (...args) => {
+          if (drawingSegment?.index >= SEGMENT_COUNT - 2 && ctx.fillStyle === '#ffffff') whiteCells++;
+          return drawStrip(...args);
+        };
+        ctx.fillText = function (text, ...args) {
+          if (text === 'FINISH') finishLabels++;
+          return drawLabel.call(this, text, ...args);
+        };
+        try {
+          render(ts);
+          paintedFinishes.push({ level, whiteCells, finishLabels });
+        } finally {
+          window.drawRoadSegment = drawRoad;
+          window.trapezoid = drawStrip;
+          ctx.fillText = drawLabel;
+        }
+      }
+      record('all-levels-paint-checkered-finish', paintedFinishes.every(sample => sample.whiteCells >= 10), paintedFinishes);
+      record('level-three-paints-finish-banner', paintedFinishes.find(sample => sample.level === 3).finishLabels === 1, paintedFinishes);
+
       const glassWall = 0.8;
       const wallContacts = [];
       for (const side of [-1, 1]) {

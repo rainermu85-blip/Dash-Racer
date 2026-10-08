@@ -254,6 +254,7 @@ const LVL3_TUNNELS = [
   { start: 1250, end: 1550, from: 'arctic', to: 'dali' },
   { start: 2050, end: 2350, from: 'dali',   to: 'underwater' }
 ];
+const UNDERWATER_FLORA = ['coral_spire', 'sea_grass', 'kelp', 'fan_coral', 'tube_sponge'];
 
 // What each world contributes to a portal it touches.
 const LVL3_PORTAL_PALETTE = {
@@ -547,7 +548,8 @@ function buildSegments() {
     while (trackDef.length < SEGMENT_COUNT) trackDef = [...trackDef, ...trackDef];
     trackDef = trackDef.slice(0, SEGMENT_COUNT);
 
-    segments = []; let worldY = 0; 
+    segments = []; let worldY = 0;
+    let underwaterPlantCount = 0;
     for (let i = 0; i < SEGMENT_COUNT; i++) {
         const def = trackDef[i]; const isStartLine = i < 3 || i > SEGMENT_COUNT - 3;
         const isBridge = currentLevel === 1 && (i >= 930 && i <= 1050);
@@ -647,8 +649,10 @@ function buildSegments() {
                     }
                 } else if (zone === 'underwater') {
                     if (Math.random() < 0.12) {
-                        sprite = 'coral_spire';
-                        spriteX = Math.random() < 0.5 ? (-1.5 - Math.random() * 0.8) : (1.5 + Math.random() * 0.8);
+                        // Balance the silhouettes, with irregular spacing and
+                        // enough clearance to keep the reef outside the glass.
+                        sprite = UNDERWATER_FLORA[underwaterPlantCount++ % UNDERWATER_FLORA.length];
+                        spriteX = (Math.random() < 0.5 ? -1 : 1) * (1.65 + Math.random() * 0.85);
                     }
                 }
             }
@@ -843,6 +847,46 @@ function trapezoid(x1l, y1, x1r, x2l, y2, x2r) {
   ctx.fill();
 }
 function drawGlowRect(x, y, w, h, color, blur = 12, alpha = 0.35) { ctx.save(); ctx.globalAlpha = alpha; ctx.shadowBlur = blur; ctx.shadowColor = color; ctx.fillStyle = color; ctx.fillRect(x, y, w, h); ctx.restore(); }
+
+function drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt) {
+    ctx.fillStyle = isAlt ? '#ffffff' : '#111111';
+    trapezoid(x1 - w1 * 1.18, y1, x1 + w1 * 1.18, x2 - w2 * 1.18, y2, x2 + w2 * 1.18);
+    const columns = 10;
+    for (let c = 0; c < columns; c++) {
+        ctx.fillStyle = (c + (isAlt ? 1 : 0)) % 2 === 0 ? '#111111' : '#ffffff';
+        const stripW1 = w1 * 2 / columns, stripW2 = w2 * 2 / columns;
+        const sx1 = x1 - w1 + c * stripW1, sx2 = x2 - w2 + c * stripW2;
+        trapezoid(sx1, y1, sx1 + stripW1, sx2, y2, sx2 + stripW2);
+    }
+}
+
+function drawUnderwaterArch(x, y, w) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 245, 212, 0.28)';
+    ctx.lineWidth = Math.max(2, w * 0.035);
+    ctx.beginPath();
+    ctx.moveTo(x - w * 1.15, y);
+    ctx.bezierCurveTo(x - w * 1.15, y - w * 1.8, x + w * 1.15, y - w * 1.8, x + w * 1.15, y);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawUnderwaterFinish(x, y, w) {
+    ctx.save();
+    const top = y - w * 1.05;
+    ctx.strokeStyle = '#99fff0'; ctx.lineWidth = Math.max(2, w * 0.018);
+    ctx.beginPath();
+    ctx.moveTo(x - w * 1.04, y); ctx.lineTo(x - w * 1.04, top);
+    ctx.lineTo(x + w * 1.04, top); ctx.lineTo(x + w * 1.04, y);
+    ctx.stroke();
+    ctx.fillStyle = '#061c28';
+    ctx.fillRect(x - w * 0.62, top - w * 0.10, w * 1.24, w * 0.22);
+    ctx.strokeRect(x - w * 0.62, top - w * 0.10, w * 1.24, w * 0.22);
+    ctx.fillStyle = '#fff8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.max(1, w * 0.17)}px monospace`;
+    ctx.fillText('FINISH', x, top + w * 0.01);
+    ctx.restore();
+}
 
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
     if (currentLevel === 3) {
@@ -1058,8 +1102,8 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
             }
         } else {
             // --- OUTSIDE THE TUNNEL: STEPPE, ARCTIC, DALI, OR UNDERWATER ---
+            const zone = getLvl3Zone(segIdx);
             if (isVisible) {
-                const zone = getLvl3Zone(segIdx);
                 const snowHillL1 = x1 - w1 * 1.18;
                 const snowHillR1 = x1 + w1 * 1.18;
                 const snowHillL2 = x2 - w2 * 1.18;
@@ -1134,18 +1178,14 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
                     trapezoid(lx1 - lw1, y1, lx1 + lw1, lx2 - lw2, y2, lx2 + lw2);
                 }
 
-                // Subaquatic dome arches (translucent glowing glass ribs!)
-                if (zone === 'underwater' && segIdx % 8 === 0) {
-                    ctx.save();
-                    ctx.strokeStyle = 'rgba(0, 245, 212, 0.28)';
-                    ctx.lineWidth = Math.max(2.0, w1 * 0.035);
-                    ctx.beginPath();
-                    const archH1 = w1 * 1.8;
-                    ctx.moveTo(x1 - w1 * 1.15, y1);
-                    ctx.bezierCurveTo(x1 - w1 * 1.15, y1 - archH1, x1 + w1 * 1.15, y1 - archH1, x1 + w1 * 1.15, y1);
-                    ctx.stroke();
-                    ctx.restore();
-                }
+                if (isStart) drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt);
+            }
+            // Elevated structures remain visible over the exit crest even when
+            // the road beneath them is hidden. Nearer road/tunnel segments still
+            // occlude their bases through the normal back-to-front drawing.
+            if (zone === 'underwater') {
+                if (segIdx % 8 === 0 || segIdx === LVL3_TUNNELS[2].end) drawUnderwaterArch(x1, y1, w1);
+                if (segIdx === SEGMENT_COUNT - 1) drawUnderwaterFinish(x2, y2, w2);
             }
         }
         return;
@@ -1380,19 +1420,7 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
     // --- DRAW ASPHALT ROADBED (only if segment road is actually visible on screen) ---
     if (isVisible) {
         if (isStart) {
-            ctx.fillStyle = isAlt ? '#ffffff' : '#111111'; trapezoid(x1 - w1 * 1.18, y1, x1 + w1 * 1.18, x2 - w2 * 1.18, y2, x2 + w2 * 1.18);
-            const COLS = 10, ROWS = 1;  
-            for (let r = 0; r < ROWS; r++) {
-                const rY1 = y1 - (y1 - y2) * (r / ROWS), rY2 = y1 - (y1 - y2) * ((r + 1) / ROWS);
-                const rW1 = w1 - (w1 - w2) * (r / ROWS), rW2 = w1 - (w1 - w2) * ((r + 1) / ROWS);
-                const rX1 = x1 - (x1 - x2) * (r / ROWS), rX2 = x1 - (x1 - x2) * ((r + 1) / ROWS);
-                for (let c = 0; c < COLS; c++) {
-                    ctx.fillStyle = ((c + r + (isAlt ? 1 : 0)) % 2 === 0) ? '#111111' : '#ffffff';
-                    const stripW1 = (rW1 * 2) / COLS, stripW2 = (rW2 * 2) / COLS;
-                    const sx1 = (rX1 - rW1) + c * stripW1, sx2 = (rX2 - rW2) + c * stripW2;
-                    trapezoid(sx1, rY1, sx1 + stripW1, sx2, rY2, sx2 + stripW2);
-                }
-            }
+            drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt);
         } else {
             if (currentLevel === 4) {
                 // Keep the road base perfectly clean and tight up to the exact edge
@@ -2027,6 +2055,104 @@ function drawCoralSpireSprite(sx, sy, sc) {
     ctx.fill();
   }
   
+  ctx.restore();
+}
+
+function drawSeaGrassSprite(sx, sy, sc, ts, seed) {
+  ctx.save(); ctx.translate(sx, sy); ctx.scale(sc, sc);
+  ctx.fillStyle = '#123d36';
+  ctx.beginPath(); ctx.ellipse(0, -2, 48, 9, 0, 0, Math.PI * 2); ctx.fill();
+  for (let i = 0; i < 9; i++) {
+    const root = (i - 4) * 9, height = 52 + (i * 23 % 51);
+    const bend = (i - 4) * 5 + Math.sin(ts * 0.0018 + seed + i * 0.6) * 9;
+    ctx.fillStyle = ['#167d68', '#29b890', '#75d6a6'][i % 3];
+    ctx.beginPath(); ctx.moveTo(root - 4, 0);
+    ctx.quadraticCurveTo(root + bend * 0.3 - 6, -height * 0.6, root + bend, -height);
+    ctx.quadraticCurveTo(root + bend * 0.55 + 4, -height * 0.4, root + 4, 0);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawKelpSprite(sx, sy, sc, ts, seed) {
+  ctx.save(); ctx.translate(sx, sy); ctx.scale(sc, sc);
+  ctx.fillStyle = '#124a4c';
+  ctx.beginPath(); ctx.ellipse(0, -3, 24, 9, 0, 0, Math.PI * 2); ctx.fill();
+  for (let stalk = 0; stalk < 3; stalk++) {
+    const root = (stalk - 1) * 17, height = 125 + stalk * 24;
+    const sway = Math.sin(ts * 0.0013 + seed * 0.7 + stalk) * 13;
+    ctx.strokeStyle = '#329f8b'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(root, 0);
+    ctx.bezierCurveTo(root - sway, -height * 0.3, root + sway, -height * 0.65, root + sway, -height);
+    ctx.stroke();
+    for (let leaf = 1; leaf <= 5; leaf++) {
+      const y = -height * leaf / 6, x = root + sway * leaf / 6;
+      const side = (leaf + stalk) % 2 === 0 ? -1 : 1;
+      ctx.fillStyle = leaf % 2 ? '#27ac91' : '#76cdb0';
+      ctx.beginPath(); ctx.moveTo(x, y + 10);
+      ctx.quadraticCurveTo(x + side * 35, y + 8, x + side * 30, y - 22);
+      ctx.quadraticCurveTo(x + side * 7, y - 26, x, y + 10);
+      ctx.fill();
+      ctx.fillStyle = '#c8e490';
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawFanCoralSprite(sx, sy, sc, ts, seed) {
+  ctx.save(); ctx.translate(sx, sy); ctx.scale(sc, sc);
+  ctx.rotate(Math.sin(ts * 0.001 + seed) * 0.025);
+  ctx.strokeStyle = '#774684'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -35); ctx.stroke();
+  ctx.fillStyle = 'rgba(128, 77, 186, 0.28)';
+  ctx.beginPath(); ctx.moveTo(0, -20);
+  ctx.bezierCurveTo(-96, -72, -68, -160, 0, -174);
+  ctx.bezierCurveTo(68, -160, 96, -72, 0, -20);
+  ctx.fill();
+  for (let branch = -3; branch <= 3; branch++) {
+    const tipX = branch * 20, tipY = -170 + Math.abs(branch) * 17;
+    ctx.strokeStyle = branch % 2 ? '#b388dc' : '#dbb5ee'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, -24);
+    ctx.quadraticCurveTo(branch * 12, -92, tipX, tipY); ctx.stroke();
+    for (let twig = 1; twig <= 3; twig++) {
+      const t = twig / 4, x = tipX * t, y = -28 + (tipY + 28) * t;
+      for (const side of [-1, 1]) {
+        ctx.strokeStyle = '#ad79c9'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y + 12);
+        ctx.quadraticCurveTo(x + side * 12, y, x + side * 16, y - 16); ctx.stroke();
+        ctx.fillStyle = '#85eadc';
+        ctx.beginPath(); ctx.arc(x + side * 16, y - 16, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawTubeSpongeSprite(sx, sy, sc) {
+  ctx.save(); ctx.translate(sx, sy); ctx.scale(sc, sc);
+  ctx.fillStyle = '#394848';
+  ctx.beginPath(); ctx.ellipse(0, -3, 54, 12, 0, 0, Math.PI * 2); ctx.fill();
+  for (const [x, height, radius] of [[-31, 69, 13], [26, 86, 15], [-3, 122, 17]]) {
+    const body = ctx.createLinearGradient(x - radius, 0, x + radius, 0);
+    body.addColorStop(0, '#986a28'); body.addColorStop(0.5, '#efbf57'); body.addColorStop(1, '#b88232');
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.moveTo(x - radius * 0.8, -5);
+    ctx.quadraticCurveTo(x - radius * 1.25, -height * 0.5, x - radius, -height);
+    ctx.lineTo(x + radius, -height);
+    ctx.quadraticCurveTo(x + radius * 1.25, -height * 0.5, x + radius * 0.8, -5);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f9d984';
+    ctx.beginPath(); ctx.ellipse(x, -height, radius, radius * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#304250';
+    ctx.beginPath(); ctx.ellipse(x, -height, radius * 0.62, radius * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#956931';
+    for (let pore = 0; pore < 7; pore++) {
+      const px = x + Math.sin(pore * 2.4) * radius * 0.55;
+      const py = -15 - pore * (height - 28) / 7;
+      ctx.beginPath(); ctx.ellipse(px, py, 2, 3, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   ctx.restore();
 }
 
@@ -6743,6 +6869,7 @@ function render(ts) {
         s.x = rx2 + seg.spriteX * p2.w;
         s.y = p2.y;
         s.sc = Math.min(1.25, p2.scale * (seg.sprite === 'gnarled_tree' ? 3800 : 2800)) * responsiveFactor;
+        if (UNDERWATER_FLORA.includes(seg.sprite)) s.sc *= 0.86 + (seg.index % 5) * 0.055;
         s.depth = n;
         s.clipY = segmentClipY;
         s.segIdx = segIdx;
@@ -6856,12 +6983,16 @@ function render(ts) {
         else drawDaliEyeSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
-    else if (s.type === 'coral_spire') {
+    else if (UNDERWATER_FLORA.includes(s.type)) {
         ctx.save();
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawCoralSpireSprite(s.x, s.y, s.sc);
+        if (s.type === 'coral_spire') drawCoralSpireSprite(s.x, s.y, s.sc);
+        else if (s.type === 'sea_grass') drawSeaGrassSprite(s.x, s.y, s.sc, ts, s.segIdx);
+        else if (s.type === 'kelp') drawKelpSprite(s.x, s.y, s.sc, ts, s.segIdx);
+        else if (s.type === 'fan_coral') drawFanCoralSprite(s.x, s.y, s.sc, ts, s.segIdx);
+        else drawTubeSpongeSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
     else if (s.type === 'gnarled_tree') {

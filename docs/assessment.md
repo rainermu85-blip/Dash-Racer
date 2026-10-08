@@ -47,6 +47,16 @@ Zusätzlich liefen alle vier Rennen mit dem neuen Modell vollständig bis zur
 Ergebnisanzeige, ohne JavaScript-Fehler. Wandkontakt wurde links und rechts
 bei 390 und 480 Pixel Breite visuell geprüft; der Produktionsbuild besteht.
 
+Die Unterwasserszene wurde anschließend um Seegras, Tang, Fächerkorallen und
+Röhrenschwämme ergänzt. Die Glasbögen werden auch über verdecktem Straßenboden
+gezeichnet und sind dadurch schon durch die ansteigende Tunnelausfahrt sichtbar.
+Level 3 zeichnet jetzt seine Schachbrett-Ziellinie sowie einen Zielbogen am
+Streckenende. Drei zusätzliche Renderprüfungen sichern die Bögen über der
+Ausfahrt, die Ziellinien aller vier Level und die Level-3-Zielbeschriftung ab;
+der Mechaniklauf besteht jetzt 23/23 Prüfungen. Alle vier neuen Motive, der
+Übergang und die Zielmarkierungen wurden bei 390 und 480 Pixel Breite visuell
+geprüft, ohne JavaScript-Fehler. Der Produktionsbuild besteht ebenfalls.
+
 ## Prüfungen und Grenzen
 
 Umgebung: Node.js 24.19.0, npm 11.9.0, Vite 6.4.3, Playwright 1.62.1 und
