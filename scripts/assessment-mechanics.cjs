@@ -44,8 +44,8 @@ module.exports = async function runMechanics(browser, baseUrl) {
       record('boost-expires', !player.isBoosting, { boosting: player.isBoosting });
       reset(); player.boosts = 3; lightning = atItem('lightning'); tick();
       record('boost-cap-three', player.boosts === 3, { charges: player.boosts });
-      reset(); const barrier = atItem('barrier'); tick();
-      record('barrier-hit', player.speed < 0 && player.collisionCooldown > 0 && barrier.barrier.state === 'blinking', { speed: player.speed, cooldown: player.collisionCooldown, barrier: barrier.barrier.state });
+      reset(); const barrier = atItem('barrier'); player.speed = player.maxSpeed; tick();
+      record('barrier-hit', player.speed >= 0 && player.speed < player.maxSpeed * 0.5 && player.collisionCooldown > 0 && barrier.barrier.state === 'blinking', { speed: player.speed, cooldown: player.collisionCooldown, barrier: barrier.barrier.state });
       reset(); player.speed = 3600; player.x = 1.2; tick();
       record('offroad-slows-car', player.speed < 3600, { speed: player.speed });
       reset(4);
@@ -112,10 +112,10 @@ module.exports = async function runMechanics(browser, baseUrl) {
             furthest = Math.max(furthest, Math.abs(player.x));
             collisionFeedback ||= player.hitFlash > 0;
           }
-          wallContacts.push({ side, boosted, furthest, collisionFeedback, speed: player.speed });
+          wallContacts.push({ side, boosted, furthest, collisionFeedback, speed: player.speed, speedLimit: player.maxSpeed * (boosted ? 1.65 : 1) });
         }
       }
-      record('underwater-glass-walls-stop-steering-and-boost', wallContacts.every(sample => sample.furthest <= glassWall && sample.collisionFeedback && sample.speed < player.maxSpeed), wallContacts);
+      record('underwater-glass-walls-stop-steering-and-boost', wallContacts.every(sample => sample.furthest <= glassWall && sample.collisionFeedback && sample.speed < sample.speedLimit * 0.9), wallContacts);
 
       const entries = [];
       for (const side of [-1, 1]) {
@@ -130,11 +130,12 @@ module.exports = async function runMechanics(browser, baseUrl) {
       for (const side of [-1, 1]) {
         reset(3);
         const opponent = opponents[0]; opponents.length = 1;
-        player.z = 2650 * SEGMENT_LENGTH; player.x = side * 0.79;
+        player.z = 2820 * SEGMENT_LENGTH; player.x = side * 0.799;
         player.speed = player.maxSpeed;
-        opponent.x = opponent.baseX = opponent.targetX = side * 0.67;
-        opponent.z = player.z + contactDistance() + 90;
-        opponent.speed = opponent.maxSpeed = 0;
+        opponent.x = side * 0.5595;
+        opponent.baseX = opponent.targetX = side * 0.8;
+        opponent.z = player.z + contactDistance();
+        opponent.speed = opponent.maxSpeed = player.speed;
         opponent.isBoosting = opponent.isChevronBoosting = false;
         tick();
         pushes.push({ side, x: player.x, cooldown: player.collisionCooldown });

@@ -23,6 +23,30 @@ Importstand und bestehen mit der Korrektur; der aktuelle Mechaniklauf besteht
 geprüft. Die historischen Messdaten unten beziehen sich weiterhin auf den
 ursprünglichen Stand; die beiden Menüfehler sind davon unabhängig.
 
+Weiterer Nachtrag vom 8. Oktober: Das Kollisionsmodell prüft jetzt den gesamten
+zurückgelegten Weg, einschließlich seitlicher Bewegungen, in Rechenschritten
+von höchstens 1/120 Sekunde. Blitze, Energiekugeln und Baustellen werden damit
+auch bei maximalem Chevron-Turbo und 30 FPS erfasst. Die Glastunnelwände in
+Level 3 begrenzen weiterhin nur den Unterwasserabschnitt und seinen Auslauf.
+
+Wandkontakt verursacht einen einmaligen, nach seitlicher Annäherung abgestuften
+Stoß und anschließend Reibung pro Sekunde. Streifer kosten weniger Tempo als
+harte Auffahrunfälle; Fahrzeugkontakte berücksichtigen die tatsächliche
+Annäherung statt Tastendruck oder sichtbarer Neigung. Auffahren überträgt
+Geschwindigkeit zwischen den Fahrzeugen. Eine kurze Schutzzeit und die
+Freigabe erst nach Trennung verhindern wiederholte Aufprallstrafen beim
+gleichen Kontakt. Fahrzeugpositionen werden getrennt, auch neben den Glaswänden.
+Baustellen bremsen stark und beenden Boosts, ohne Rückwärtsfahrt auszulösen.
+
+Der aktuelle kurze Browserlauf besteht 20 Mechanik- und 29 zusätzliche
+Kollisionsprüfungen. Diese vergleichen unter anderem 30/60/120 FPS, schnelle
+Pickups, Streifer/Auffahren, anhaltenden Kontakt, erneuten Kontakt nach Trennung,
+Glaswände, Rundengrenzen und Zieleinlauf. Die historischen Messdaten und die
+unabhängigen Menü- und Bedienungsprobleme unten bleiben als Ausgangspunkt erhalten.
+Zusätzlich liefen alle vier Rennen mit dem neuen Modell vollständig bis zur
+Ergebnisanzeige, ohne JavaScript-Fehler. Wandkontakt wurde links und rechts
+bei 390 und 480 Pixel Breite visuell geprüft; der Produktionsbuild besteht.
+
 ## Prüfungen und Grenzen
 
 Umgebung: Node.js 24.19.0, npm 11.9.0, Vite 6.4.3, Playwright 1.62.1 und
@@ -161,6 +185,7 @@ Danach aus dem Repository; bei vorhandenem Playwright ist `NODE_PATH` unnötig:
 
 ```sh
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs mechanics
+NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs collisions
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs edges
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs races
 ```

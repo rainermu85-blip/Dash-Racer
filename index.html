@@ -757,7 +757,7 @@ function getSeg(z) {
     return segments[(idx % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
 }
 
-const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1 };
+const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, wallContactSide:0, wallHitCooldown:0 };
 
 // --- EINSTELLUNGEN FÜR DICH ZUM SPIELEN ---
 const STEER_SENSITIVITY = 2.0; // steering speed multiplier
@@ -766,8 +766,9 @@ const UNDERWATER_WALL_LIMIT = 0.8; // Leave room for the full car body at the gl
 
 const OPP_COLORS = ['#ff4466','#44ddff','#ffcc22','#44ff88','#dd88ff'];
 let opponents = [];
-const COLLISION_SPEED = 150 / 0.45; const COLLISION_FRONT_RANGE = SEGMENT_LENGTH * 0.62; const COLLISION_REAR_RANGE = SEGMENT_LENGTH * 0.18; const COLLISION_X_RANGE = 0.24;
-const PLAYER_HIT_Z_OFFSET = 750; 
+const COLLISION_X_RANGE = 0.24;
+const COLLISION_Z_RANGE = 90;
+const MAX_PHYSICS_STEP = 1 / 120;
 
 function initOpponents() {
   opponents = OPP_COLORS.map((color, i) => {
@@ -777,7 +778,8 @@ function initOpponents() {
       color, x: startX, baseX: startX, targetX: startX, z: SEGMENT_LENGTH * (4 + i * 5),
       speed: 1700 + i * 130, maxSpeed: 2600 + i * 150 + Math.random() * 250, lap: 1,
       isBoosting: false, boostTimer: 0, timeInLane: Math.random() * 5.0,
-      chevronDecisions: {}, energyBallsCollected: 0, isChevronBoosting: false, chevronBoostTimer: 0, lastChevronPanelIdx: -1
+      chevronDecisions: {}, energyBallsCollected: 0, isChevronBoosting: false, chevronBoostTimer: 0, lastChevronPanelIdx: -1,
+      collisionCooldown: 0, contactSide: 0, contactAxis: null
     };
   });
 }
@@ -7858,6 +7860,7 @@ function startRace() {
     player.x = 0; player.z = 0; player.speed = 0; player.lap = 1; player.finished = false; player.collisionCooldown = 0; player.hitFlash = 0; player.steerLean = 0; player.pitch = 0; player.curveAheadSmooth = 0; player.fovOffset = 0;
     player.boosts = 0; player.isBoosting = false; player.boostTimer = 0; player.isSparking = false;
     player.energyBallsCollected = 0; player.isChevronBoosting = false; player.chevronBoostTimer = 0; player.lastChevronPanelIdx = -1;
+    player.wallContactSide = 0; player.wallHitCooldown = 0;
     bgOffset = 0; lastTime = 0; state = 'countdown'; cntVal = 3; cntTimer = 0; paused = false;
     document.getElementById('pauseOverlay').classList.add('hide');
     const ov = document.getElementById('overlay');
@@ -7914,62 +7917,166 @@ function showResult(place) {
   document.getElementById('lvl4Btn').onclick = () => selectLevel(4);
 }
 
-function checkOpponentCollision() {
+function getRaceDistance(car) {
+  return currentLevel === 3 ? car.z : (car.lap - 1) * TRACK_LENGTH + car.z;
+}
+
+function getPlayerContactDistance() {
   const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
   const playerScale = 1.64 * responsiveFactor;
   const horizonY = ~~(H * 0.5) + player.pitch * 1.5;
   const denom = Math.max(100, H - 76 - 12 * playerScale - horizonY);
-  const visualContactDistance = (CAMERA_DEPTH + player.fovOffset) * CAMERA_HEIGHT * H / (2 * denom);
-  
-  const pTotal_real = (player.lap - 1) * TRACK_LENGTH + player.z;
-  const playerVisualZ = pTotal_real + visualContactDistance;
+  return (CAMERA_DEPTH + player.fovOffset) * CAMERA_HEIGHT * H / (2 * denom);
+}
 
-  for (const opp of opponents) {
-    const oTotal = (opp.lap - 1) * TRACK_LENGTH + opp.z; 
-    const relZ = oTotal - playerVisualZ; 
-    const absRelZ = Math.abs(relZ);
-    const absRelX = Math.abs(player.x - opp.x);
+// Intersect the whole movement with a contact rectangle, including lateral
+// motion. Returns the first contact and its normal, or null for a clean miss.
+function sweepContact(x0, z0, x1, z1, halfWidth, minZ, maxZ) {
+  let enter = 0, exit = 1, axis = null, side = 0;
+  for (const [name, from, to, min, max] of [['x', x0, x1, -halfWidth, halfWidth], ['z', z0, z1, minZ, maxZ]]) {
+    const delta = to - from;
+    if (Math.abs(delta) < 1e-9) {
+      if (from < min || from > max) return null;
+      continue;
+    }
+    const a = (min - from) / delta, b = (max - from) / delta;
+    const near = Math.min(a, b), far = Math.max(a, b);
+    if (near > enter) { enter = near; axis = name; side = delta > 0 ? -1 : 1; }
+    exit = Math.min(exit, far);
+    if (enter > exit) return null;
+  }
+  if (exit < 0 || enter > 1) return null;
+  if (!axis) {
+    // An existing overlap uses the nearest face, not the driver's keys/lean.
+    const xDepth = (halfWidth - Math.abs(x0)) / halfWidth;
+    const zDepth = Math.min(z0 - minZ, maxZ - z0) / ((maxZ - minZ) / 2);
+    axis = xDepth < zDepth ? 'x' : 'z';
+    const position = axis === 'x' ? x0 : z0 - (minZ + maxZ) / 2;
+    const delta = axis === 'x' ? x1 - x0 : z1 - z0;
+    side = Math.sign(position) || -Math.sign(delta) || 1;
+  }
+  return { time: enter, axis, side };
+}
 
-    if (absRelX < COLLISION_X_RANGE) {
-      if (absRelZ < 110) {
-        let isPlayerFault = false;
-        
-        // 1. Rear-end collision (Player actively runs into opponent from behind)
-        if (relZ > 0 && relZ < 110) {
-          if (player.speed > opp.speed) {
-            isPlayerFault = true;
-          }
-        }
-        
-        // 2. Side collision (Player actively steers into opponent)
-        if (absRelZ < 90) {
-          const steeringRight = keys.right || (player.steerLean > 0.05);
-          const steeringLeft = keys.left || (player.steerLean < -0.05);
-          
-          if (opp.x > player.x && steeringRight) {
-            isPlayerFault = true;
-          } else if (opp.x < player.x && steeringLeft) {
-            isPlayerFault = true;
-          }
-        }
+function getRoadLimits(z) {
+  const segment = getSeg(z);
+  const enclosed = segment.isBridge || (currentLevel === 3 && segment.isTunnel);
+  let left = enclosed ? 1.05 : 1.45, right = left;
+  if (currentLevel === 2) left = 1.05;
+  if (currentLevel === 4) left = right = 0.98;
+  if (currentLevel === 3 && getLvl3Zone(segment.index) === 'underwater') left = right = UNDERWATER_WALL_LIMIT;
+  return { left, right };
+}
 
-        if (isPlayerFault) {
-          if (player.collisionCooldown <= 0) {
-            player.speed = Math.min(player.speed * 0.58, COLLISION_SPEED); 
-            player.collisionCooldown = 0.85; 
-            player.hitFlash = 1;
-            player.steerLean += player.x >= opp.x ? 0.45 : -0.45; 
-            player.x += (player.x >= opp.x ? 1 : -1) * 0.18; 
-            player.x = Math.max(-1.56, Math.min(1.56, player.x));
-            opp.z += SEGMENT_LENGTH * 0.55; 
-            if (opp.z >= TRACK_LENGTH) { opp.z -= TRACK_LENGTH; opp.lap++; }
-          }
-        } else {
-          // If opponent hits player from behind (not player's fault)
-          if (relZ <= 0 && opp.speed > player.speed) {
-            opp.speed = Math.min(opp.speed, player.speed * 0.6); 
-          }
-        }
+function applyRoadContact(dt, lateralSpeed = 0) {
+  const limits = getRoadLimits(player.z);
+  const boundedX = clamp(player.x, -limits.left, limits.right);
+  if (boundedX === player.x) {
+    if (dt > 0 && player.x > -limits.left + 0.015 && player.x < limits.right - 0.015) player.wallContactSide = 0;
+    return;
+  }
+  const side = player.x > boundedX ? 1 : -1;
+  player.x = boundedX;
+  if (player.wallContactSide !== side && player.wallHitCooldown <= 0) {
+    const severity = clamp(Math.abs(lateralSpeed) / 3, 0, 1);
+    player.speed *= 1 - (0.03 + severity * 0.12);
+    player.hitFlash = Math.max(player.hitFlash, 0.2 + severity * 0.3);
+    player.wallHitCooldown = 0.2;
+  }
+  player.wallContactSide = side;
+  // Rubbing is a drag per second, not another full impact on every frame.
+  player.speed *= Math.exp(-0.9 * dt);
+  player.isSparking ||= player.speed > 150;
+}
+
+function getTrackContacts(from, to, fields) {
+  const contacts = [];
+  const first = Math.floor(Math.min(from.z, to.z) / SEGMENT_LENGTH);
+  const last = Math.floor(Math.max(from.z, to.z) / SEGMENT_LENGTH);
+  for (let index = first; index <= last; index++) {
+    if (currentLevel === 3 && (index < 0 || index >= SEGMENT_COUNT)) continue;
+    const segment = segments[(index % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
+    for (const type of fields) {
+      const object = segment[type];
+      if (!object?.active || (type === 'barrier' && object.state !== 'idle')) continue;
+      const halfWidth = type === 'barrier' ? 0.45 : type === 'lightning' ? 0.3 : 0.25;
+      const hit = sweepContact(from.x - object.x, from.z, to.x - object.x, to.z, halfWidth, index * SEGMENT_LENGTH, (index + 1) * SEGMENT_LENGTH);
+      if (hit) contacts.push({ ...hit, type, object });
+    }
+  }
+  return contacts.sort((a, b) => a.time - b.time);
+}
+
+function hitBarrier(car, barrier) {
+  if (car.collisionCooldown <= 0) {
+    const severity = clamp(car.speed / player.maxSpeed, 0, 1);
+    car.speed *= 1 - (0.35 + severity * 0.35);
+    car.collisionCooldown = 0.35 + severity * 0.15;
+    car.isBoosting = car.isChevronBoosting = false;
+    if (car === player) player.hitFlash = Math.max(player.hitFlash, 0.45 + severity * 0.55);
+  }
+  barrier.state = 'blinking'; barrier.timer = 0.15;
+  blinkingBarriers.push(barrier);
+}
+
+function checkOpponentCollision(previousPlayer, previousOpponents, dt) {
+  if (player.finished) return;
+  const playerVX = (player.x - previousPlayer.x) / dt;
+  for (let i = 0; i < opponents.length; i++) {
+    const opp = opponents[i], previous = previousOpponents[i];
+    const playerVisualZ = getRaceDistance(player) + getPlayerContactDistance();
+    const relX = opp.x - player.x, relZ = getRaceDistance(opp) - playerVisualZ;
+    const hit = sweepContact(previous.x - previousPlayer.x, previous.z - previousPlayer.z, relX, relZ, COLLISION_X_RANGE, -COLLISION_Z_RANGE, COLLISION_Z_RANGE);
+    if (!hit) {
+      if (Math.abs(relX) > COLLISION_X_RANGE + 0.025 || Math.abs(relZ) > COLLISION_Z_RANGE + 10) opp.contactAxis = null;
+      continue;
+    }
+    const oppVX = (opp.x - previous.x) / dt;
+    const closing = Math.max(0, -hit.side * (hit.axis === 'x' ? oppVX - playerVX : opp.speed - player.speed));
+    if (!opp.contactAxis && opp.collisionCooldown <= 0 && player.collisionCooldown <= 0 && closing > 0.01) {
+      const severity = clamp(closing / (hit.axis === 'x' ? 3 : player.maxSpeed), 0, 1);
+      if (hit.axis === 'x') {
+        const playerApproach = Math.max(0, hit.side * playerVX);
+        const oppApproach = Math.max(0, -hit.side * oppVX);
+        const responsibility = playerApproach / Math.max(0.01, playerApproach + oppApproach);
+        const loss = 0.025 + severity * 0.12;
+        player.speed *= 1 - loss * (0.35 + responsibility * 0.65);
+        opp.speed *= 1 - loss * (1 - responsibility * 0.65);
+        player.steerLean -= hit.side * (0.08 + severity * 0.12);
+      } else {
+        // Transfer longitudinal speed instead of teleporting the opponent or
+        // imposing the same low speed on every kind of contact.
+        const transfer = closing * 0.5;
+        player.speed = Math.max(0, player.speed - hit.side * transfer);
+        opp.speed = Math.max(0, opp.speed + hit.side * transfer);
+        if (severity > 0.55) player.isBoosting = player.isChevronBoosting = false;
+      }
+      player.hitFlash = Math.max(player.hitFlash, 0.15 + severity * 0.65);
+      player.collisionCooldown = opp.collisionCooldown = 0.18 + severity * 0.22;
+      opp.contactAxis = hit.axis; opp.contactSide = hit.side;
+    }
+    const axis = opp.contactAxis || hit.axis, side = opp.contactAxis ? opp.contactSide : hit.side;
+    if (axis === 'x') {
+      const separation = Math.max(0, COLLISION_X_RANGE - side * (opp.x - player.x));
+      player.x -= side * separation * 0.5;
+      opp.x += side * separation * 0.5;
+      const pLimits = getRoadLimits(player.z), oLimits = getRoadLimits(opp.z);
+      player.x = clamp(player.x, -pLimits.left, pLimits.right);
+      opp.x = clamp(opp.x, -oLimits.left, oLimits.right);
+      // A car pinned against a wall cannot take its half of the separation.
+      // Give the remaining space to the other car instead of overlapping it.
+      let remaining = Math.max(0, COLLISION_X_RANGE - side * (opp.x - player.x));
+      opp.x = clamp(opp.x + side * remaining, -oLimits.left, oLimits.right);
+      remaining = Math.max(0, COLLISION_X_RANGE - side * (opp.x - player.x));
+      player.x = clamp(player.x - side * remaining, -pLimits.left, pLimits.right);
+    } else if (Math.abs(relX) < COLLISION_X_RANGE) {
+      const separation = Math.max(0, COLLISION_Z_RANGE - side * relZ);
+      if (side > 0) player.z -= separation;
+      else opp.z -= separation;
+      // During protected contact, still match the closing speed. Otherwise a
+      // car could display full speed while its position is held behind another.
+      if (side * (opp.speed - player.speed) < 0) {
+        player.speed = opp.speed = (player.speed + opp.speed) * 0.5;
       }
     }
   }
@@ -7996,8 +8103,16 @@ function loop(ts) {
   }
 
   if (state === 'playing') {
+    // Render once, but advance contacts in short steps even on slower devices.
+    const steps = Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP - 1e-8));
+    const stepDt = dt / steps;
+    for (let step = 0; step < steps; step++) {
+    const dt = stepDt;
+    const previousPlayer = { x: player.x, z: getRaceDistance(player) + getPlayerContactDistance() };
+    const previousOpponents = opponents.map(opp => ({ x: opp.x, z: getRaceDistance(opp) }));
     if (!player.finished) currentLapTime += dt * 1000;
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
+    player.wallHitCooldown = Math.max(0, player.wallHitCooldown - dt);
 
     if (keys.boost && player.boosts > 0 && !player.isBoosting && !player.isChevronBoosting && player.collisionCooldown <= 0 && !player.finished) {
         player.isBoosting = true;
@@ -8019,28 +8134,10 @@ function loop(ts) {
     let targetFov = player.isChevronBoosting ? -0.56 : (player.isBoosting ? -0.4 : 0);
     player.fovOffset += (targetFov - player.fovOffset) * dt * 3.0;
 
-    const currentSeg = getSeg(player.z);
-    const isOnBridge = !!(currentSeg && currentSeg.isBridge);
-    const inTunnel = !!(currentLevel === 3 && currentSeg && currentSeg.isTunnel);
-    const inGlassTunnel = currentLevel === 3 && getLvl3Zone(currentSeg.index) === 'underwater';
     const softLimit = 0.94; 
-    let hardLimitLeft = (isOnBridge || inTunnel) ? 1.05 : 1.45;
-    let hardLimitRight = (isOnBridge || inTunnel) ? 1.05 : 1.45;
-    if (currentLevel === 2) {
-        hardLimitLeft = 1.05; // Prevents clipping into left cliff wall
-    }
-    if (currentLevel === 4) {
-        hardLimitLeft = 0.98;
-        hardLimitRight = 0.98;
-    }
-    if (inGlassTunnel) {
-        hardLimitLeft = UNDERWATER_WALL_LIMIT;
-        hardLimitRight = UNDERWATER_WALL_LIMIT;
-    }
     const offroad = Math.abs(player.x) >= softLimit;
     const steerInput = player.finished ? 0 : ((keys.right ? 1 : 0) - (keys.left ? 1 : 0));
     player.steerLean += (steerInput - player.steerLean) * Math.min(1, dt * 9.5);
-    const collisionLimited = player.collisionCooldown > 0 && player.speed <= COLLISION_SPEED + 80;
     
     // Topspeed auf exakt 165% gedrosselt (für Lvl 4 Chevron Boost 231% = 1.65 * 1.40)
     let currentMax = player.maxSpeed;
@@ -8050,7 +8147,7 @@ function loop(ts) {
         currentMax *= 1.65;
     }
     
-    let targetSpeed = collisionLimited ? COLLISION_SPEED : (offroad ? currentMax * 0.36 : currentMax);
+    let targetSpeed = offroad ? currentMax * 0.36 : currentMax;
     if (player.finished) targetSpeed = 0;
 
     const speedRatio = player.speed / player.maxSpeed; 
@@ -8082,19 +8179,10 @@ function loop(ts) {
     player.x -= curveAhead * 0.5 * dt * (0.35 + currentSpeedRatio * 1.65); player.pitch += (pitchAhead - player.pitch) * Math.min(1, dt * 5.0);
 
     const over = Math.max(0, Math.abs(player.x) - softLimit);
-    if (over > 0) { player.speed *= Math.max(0.66, 1 - (3.6 + over * 3.2) * dt); player.steerLean += (player.x > 0 ? -0.25 : 0.25) * Math.min(1, over) * dt; }
-    if (player.x > hardLimitRight) { player.x = hardLimitRight; player.speed *= 0.68; player.hitFlash = Math.max(player.hitFlash, 0.25); }
-    if (player.x < -hardLimitLeft) { player.x = -hardLimitLeft; player.speed *= 0.68; player.hitFlash = Math.max(player.hitFlash, 0.25); }
+    if (over > 0) { player.speed *= Math.exp(-(3.6 + over * 3.2) * dt); player.steerLean += (player.x > 0 ? -0.25 : 0.25) * Math.min(1, over) * dt; }
+    applyRoadContact(dt, (player.x - previousPlayer.x) / dt);
 
-    const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
-    const playerScale = 1.64 * responsiveFactor;
-    const horizonY = ~~(H * 0.5) + player.pitch * 1.5;
-    const denom = Math.max(100, H - 76 - 12 * playerScale - horizonY);
-    const visualContactDistance = (CAMERA_DEPTH + player.fovOffset) * CAMERA_HEIGHT * H / (2 * denom);
-
-    const hitZ = player.z + visualContactDistance;
-    const hitSegIdx = ~~(hitZ / SEGMENT_LENGTH) % SEGMENT_COUNT;
-    const hitSeg = segments[hitSegIdx];
+    const nextContact = { x: player.x, z: getRaceDistance(player) + player.speed * dt + getPlayerContactDistance() };
 
     // Chevron boost checking
     if (currentLevel === 4) {
@@ -8138,16 +8226,15 @@ function loop(ts) {
         }
     }
 
-    if (hitSeg.lightning && hitSeg.lightning.active) {
-      if (Math.abs(player.x - hitSeg.lightning.x) < 0.3) {
-        hitSeg.lightning.active = false;
+    let playerTravel = player.speed * dt;
+    const trackContacts = player.finished ? [] : getTrackContacts(previousPlayer, nextContact, ['lightning', 'pylon', 'barrier']);
+    for (const contact of trackContacts) {
+      const object = contact.object;
+      if (contact.type === 'lightning') {
+        object.active = false;
         if (player.boosts < 3) player.boosts++;
-      }
-    }
-
-    if (hitSeg.pylon && hitSeg.pylon.active) {
-      if (Math.abs(player.x - hitSeg.pylon.x) < 0.25) {
-        hitSeg.pylon.active = false;
+      } else if (contact.type === 'pylon') {
+        object.active = false;
         if (currentLevel === 4) {
           player.energyBallsCollected = (player.energyBallsCollected || 0) + 1;
           if (player.energyBallsCollected === 1) {
@@ -8164,7 +8251,7 @@ function loop(ts) {
             spawnPopupText("Turbo Charged!", "#ff00ff");
           }
           activeFlyingPylons.push({
-            x: W/2 + hitSeg.pylon.x * W * 0.55, y: H - 90, 
+            x: W/2 + object.x * W * 0.55, y: H - 90,
             vx: steerInput * 1600 + (Math.random() - 0.5) * 800, 
             vy: -2000 - Math.random() * 600, 
             scale: 1.8, 
@@ -8173,66 +8260,35 @@ function loop(ts) {
         } else {
           player.speed *= 0.97; 
           activeFlyingPylons.push({
-            x: W/2 + hitSeg.pylon.x * W * 0.55, y: H - 90, 
+            x: W/2 + object.x * W * 0.55, y: H - 90,
             vx: steerInput * 1600 + (Math.random() - 0.5) * 800, 
             vy: -2000 - Math.random() * 600, 
             scale: 1.8, 
             rot: 0, rotSpeed: (Math.random()-0.5)*20
           });
         }
-      }
-    }
-    
-    if (hitSeg.barrier && hitSeg.barrier.active && hitSeg.barrier.state === 'idle') {
-      if (Math.abs(player.x - hitSeg.barrier.x) < 0.45) { 
-        hitSeg.barrier.state = 'blinking';
-        hitSeg.barrier.timer = 0.15;
-        blinkingBarriers.push(hitSeg.barrier);
-        
-        player.speed = -1500; 
-        player.isBoosting = false; 
-        player.collisionCooldown = 0.6; 
-        player.hitFlash = 1.0; 
+      } else {
+        const impactSpeed = player.speed;
+        hitBarrier(player, object);
+        playerTravel -= (impactSpeed - player.speed) * dt * (1 - contact.time);
+        break;
       }
     }
 
-    player.z += player.speed * dt;
-    if (player.z >= TRACK_LENGTH && !player.finished) {
-      if (currentLevel !== 3) {
-        player.z -= TRACK_LENGTH; 
-      }
-      
-      lapTimes[player.lap - 1] = currentLapTime;
-      if (currentLapTime < bestLapTime) bestLapTime = currentLapTime;
-      currentLapTime = 0;
-      
-      player.lap++;
-      
-      segments.forEach(s => {
-        if (s.pylon) s.pylon.active = true;
-        if (s.barrier) { s.barrier.active = true; s.barrier.state = 'idle'; s.barrier.blinkCount = 0; }
-        if (s.lightning) s.lightning.active = true;
-      });
+    player.z += playerTravel;
 
-      const maxLaps = currentLevel === 3 ? 1 : 3;
-      if (player.lap > maxLaps) { 
-          player.finished = true; 
-          const finalPlace = updateHUD(ts);
-          spawnConfetti(finalPlace); 
-          setTimeout(() => showResult(finalPlace), 1500); 
-      }
-    }
-
-    const pTotal = (player.lap - 1) * TRACK_LENGTH + player.z;
-    for (const opp of opponents) {
-      const oTotal = (opp.lap - 1) * TRACK_LENGTH + opp.z;
+    const pTotal = getRaceDistance(player);
+    for (let oppIndex = 0; oppIndex < opponents.length; oppIndex++) {
+      const opp = opponents[oppIndex];
+      opp.collisionCooldown = Math.max(0, opp.collisionCooldown - dt);
+      const oTotal = getRaceDistance(opp);
       const dist = oTotal - pTotal;
       
       let rubberBandTarget = opp.maxSpeed;
       if (dist < -3500) rubberBandTarget *= 1.04; 
       if (dist > 4500) rubberBandTarget *= 0.96;  
 
-      if (Math.abs(dist) < 4000 && Math.random() < 0.003 && opp.boostTimer <= 0 && !opp.isChevronBoosting) {
+      if (Math.abs(dist) < 4000 && Math.random() < 1 - Math.exp(-0.18 * dt) && opp.boostTimer <= 0 && !opp.isChevronBoosting) {
           opp.isBoosting = true;
           opp.boostTimer = 1.5;
       }
@@ -8356,9 +8412,12 @@ function loop(ts) {
           }
       }
 
-      const oSeg = segments[oppSegIdx] || segments[segments.length - 1];
-      if (oSeg.pylon && oSeg.pylon.active && Math.abs(opp.x - oSeg.pylon.x) < 0.3) {
-         oSeg.pylon.active = false;
+      const nextOpponent = { x: opp.x, z: getRaceDistance(opp) + opp.speed * dt };
+      let opponentTravel = opp.speed * dt;
+      for (const contact of getTrackContacts(previousOpponents[oppIndex], nextOpponent, ['pylon', 'barrier'])) {
+        const object = contact.object;
+        if (contact.type === 'pylon') {
+         object.active = false;
          if (currentLevel === 4) {
             opp.energyBallsCollected = (opp.energyBallsCollected || 0) + 1;
             if (opp.energyBallsCollected >= 5) {
@@ -8367,46 +8426,59 @@ function loop(ts) {
                opp.boostTimer = 1.5; 
             }
             activeFlyingPylons.push({
-              x: W/2 + oSeg.pylon.x * W * 0.55, y: H * 0.65, 
+              x: W/2 + object.x * W * 0.55, y: H * 0.65,
               vx: (Math.random()-0.5)*800, vy: -1500, scale: 1.0, rot: 0, rotSpeed: 15
             });
          } else {
-            opp.speed *= 0.6;
+            opp.speed *= 0.97;
             activeFlyingPylons.push({
-              x: W/2 + oSeg.pylon.x * W * 0.55, y: H * 0.65, 
+              x: W/2 + object.x * W * 0.55, y: H * 0.65,
               vx: (Math.random()-0.5)*800, vy: -1500, scale: 1.0, rot: 0, rotSpeed: 15
             });
          }
-      }
-      if (oSeg.barrier && oSeg.barrier.active && Math.abs(opp.x - oSeg.barrier.x) < 0.45) {
-         opp.speed = -600;
-         opp.isBoosting = false;
-         opp.targetX = oSeg.barrier.x > 0 ? -0.65 : 0.65;
-         if (oSeg.barrier.state === 'idle') {
-           oSeg.barrier.state = 'blinking'; oSeg.barrier.timer = 0.15;
-           blinkingBarriers.push(oSeg.barrier);
-         }
+        } else {
+          const impactSpeed = opp.speed;
+          hitBarrier(opp, object);
+          opponentTravel -= (impactSpeed - opp.speed) * dt * (1 - contact.time);
+          opp.targetX = object.x > 0 ? -0.65 : 0.65;
+          break;
+        }
       }
 
-      opp.z += opp.speed * dt;
-      if (opp.z >= TRACK_LENGTH && opp.lap === 1) {
-        if (currentLevel !== 3) {
-          opp.z -= TRACK_LENGTH;
-        }
-        opp.lap++;
+      opp.z += opponentTravel;
+    }
+
+    checkOpponentCollision(previousPlayer, previousOpponents, dt);
+    // Entry transitions and opponent pushes must respect the road's walls too.
+    applyRoadContact(0, (player.x - previousPlayer.x) / dt);
+
+    for (const opp of opponents) {
+      if (opp.z >= TRACK_LENGTH) {
+        if (currentLevel === 3) { if (opp.lap === 1) opp.lap++; }
+        else { opp.z -= TRACK_LENGTH; opp.lap++; }
       }
     }
 
-    checkOpponentCollision();
-    // Movement can enter the glass tunnel this frame; opponent impacts can
-    // also push outward after the steering limits. Keep both inside the walls.
-    if (currentLevel === 3 && getLvl3Zone(getSeg(player.z).index) === 'underwater') {
-      const insideX = clamp(player.x, -UNDERWATER_WALL_LIMIT, UNDERWATER_WALL_LIMIT);
-      if (insideX !== player.x) {
-        player.x = insideX;
-        player.speed *= 0.68;
-        player.hitFlash = Math.max(player.hitFlash, 0.25);
+    // Finalize laps after contact resolution, so an impact at the line cannot
+    // award a lap or finish a race before the movement is actually complete.
+    if (player.z >= TRACK_LENGTH && !player.finished) {
+      if (currentLevel !== 3) player.z -= TRACK_LENGTH;
+      lapTimes[player.lap - 1] = currentLapTime;
+      if (currentLapTime < bestLapTime) bestLapTime = currentLapTime;
+      currentLapTime = 0; player.lap++;
+      segments.forEach(s => {
+        if (s.pylon) s.pylon.active = true;
+        if (s.barrier) { s.barrier.active = true; s.barrier.state = 'idle'; s.barrier.blinkCount = 0; }
+        if (s.lightning) s.lightning.active = true;
+      });
+      const maxLaps = currentLevel === 3 ? 1 : 3;
+      if (player.lap > maxLaps) {
+        player.finished = true;
+        const finalPlace = updateHUD(ts);
+        spawnConfetti(finalPlace);
+        setTimeout(() => showResult(finalPlace), 1500);
       }
+    }
     }
     updateHUD(ts);
   }
