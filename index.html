@@ -628,8 +628,8 @@ function buildSegments() {
             const zone = getLvl3Zone(i);
             if (!isStartLine) {
                 if (zone === 'steppe') {
-                    if (Math.random() < 0.08) {
-                        sprite = Math.random() < 0.4 ? 'research_dome' : 'rock';
+                    if (Math.random() < 0.06) {
+                        sprite = Math.random() < 0.7 ? 'tundra_shrub' : 'rock';
                         spriteX = Math.random() < 0.5 ? (-1.55 - Math.random() * 0.9) : (1.55 + Math.random() * 0.9);
                     }
                 } else if (zone === 'arctic') {
@@ -638,9 +638,12 @@ function buildSegments() {
                         spriteX = Math.random() < 0.5 ? (-1.6 - Math.random() * 0.9) : (1.6 + Math.random() * 0.9);
                     }
                 } else if (zone === 'dali') {
-                    if (Math.random() < 0.10) {
-                        sprite = Math.random() < 0.5 ? 'melting_clock' : 'dali_obelisk';
-                        spriteX = Math.random() < 0.5 ? (-1.55 - Math.random() * 0.9) : (1.55 + Math.random() * 0.9);
+                    // A spaced procession: every motif appears, with only three clocks.
+                    if (i >= 1565 && (i - 1565) % 32 === 0) {
+                        const landmark = (i - 1565) / 32;
+                        const motifs = ['dali_elephant', 'dali_egg', 'dali_drawers', 'dali_eye', 'melting_clock'];
+                        sprite = motifs[landmark % motifs.length];
+                        spriteX = (landmark % 2 === 0 ? -1 : 1) * (1.8 + (landmark % 3) * 0.15);
                     }
                 } else if (zone === 'underwater') {
                     if (Math.random() < 0.12) {
@@ -1739,155 +1742,238 @@ function drawRockSprite(sx, sy, sc) {
   ctx.restore();
 }
 
-function drawResearchDomeSprite(sx, sy, sc) {
-  const r = Math.max(8, ~~(sc * 120));
+function drawTundraShrubSprite(sx, sy, sc) {
+  if (sc < 0.03) return;
   ctx.save();
   ctx.translate(sx, sy);
-  
-  // Base slab
-  ctx.fillStyle = '#2c2c35';
-  ctx.strokeStyle = '#5c5c68';
-  ctx.lineWidth = Math.max(1, 2 * sc);
-  ctx.beginPath();
-  ctx.ellipse(0, 0, r * 1.2, r * 0.3, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+  ctx.scale(sc, sc);
+  ctx.fillStyle = 'rgba(49, 51, 40, 0.18)';
+  ctx.beginPath(); ctx.ellipse(0, 0, 42, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6c7050';
+  ctx.beginPath(); ctx.ellipse(-8, -4, 27, 6, -0.08, 0, Math.PI * 2); ctx.fill();
 
-  // Glass Dome
-  const gGrad = ctx.createRadialGradient(-r*0.2, -r*0.4, r*0.1, 0, -r*0.2, r);
-  gGrad.addColorStop(0, '#5bc0be');
-  gGrad.addColorStop(0.5, '#3a506b');
-  gGrad.addColorStop(1, '#1c2541');
-  ctx.fillStyle = gGrad;
-  ctx.beginPath();
-  ctx.arc(0, 0, r, Math.PI, 0);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Dome contour lines (cyber ribs)
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
-  ctx.lineWidth = Math.max(0.5, 1.5 * sc);
-  ctx.beginPath();
-  ctx.arc(0, 0, r, Math.PI, 0);
-  ctx.stroke();
-  
-  ctx.beginPath();
-  ctx.ellipse(0, 0, r * 0.6, r, 0, Math.PI, 0);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.ellipse(0, 0, r * 0.2, r, 0, Math.PI, 0);
-  ctx.stroke();
-
-  // Blinking red beacons
-  const isLit = (Date.now() % 600) < 300;
-  if (isLit) {
-    ctx.fillStyle = '#ff0055';
-    ctx.shadowColor = '#ff0055';
-    ctx.shadowBlur = 15;
+  // Wind-pruned willow branches, lichen and a few dry sedges; no tall trees.
+  ctx.lineCap = 'round';
+  const twigs = [[-38, -22], [-24, -35], [-8, -42], [13, -31], [33, -24], [46, -16]];
+  for (let i = 0; i < twigs.length; i++) {
+    const [x, y] = twigs[i];
+    ctx.strokeStyle = i % 2 ? '#74624b' : '#5d5942';
+    ctx.lineWidth = 2.6;
     ctx.beginPath();
-    ctx.arc(0, -r, Math.max(2, 6 * sc), 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(-5, 0); ctx.quadraticCurveTo(x * 0.3, y * 0.6, x, y);
+    ctx.moveTo(x * 0.55, y * 0.65); ctx.lineTo(x * 0.55 - 10, y * 0.65 - 10);
+    ctx.stroke();
+    ctx.fillStyle = i % 2 ? '#8b8a62' : '#656e51';
+    ctx.beginPath(); ctx.ellipse(x, y + 2, 8, 3.5, -0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x * 0.55 - 10, y * 0.65 - 9, 5, 3, -0.4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = '#b6a37e'; ctx.lineWidth = 1.2;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.moveTo(19 + i * 3, 0);
+    ctx.quadraticCurveTo(17 + i * 3, -12, 12 + i * 4, -18 - (i % 3) * 4); ctx.stroke();
   }
   ctx.restore();
 }
 
-function drawMeltingClockSprite(sx, sy, sc) {
-  const h = Math.max(10, ~~(sc * 220));
+function beginDaliSprite(sx, sy, sc, width) {
   ctx.save();
   ctx.translate(sx, sy);
-  
-  // Draw surreal bent dry tree trunk (brownish-grey)
-  ctx.strokeStyle = '#5a4d41';
-  ctx.fillStyle = '#5a4d41';
-  ctx.lineWidth = Math.max(1.5, 14 * sc);
-  ctx.lineCap = 'round';
+  ctx.scale(sc, sc);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // Long, low sunset shadows tie the sculptures to the desert floor.
+  ctx.fillStyle = 'rgba(49, 23, 43, 0.3)';
   ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.quadraticCurveTo(-40 * sc, -h * 0.4, -20 * sc, -h * 0.7);
-  ctx.quadraticCurveTo(0, -h * 0.9, 40 * sc, -h * 0.8);
-  ctx.stroke();
-  
-  // Branches splitting off
-  ctx.lineWidth = Math.max(1.0, 6 * sc);
-  ctx.beginPath();
-  ctx.moveTo(-20 * sc, -h * 0.7);
-  ctx.quadraticCurveTo(-50 * sc, -h * 0.85, -60 * sc, -h * 0.95);
-  ctx.stroke();
-  
-  // Melting white pocket watch hanging/dripping from branch
-  const cx = 35 * sc;
-  const cy = -h * 0.8;
-  
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = '#d4af37'; // gold trim
-  ctx.lineWidth = Math.max(0.5, 2 * sc);
-  
-  // Draw distorted melting shape
-  ctx.beginPath();
-  ctx.moveTo(cx - 15 * sc, cy - 5 * sc);
-  ctx.bezierCurveTo(cx - 20 * sc, cy + 10 * sc, cx - 10 * sc, cy + 45 * sc, cx, cy + 50 * sc); // dripping tail
-  ctx.bezierCurveTo(cx + 8 * sc, cy + 45 * sc, cx + 22 * sc, cy + 20 * sc, cx + 18 * sc, cy - 5 * sc);
-  ctx.bezierCurveTo(cx + 10 * sc, cy - 18 * sc, cx - 8 * sc, cy - 18 * sc, cx - 15 * sc, cy - 5 * sc);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-  
-  // Draw blue Roman numerals melting (just symbolic squiggly clock face lines)
-  ctx.strokeStyle = '#000044';
-  ctx.lineWidth = Math.max(0.5, 1.5 * sc);
-  ctx.beginPath();
-  // Clock hands drooping down
-  ctx.moveTo(cx, cy + 5 * sc);
-  ctx.lineTo(cx - 5 * sc, cy + 15 * sc);
-  ctx.moveTo(cx, cy + 5 * sc);
-  ctx.lineTo(cx + 2 * sc, cy + 28 * sc);
-  ctx.stroke();
-  
-  // Little gold crown on top
-  ctx.fillStyle = '#d4af37';
-  ctx.beginPath();
-  ctx.arc(cx, cy - 16 * sc, Math.max(1, 4 * sc), 0, Math.PI * 2);
-  ctx.fill();
-  
+  ctx.moveTo(-width / 2, 0); ctx.lineTo(135, -23);
+  ctx.lineTo(135 + width * 0.5, -18); ctx.lineTo(width / 2, 4);
+  ctx.closePath(); ctx.fill();
+}
+
+function drawMeltingClockSprite(sx, sy, sc) {
+  if (sc < 0.03) return;
+  beginDaliSprite(sx, sy, sc, 115);
+  // Warm sandstone ledge; the watch folds across its edge instead of a branch.
+  const stone = ctx.createLinearGradient(-55, -105, 65, 0);
+  stone.addColorStop(0, '#f0c38a'); stone.addColorStop(1, '#9d625a');
+  ctx.fillStyle = stone;
+  ctx.beginPath(); ctx.moveTo(-58, -104); ctx.lineTo(45, -104);
+  ctx.lineTo(60, -83); ctx.lineTo(60, 0); ctx.lineTo(-58, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#bd805f';
+  ctx.beginPath(); ctx.moveTo(45, -104); ctx.lineTo(60, -83);
+  ctx.lineTo(60, 0); ctx.lineTo(44, -9); ctx.closePath(); ctx.fill();
+
+  const face = ctx.createLinearGradient(0, -123, 0, -27);
+  face.addColorStop(0, '#fff4d2'); face.addColorStop(0.55, '#dce9e5'); face.addColorStop(1, '#79a3b4');
+  ctx.fillStyle = face; ctx.strokeStyle = '#dfb75b'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(-42, -106);
+  ctx.bezierCurveTo(-51, -139, 21, -145, 37, -112);
+  ctx.bezierCurveTo(53, -88, 49, -71, 39, -53);
+  ctx.bezierCurveTo(35, -39, 21, -22, 12, -29);
+  ctx.bezierCurveTo(1, -38, 14, -66, 2, -84);
+  ctx.bezierCurveTo(-11, -99, -36, -87, -42, -106);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Twelve hour marks follow an elliptical dial, with numerals and two hands.
+  ctx.save(); ctx.translate(-4, -111); ctx.scale(1, 0.58);
+  ctx.strokeStyle = '#334758'; ctx.lineWidth = 2;
+  for (let i = 0; i < 12; i++) {
+    const angle = i * Math.PI / 6 - Math.PI / 2;
+    ctx.beginPath(); ctx.moveTo(Math.cos(angle) * 27, Math.sin(angle) * 27);
+    ctx.lineTo(Math.cos(angle) * 31, Math.sin(angle) * 31); ctx.stroke();
+  }
+  ctx.font = 'bold 11px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#243a4d';
+  ctx.fillText('12', 0, -21); ctx.fillText('3', 22, 0);
+  ctx.fillText('6', 0, 21); ctx.fillText('9', -22, 0);
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-13, -9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(14, -17); ctx.stroke();
+  ctx.fillStyle = '#bd8f35'; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255, 250, 216, 0.7)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(36, -97); ctx.bezierCurveTo(43, -76, 30, -43, 20, -36); ctx.stroke();
   ctx.restore();
 }
 
-function drawDaliObeliskSprite(sx, sy, sc) {
-  const h = Math.max(10, ~~(sc * 180));
-  const ts = Date.now();
-  // Floating up and down slightly
-  const floatOffset = Math.sin(ts * 0.002) * 15 * sc;
-  ctx.save();
-  ctx.translate(sx, sy - floatOffset);
-  
-  // Tall, thin neon obelisk
-  const halfW = 12 * sc;
-  const oGrad = ctx.createLinearGradient(-halfW, 0, halfW, 0);
-  oGrad.addColorStop(0, '#e9c46a');
-  oGrad.addColorStop(0.5, '#f4a261');
-  oGrad.addColorStop(1, '#e76f51');
-  
-  ctx.fillStyle = oGrad;
-  ctx.beginPath();
-  ctx.moveTo(-halfW, 0);
-  ctx.lineTo(-halfW * 0.4, -h);
-  ctx.lineTo(0, -h - 20 * sc); // Pyramid top
-  ctx.lineTo(halfW * 0.4, -h);
-  ctx.lineTo(halfW, 0);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Glowing core line
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = Math.max(0.5, 2 * sc);
-  ctx.shadowColor = '#f4a261';
-  ctx.shadowBlur = 10;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(0, -h - 10 * sc);
-  ctx.stroke();
-  
+function drawDaliElephantSprite(sx, sy, sc) {
+  if (sc < 0.03) return;
+  beginDaliSprite(sx, sy, sc, 80);
+  // Impossibly long, jointed legs below a sculpted elephant and golden obelisk.
+  ctx.strokeStyle = '#b88476'; ctx.lineWidth = 3.5;
+  for (const [hip, knee, foot] of [[-33, -48, -55], [-15, -7, -19], [16, 30, 21], [33, 49, 56]]) {
+    ctx.beginPath(); ctx.moveTo(hip, -147); ctx.lineTo(knee, -70); ctx.lineTo(foot, 0); ctx.stroke();
+    ctx.fillStyle = '#d7a78a'; ctx.beginPath(); ctx.arc(knee, -70, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(foot, 0, 5, 2, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  const skin = ctx.createLinearGradient(-48, -193, 28, -139);
+  skin.addColorStop(0, '#e2b6a0'); skin.addColorStop(1, '#865e69');
+  ctx.fillStyle = skin; ctx.strokeStyle = '#785366'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(0, -166, 47, 27, -0.05, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // Head, curled trunk and a broad ear give it an unmistakable silhouette.
+  ctx.beginPath(); ctx.ellipse(-42, -167, 22, 24, -0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-58, -174);
+  ctx.bezierCurveTo(-83, -163, -67, -129, -91, -123);
+  ctx.quadraticCurveTo(-107, -127, -96, -140);
+  ctx.quadraticCurveTo(-104, -135, -102, -122);
+  ctx.bezierCurveTo(-81, -99, -60, -125, -51, -156); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#c38d85'; ctx.strokeStyle = '#986674';
+  ctx.beginPath(); ctx.ellipse(-28, -165, 18, 23, -0.18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#fff0cb'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-57, -155); ctx.quadraticCurveTo(-76, -151, -80, -161); ctx.stroke();
+  ctx.fillStyle = '#302131'; ctx.beginPath(); ctx.arc(-49, -173, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#a77278'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(44, -171); ctx.quadraticCurveTo(60, -163, 53, -139); ctx.stroke();
+  ctx.fillStyle = '#a55953'; ctx.fillRect(-21, -191, 48, 8);
+  ctx.fillStyle = '#eed393';
+  ctx.beginPath(); ctx.moveTo(-11, -193); ctx.lineTo(-7, -236);
+  ctx.lineTo(0, -252); ctx.lineTo(9, -236); ctx.lineTo(15, -193); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ae784f';
+  ctx.beginPath(); ctx.moveTo(0, -252); ctx.lineTo(9, -236);
+  ctx.lineTo(15, -193); ctx.lineTo(1, -195); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawDaliEggSprite(sx, sy, sc) {
+  if (sc < 0.03) return;
+  beginDaliSprite(sx, sy, sc, 80);
+  const lift = Math.sin(Date.now() * 0.0014 + sx * 0.01) * 5;
+  ctx.translate(0, lift);
+  // A luminous cracked shell hovering above a separate, grounded shadow.
+  const shell = ctx.createRadialGradient(-17, -136, 5, 0, -112, 62);
+  shell.addColorStop(0, '#fff9df'); shell.addColorStop(0.55, '#eed6ac'); shell.addColorStop(1, '#b08269');
+  ctx.fillStyle = shell; ctx.strokeStyle = '#e8c593'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-41, -96);
+  ctx.bezierCurveTo(-48, -127, -23, -181, 0, -180);
+  ctx.bezierCurveTo(25, -181, 48, -128, 41, -95);
+  ctx.lineTo(25, -107); ctx.lineTo(13, -91); ctx.lineTo(-2, -106);
+  ctx.lineTo(-18, -90); ctx.lineTo(-30, -108); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-42, -79); ctx.lineTo(-26, -90);
+  ctx.lineTo(-13, -74); ctx.lineTo(1, -89); ctx.lineTo(16, -74); ctx.lineTo(29, -91); ctx.lineTo(42, -79);
+  ctx.bezierCurveTo(41, -37, -42, -35, -42, -79); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Golden inner light through the opening, kept within the shell silhouette.
+  ctx.fillStyle = '#f5b957';
+  ctx.beginPath(); ctx.ellipse(0, -84, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffe7a5';
+  ctx.beginPath(); ctx.ellipse(-5, -86, 11, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#80585f'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(21, -151); ctx.lineTo(11, -140); ctx.lineTo(16, -126); ctx.lineTo(6, -117); ctx.stroke();
+  ctx.fillStyle = '#efd5a3';
+  ctx.beginPath(); ctx.moveTo(51, -111); ctx.lineTo(60, -116); ctx.lineTo(58, -104); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-54, -67); ctx.lineTo(-61, -77); ctx.lineTo(-48, -73); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawDaliDrawerSprite(sx, sy, sc) {
+  if (sc < 0.03) return;
+  beginDaliSprite(sx, sy, sc, 65);
+  // A bronze figure whose torso opens into three real, projecting drawers.
+  const bronze = ctx.createLinearGradient(-30, -210, 36, 0);
+  bronze.addColorStop(0, '#efc391'); bronze.addColorStop(0.45, '#bc8371'); bronze.addColorStop(1, '#654b58');
+  ctx.fillStyle = bronze;
+  ctx.beginPath(); ctx.moveTo(-12, -118);
+  ctx.bezierCurveTo(-21, -99, -13, -54, -26, -6); ctx.lineTo(-8, -3);
+  ctx.lineTo(4, -72); ctx.lineTo(15, -3); ctx.lineTo(30, -1);
+  ctx.bezierCurveTo(18, -44, 29, -99, 14, -122); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-22, -184); ctx.quadraticCurveTo(0, -197, 24, -181);
+  ctx.quadraticCurveTo(38, -153, 18, -111); ctx.quadraticCurveTo(0, -99, -21, -116);
+  ctx.quadraticCurveTo(-34, -156, -22, -184); ctx.closePath(); ctx.fill();
+  ctx.fillRect(-7, -205, 14, 23);
+  ctx.beginPath(); ctx.ellipse(0, -218, 17, 23, -0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#6c4954'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(4, -232); ctx.lineTo(2, -218); ctx.lineTo(8, -215); ctx.moveTo(-1, -207); ctx.lineTo(8, -207); ctx.stroke();
+  ctx.strokeStyle = '#c39379'; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(-24, -178); ctx.quadraticCurveTo(-47, -161, -58, -130); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(24, -178); ctx.quadraticCurveTo(39, -154, 59, -175); ctx.stroke();
+  for (let i = 0; i < 3; i++) {
+    const y = -172 + i * 24, extension = 12 + i * 4;
+    ctx.fillStyle = '#453443'; ctx.fillRect(-14, y, 29, 15);
+    ctx.fillStyle = '#986853';
+    ctx.beginPath(); ctx.moveTo(-14, y); ctx.lineTo(-14 - extension, y + 7);
+    ctx.lineTo(15 - extension, y + 7); ctx.lineTo(15, y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e2b684'; ctx.fillRect(-14 - extension, y + 7, 29, 15);
+    ctx.strokeStyle = '#8c6157'; ctx.lineWidth = 1; ctx.strokeRect(-14 - extension, y + 7, 29, 15);
+    ctx.fillStyle = '#624331'; ctx.beginPath(); ctx.arc(1 - extension, y + 15, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  // A characteristic forked crutch holds the outstretched hand.
+  ctx.strokeStyle = '#e2b877'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(66, 0); ctx.lineTo(59, -161);
+  ctx.lineTo(50, -174); ctx.moveTo(59, -161); ctx.lineTo(68, -175); ctx.stroke();
+  ctx.restore();
+}
+
+function drawDaliEyeSprite(sx, sy, sc) {
+  if (sc < 0.03) return;
+  beginDaliSprite(sx, sy, sc, 60);
+  ctx.strokeStyle = '#849485'; ctx.lineWidth = 7;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(22, -45, -22, -75, 0, -128); ctx.stroke();
+  ctx.fillStyle = '#668378';
+  ctx.beginPath(); ctx.moveTo(1, -42); ctx.quadraticCurveTo(42, -82, 47, -58);
+  ctx.quadraticCurveTo(28, -36, 1, -42); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-3, -75); ctx.quadraticCurveTo(-40, -114, -43, -82);
+  ctx.quadraticCurveTo(-24, -65, -3, -75); ctx.fill();
+  // An open eye nested in velvety, rust-gold petals.
+  for (let i = 0; i < 8; i++) {
+    const angle = i * Math.PI / 4;
+    ctx.save(); ctx.translate(0, -147); ctx.rotate(angle);
+    const petal = ctx.createLinearGradient(0, 0, 0, -60);
+    petal.addColorStop(0, '#eab57b'); petal.addColorStop(1, i % 2 ? '#a55662' : '#c57561');
+    ctx.fillStyle = petal;
+    ctx.beginPath(); ctx.moveTo(-12, -8); ctx.bezierCurveTo(-35, -37, -16, -65, 0, -62);
+    ctx.bezierCurveTo(20, -58, 26, -30, 12, -8); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#fff0d2'; ctx.strokeStyle = '#794656'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-45, -148); ctx.quadraticCurveTo(0, -185, 45, -148);
+  ctx.quadraticCurveTo(0, -113, -45, -148); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const iris = ctx.createRadialGradient(-4, -154, 1, 0, -148, 17);
+  iris.addColorStop(0, '#9fdbd6'); iris.addColorStop(0.6, '#4f929e'); iris.addColorStop(1, '#264c69');
+  ctx.fillStyle = iris; ctx.beginPath(); ctx.arc(0, -148, 17, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#bfd9bd'; ctx.lineWidth = 1;
+  for (let i = 0; i < 12; i++) {
+    const a = i * Math.PI / 6;
+    ctx.beginPath(); ctx.moveTo(Math.cos(a) * 9, -148 + Math.sin(a) * 9);
+    ctx.lineTo(Math.cos(a) * 14, -148 + Math.sin(a) * 14); ctx.stroke();
+  }
+  ctx.fillStyle = '#192735'; ctx.beginPath(); ctx.arc(0, -148, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff7e0'; ctx.beginPath(); ctx.arc(-4, -153, 3.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -2118,22 +2204,32 @@ function drawReefShark(x, y, sc, ts) {
   ctx.scale(sc, sc);
   const sweep = Math.sin(ts * 0.0035);
 
-  // Tail
+  // A broad tail root overlaps the body, even at either extreme of the sweep.
   ctx.save();
-  ctx.translate(34, 0);
-  ctx.rotate(sweep * 0.32);
-  ctx.fillStyle = '#5a7183';
+  ctx.translate(28, 0);
+  ctx.rotate(sweep * 0.23);
+  const tailShade = ctx.createLinearGradient(0, -20, 0, 17);
+  tailShade.addColorStop(0, '#6d869b'); tailShade.addColorStop(1, '#496477');
+  ctx.fillStyle = tailShade;
   ctx.beginPath();
-  ctx.moveTo(0, 0); ctx.lineTo(20, -18); ctx.lineTo(15, -2);
-  ctx.lineTo(20, 12); ctx.closePath(); ctx.fill();
+  ctx.moveTo(-5, -5);
+  ctx.quadraticCurveTo(9, -5, 15, -11);
+  ctx.quadraticCurveTo(23, -19, 29, -25);
+  ctx.quadraticCurveTo(28, -11, 22, -2);
+  ctx.quadraticCurveTo(24, 7, 28, 17);
+  ctx.quadraticCurveTo(16, 13, 12, 6);
+  ctx.quadraticCurveTo(5, 4, -5, 5);
+  ctx.closePath(); ctx.fill();
   ctx.restore();
 
   // Body
   ctx.fillStyle = '#6d869b';
   ctx.beginPath();
   ctx.moveTo(-40, 0);
-  ctx.quadraticCurveTo(-14, -13, 34, -5);
-  ctx.lineTo(34, 5);
+  ctx.bezierCurveTo(-24, -14, 1, -16, 22, -7);
+  ctx.quadraticCurveTo(29, -4, 35, -3.5);
+  ctx.lineTo(35, 3.5);
+  ctx.bezierCurveTo(21, 7, 1, 14, -17, 8);
   ctx.quadraticCurveTo(-14, 12, -40, 0);
   ctx.closePath(); ctx.fill();
 
@@ -6274,13 +6370,13 @@ function render(ts) {
   if (currentLevel === 3) {
     const zone = getLvl3World(startSegIdx);
     if (zone === 'steppe') {
-        // Gentle white hills with tiny green tannen for the Steppe
+        // Treeless tundra: weathered ridges, pale frost and sparse low scrub.
         drawTile(bgOffset * 0.25, horizonY, () => {
           // Draw 2 layers of rolling hills for depth
           for (let layer = 0; layer < 2; layer++) {
             const hOffset = layer * 15;
-            ctx.fillStyle = layer === 0 ? '#ebe4e8' : '#f4eff2';
-            ctx.strokeStyle = '#dcd5da';
+            ctx.fillStyle = layer === 0 ? '#adb3aa' : '#cbd0bf';
+            ctx.strokeStyle = '#deded1';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(0, 40);
@@ -6301,27 +6397,20 @@ function render(ts) {
             ctx.fill();
             ctx.stroke();
             
-            // Draw tiny green pine trees on these hills!
-            ctx.fillStyle = '#2f5c43'; // Forest green
-            for (let s = 2; s < numSteps - 2; s += 3) {
+            // Isolated wind-pruned bushes, leaving most of the horizon bare.
+            ctx.fillStyle = layer === 0 ? '#747b64' : '#899175';
+            for (let s = 3; s < numSteps - 2; s += 8) {
               const x = s * stepW + (layer * 12) % 30;
               const angle1 = (s / numSteps) * 2 * Math.PI;
               const angle2 = (s / numSteps) * 4 * Math.PI;
               const wave = Math.sin(angle1 + layer * 1.5) * 15 + Math.cos(angle2 - layer * 0.8) * 8;
               const y = -35 + wave - hOffset;
               
-              // Draw a tiny pine tree: a small triangle
+              // Low, irregular scrub rather than a forest of pointed trees.
               ctx.beginPath();
-              ctx.moveTo(x, y);
-              ctx.lineTo(x - 3.5, y + 8);
-              ctx.lineTo(x + 3.5, y + 8);
-              ctx.closePath();
+              ctx.ellipse(x, y - 1, 5.5, 2.5, -0.1, 0, Math.PI * 2);
               ctx.fill();
-              
-              // Draw tiny trunk
-              ctx.fillStyle = '#5c4033';
-              ctx.fillRect(x - 0.6, y + 8, 1.2, 2.5);
-              ctx.fillStyle = '#2f5c43';
+              ctx.beginPath(); ctx.ellipse(x + 4, y, 3, 1.5, 0, 0, Math.PI * 2); ctx.fill();
             }
           }
         });
@@ -6737,12 +6826,12 @@ function render(ts) {
         drawRockSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
-    else if (s.type === 'research_dome') {
+    else if (s.type === 'tundra_shrub') {
         ctx.save();
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawResearchDomeSprite(s.x, s.y, s.sc);
+        drawTundraShrubSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
     else if (s.type === 'melting_clock') {
@@ -6753,12 +6842,15 @@ function render(ts) {
         drawMeltingClockSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
-    else if (s.type === 'dali_obelisk') {
+    else if (s.type === 'dali_elephant' || s.type === 'dali_egg' || s.type === 'dali_drawers' || s.type === 'dali_eye') {
         ctx.save();
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawDaliObeliskSprite(s.x, s.y, s.sc);
+        if (s.type === 'dali_elephant') drawDaliElephantSprite(s.x, s.y, s.sc);
+        else if (s.type === 'dali_egg') drawDaliEggSprite(s.x, s.y, s.sc);
+        else if (s.type === 'dali_drawers') drawDaliDrawerSprite(s.x, s.y, s.sc);
+        else drawDaliEyeSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
     else if (s.type === 'coral_spire') {
