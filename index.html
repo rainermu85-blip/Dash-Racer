@@ -761,6 +761,7 @@ const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, lap:1, finished:fa
 
 // --- EINSTELLUNGEN FÜR DICH ZUM SPIELEN ---
 const STEER_SENSITIVITY = 2.0; // steering speed multiplier
+const UNDERWATER_WALL_LIMIT = 0.8; // Leave room for the full car body at the glass-lined road edge.
 // ------------------------------------------
 
 const OPP_COLORS = ['#ff4466','#44ddff','#ffcc22','#44ff88','#dd88ff'];
@@ -8021,6 +8022,7 @@ function loop(ts) {
     const currentSeg = getSeg(player.z);
     const isOnBridge = !!(currentSeg && currentSeg.isBridge);
     const inTunnel = !!(currentLevel === 3 && currentSeg && currentSeg.isTunnel);
+    const inGlassTunnel = currentLevel === 3 && getLvl3Zone(currentSeg.index) === 'underwater';
     const softLimit = 0.94; 
     let hardLimitLeft = (isOnBridge || inTunnel) ? 1.05 : 1.45;
     let hardLimitRight = (isOnBridge || inTunnel) ? 1.05 : 1.45;
@@ -8030,6 +8032,10 @@ function loop(ts) {
     if (currentLevel === 4) {
         hardLimitLeft = 0.98;
         hardLimitRight = 0.98;
+    }
+    if (inGlassTunnel) {
+        hardLimitLeft = UNDERWATER_WALL_LIMIT;
+        hardLimitRight = UNDERWATER_WALL_LIMIT;
     }
     const offroad = Math.abs(player.x) >= softLimit;
     const steerInput = player.finished ? 0 : ((keys.right ? 1 : 0) - (keys.left ? 1 : 0));
@@ -8392,6 +8398,16 @@ function loop(ts) {
     }
 
     checkOpponentCollision();
+    // Movement can enter the glass tunnel this frame; opponent impacts can
+    // also push outward after the steering limits. Keep both inside the walls.
+    if (currentLevel === 3 && getLvl3Zone(getSeg(player.z).index) === 'underwater') {
+      const insideX = clamp(player.x, -UNDERWATER_WALL_LIMIT, UNDERWATER_WALL_LIMIT);
+      if (insideX !== player.x) {
+        player.x = insideX;
+        player.speed *= 0.68;
+        player.hitFlash = Math.max(player.hitFlash, 0.25);
+      }
+    }
     updateHUD(ts);
   }
 

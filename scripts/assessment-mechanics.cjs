@@ -98,6 +98,67 @@ module.exports = async function runMechanics(browser, baseUrl) {
         ctx.createLinearGradient = createGradient;
         ctx.fillRect = fillRect;
       }
+      const glassWall = 0.8;
+      const wallContacts = [];
+      for (const side of [-1, 1]) {
+        for (const boosted of [false, true]) {
+          reset(3); opponents.length = 0;
+          player.z = 2650 * SEGMENT_LENGTH; player.x = side * 0.79;
+          player.speed = player.maxSpeed; player.boosts = boosted ? 1 : 0;
+          keys.left = side < 0; keys.right = side > 0; keys.boost = boosted;
+          let furthest = 0, collisionFeedback = false;
+          for (let frame = 0; frame < 60; frame++) {
+            tick();
+            furthest = Math.max(furthest, Math.abs(player.x));
+            collisionFeedback ||= player.hitFlash > 0;
+          }
+          wallContacts.push({ side, boosted, furthest, collisionFeedback, speed: player.speed });
+        }
+      }
+      record('underwater-glass-walls-stop-steering-and-boost', wallContacts.every(sample => sample.furthest <= glassWall && sample.collisionFeedback && sample.speed < player.maxSpeed), wallContacts);
+
+      const entries = [];
+      for (const side of [-1, 1]) {
+        reset(3); opponents.length = 0;
+        player.z = 2350 * SEGMENT_LENGTH - 1; player.x = side * 1.02;
+        player.speed = player.maxSpeed; tick();
+        entries.push({ side, zone: getLvl3Zone(Math.floor(player.z / SEGMENT_LENGTH)), x: player.x });
+      }
+      record('underwater-glass-walls-apply-on-entry', entries.every(sample => sample.zone === 'underwater' && Math.abs(sample.x) <= glassWall), entries);
+
+      const pushes = [];
+      for (const side of [-1, 1]) {
+        reset(3);
+        const opponent = opponents[0]; opponents.length = 1;
+        player.z = 2650 * SEGMENT_LENGTH; player.x = side * 0.79;
+        player.speed = player.maxSpeed;
+        opponent.x = opponent.baseX = opponent.targetX = side * 0.67;
+        opponent.z = player.z + contactDistance() + 90;
+        opponent.speed = opponent.maxSpeed = 0;
+        opponent.isBoosting = opponent.isChevronBoosting = false;
+        tick();
+        pushes.push({ side, x: player.x, cooldown: player.collisionCooldown });
+      }
+      record('underwater-glass-walls-contain-opponent-push', pushes.every(sample => Math.abs(sample.x) <= glassWall && sample.cooldown > 0), pushes);
+
+      const runout = [];
+      for (const side of [-1, 1]) {
+        reset(3); opponents.length = 0;
+        player.finished = true; player.z = TRACK_LENGTH + 10 * SEGMENT_LENGTH;
+        player.x = side * 1.2; player.speed = player.maxSpeed; tick();
+        runout.push({ side, x: player.x, finished: player.finished });
+      }
+      record('underwater-glass-walls-continue-after-finish', runout.every(sample => sample.finished && Math.abs(sample.x) <= glassWall), runout);
+
+      const otherZones = [];
+      for (const segment of [100, 1000, 1750, 2250]) {
+        reset(3); opponents.length = 0;
+        player.z = segment * SEGMENT_LENGTH; player.x = 1.02;
+        player.speed = 0; tick();
+        otherZones.push({ segment, x: player.x, zone: getLvl3Zone(segment), world: getLvl3World(segment) });
+      }
+      record('underwater-glass-walls-leave-other-zones-open', otherZones.every(sample => sample.x > 1), otherZones);
+
       reset(); player.lap = 2; player.z = 0;
       opponents.forEach((opponent, i) => { opponent.lap = 1; opponent.z = i * 100; });
       opponents[0].lap = 2; opponents[0].z = 200;
