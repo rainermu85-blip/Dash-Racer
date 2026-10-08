@@ -1,0 +1,357 @@
+{
+  "date": "2026-10-08",
+  "source_commit": "af1c28b7951d1b6f9d46526a27ad40ce3147cc85",
+  "runtime": {
+    "node": "24.19.0",
+    "npm": "11.9.0",
+    "vite": "6.4.3",
+    "playwright": "1.62.1",
+    "chromium": "151.0.7922.173",
+    "platform": "Linux"
+  },
+  "scope": {
+    "full_races": "Native requestAnimationFrame; feedback driver produces steering keys only. No distance, speed or lap overrides. No deliberate boost collection.",
+    "mechanics": "Controlled state fixtures and manual 60 Hz frames in Chromium.",
+    "edges": "Native browser frames with deliberate finish-boundary fixtures. blur event is synthetic; mobile is emulated."
+  },
+  "full_races": [
+    {
+      "level": 1,
+      "wall_seconds": 163.372,
+      "lap_seconds": [
+        55.847588,
+        50.419284,
+        51.326339
+      ],
+      "result_rank": "4TH",
+      "result_text": "RACE COMPLETED\nYOU PLACED\n4TH\nLAP 1: 00:00:55:84\nLAP 2: 00:00:50:41\nLAP 3: 00:00:51:32\nBEST: 00:00:50:41\nSELECT LEVEL:\nLVL 1: NEON\nLVL 2: COASTAL\nLVL 3: ARCTIC\nLVL 4: SPACE\nRACE AGAIN",
+      "finished": true,
+      "javascript_errors": [],
+      "failed_requests": [
+        {
+          "url": "https://fonts.googleapis.com/css2",
+          "failure": "net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "wall_seconds": 169.601,
+      "lap_seconds": [
+        57.522203,
+        51.338394,
+        54.722164
+      ],
+      "result_rank": "4TH",
+      "result_text": "RACE COMPLETED\nYOU PLACED\n4TH\nLAP 1: 00:00:57:52\nLAP 2: 00:00:51:33\nLAP 3: 00:00:54:72\nBEST: 00:00:51:33\nSELECT LEVEL:\nLVL 1: NEON\nLVL 2: COASTAL\nLVL 3: ARCTIC\nLVL 4: SPACE\nRACE AGAIN",
+      "finished": true,
+      "javascript_errors": [],
+      "failed_requests": [
+        {
+          "url": "https://fonts.googleapis.com/css2",
+          "failure": "net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "wall_seconds": 142.255,
+      "lap_seconds": [
+        136.276978
+      ],
+      "result_rank": "5TH",
+      "result_text": "RACE COMPLETED\nYOU PLACED\n5TH\nLAP 1: 00:02:16:27\nBEST: 00:02:16:27\nSELECT LEVEL:\nLVL 1: NEON\nLVL 2: COASTAL\nLVL 3: ARCTIC\nLVL 4: SPACE\nRACE AGAIN",
+      "finished": true,
+      "javascript_errors": [],
+      "failed_requests": [
+        {
+          "url": "https://fonts.googleapis.com/css2",
+          "failure": "net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "wall_seconds": 199.642,
+      "lap_seconds": [
+        67.280566,
+        63.749274,
+        62.640063
+      ],
+      "result_rank": "6TH",
+      "result_text": "RACE COMPLETED\nYOU PLACED\n6TH\nLAP 1: 00:01:07:28\nLAP 2: 00:01:03:74\nLAP 3: 00:01:02:64\nBEST: 00:01:02:64\nSELECT LEVEL:\nLVL 1: NEON\nLVL 2: COASTAL\nLVL 3: ARCTIC\nLVL 4: SPACE\nRACE AGAIN",
+      "finished": true,
+      "javascript_errors": [],
+      "failed_requests": [
+        {
+          "url": "https://fonts.googleapis.com/css2",
+          "failure": "net::ERR_TUNNEL_CONNECTION_FAILED"
+        }
+      ]
+    }
+  ],
+  "mechanics": [
+    {
+      "name": "auto-acceleration",
+      "pass": true,
+      "actual": {
+        "speed": 1923.3223581283937,
+        "z": 1069.7556193687167
+      }
+    },
+    {
+      "name": "no-charge-no-boost",
+      "pass": true,
+      "actual": {
+        "boosting": false,
+        "charges": 0
+      }
+    },
+    {
+      "name": "lightning-pickup",
+      "pass": true,
+      "actual": {
+        "charges": 1,
+        "active": false
+      }
+    },
+    {
+      "name": "boost-consumes-charge",
+      "pass": true,
+      "actual": {
+        "boosting": true,
+        "charges": 0
+      }
+    },
+    {
+      "name": "boost-expires",
+      "pass": true,
+      "actual": {
+        "boosting": false
+      }
+    },
+    {
+      "name": "boost-cap-three",
+      "pass": true,
+      "actual": {
+        "charges": 3
+      }
+    },
+    {
+      "name": "barrier-hit",
+      "pass": true,
+      "actual": {
+        "speed": -1500,
+        "cooldown": 0.6,
+        "barrier": "blinking"
+      }
+    },
+    {
+      "name": "offroad-slows-car",
+      "pass": true,
+      "actual": {
+        "speed": 3281.2904000000003
+      }
+    },
+    {
+      "name": "five-energy-give-charge",
+      "pass": true,
+      "actual": {
+        "energy": 0,
+        "charges": 1
+      }
+    },
+    {
+      "name": "chevron-turbo",
+      "pass": true,
+      "actual": {
+        "turbo": true,
+        "charges": 0
+      }
+    },
+    {
+      "name": "lap-wrap-resets-items",
+      "pass": true,
+      "actual": {
+        "lap": 2,
+        "z": 59,
+        "times": [
+          16.66666666666664,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "name": "level-three-zones",
+      "pass": true,
+      "actual": {
+        "zones": [
+          "steppe",
+          "tunnel",
+          "arctic",
+          "tunnel",
+          "dali",
+          "tunnel",
+          "underwater"
+        ],
+        "segments": 3075
+      }
+    },
+    {
+      "name": "ranking-uses-total-distance",
+      "pass": true,
+      "actual": {
+        "rank": 2
+      }
+    }
+  ],
+  "edges": [
+    {
+      "name": "finish-exit-pending-timer",
+      "pass": false,
+      "immediate": "intro",
+      "later": {
+        "state": "result",
+        "paused": false,
+        "finished": true,
+        "menu": false
+      },
+      "errors": [],
+      "classification": "confirmed_bug"
+    },
+    {
+      "name": "finish-restart-exit-main-menu",
+      "pass": false,
+      "observation": {
+        "state": "intro",
+        "menu": false,
+        "resultVisible": true
+      },
+      "errors": [],
+      "classification": "confirmed_bug"
+    },
+    {
+      "name": "blur-does-not-pause",
+      "pass": false,
+      "before": {
+        "z": 0.6999877058686632,
+        "keys": {
+          "left": false,
+          "right": false,
+          "boost": false
+        },
+        "paused": false
+      },
+      "after": {
+        "z": 335.51025146741154,
+        "paused": false
+      },
+      "errors": [],
+      "classification": "ux_recommendation"
+    },
+    {
+      "name": "mobile-pause-control",
+      "pass": false,
+      "visibleButtons": [],
+      "errors": [],
+      "classification": "ux_recommendation"
+    },
+    {
+      "name": "pause-freezes-progress-and-time",
+      "pass": true,
+      "before": {
+        "z": 0.7003644163315084,
+        "t": 16.671004391851685
+      },
+      "after": {
+        "z": 0.7003644163315084,
+        "t": 16.671004391851685
+      },
+      "errors": [],
+      "classification": "passed_behavior"
+    },
+    {
+      "name": "level-switch-3-to-4-restart",
+      "pass": true,
+      "actual": {
+        "level": 4,
+        "count": 1350,
+        "segments": 1350,
+        "lap": 1,
+        "finished": false,
+        "boosts": 0,
+        "energy": 0,
+        "times": [
+          0,
+          0,
+          0
+        ],
+        "energyVisible": true
+      },
+      "errors": [],
+      "classification": "passed_behavior"
+    }
+  ],
+  "dependency_audit": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 1,
+      "critical": 0,
+      "total": 1
+    },
+    "findings": {
+      "source-map-js": {
+        "name": "source-map-js",
+        "severity": "high",
+        "isDirect": false,
+        "via": [
+          {
+            "source": 1241209,
+            "name": "source-map-js",
+            "dependency": "source-map-js",
+            "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+            "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q",
+            "severity": "high",
+            "cwe": [
+              "CWE-1284"
+            ],
+            "cvss": {
+              "score": 7.5,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+            },
+            "range": ">=1.0.0 <1.2.2"
+          }
+        ],
+        "effects": [],
+        "range": "1.0.0 - 1.2.1",
+        "nodes": [
+          "node_modules/source-map-js"
+        ],
+        "fixAvailable": true
+      }
+    }
+  },
+  "saved_script_verification": {
+    "mechanics": {
+      "executed": 13,
+      "passed": 13,
+      "failed": 0,
+      "exit_code": 0
+    },
+    "edges": {
+      "executed": 6,
+      "passed": 2,
+      "failed": 4,
+      "exit_code": 1
+    },
+    "races": {
+      "executed": 4,
+      "passed": 4,
+      "failed": 0,
+      "exit_code": 0
+    }
+  }
+}

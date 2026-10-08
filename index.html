@@ -235,7 +235,8 @@ let blinkingBarriers = [];
 let weatherParticles = [];
 
 function getLvl3Zone(idx) {
-  const i = (~~idx % 2875 + 2875) % 2875;
+  // Level 3 is a point-to-point route; the runout stays in the final world.
+  const i = Math.max(0, Math.trunc(idx));
   if (i < 450) return 'steppe';
   if (i >= 450 && i < 750) return 'tunnel';
   if (i >= 750 && i < 1250) return 'arctic';
@@ -264,7 +265,7 @@ const LVL3_PORTAL_PALETTE = {
 
 // Palette + entrance/exit weighting at a given tunnel segment, or null outside.
 function getTunnelStyle(segIdx) {
-  const i = (~~segIdx % 2875 + 2875) % 2875;
+  const i = Math.max(0, Math.trunc(segIdx));
   let t = null;
   for (const cand of LVL3_TUNNELS) { if (i >= cand.start && i < cand.end) { t = cand; break; } }
   if (!t) return null;
@@ -298,7 +299,7 @@ function getTunnelStyle(segIdx) {
 // tunnel hides it, and you drive out into a world that already finished changing.
 const PORTAL_WORLD_SWITCH = 1 / 3;
 function getLvl3World(idx) {
-  const i = (~~idx % 2875 + 2875) % 2875;
+  const i = Math.max(0, Math.trunc(idx));
   for (const t of LVL3_TUNNELS) {
     if (i >= t.start && i < t.end) {
       return (i - t.start) / (t.end - t.start) < PORTAL_WORLD_SWITCH ? t.from : t.to;
@@ -312,7 +313,7 @@ function getLvl3World(idx) {
 // mouths instead of popping on the frame you cross them.
 const PORTAL_WEATHER_FADE = 40;
 function getLvl3WeatherFade(idx) {
-  const i = (~~idx % 2875 + 2875) % 2875;
+  const i = Math.max(0, Math.trunc(idx));
   for (const t of LVL3_TUNNELS) {
     if (i >= t.start && i < t.end) return 0;
     if (i >= t.start - PORTAL_WEATHER_FADE && i < t.start) return (t.start - i) / PORTAL_WEATHER_FADE;
@@ -669,7 +670,7 @@ function buildSegments() {
     }
 
     if (currentLevel === 3) {
-        // Append 200 extra flat straight snowy segments beyond the finish line
+        // Append 200 extra flat straight underwater segments beyond the finish line
         const lastWorldY = worldY;
         for (let i = 0; i < 200; i++) {
             const idx = SEGMENT_COUNT + i;
