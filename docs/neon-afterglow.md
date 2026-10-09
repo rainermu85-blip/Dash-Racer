@@ -36,25 +36,36 @@ Stadtlichter und ein gestreifter Synthwave-Sonnenuntergang.
 
 Ein schneller Rundkurs in Schwarz und Violett. Zwei Skyline-Schichten,
 Sci-Fi-Neonschrift, Türme, Lampen und leichte Reflexe auf dem Asphalt sorgen
-für Tiefe. Die Schrift besteht aus gezeichneten, erfundenen Zeichen und
-benötigt keine zusätzliche Schriftart oder externe Bilddatei.
+für Tiefe. Gezeichnete, erfundene Zeichen wechseln sich mit kurzen Laden-
+und Markenworten in Systemschrift ab. Zusätzliche Schriftarten oder externe
+Bilddateien werden dafür nicht benötigt.
 
-Die Reklame verwendet inzwischen acht kräftige Neonfarben, auch innerhalb
-eines Schildes. 74 abwechselnd links und rechts platzierte Schilder ersetzen
-die bisherigen 23 Schilder auf der rechten Seite. Schmale Schilder stehen
-am Mittelstreifen oder äußeren Rand; breite Billboards außerhalb der beiden
-Fahrbahnen. Zusätzliche Fassaden-, Laden- und Dachreklamen füllen die Skyline.
-Farbige Halos und helle Kerne entstehen durch gestaffelte Linien; die
-Zeichenkonturen werden gemeinsam verwendet, um unnötige Arbeit pro Bild
-zu vermeiden. Der violett-schwarze Untergrund bleibt der Kontrast dazu.
+Die Reklame mischt zwölf Gestaltungen: kräftige oder dünne Schrift, ein oder
+zwei Spalten, einfache und doppelte Rahmen, offene Rahmenecken und rahmenlose
+Schilder. Manche haben kleine Kreise, Sonnen, Pfeile, Sterne oder Rauten.
+Jedes Schild verwendet eine feste Palette aus einer oder zwei Neonfarben;
+zwei der zwölf Gestaltungen verwenden drei Farben. Buchstaben eines
+Schriftzugs bleiben gleichfarbig; zusätzliche Farben kennzeichnen etwa
+die zweite Spalte, den Rahmen oder ein Symbol. Die Mischung aus acht
+verfügbaren Neonfarben entsteht zwischen den unterschiedlichen Reklamen.
+Die Gestaltung bleibt bei jeder Vorbeifahrt gleich.
+
+74 abwechselnd links und rechts platzierte Schilder ersetzen die bisherigen
+23 Schilder auf der rechten Seite. Schmale Schilder stehen am Mittelstreifen
+oder äußeren Rand; breite Billboards außerhalb der beiden Fahrbahnen.
+Zusätzliche Fassaden-, Laden- und Dachreklamen verwenden ebenfalls die
+unterschiedlichen Gestaltungen. Farbige Halos und helle Kerne entstehen
+durch gestaffelte Linien; die Zeichenkonturen werden gemeinsam verwendet,
+um unnötige Arbeit pro Bild zu vermeiden. Der violett-schwarze Untergrund
+bleibt der Kontrast dazu.
 
 Produktionsbuild und die 21 Kapitelprüfungen bestehen. Eine temporäre
 Browserkontrolle zeichnete 400 Streckenansichten bei 390 und 480 Pixel
 Breite ohne JavaScript-Fehler; alle acht Farben wurden tatsächlich gezeichnet.
-Schilder, Skyline und Überführungen wurden zusätzlich visuell geprüft.
+Alle zwölf Gestaltungen, Skyline und Überführungen wurden zusätzlich visuell geprüft.
 Ein zehnsekündiger Lauf mit regulären Browserbildern erreichte auf der
-Cloud-Prüfumgebung etwa 59 FPS ohne JavaScript-Fehler; die Renderzeit lag
-im Median bei 5,2 ms und beim 95. Perzentil bei 7,8 ms. Dies ist eine
+Cloud-Prüfumgebung etwa 58 FPS ohne JavaScript-Fehler; die Renderzeit lag
+im Median bei 5,5 ms und beim 95. Perzentil bei 10 ms. Dies ist eine
 Umgebungsbeobachtung und keine Zusage für jedes Endgerät.
 
 Die Gegenfahrbahn liegt links neben der Rennstrecke, durch einen Mittelstreifen

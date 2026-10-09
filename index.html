@@ -249,6 +249,25 @@ const HIGHWAY_CROSSINGS = [
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
 const HIGHWAY_NEON_COLORS = ['#ff527f', '#ffd65c', '#7aff9e', '#35ddff', '#568cff', '#bb80ff', '#ff54dc', '#ff9853'];
+// Each business has one coherent identity, drawn consistently on every pass.
+const HIGHWAY_AD_STYLES = [
+  { wide: false, columns: 1, bold: true,  colors: 1, frame: 'none',    icon: null,      caption: false },
+  { wide: false, columns: 2, bold: false, colors: 2, frame: 'single',  icon: null,      caption: true },
+  { wide: true,  columns: 1, bold: true,  colors: 1, frame: 'double',  icon: 'circle',  caption: true, wordmark: true },
+  { wide: false, columns: 1, bold: false, colors: 2, frame: 'corners', icon: 'diamond', caption: true },
+  { wide: false, columns: 2, bold: true,  colors: 1, frame: 'none',    icon: null,      caption: false },
+  { wide: true,  columns: 1, bold: false, colors: 3, frame: 'single',  icon: 'sun',     caption: true },
+  { wide: false, columns: 1, bold: true,  colors: 2, frame: 'none',    icon: 'arrow',   caption: false },
+  { wide: false, columns: 1, bold: false, colors: 1, frame: 'single',  icon: null,      caption: false },
+  { wide: true,  columns: 1, bold: true,  colors: 2, frame: 'none',    icon: 'arrow',   caption: true, wordmark: true },
+  { wide: true,  columns: 2, bold: false, colors: 2, frame: 'corners', icon: null,      caption: false },
+  { wide: false, columns: 2, bold: false, colors: 3, frame: 'double',  icon: 'star',    caption: true },
+  { wide: true,  columns: 1, bold: true,  colors: 1, frame: 'none',    icon: null,      caption: true, wordmark: true }
+];
+const HIGHWAY_AD_BRANDS = ['NOVA', 'RAMEN', 'ARCADE', 'HOTEL', 'ORBIT', 'NIGHT FM', 'KINO', 'DREAM TV'];
+function getHighwayAdStyle(seed) {
+  return HIGHWAY_AD_STYLES[(seed * 7 + Math.floor(seed / 11)) % HIGHWAY_AD_STYLES.length];
+}
 const HIGHWAY_NEON_GLYPHS = [
   [[-7,-9],[7,-9],[0,0],[7,8],[-7,8]],
   [[-7,-8],[-7,8],[7,8],[7,-8],[-7,-8],[0,0],[7,0]],
@@ -703,7 +722,7 @@ function buildSegments() {
                     sprite = 'fantasy_sign';
                     // Slim signs fit on the divider; wide billboards sit
                     // beyond the carriageways, leaving both roads clear.
-                    spriteX = sign % 3 === 2 ? (sign % 2 ? -3.85 : 1.65) : (sign % 2 ? -1.32 : 1.42);
+                    spriteX = getHighwayAdStyle(sign).wide ? (sign % 2 ? -3.85 : 1.65) : (sign % 2 ? -1.32 : 1.42);
                 } else if (i % 48 === 20) {
                     sprite = 'highway_lamp'; spriteX = 1.22;
                 }
@@ -1135,15 +1154,15 @@ function drawFantasyGlyph(x, y, size, seed, strokeWidth = 1.6) {
     ctx.restore();
 }
 
-function drawNeonGlyph(x, y, size, seed, color) {
+function drawNeonGlyph(x, y, size, seed, color, weight = 1.9) {
     // Layered strokes give a colored halo and a hot core without per-letter
     // shadow filters on every distant building.
     ctx.save();
     const alpha = ctx.globalAlpha;
     ctx.strokeStyle = color; ctx.globalAlpha = alpha * 0.2;
-    drawFantasyGlyph(x, y, size, seed, 6);
+    drawFantasyGlyph(x, y, size, seed, weight + 4);
     ctx.globalAlpha = alpha;
-    drawFantasyGlyph(x, y, size, seed, 1.9);
+    drawFantasyGlyph(x, y, size, seed, weight);
     ctx.strokeStyle = '#fff5e9'; ctx.globalAlpha = alpha * 0.65;
     drawFantasyGlyph(x, y, size, seed, 0.45);
     ctx.restore();
@@ -1160,28 +1179,118 @@ function drawNeonFrame(x, y, width, height, color, secondary) {
     ctx.restore();
 }
 
+function drawAdvertSymbol(x, y, size, shape, color) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(size, size);
+    ctx.strokeStyle = color; ctx.lineWidth = 0.12; ctx.beginPath();
+    if (shape === 'circle' || shape === 'sun') {
+        ctx.arc(0, 0, 0.65, 0, Math.PI * 2);
+        if (shape === 'sun') for (let i = 0; i < 8; i++) {
+            const angle = i * Math.PI / 4;
+            ctx.moveTo(Math.cos(angle) * 0.83, Math.sin(angle) * 0.83);
+            ctx.lineTo(Math.cos(angle), Math.sin(angle));
+        }
+    } else if (shape === 'diamond') {
+        ctx.moveTo(0, -0.85); ctx.lineTo(0.75, 0); ctx.lineTo(0, 0.85); ctx.lineTo(-0.75, 0); ctx.closePath();
+    } else if (shape === 'arrow') {
+        ctx.moveTo(-0.8, 0); ctx.lineTo(0.8, 0); ctx.lineTo(0.1, -0.55);
+        ctx.moveTo(0.8, 0); ctx.lineTo(0.1, 0.55);
+    } else {
+        for (let i = 0; i < 10; i++) {
+            const angle = i * Math.PI / 5 - Math.PI / 2, radius = i % 2 ? 0.38 : 0.85;
+            const px = Math.cos(angle) * radius, py = Math.sin(angle) * radius;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+    }
+    ctx.stroke(); ctx.restore();
+}
+
+function drawHighwayAdvert(x, y, width, height, seed) {
+    const style = getHighwayAdStyle(seed);
+    const base = (seed * 5 + Math.floor(seed / 12)) % HIGHWAY_NEON_COLORS.length;
+    const primary = HIGHWAY_NEON_COLORS[base];
+    const secondary = style.colors > 1 ? HIGHWAY_NEON_COLORS[(base + 3) % HIGHWAY_NEON_COLORS.length] : primary;
+    const accent = style.colors > 2 ? HIGHWAY_NEON_COLORS[(base + 6) % HIGHWAY_NEON_COLORS.length] : secondary;
+    const tall = height > width * 1.15, weight = style.bold ? 3.8 : 1.35;
+    ctx.save();
+    // Frameless signs have a quiet mounting plate; their lettering is the light.
+    ctx.fillStyle = style.frame === 'none' ? '#120b1f' : '#080613';
+    ctx.fillRect(x, y, width, height);
+    if (style.frame === 'single' || style.frame === 'double') {
+        drawNeonFrame(x + 1, y + 1, width - 2, height - 2, secondary, secondary);
+        if (style.frame === 'double') {
+            ctx.strokeStyle = primary; ctx.lineWidth = Math.min(width, height) * 0.015;
+            ctx.strokeRect(x + width * 0.07, y + height * 0.05, width * 0.86, height * 0.9);
+        }
+    } else if (style.frame === 'corners') {
+        ctx.strokeStyle = secondary; ctx.lineWidth = Math.max(0.6, Math.min(width, height) * 0.035);
+        const arm = Math.min(width, height) * 0.22;
+        ctx.beginPath();
+        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+            const px = x + dx * width, py = y + dy * height;
+            ctx.moveTo(px + (dx ? -arm : arm), py); ctx.lineTo(px, py); ctx.lineTo(px, py + (dy ? -arm : arm));
+        }
+        ctx.stroke();
+    }
+    if (tall) {
+        const top = style.icon ? height * 0.24 : height * 0.12;
+        const bottom = style.caption ? height * 0.14 : height * 0.08;
+        const rows = style.columns === 2 ? 3 : 4;
+        const rowHeight = (height - top - bottom) / rows;
+        const size = Math.min(width / style.columns * 0.55, rowHeight * 0.76);
+        if (style.icon) drawAdvertSymbol(x + width / 2, y + height * 0.12, Math.min(width * 0.22, height * 0.075), style.icon, accent);
+        for (let col = 0; col < style.columns; col++) {
+            for (let row = 0; row < rows; row++) {
+                const gx = x + width * (col + 0.5) / style.columns;
+                const gy = y + top + rowHeight * (row + 0.5);
+                drawNeonGlyph(gx, gy, size, seed + col * 3 + row, col === 0 ? primary : secondary, weight);
+            }
+        }
+    } else {
+        const iconWidth = style.icon ? width * 0.24 : 0;
+        const textX = x + width * 0.1 + iconWidth, textWidth = width * 0.8 - iconWidth;
+        const centerY = y + height * (style.caption ? 0.42 : 0.5);
+        if (style.icon) drawAdvertSymbol(x + width * 0.16, centerY, Math.min(width * 0.085, height * 0.23), style.icon, accent);
+        if (style.wordmark) {
+            const brand = HIGHWAY_AD_BRANDS[seed % HIGHWAY_AD_BRANDS.length];
+            const fontSize = Math.min(height * 0.38, textWidth / (brand.length * 0.62));
+            ctx.font = `${style.bold ? '900' : '400'} ${fontSize}px monospace`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.strokeStyle = primary; ctx.lineWidth = fontSize * 0.12;
+            const alpha = ctx.globalAlpha; ctx.globalAlpha = alpha * 0.18;
+            ctx.strokeText(brand, textX + textWidth / 2, centerY);
+            ctx.globalAlpha = alpha; ctx.fillStyle = primary;
+            ctx.fillText(brand, textX + textWidth / 2, centerY);
+        } else {
+            const rows = style.columns === 2 ? 2 : 1, columns = style.columns === 2 ? 2 : 4;
+            const size = Math.min(textWidth / columns * 0.75, height * (rows === 2 ? 0.3 : 0.4));
+            for (let col = 0; col < columns; col++) for (let row = 0; row < rows; row++) {
+                drawNeonGlyph(textX + textWidth * (col + 0.5) / columns,
+                    centerY + (row - (rows - 1) / 2) * height * 0.34, size, seed + col + row * 3,
+                    style.columns === 2 && col === 1 ? secondary : primary, weight);
+            }
+        }
+    }
+    if (style.caption && width >= 25) {
+        const fontSize = Math.min(width * 0.09, height * 0.1);
+        ctx.font = `${style.bold ? 'bold' : 'normal'} ${fontSize}px monospace`;
+        ctx.fillStyle = secondary; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(tall ? ['24H', 'OPEN', '1989'][seed % 3] : ['AFTER DARK', 'OPEN 24H', 'EST. 1989'][seed % 3], x + width / 2, y + height * (tall ? 0.93 : 0.84));
+    }
+    ctx.restore();
+}
+
 function drawFantasySign(x, y, scale, seed, ts) {
     if (scale < 0.025) return;
     beginChapterSprite(x, y, scale);
-    const sign = Math.floor(seed / 16), wide = sign % 3 === 2;
-    const color = HIGHWAY_NEON_COLORS[sign % HIGHWAY_NEON_COLORS.length];
-    const secondary = HIGHWAY_NEON_COLORS[(sign + 3) % HIGHWAY_NEON_COLORS.length];
+    const sign = Math.floor(seed / 16), wide = getHighwayAdStyle(sign).wide;
+    const color = HIGHWAY_NEON_COLORS[(sign * 5 + Math.floor(sign / 12)) % HIGHWAY_NEON_COLORS.length];
     ctx.fillStyle = '#282039'; ctx.fillRect(-4, -205, 8, 205);
     ctx.globalAlpha = 0.94 + Math.sin(ts * 0.00065 + sign) * 0.04;
     if (wide) {
-        ctx.fillStyle = '#100b20'; ctx.fillRect(-70, -218, 140, 83);
-        drawNeonFrame(-67, -215, 134, 77, color, secondary);
-        for (let i = 0; i < 5; i++) drawNeonGlyph(-48 + i * 24, -189, 24, sign + i,
-            HIGHWAY_NEON_COLORS[(sign + i) % HIGHWAY_NEON_COLORS.length]);
-        ctx.fillStyle = secondary; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
-        ctx.fillText(['NOVA // FM', 'DREAM TV', 'NIGHT MARKET'][Math.floor(sign / 3) % 3], 0, -154);
-        ctx.fillStyle = color; ctx.fillRect(-50, -145, 33, 2); ctx.fillStyle = secondary; ctx.fillRect(17, -145, 33, 2);
+        drawHighwayAdvert(-70, -218, 140, 83, sign);
     } else {
-        ctx.fillStyle = '#100b20'; ctx.fillRect(-33, -222, 66, 157);
-        drawNeonFrame(-30, -219, 60, 151, color, secondary);
-        for (let i = 0; i < 4; i++) drawNeonGlyph(0, -196 + i * 31, 24, sign + i,
-            HIGHWAY_NEON_COLORS[(sign + i * 2) % HIGHWAY_NEON_COLORS.length]);
-        ctx.fillStyle = secondary; ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillText('AFTER HOURS', 0, -78);
+        drawHighwayAdvert(-33, -222, 66, 157, sign);
     }
     // A small pool of colored light around each roadside support.
     ctx.globalAlpha = 0.1; ctx.fillStyle = color;
@@ -1207,15 +1316,9 @@ function drawNeonTower(x, y, scale, seed, ts) {
             ctx.fillStyle = (i + j) % 3 === 0 ? '#b673c2' : '#386f8f'; ctx.fillRect(-55 + j * 18, wy + 4, 9, 5);
         }
     }
-    ctx.fillStyle = '#060512'; ctx.fillRect(-28, -height + 35, 39, 112);
-    drawNeonFrame(-28, -height + 35, 39, 112, color, HIGHWAY_NEON_COLORS[(tower + 3) % HIGHWAY_NEON_COLORS.length]);
-    for (let i = 0; i < 3; i++) drawNeonGlyph(-8, -height + 55 + i * 30, 22, seed + i,
-        HIGHWAY_NEON_COLORS[(tower + i * 2) % HIGHWAY_NEON_COLORS.length]);
-    // A second, horizontal shop sign brings warmer hues down to street level.
-    ctx.fillStyle = '#0a0816'; ctx.fillRect(-58, -43, 88, 25);
-    drawNeonFrame(-57, -42, 86, 23, HIGHWAY_NEON_COLORS[(tower + 4) % HIGHWAY_NEON_COLORS.length], color);
-    for (let i = 0; i < 4; i++) drawNeonGlyph(-42 + i * 18, -30, 14, seed + i + 3,
-        HIGHWAY_NEON_COLORS[(tower + i + 4) % HIGHWAY_NEON_COLORS.length]);
+    drawHighwayAdvert(-28, -height + 35, 39, 112, tower * 3 + 5);
+    // The street-level shop has its own identity, separate from the facade ad.
+    drawHighwayAdvert(-58, -43, 88, 25, tower * 3 + 8);
     ctx.strokeStyle = '#5b4581'; ctx.beginPath(); ctx.moveTo(3, -height); ctx.lineTo(3, -height - 28); ctx.stroke();
     ctx.fillStyle = Math.sin(ts * 0.002 + seed) > 0 ? '#ff77e6' : '#6b284f'; ctx.fillRect(1, -height - 30, 4, 4);
     ctx.restore();
@@ -1380,24 +1483,14 @@ function drawChapterBackdrop(horizonY, ts) {
                         }
                     }
                     ctx.save(); ctx.globalAlpha = layer ? 0.95 : 0.65;
-                    const secondary = HIGHWAY_NEON_COLORS[(i + layer * 3 + 3) % HIGHWAY_NEON_COLORS.length];
                     if (i % 2 === 0) {
-                        ctx.fillStyle = '#090717'; ctx.fillRect(bx + width / 2 - 10, -height + 10, 20, 58);
-                        drawNeonFrame(bx + width / 2 - 9, -height + 11, 18, 56, neon, secondary);
-                        for (let j = 0; j < 3; j++) drawNeonGlyph(bx + width / 2, -height + 21 + j * 17, 12, i + j,
-                            HIGHWAY_NEON_COLORS[(i + j + layer * 3) % HIGHWAY_NEON_COLORS.length]);
+                        drawHighwayAdvert(bx + width / 2 - 10, -height + 10, 20, 58, i + layer * 37 + 29);
                     } else {
-                        ctx.fillStyle = '#090717'; ctx.fillRect(bx - 2, -height * 0.6, width + 4, 19);
-                        drawNeonFrame(bx - 1, -height * 0.6 + 1, width + 2, 17, neon, secondary);
-                        for (let j = 0; j < 3; j++) drawNeonGlyph(bx + 6 + j * (width - 10) / 2, -height * 0.6 + 9, 10, i + j,
-                            HIGHWAY_NEON_COLORS[(i + j * 2 + layer * 3) % HIGHWAY_NEON_COLORS.length]);
+                        drawHighwayAdvert(bx - 2, -height * 0.6, width + 4, 19, i + layer * 37 + 41);
                     }
                     // Occasional roof billboards above the smaller shop signs.
                     if (i % 6 === 3) {
-                        ctx.fillStyle = '#090717'; ctx.fillRect(bx - 13, -height - 28, width + 26, 24);
-                        drawNeonFrame(bx - 12, -height - 27, width + 24, 22, secondary, neon);
-                        for (let j = 0; j < 4; j++) drawNeonGlyph(bx - 5 + j * (width + 9) / 3, -height - 16, 12, i + j,
-                            HIGHWAY_NEON_COLORS[(i + j + 4) % HIGHWAY_NEON_COLORS.length]);
+                        drawHighwayAdvert(bx - 13, -height - 28, width + 26, 24, i + layer * 37 + 61);
                     }
                     ctx.restore();
                 }
