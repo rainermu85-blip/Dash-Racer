@@ -39,6 +39,24 @@ Sci-Fi-Neonschrift, Türme, Lampen und leichte Reflexe auf dem Asphalt sorgen
 für Tiefe. Die Schrift besteht aus gezeichneten, erfundenen Zeichen und
 benötigt keine zusätzliche Schriftart oder externe Bilddatei.
 
+Die Reklame verwendet inzwischen acht kräftige Neonfarben, auch innerhalb
+eines Schildes. 74 abwechselnd links und rechts platzierte Schilder ersetzen
+die bisherigen 23 Schilder auf der rechten Seite. Schmale Schilder stehen
+am Mittelstreifen oder äußeren Rand; breite Billboards außerhalb der beiden
+Fahrbahnen. Zusätzliche Fassaden-, Laden- und Dachreklamen füllen die Skyline.
+Farbige Halos und helle Kerne entstehen durch gestaffelte Linien; die
+Zeichenkonturen werden gemeinsam verwendet, um unnötige Arbeit pro Bild
+zu vermeiden. Der violett-schwarze Untergrund bleibt der Kontrast dazu.
+
+Produktionsbuild und die 21 Kapitelprüfungen bestehen. Eine temporäre
+Browserkontrolle zeichnete 400 Streckenansichten bei 390 und 480 Pixel
+Breite ohne JavaScript-Fehler; alle acht Farben wurden tatsächlich gezeichnet.
+Schilder, Skyline und Überführungen wurden zusätzlich visuell geprüft.
+Ein zehnsekündiger Lauf mit regulären Browserbildern erreichte auf der
+Cloud-Prüfumgebung etwa 59 FPS ohne JavaScript-Fehler; die Renderzeit lag
+im Median bei 5,2 ms und beim 95. Perzentil bei 7,8 ms. Dies ist eine
+Umgebungsbeobachtung und keine Zusage für jedes Endgerät.
+
 Die Gegenfahrbahn liegt links neben der Rennstrecke, durch einen Mittelstreifen
 getrennt. 22 Fahrzeuge fahren entgegen der Rennrichtung auf den Spuren
 `x = -1.9` und `x = -2.9` und werden über dieselbe Segmentprojektion wie die

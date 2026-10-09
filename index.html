@@ -248,6 +248,15 @@ const HIGHWAY_CROSSINGS = [
   { index: 215, kind: 'road' }, { index: 475, kind: 'train' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
+const HIGHWAY_NEON_COLORS = ['#ff527f', '#ffd65c', '#7aff9e', '#35ddff', '#568cff', '#bb80ff', '#ff54dc', '#ff9853'];
+const HIGHWAY_NEON_GLYPHS = [
+  [[-7,-9],[7,-9],[0,0],[7,8],[-7,8]],
+  [[-7,-8],[-7,8],[7,8],[7,-8],[-7,-8],[0,0],[7,0]],
+  [[0,-9],[0,9],[-7,4],[7,-4],[-7,-4],[7,4]],
+  [[-7,-8],[7,-8],[-4,0],[7,0],[-7,9],[7,9]],
+  [[-7,-9],[7,1],[0,9],[-7,1],[7,-9]],
+  [[-7,-9],[-7,9],[0,3],[7,9],[7,-9],[0,-3],[-7,-9]]
+];
 let highwayTraffic = [], crossingEvents = new Map(), chapterTime = 0;
 const BG_W = 1400; const bgMountains = []; const bgBuildings = []; const bgBirds = []; let bgOffset = 0; 
 
@@ -689,8 +698,12 @@ function buildSegments() {
             if (!isStartLine) {
                 if (i % 52 === 8) {
                     sprite = 'neon_tower'; spriteX = 1.85 + (Math.floor(i / 52) % 3) * 0.25;
-                } else if (i % 52 === 32) {
-                    sprite = 'fantasy_sign'; spriteX = 1.45;
+                } else if (i % 16 === 14) {
+                    const sign = Math.floor(i / 16);
+                    sprite = 'fantasy_sign';
+                    // Slim signs fit on the divider; wide billboards sit
+                    // beyond the carriageways, leaving both roads clear.
+                    spriteX = sign % 3 === 2 ? (sign % 2 ? -3.85 : 1.65) : (sign % 2 ? -1.32 : 1.42);
                 } else if (i % 48 === 20) {
                     sprite = 'highway_lamp'; spriteX = 1.22;
                 }
@@ -1111,41 +1124,76 @@ function drawChapterLamp(x, y, scale, highway) {
     ctx.restore();
 }
 
-function drawFantasyGlyph(x, y, size, seed) {
+function drawFantasyGlyph(x, y, size, seed, strokeWidth = 1.6) {
     ctx.save(); ctx.translate(x, y); ctx.scale(size / 20, size / 20);
-    ctx.lineWidth = 1.6; ctx.beginPath();
+    ctx.lineWidth = strokeWidth; ctx.beginPath();
     // Invented angular lettering stays crisp without downloading a font.
-    const glyphs = [
-        [[-7,-9],[7,-9],[0,0],[7,8],[-7,8]],
-        [[-7,-8],[-7,8],[7,8],[7,-8],[-7,-8],[0,0],[7,0]],
-        [[0,-9],[0,9],[-7,4],[7,-4],[-7,-4],[7,4]],
-        [[-7,-8],[7,-8],[-4,0],[7,0],[-7,9],[7,9]],
-        [[-7,-9],[7,1],[0,9],[-7,1],[7,-9]],
-        [[-7,-9],[-7,9],[0,3],[7,9],[7,-9],[0,-3],[-7,-9]]
-    ];
-    const points = glyphs[seed % glyphs.length];
-    ctx.moveTo(...points[0]); for (const point of points.slice(1)) ctx.lineTo(...point); ctx.stroke();
+    const points = HIGHWAY_NEON_GLYPHS[seed % HIGHWAY_NEON_GLYPHS.length];
+    ctx.moveTo(...points[0]);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(...points[i]);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawNeonGlyph(x, y, size, seed, color) {
+    // Layered strokes give a colored halo and a hot core without per-letter
+    // shadow filters on every distant building.
+    ctx.save();
+    const alpha = ctx.globalAlpha;
+    ctx.strokeStyle = color; ctx.globalAlpha = alpha * 0.2;
+    drawFantasyGlyph(x, y, size, seed, 6);
+    ctx.globalAlpha = alpha;
+    drawFantasyGlyph(x, y, size, seed, 1.9);
+    ctx.strokeStyle = '#fff5e9'; ctx.globalAlpha = alpha * 0.65;
+    drawFantasyGlyph(x, y, size, seed, 0.45);
+    ctx.restore();
+}
+
+function drawNeonFrame(x, y, width, height, color, secondary) {
+    ctx.save();
+    const alpha = ctx.globalAlpha;
+    ctx.strokeStyle = color; ctx.lineWidth = 7; ctx.globalAlpha = alpha * 0.12;
+    ctx.strokeRect(x, y, width, height);
+    ctx.globalAlpha = alpha; ctx.lineWidth = 1.8; ctx.strokeRect(x, y, width, height);
+    ctx.strokeStyle = secondary; ctx.beginPath();
+    ctx.moveTo(x, y + height); ctx.lineTo(x + width, y + height); ctx.lineTo(x + width, y); ctx.stroke();
     ctx.restore();
 }
 
 function drawFantasySign(x, y, scale, seed, ts) {
     if (scale < 0.025) return;
     beginChapterSprite(x, y, scale);
-    ctx.fillStyle = '#282039'; ctx.fillRect(-4, -192, 8, 192);
-    ctx.fillStyle = '#100d24'; ctx.fillRect(-33, -222, 66, 157);
-    const color = seed % 2 ? '#ff5adc' : '#76e5ff';
-    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.strokeRect(-30, -219, 60, 151);
-    ctx.globalAlpha = 0.88 + Math.sin(ts * 0.0008 + seed) * 0.08;
-    ctx.shadowColor = color; ctx.shadowBlur = 9 * scale;
-    for (let i = 0; i < 4; i++) drawFantasyGlyph(0, -196 + i * 31, 24, seed + i);
-    ctx.shadowBlur = 0; ctx.fillStyle = '#b39fff'; ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillText('AFTER HOURS', 0, -78);
+    const sign = Math.floor(seed / 16), wide = sign % 3 === 2;
+    const color = HIGHWAY_NEON_COLORS[sign % HIGHWAY_NEON_COLORS.length];
+    const secondary = HIGHWAY_NEON_COLORS[(sign + 3) % HIGHWAY_NEON_COLORS.length];
+    ctx.fillStyle = '#282039'; ctx.fillRect(-4, -205, 8, 205);
+    ctx.globalAlpha = 0.94 + Math.sin(ts * 0.00065 + sign) * 0.04;
+    if (wide) {
+        ctx.fillStyle = '#100b20'; ctx.fillRect(-70, -218, 140, 83);
+        drawNeonFrame(-67, -215, 134, 77, color, secondary);
+        for (let i = 0; i < 5; i++) drawNeonGlyph(-48 + i * 24, -189, 24, sign + i,
+            HIGHWAY_NEON_COLORS[(sign + i) % HIGHWAY_NEON_COLORS.length]);
+        ctx.fillStyle = secondary; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(['NOVA // FM', 'DREAM TV', 'NIGHT MARKET'][Math.floor(sign / 3) % 3], 0, -154);
+        ctx.fillStyle = color; ctx.fillRect(-50, -145, 33, 2); ctx.fillStyle = secondary; ctx.fillRect(17, -145, 33, 2);
+    } else {
+        ctx.fillStyle = '#100b20'; ctx.fillRect(-33, -222, 66, 157);
+        drawNeonFrame(-30, -219, 60, 151, color, secondary);
+        for (let i = 0; i < 4; i++) drawNeonGlyph(0, -196 + i * 31, 24, sign + i,
+            HIGHWAY_NEON_COLORS[(sign + i * 2) % HIGHWAY_NEON_COLORS.length]);
+        ctx.fillStyle = secondary; ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillText('AFTER HOURS', 0, -78);
+    }
+    // A small pool of colored light around each roadside support.
+    ctx.globalAlpha = 0.1; ctx.fillStyle = color;
+    ctx.beginPath(); ctx.ellipse(0, -1, wide ? 30 : 19, 4, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 }
 
 function drawNeonTower(x, y, scale, seed, ts) {
     if (scale < 0.025) return;
     beginChapterSprite(x, y, scale);
-    const height = 240 + seed % 3 * 35, color = seed % 2 ? '#c16aff' : '#ff65c9';
+    const tower = Math.floor(seed / 52);
+    const height = 240 + seed % 3 * 35, color = HIGHWAY_NEON_COLORS[tower % HIGHWAY_NEON_COLORS.length];
     ctx.fillStyle = '#100d22'; ctx.fillRect(-67, -height, 108, height);
     ctx.fillStyle = '#221433'; ctx.beginPath(); ctx.moveTo(41, -height); ctx.lineTo(72, -height + 27); ctx.lineTo(72, 0); ctx.lineTo(41, 0); ctx.fill();
     ctx.strokeStyle = color; ctx.lineWidth = 2;
@@ -1160,8 +1208,14 @@ function drawNeonTower(x, y, scale, seed, ts) {
         }
     }
     ctx.fillStyle = '#060512'; ctx.fillRect(-28, -height + 35, 39, 112);
-    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(-28, -height + 35, 39, 112);
-    for (let i = 0; i < 3; i++) drawFantasyGlyph(-8, -height + 55 + i * 30, 22, seed + i);
+    drawNeonFrame(-28, -height + 35, 39, 112, color, HIGHWAY_NEON_COLORS[(tower + 3) % HIGHWAY_NEON_COLORS.length]);
+    for (let i = 0; i < 3; i++) drawNeonGlyph(-8, -height + 55 + i * 30, 22, seed + i,
+        HIGHWAY_NEON_COLORS[(tower + i * 2) % HIGHWAY_NEON_COLORS.length]);
+    // A second, horizontal shop sign brings warmer hues down to street level.
+    ctx.fillStyle = '#0a0816'; ctx.fillRect(-58, -43, 88, 25);
+    drawNeonFrame(-57, -42, 86, 23, HIGHWAY_NEON_COLORS[(tower + 4) % HIGHWAY_NEON_COLORS.length], color);
+    for (let i = 0; i < 4; i++) drawNeonGlyph(-42 + i * 18, -30, 14, seed + i + 3,
+        HIGHWAY_NEON_COLORS[(tower + i + 4) % HIGHWAY_NEON_COLORS.length]);
     ctx.strokeStyle = '#5b4581'; ctx.beginPath(); ctx.moveTo(3, -height); ctx.lineTo(3, -height - 28); ctx.stroke();
     ctx.fillStyle = Math.sin(ts * 0.002 + seed) > 0 ? '#ff77e6' : '#6b284f'; ctx.fillRect(1, -height - 30, 4, 4);
     ctx.restore();
@@ -1316,8 +1370,8 @@ function drawChapterBackdrop(horizonY, ts) {
                     const bx = i * 51, height = (layer ? 65 : 100) + (i * 37 % (layer ? 75 : 120)), width = 30 + i % 3 * 8;
                     ctx.fillStyle = layer ? '#130c23' : '#29203d'; ctx.fillRect(bx, -height, width, height);
                     ctx.fillStyle = layer ? '#42245e' : '#443254'; ctx.fillRect(bx + width - 4, -height, 4, height);
-                    const neon = i % 2 ? '#ad65eb' : '#673ec9';
-                    ctx.fillStyle = neon; ctx.globalAlpha = layer ? 0.55 : 0.35; ctx.fillRect(bx, -height, width, 1.5); ctx.globalAlpha = 1;
+                    const neon = HIGHWAY_NEON_COLORS[(i + layer * 3) % HIGHWAY_NEON_COLORS.length];
+                    ctx.fillStyle = neon; ctx.globalAlpha = layer ? 0.8 : 0.5; ctx.fillRect(bx, -height, width, 1.5); ctx.globalAlpha = 1;
                     for (let row = 0; row < 12; row++) {
                         for (let col = 0; col < 3; col++) {
                             if ((i * 3 + row * 7 + col * 5) % 4 < 2) continue;
@@ -1325,10 +1379,27 @@ function drawChapterBackdrop(horizonY, ts) {
                             ctx.fillRect(bx + 5 + col * 8, -height + 10 + row * 11, 3, 3);
                         }
                     }
-                    if (i % 5 === 0) {
-                        ctx.strokeStyle = '#ca72f1';
-                        for (let j = 0; j < 3; j++) drawFantasyGlyph(bx + width / 2, -height + 20 + j * 17, 12, i + j);
+                    ctx.save(); ctx.globalAlpha = layer ? 0.95 : 0.65;
+                    const secondary = HIGHWAY_NEON_COLORS[(i + layer * 3 + 3) % HIGHWAY_NEON_COLORS.length];
+                    if (i % 2 === 0) {
+                        ctx.fillStyle = '#090717'; ctx.fillRect(bx + width / 2 - 10, -height + 10, 20, 58);
+                        drawNeonFrame(bx + width / 2 - 9, -height + 11, 18, 56, neon, secondary);
+                        for (let j = 0; j < 3; j++) drawNeonGlyph(bx + width / 2, -height + 21 + j * 17, 12, i + j,
+                            HIGHWAY_NEON_COLORS[(i + j + layer * 3) % HIGHWAY_NEON_COLORS.length]);
+                    } else {
+                        ctx.fillStyle = '#090717'; ctx.fillRect(bx - 2, -height * 0.6, width + 4, 19);
+                        drawNeonFrame(bx - 1, -height * 0.6 + 1, width + 2, 17, neon, secondary);
+                        for (let j = 0; j < 3; j++) drawNeonGlyph(bx + 6 + j * (width - 10) / 2, -height * 0.6 + 9, 10, i + j,
+                            HIGHWAY_NEON_COLORS[(i + j * 2 + layer * 3) % HIGHWAY_NEON_COLORS.length]);
                     }
+                    // Occasional roof billboards above the smaller shop signs.
+                    if (i % 6 === 3) {
+                        ctx.fillStyle = '#090717'; ctx.fillRect(bx - 13, -height - 28, width + 26, 24);
+                        drawNeonFrame(bx - 12, -height - 27, width + 24, 22, secondary, neon);
+                        for (let j = 0; j < 4; j++) drawNeonGlyph(bx - 5 + j * (width + 9) / 3, -height - 16, 12, i + j,
+                            HIGHWAY_NEON_COLORS[(i + j + 4) % HIGHWAY_NEON_COLORS.length]);
+                    }
+                    ctx.restore();
                 }
             });
         }
