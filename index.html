@@ -255,6 +255,12 @@ const LVL3_TUNNELS = [
   { start: 2050, end: 2350, from: 'dali',   to: 'underwater' }
 ];
 const UNDERWATER_FLORA = ['coral_spire', 'sea_grass', 'kelp', 'fan_coral', 'tube_sponge'];
+// Level 3: slow distant skies, livelier landscape and nearer sea life.
+const LVL3_PARALLAX = {
+  stars: 0.018, atmosphere: 0.055, sun: 0.10, birds: 0.20,
+  landscape: 0.38, mountains: 0.42, reef: 0.30,
+  jellyfish: 0.115, faunaMultiplier: 1.4
+};
 
 // What each world contributes to a portal it touches.
 const LVL3_PORTAL_PALETTE = {
@@ -430,6 +436,12 @@ function drawTile(offset, y, drawFn) {
   ctx.save(); let shift = offset % BG_W; if (shift < 0) shift += BG_W;
   ctx.translate(-shift, y); for (let x = 0; x < shift + W; x += BG_W) { drawFn(); ctx.translate(BG_W, 0); }
   ctx.restore();
+}
+
+// Wrap only once an object's full silhouette/halo is beyond the screen edge.
+function backdropX(base, offset, padding) {
+  const span = W + padding * 2;
+  return ((base - offset + padding) % span + span) % span - padding;
 }
 
 function makeSection(len, curve, hill) { const arr = []; for (let i = 0; i < len; i++) arr.push({ curve, hill }); return arr; }
@@ -640,12 +652,12 @@ function buildSegments() {
                         spriteX = Math.random() < 0.5 ? (-1.6 - Math.random() * 0.9) : (1.6 + Math.random() * 0.9);
                     }
                 } else if (zone === 'dali') {
-                    // A spaced procession: every motif appears, with only three clocks.
+                    // A spaced procession of sculptures, animals and two clocks.
                     if (i >= 1565 && (i - 1565) % 32 === 0) {
                         const landmark = (i - 1565) / 32;
-                        const motifs = ['dali_elephant', 'dali_egg', 'dali_drawers', 'dali_eye', 'melting_clock'];
+                        const motifs = ['dali_elephant', 'dali_egg', 'dali_drawers', 'dali_eye', 'melting_clock', 'dali_giraffe'];
                         sprite = motifs[landmark % motifs.length];
-                        spriteX = (landmark % 2 === 0 ? -1 : 1) * (1.8 + (landmark % 3) * 0.15);
+                        spriteX = ((landmark + Math.floor(landmark / motifs.length)) % 2 === 0 ? -1 : 1) * (1.8 + (landmark % 3) * 0.15);
                     }
                 } else if (zone === 'underwater') {
                     if (Math.random() < 0.12) {
@@ -1864,16 +1876,26 @@ function drawMeltingClockSprite(sx, sy, sc) {
   ctx.restore();
 }
 
-function drawDaliElephantSprite(sx, sy, sc) {
+function drawDaliElephantSprite(sx, sy, sc, ts = 0, seed = 0) {
   if (sc < 0.03) return;
   beginDaliSprite(sx, sy, sc, 80);
+  const walk = ts * 0.0007 + seed * 0.37;
+  const bodyBob = Math.sin(walk * 2) * 1.2;
   // Impossibly long, jointed legs below a sculpted elephant and golden obelisk.
   ctx.strokeStyle = '#b88476'; ctx.lineWidth = 3.5;
-  for (const [hip, knee, foot] of [[-33, -48, -55], [-15, -7, -19], [16, 30, 21], [33, 49, 56]]) {
-    ctx.beginPath(); ctx.moveTo(hip, -147); ctx.lineTo(knee, -70); ctx.lineTo(foot, 0); ctx.stroke();
-    ctx.fillStyle = '#d7a78a'; ctx.beginPath(); ctx.arc(knee, -70, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(foot, 0, 5, 2, 0, 0, Math.PI * 2); ctx.fill();
+  const legs = [[-33, -48, -55], [-15, -7, -19], [16, 30, 21], [33, 49, 56]];
+  for (let i = 0; i < legs.length; i++) {
+    const [hip, knee, foot] = legs[i];
+    const phase = walk + i * Math.PI * 0.5;
+    const lift = Math.pow(Math.max(0, Math.sin(phase)), 2) * 7;
+    const kneeX = knee + Math.cos(phase - 0.35) * 4;
+    const footX = foot + Math.cos(phase) * 10;
+    ctx.beginPath(); ctx.moveTo(hip, -147 + bodyBob);
+    ctx.lineTo(kneeX, -70 - lift * 0.4); ctx.lineTo(footX, -lift); ctx.stroke();
+    ctx.fillStyle = '#d7a78a'; ctx.beginPath(); ctx.arc(kneeX, -70 - lift * 0.4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(footX, -lift, 5, 2, 0, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.save(); ctx.translate(0, bodyBob);
   const skin = ctx.createLinearGradient(-48, -193, 28, -139);
   skin.addColorStop(0, '#e2b6a0'); skin.addColorStop(1, '#865e69');
   ctx.fillStyle = skin; ctx.strokeStyle = '#785366'; ctx.lineWidth = 1.5;
@@ -1900,12 +1922,13 @@ function drawDaliElephantSprite(sx, sy, sc) {
   ctx.beginPath(); ctx.moveTo(0, -252); ctx.lineTo(9, -236);
   ctx.lineTo(15, -193); ctx.lineTo(1, -195); ctx.closePath(); ctx.fill();
   ctx.restore();
+  ctx.restore();
 }
 
-function drawDaliEggSprite(sx, sy, sc) {
+function drawDaliEggSprite(sx, sy, sc, ts = 0, seed = 0) {
   if (sc < 0.03) return;
   beginDaliSprite(sx, sy, sc, 80);
-  const lift = Math.sin(Date.now() * 0.0014 + sx * 0.01) * 5;
+  const lift = Math.sin(ts * 0.0006 + seed * 0.53) * 7;
   ctx.translate(0, lift);
   // A luminous cracked shell hovering above a separate, grounded shadow.
   const shell = ctx.createRadialGradient(-17, -136, 5, 0, -112, 62);
@@ -1929,6 +1952,80 @@ function drawDaliEggSprite(sx, sy, sc) {
   ctx.fillStyle = '#efd5a3';
   ctx.beginPath(); ctx.moveTo(51, -111); ctx.lineTo(60, -116); ctx.lineTo(58, -104); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(-54, -67); ctx.lineTo(-61, -77); ctx.lineTo(-48, -73); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawDaliGiraffeSprite(sx, sy, sc, ts = 0, seed = 0) {
+  if (sc < 0.03) return;
+  beginDaliSprite(sx, sy, sc, 95);
+  ctx.strokeStyle = '#354455'; ctx.lineWidth = 5;
+  for (const [hip, knee, foot] of [[-25, -32, -38], [-9, -4, 4], [20, 28, 30], [30, 39, 44]]) {
+    ctx.beginPath(); ctx.moveTo(hip, -134); ctx.lineTo(knee, -62); ctx.lineTo(foot, 0); ctx.stroke();
+    ctx.fillStyle = '#243543'; ctx.beginPath(); ctx.ellipse(foot + 2, 0, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  const skin = ctx.createLinearGradient(-40, -310, 50, -120);
+  skin.addColorStop(0, '#70919c'); skin.addColorStop(0.5, '#435f71'); skin.addColorStop(1, '#263a4e');
+  ctx.fillStyle = skin; ctx.strokeStyle = '#263543'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(11, -137);
+  ctx.bezierCurveTo(27, -177, 28, -236, 41, -290);
+  ctx.lineTo(57, -288); ctx.bezierCurveTo(47, -238, 56, -175, 38, -136);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, -143, 39, 20, -0.12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(60, -294, 22, 10, -0.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(46, -299); ctx.lineTo(34, -316); ctx.lineTo(52, -308); ctx.fill();
+  ctx.strokeStyle = '#46596a'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(53, -303); ctx.lineTo(52, -323);
+  ctx.moveTo(61, -303); ctx.lineTo(65, -321); ctx.stroke();
+  ctx.fillStyle = '#273442';
+  ctx.beginPath(); ctx.arc(52, -323, 3, 0, Math.PI * 2); ctx.arc(65, -321, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(71, -296, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#a47b62';
+  for (const [x, y, radius] of [[-25,-144,6],[-8,-151,7],[9,-140,6],[25,-151,5],[39,-178,5],[39,-204,5],[42,-230,4],[46,-256,4],[49,-278,3]]) {
+    ctx.beginPath(); ctx.ellipse(x, y, radius, radius * 1.3, -0.2, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.strokeStyle = '#263543'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(-37, -142); ctx.quadraticCurveTo(-58, -126, -52, -100); ctx.stroke();
+  ctx.fillStyle = '#263543'; ctx.beginPath(); ctx.ellipse(-53, -98, 4, 7, 0.1, 0, Math.PI * 2); ctx.fill();
+
+  // Small, continuous flames grow directly from the back, with no random jumps.
+  ctx.shadowColor = '#ff893a'; ctx.shadowBlur = sc * 9;
+  for (let i = 0; i < 6; i++) {
+    const x = -31 + i * 10, y = -158 - Math.sin(i * 0.5) * 5;
+    const flicker = Math.sin(ts * 0.002 + seed + i * 1.4);
+    const height = 30 + (i % 3) * 9 + flicker * 4;
+    const sway = Math.sin(ts * 0.0016 + i) * 4;
+    ctx.fillStyle = i % 2 ? '#f57938' : '#ef5738';
+    ctx.beginPath(); ctx.moveTo(x - 6, y);
+    ctx.quadraticCurveTo(x - 13, y - height * 0.45, x + sway, y - height);
+    ctx.quadraticCurveTo(x + 3, y - height * 0.65, x + 7, y - height * 0.25);
+    ctx.quadraticCurveTo(x + 9, y + 3, x - 6, y); ctx.fill();
+    ctx.fillStyle = '#ffd479';
+    ctx.beginPath(); ctx.moveTo(x - 3, y);
+    ctx.quadraticCurveTo(x - 4, y - height * 0.25, x + sway * 0.5, y - height * 0.57);
+    ctx.quadraticCurveTo(x + 6, y - height * 0.2, x + 3, y); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawDaliSun(cx, cy, radius, ts) {
+  ctx.save(); ctx.translate(cx, cy);
+  const swell = Math.sin(ts * 0.00042), droop = Math.sin(ts * 0.00031 + 1.3);
+  ctx.translate(0, droop * radius * 0.025);
+  ctx.rotate(Math.sin(ts * 0.00028) * 0.012);
+  ctx.scale(1 + swell * 0.018, 1 - swell * 0.015);
+  const heatScale = 1 + Math.sin(ts * 0.00045) * 0.025;
+  const glow = ctx.createRadialGradient(0, 0, radius * 0.2, 0, 0, radius * 2.5 * heatScale);
+  glow.addColorStop(0, 'rgba(231, 111, 81, 0.7)');
+  glow.addColorStop(0.4, 'rgba(244, 162, 97, 0.3)'); glow.addColorStop(1, 'rgba(233, 196, 106, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0, 0, radius * 2.5 * heatScale, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e76f51';
+  ctx.beginPath(); ctx.moveTo(-radius, 0);
+  ctx.bezierCurveTo(-radius * 1.1, -radius * 0.8, radius * 1.1, -radius * 1.3, radius * 0.8, 0);
+  ctx.bezierCurveTo(radius * (0.6 + droop * 0.025), radius * 1.2, -radius * 0.6, radius * (1.6 + swell * 0.03), -radius, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#f4a261';
+  ctx.beginPath(); ctx.arc(0, 0, radius * 0.5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -6160,7 +6257,8 @@ function render(ts) {
   }
 
   for (const s of bgStars) {
-    let finalX = (s.x - bgOffset * (currentLevel === 4 ? 0.05 : 0.01)) % W; if (finalX < 0) finalX += W;
+    const starParallax = currentLevel === 3 ? LVL3_PARALLAX.stars : (currentLevel === 4 ? 0.05 : 0.01);
+    let finalX = (s.x - bgOffset * starParallax) % W; if (finalX < 0) finalX += W;
     const twinkle = Math.sin(ts * 0.004 + s.t) * 0.5 + 0.5;
     const starAlpha = nightFactor * (0.05 + twinkle * 0.95);
     ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha})`;
@@ -6189,7 +6287,7 @@ function render(ts) {
               const steps = 14;
               const yBase = H * 0.06 + w * H * 0.045;
               const amp = H * 0.04;
-              const phase = ts * 0.0003 + w * Math.PI / 4;
+              const phase = ts * 0.0003 + w * Math.PI / 4 + bgOffset * LVL3_PARALLAX.atmosphere * Math.PI * 1.6 / (W * 1.3);
               for (let i = 0; i <= steps; i++) {
                   const x = -W * 0.15 + (i / steps) * W * 1.3;
                   const y = yBase + Math.sin((i / steps) * Math.PI * 1.6 + phase) * amp;
@@ -6208,11 +6306,11 @@ function render(ts) {
           }
           ctx.restore();
       } else if (zone === 'steppe') {
-          // 2. Pale Winter Sun exactly overhead in the sky center
+          // 2. A distant winter sun follows the turn more slowly than the hills.
           ctx.save();
-          const cx = W / 2;
           const cy = horizonY - H * 0.23;
           const rSun = Math.min(W, H) * 0.1;
+          const cx = backdropX(W / 2, bgOffset * LVL3_PARALLAX.sun, rSun * 5.5);
           
           // Giant surrounding frost halo
           const sGrad = ctx.createRadialGradient(cx, cy, rSun * 0.1, cx, cy, rSun * 5.5);
@@ -6243,37 +6341,10 @@ function render(ts) {
           ctx.restore();
       } else if (zone === 'dali') {
           // 3. Surreal melting red-gold Sun
-          ctx.save();
-          const cx = W * 0.35 - (bgOffset * 0.05) % W;
           const cy = horizonY - H * 0.15;
           const rSun = Math.min(W, H) * 0.15;
-          
-          // Outer heat ripples (radial pulses)
-          const heatScale = 1.0 + Math.sin(ts * 0.005) * 0.05;
-          const sGrad = ctx.createRadialGradient(cx, cy, rSun * 0.2, cx, cy, rSun * 2.5 * heatScale);
-          sGrad.addColorStop(0, 'rgba(231, 111, 81, 0.7)');
-          sGrad.addColorStop(0.4, 'rgba(244, 162, 97, 0.3)');
-          sGrad.addColorStop(1, 'rgba(233, 196, 106, 0)');
-          ctx.fillStyle = sGrad;
-          ctx.beginPath();
-          ctx.arc(cx, cy, rSun * 2.5 * heatScale, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Distorted egg/melting shape for Dali sun
-          ctx.fillStyle = '#e76f51';
-          ctx.beginPath();
-          ctx.moveTo(cx - rSun, cy);
-          ctx.bezierCurveTo(cx - rSun * 1.1, cy - rSun * 0.8, cx + rSun * 1.1, cy - rSun * 1.3, cx + rSun * 0.8, cy);
-          ctx.bezierCurveTo(cx + rSun * 0.6, cy + rSun * 1.2, cx - rSun * 0.6, cy + rSun * 1.6, cx - rSun, cy);
-          ctx.closePath();
-          ctx.fill();
-          
-          // Golden white core
-          ctx.fillStyle = '#f4a261';
-          ctx.beginPath();
-          ctx.arc(cx, cy, rSun * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
+          const cx = backdropX(W * 0.35, bgOffset * LVL3_PARALLAX.sun, rSun * 2.7);
+          drawDaliSun(cx, cy, rSun, ts);
       } else if (zone === 'underwater') {
           // 4. Underwater Light Shafts and giant floating neon-bioluminescent Jellyfish!
           ctx.save();
@@ -6281,7 +6352,7 @@ function render(ts) {
           
           // Draw 4 light shafts filtering from top
           for (let i = 0; i < 4; i++) {
-              const startX = W * (0.2 + i * 0.2) + Math.sin(ts * 0.0005 + i) * 50;
+              const startX = backdropX(W * (0.2 + i * 0.2) + Math.sin(ts * 0.0005 + i) * 50, bgOffset * LVL3_PARALLAX.atmosphere, H * 0.1 + 140);
               const angle = Math.sin(ts * 0.0002 + i) * 0.15;
               ctx.fillStyle = 'rgba(0, 245, 212, 0.05)';
               ctx.beginPath();
@@ -6295,9 +6366,9 @@ function render(ts) {
           
           // Draw 3 giant background jellyfish floating slowly in the upper ocean!
           for (let j = 0; j < 3; j++) {
-              const jx = (W * (0.25 + j * 0.3) - bgOffset * 0.08) % W;
               const jBaseY = H * 0.12 + Math.sin(ts * 0.001 + j) * 20;
               const r = 25 + j * 8;
+              const jx = backdropX(W * (0.25 + j * 0.3), bgOffset * LVL3_PARALLAX.jellyfish, r * 1.5 + 20);
               const pulse = 1.0 + Math.sin(ts * 0.003 + j) * 0.15;
               
               // Jellyfish dome/umbrella (bioluminescent pink/cyan)
@@ -6338,7 +6409,7 @@ function render(ts) {
           ctx.save();
           const VW = W * 3.2;
           const S = Math.min(W, H) / 460;
-          const swim = (base, speed) => ((base - bgOffset * speed) % VW + VW) % VW - W * 1.1;
+          const swim = (base, speed) => ((base - bgOffset * speed * LVL3_PARALLAX.faunaMultiplier) % VW + VW) % VW - W * 1.1;
           const haze = (alpha, fn) => { ctx.globalAlpha = alpha; fn(); ctx.globalAlpha = 1; };
 
           haze(0.62, () => drawWhale(swim(W * 1.5, 0.05), H * 0.31 + Math.sin(ts * 0.0006) * 12, S * 1.15, ts));
@@ -6365,7 +6436,8 @@ function render(ts) {
             ctx.globalAlpha = 0.95 * edge;
             // Sweep centred on the screen, not on x=0: starts a full body-length
             // clear of the right edge and ends the same clear of the left.
-            ctx.translate(W * 1.5 - pass * (W * 2), H * 0.30 - Math.sin(pass * Math.PI) * H * 0.05);
+            const turnDrift = Math.sin(bgOffset * 0.001) * W * 0.05;
+            ctx.translate(W * 1.5 - pass * (W * 2) - turnDrift, H * 0.30 - Math.sin(pass * Math.PI) * H * 0.05);
             ctx.rotate(Math.cos(pass * Math.PI) * 0.06);
             drawReefShark(0, 0, S * 2.7, ts);
             ctx.restore();
@@ -6380,18 +6452,15 @@ function render(ts) {
       ctx.strokeStyle = '#5a5e65';
       ctx.lineWidth = 1.5;
       for (const b of bgBirds) {
-          b.x += b.speed * dt;
-          if (b.x > W + 20) {
-              b.x = -20;
-              b.y = H * 0.08 + Math.random() * H * 0.18;
-          }
+          b.x = (b.x + b.speed * dt) % (W + 40);
+          const birdX = backdropX(b.x, bgOffset * LVL3_PARALLAX.birds, 20);
           b.phase += dt * 8;
           const flap = Math.sin(b.phase) * (b.size * 0.45);
           
           ctx.beginPath();
-          ctx.moveTo(b.x - b.size, b.y + flap);
-          ctx.lineTo(b.x, b.y - flap * 0.2);
-          ctx.lineTo(b.x + b.size, b.y + flap);
+          ctx.moveTo(birdX - b.size, b.y + flap);
+          ctx.lineTo(birdX, b.y - flap * 0.2);
+          ctx.lineTo(birdX + b.size, b.y + flap);
           ctx.stroke();
       }
       ctx.restore();
@@ -6500,7 +6569,7 @@ function render(ts) {
     const zone = getLvl3World(startSegIdx);
     if (zone === 'steppe') {
         // Treeless tundra: weathered ridges, pale frost and sparse low scrub.
-        drawTile(bgOffset * 0.25, horizonY, () => {
+        drawTile(bgOffset * LVL3_PARALLAX.landscape, horizonY, () => {
           // Draw 2 layers of rolling hills for depth
           for (let layer = 0; layer < 2; layer++) {
             const hOffset = layer * 15;
@@ -6545,7 +6614,7 @@ function render(ts) {
         });
     } else if (zone === 'arctic') {
         // Massive snow-capped peaks
-        drawTile(bgOffset * 0.3, horizonY, () => {
+        drawTile(bgOffset * LVL3_PARALLAX.mountains, horizonY, () => {
           for (const m of bgMountains) {
               // Dark winter mountain base
               ctx.fillStyle = '#0a1424';
@@ -6585,7 +6654,7 @@ function render(ts) {
         });
     } else if (zone === 'dali') {
         // Abstract floating surreal structures
-        drawTile(bgOffset * 0.25, horizonY, () => {
+        drawTile(bgOffset * LVL3_PARALLAX.landscape, horizonY, () => {
           ctx.strokeStyle = 'rgba(231, 111, 81, 0.45)';
           ctx.lineWidth = 1.5;
           for (let i = 0; i < 4; i++) {
@@ -6606,7 +6675,7 @@ function render(ts) {
         });
     } else if (zone === 'underwater') {
         // Deep background trench / coral silhouettes
-        drawTile(bgOffset * 0.2, horizonY, () => {
+        drawTile(bgOffset * LVL3_PARALLAX.reef, horizonY, () => {
           ctx.strokeStyle = 'rgba(10, 147, 150, 0.35)';
           ctx.lineWidth = 2;
           ctx.fillStyle = 'rgba(5, 25, 35, 0.65)';
@@ -6972,13 +7041,14 @@ function render(ts) {
         drawMeltingClockSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
-    else if (s.type === 'dali_elephant' || s.type === 'dali_egg' || s.type === 'dali_drawers' || s.type === 'dali_eye') {
+    else if (s.type === 'dali_elephant' || s.type === 'dali_egg' || s.type === 'dali_drawers' || s.type === 'dali_eye' || s.type === 'dali_giraffe') {
         ctx.save();
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        if (s.type === 'dali_elephant') drawDaliElephantSprite(s.x, s.y, s.sc);
-        else if (s.type === 'dali_egg') drawDaliEggSprite(s.x, s.y, s.sc);
+        if (s.type === 'dali_elephant') drawDaliElephantSprite(s.x, s.y, s.sc, ts, s.segIdx);
+        else if (s.type === 'dali_egg') drawDaliEggSprite(s.x, s.y, s.sc, ts, s.segIdx);
+        else if (s.type === 'dali_giraffe') drawDaliGiraffeSprite(s.x, s.y, s.sc, ts, s.segIdx);
         else if (s.type === 'dali_drawers') drawDaliDrawerSprite(s.x, s.y, s.sc);
         else drawDaliEyeSprite(s.x, s.y, s.sc);
         ctx.restore();

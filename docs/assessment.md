@@ -57,6 +57,25 @@ der Mechaniklauf besteht jetzt 23/23 Prüfungen. Alle vier neuen Motive, der
 Übergang und die Zielmarkierungen wurden bei 390 und 480 Pixel Breite visuell
 geprüft, ohne JavaScript-Fehler. Der Produktionsbuild besteht ebenfalls.
 
+Nachtrag vom 9. Oktober: Die Hintergrundschichten von Level 3 bewegen sich in
+Kurven stärker, mit weiterhin langsamerer Parallaxe für entfernte Objekte.
+Auch Wintersonne, Polarlichter, Vögel und Unterwasserlicht folgen jetzt der
+Kurvenbewegung. Die Landschaft bewegt sich um etwa 40–50 Prozent stärker;
+die beiden Sonnen wandern langsamer und wechseln erst außerhalb ihres Halos
+die Bildschirmseite. Dalí-Elefanten haben einen langsamen Schrittzyklus von
+etwa neun Sekunden. Die Eier schweben über eine kurze Distanz in etwa zehn
+Sekunden, die Sonne verformt sich nur leicht in längeren Zyklen. Zwei brennende
+Giraffen mit sanft bewegten Flammen ergänzen die Motivfolge.
+
+Der Produktionsbuild und alle 23 vorhandenen Mechanikprüfungen bestehen.
+Eine zusätzliche temporäre Browserkontrolle zeichnete 560 Dalí-Ansichten bei
+390 und 480 Pixel Breite: Alle sechs Motive sind sichtbar, und die Animationen
+erhalten stabile Objektphasen. Die gemessene Kurvenparallaxe bleibt gestaffelt
+(bei 200 Einheiten Hintergrundverschiebung: Sonne 20 Pixel, Landschaft 76,
+Berge 84, Unterwasserriff 60 und ferner Wal 14). Die vier Landschaften wurden
+auch mit großen positiven und negativen Verschiebungen gezeichnet, ohne
+JavaScript-Fehler. Die Motive und mehrere Animationsphasen wurden visuell geprüft.
+
 ## Prüfungen und Grenzen
 
 Umgebung: Node.js 24.19.0, npm 11.9.0, Vite 6.4.3, Playwright 1.62.1 und
