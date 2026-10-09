@@ -78,6 +78,32 @@ JavaScript-Fehler. Die Motive und mehrere Animationsphasen wurden visuell geprü
 
 ## Prüfungen und Grenzen
 
+Nachtrag vom 9. Oktober — NEON AFTERGLOW: Der erste Themenblock enthält jetzt
+Neon City, Ocean Drive und die neuen Rundkurse Sunset Hills und Midnight
+Highway. Die bisherigen Sonderwelten bleiben als Dream Odyssey (Level 5)
+und Space Wave (Level 6) erhalten. Alle sechs Level sind zunächst frei
+auswählbar; gespeicherter Fortschritt und Freischaltschwellen sind noch offen.
+Die neue Struktur und der Umgebungsverkehr sind in
+[NEON AFTERGLOW](neon-afterglow.md) beschrieben.
+
+Der Produktionsbuild, 21 neue Kapitelprüfungen, 23 Mechanikprüfungen und
+29 Kollisionsprüfungen bestehen. Alle sechs vollständigen Browserrennen
+erreichten die Ergebnisanzeige mit gültigen Rundenzeiten, ohne JavaScript-
+oder fehlgeschlagene Netzwerkanfragen. Die Kapitelprüfung beobachtet unter
+anderem getrennten Gegenverkehr, die Leitplanken bei Boost, Zugauslösung
+vor der Brücke, Wiederholung pro Runde, Pause und Reset. Hills, Highway,
+Überführungen, Schnellzug und die erhaltenen Welten wurden bei 390 und
+480 Pixel Breite visuell geprüft; Menü und Ergebnis passen auch bei
+390 × 640 Pixel ohne verdeckte Bedienflächen.
+
+Die gemeinsam aufgebaute Levelauswahl und das Löschen des Ergebnis-Timers
+beheben die beiden zuvor belegten Menüfehler. `edges` besteht jetzt vier
+Prüfungen, einschließlich Menüwechsel und Neustart. Zwei bekannte, davon
+unabhängige vorgeschlagene UX-Anforderungen bleiben rot: automatische Pause
+bei Fokusverlust und eine eigene mobile Pause-Schaltfläche. Diese wurden
+in der vorliegenden Level-Erweiterung nicht umgesetzt. Die folgenden
+Tabellen und historischen Messdaten beschreiben weiterhin den Importstand.
+
 Umgebung: Node.js 24.19.0, npm 11.9.0, Vite 6.4.3, Playwright 1.62.1 und
 headless Chromium 151.0.7922.173 auf Linux. Lange Rennen verwendeten
 480 × 800 Pixel; die Ablaufprüfungen emulierten Touch bei 390 × 844.
@@ -215,6 +241,7 @@ Danach aus dem Repository; bei vorhandenem Playwright ist `NODE_PATH` unnötig:
 ```sh
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs mechanics
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs collisions
+NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs chapter
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs edges
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs races
 ```

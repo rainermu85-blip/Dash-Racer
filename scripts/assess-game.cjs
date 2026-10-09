@@ -5,8 +5,8 @@ const os = require('node:os');
 const path = require('node:path');
 
 const mode = process.argv[2] || 'edges';
-if (!['edges', 'races', 'mechanics', 'collisions'].includes(mode)) {
-  console.error('Usage: node scripts/assess-game.cjs [edges|races|mechanics|collisions]');
+if (!['edges', 'races', 'mechanics', 'collisions', 'chapter'].includes(mode)) {
+  console.error('Usage: node scripts/assess-game.cjs [edges|races|mechanics|collisions|chapter]');
   process.exit(2);
 }
 const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:3000';
@@ -49,7 +49,7 @@ async function main() {
   // Edge fixtures deliberately jump to the finish. The races mode never does.
   async function nearFinish(page) {
     await page.evaluate(() => {
-      player.lap = currentLevel === 3 ? 1 : 3;
+      player.lap = currentLevel === 5 ? 1 : 3;
       player.z = TRACK_LENGTH - 1;
       player.speed = player.maxSpeed;
       player.x = 0;
@@ -107,12 +107,12 @@ async function main() {
         await page.waitForTimeout(200);
         return { pass: before.z === after.z && before.t === after.t && await page.evaluate(() => !paused && currentLapTime > 0), before, after };
       });
-      await run('level-switch-3-to-4-restart', async page => {
-        await page.locator('#lvl3Btn').tap();
+      await run('level-switch-dream-to-space-restart', async page => {
+        await page.locator('#lvl5Btn').tap();
         await start(page);
         await nearFinish(page);
         await page.waitForFunction(() => state === 'result');
-        await page.locator('#lvl4Btn').tap();
+        await page.locator('#lvl6Btn').tap();
         await page.locator('#rb').tap();
         await page.waitForFunction(() => state === 'playing');
         const actual = await page.evaluate(() => ({
@@ -121,10 +121,10 @@ async function main() {
           energy: player.energyBallsCollected, times: [...lapTimes],
           energyVisible: getComputedStyle(document.getElementById('energyBoard')).display !== 'none',
         }));
-        return { pass: actual.level === 4 && actual.count === 1350 && actual.segments === 1350 && actual.lap === 1 && !actual.finished && actual.boosts === 0 && actual.energy === 0 && actual.times.every(t => t === 0) && actual.energyVisible, actual };
+        return { pass: actual.level === 6 && actual.count === 1350 && actual.segments === 1350 && actual.lap === 1 && !actual.finished && actual.boosts === 0 && actual.energy === 0 && actual.times.every(t => t === 0) && actual.energyVisible, actual };
       });
     } else if (mode === 'races') {
-      await Promise.all([1, 2, 3, 4].map(level => run(`full-race-${level}`, async page => {
+      await Promise.all([1, 2, 3, 4, 5, 6].map(level => run(`full-race-${level}`, async page => {
         const failedRequests = [];
         page.on('requestfailed', request => failedRequests.push({ url: request.url().split('?')[0], failure: request.failure()?.errorText }));
         await page.locator(`#lvl${level}Btn`).click();
@@ -153,7 +153,7 @@ async function main() {
             console.log(`Level ${level}: ${Math.round((Date.now() - started) / 1000)}s, lap ${actual.lap}, state ${actual.state}`);
           }
           if (actual.state === 'result') {
-            const maxLaps = level === 3 ? 1 : 3;
+            const maxLaps = level === 5 ? 1 : 3;
             const completed = actual.times.slice(0, maxLaps);
             await page.screenshot({ path: path.join(output, `result-${level}.png`) });
             const resultText = await page.locator('#overlay').innerText();
@@ -165,7 +165,7 @@ async function main() {
       }, { viewport: { width: 480, height: 800 }, isMobile: false, hasTouch: false })));
     } else {
       // Fixed-frame mechanics fixtures live separately to make their scope explicit.
-      const runMechanics = require(mode === 'collisions' ? './assessment-collisions.cjs' : './assessment-mechanics.cjs');
+      const runMechanics = require(mode === 'chapter' ? './assessment-chapter.cjs' : mode === 'collisions' ? './assessment-collisions.cjs' : './assessment-mechanics.cjs');
       results.push(...await runMechanics(browser, baseUrl));
       fs.writeFileSync(path.join(output, `${mode}.json`), JSON.stringify(results, null, 2));
       for (const result of results) console.log(JSON.stringify(result));

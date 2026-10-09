@@ -4,6 +4,13 @@ Untersuchter Ausgangsstand: `af1c28b7951d1b6f9d46526a27ad40ce3147cc85`,
 8. Oktober 2026. Beschrieben wird implementiertes Verhalten, keine neue
 Produktvorgabe. Zeilennummern beziehen sich auf diesen Spielcode.
 
+Nachtrag vom 9. Oktober: Es gibt jetzt sechs Level. Der erste Themenblock
+**NEON AFTERGLOW** enthält Neon City, Ocean Drive, Sunset Hills und Midnight
+Highway. Die früheren Level 3 und 4 sind als Dream Odyssey (5) und Space Wave
+(6) erhalten. Die folgenden Tabellen und Zeilennummern beschreiben den
+historischen Ausgangsstand; die neue Struktur steht in
+[NEON AFTERGLOW](neon-afterglow.md).
+
 ## Grundlage und Dateien
 
 | Datei | Aufgabe |

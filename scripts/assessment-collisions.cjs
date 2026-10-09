@@ -38,7 +38,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
           chevronBoostTimer: 0, energyBallsCollected: 0, chevronDecisions: {},
           collisionCooldown: 0, contactAxis: null, contactSide: 0,
         };
-        if (currentLevel !== 3 && opponent.z >= TRACK_LENGTH) {
+        if (currentLevel !== 5 && opponent.z >= TRACK_LENGTH) {
           opponent.z -= TRACK_LENGTH; opponent.lap++;
         }
         opponents.push(opponent);
@@ -47,7 +47,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
       try {
         for (const frameRate of [30, 60, 120]) {
           for (const type of ['lightning', 'pylon', 'barrier']) {
-            setup(4, frameRate);
+            setup(6, frameRate);
             player.isChevronBoosting = true; player.chevronBoostTimer = 10;
             player.fovOffset = -0.56; player.speed = player.maxSpeed * 2.31;
             player.z = 300 * SEGMENT_LENGTH - 10 - getPlayerContactDistance();
@@ -67,7 +67,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
 
         const walls = [];
         for (const frameRate of [30, 60, 120]) {
-          setup(3, frameRate); player.accel = 900;
+          setup(5, frameRate); player.accel = 900;
           player.z = 2650 * SEGMENT_LENGTH; player.x = 0.8; keys.right = true;
           tick(frameRate);
           walls.push({ fps: frameRate, speed: player.speed, x: player.x });
@@ -75,7 +75,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
         const speeds = walls.map(sample => sample.speed);
         record('wall-friction-independent-of-frame-rate', walls.every(sample => sample.x === 0.8 && sample.speed > player.maxSpeed * 0.4 && sample.speed < player.maxSpeed * 0.7) && Math.max(...speeds) - Math.min(...speeds) < 1, walls);
 
-        setup(3); player.z = 2650 * SEGMENT_LENGTH; player.x = 0.8; keys.right = true;
+        setup(5); player.z = 2650 * SEGMENT_LENGTH; player.x = 0.8; keys.right = true;
         tick(60); const rubbingSpeed = player.speed;
         keys.right = false; keys.left = true; tick(12);
         record('steering-away-releases-wall-drag', player.x < 0.75 && player.wallContactSide === 0 && Math.abs(player.speed - rubbingSpeed) < 1, { x: player.x, rubbingSpeed, releasedSpeed: player.speed });
@@ -136,7 +136,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
 
         const pinned = [];
         for (const direction of [-1, 1]) {
-          setup(3); player.z = 2820 * SEGMENT_LENGTH; player.x = direction * 0.799;
+          setup(5); player.z = 2820 * SEGMENT_LENGTH; player.x = direction * 0.799;
           const opponent = addOpponent({ x: direction * 0.5595, baseX: direction * 0.8, relZ: 0, speed: player.speed });
           tick();
           pinned.push({ direction, x: player.x, gap: Math.abs(player.x - opponent.x), cooldown: player.collisionCooldown });
@@ -151,7 +151,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
         const acrossSeam = addOpponent(); tick();
         record('opponent-contact-across-lap-seam', acrossSeam.lap === 2 && player.lap === 1 && player.collisionCooldown > 0 && player.z < TRACK_LENGTH, { playerLap: player.lap, opponentLap: acrossSeam.lap, speed: player.speed, z: player.z });
 
-        setup(3); player.z = TRACK_LENGTH + 300 * SEGMENT_LENGTH - getPlayerContactDistance();
+        setup(5); player.z = TRACK_LENGTH + 300 * SEGMENT_LENGTH - getPlayerContactDistance();
         segments[300].lightning = { x: 0, active: true }; player.finished = true;
         tick();
         record('point-to-point-runout-does-not-wrap-pickups', segments[300].lightning.active && player.boosts === 0, { active: segments[300].lightning.active, charges: player.boosts });

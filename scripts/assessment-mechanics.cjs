@@ -48,22 +48,22 @@ module.exports = async function runMechanics(browser, baseUrl) {
       record('barrier-hit', player.speed >= 0 && player.speed < player.maxSpeed * 0.5 && player.collisionCooldown > 0 && barrier.barrier.state === 'blinking', { speed: player.speed, cooldown: player.collisionCooldown, barrier: barrier.barrier.state });
       reset(); player.speed = 3600; player.x = 1.2; tick();
       record('offroad-slows-car', player.speed < 3600, { speed: player.speed });
-      reset(4);
+      reset(6);
       for (let i = 0; i < 5; i++) { atItem('pylon'); tick(); }
       record('five-energy-give-charge', player.energyBallsCollected === 0 && player.boosts === 1, { energy: player.energyBallsCollected, charges: player.boosts });
-      reset(4); player.z = 180 * SEGMENT_LENGTH + 30; player.x = -0.5; player.speed = 0; tick();
+      reset(6); player.z = 180 * SEGMENT_LENGTH + 30; player.x = -0.5; player.speed = 0; tick();
       record('chevron-turbo', player.isChevronBoosting && player.boosts === 0, { turbo: player.isChevronBoosting, charges: player.boosts });
       reset(); player.z = TRACK_LENGTH - 1; player.speed = 3600; tick();
       record('lap-wrap', player.lap === 2 && player.z < TRACK_LENGTH && lapTimes[0] > 0, { lap: player.lap, z: player.z, times: [...lapTimes] });
-      reset(3);
-      const zones = [0, 450, 750, 1250, 1550, 2050, 2350].map(i => getLvl3Zone(i));
-      record('level-three-zones', JSON.stringify(zones) === JSON.stringify(['steppe', 'tunnel', 'arctic', 'tunnel', 'dali', 'tunnel', 'underwater']), { zones, segments: segments.length });
+      reset(5);
+      const zones = [0, 450, 750, 1250, 1550, 2050, 2350].map(i => getDreamZone(i));
+      record('dream-odyssey-zones', JSON.stringify(zones) === JSON.stringify(['steppe', 'tunnel', 'arctic', 'tunnel', 'dali', 'tunnel', 'underwater']), { zones, segments: segments.length });
       const finishIndices = [SEGMENT_COUNT - 1, SEGMENT_COUNT, segments.length - 1, SEGMENT_COUNT + 600];
       const finishWorlds = finishIndices.map(index => ({
-        index, zone: getLvl3Zone(index), world: getLvl3World(index),
-        tunnel: getTunnelStyle(index), weather: getLvl3WeatherFade(index),
+        index, zone: getDreamZone(index), world: getDreamWorld(index),
+        tunnel: getTunnelStyle(index), weather: getDreamWeatherFade(index),
       }));
-      record('level-three-finish-world', finishWorlds.every(sample => sample.zone === 'underwater' && sample.world === 'underwater' && sample.tunnel === null && sample.weather === 1), finishWorlds);
+      record('dream-odyssey-finish-world', finishWorlds.every(sample => sample.zone === 'underwater' && sample.world === 'underwater' && sample.tunnel === null && sample.weather === 1), finishWorlds);
       // Observe the painted sky gradient: moving foreground scenery makes a
       // single-pixel screenshot comparison unsuitable for this transition.
       const createGradient = ctx.createLinearGradient;
@@ -90,10 +90,10 @@ module.exports = async function runMechanics(browser, baseUrl) {
       try {
         player.z = TRACK_LENGTH - 400; player.speed = player.maxSpeed;
         tick();
-        const beforeFinish = { world: getLvl3World(Math.floor(player.z / SEGMENT_LENGTH)), sky: paintedSky };
+        const beforeFinish = { world: getDreamWorld(Math.floor(player.z / SEGMENT_LENGTH)), sky: paintedSky };
         tick(120);
-        const afterFinish = { world: getLvl3World(Math.floor(player.z / SEGMENT_LENGTH)), sky: paintedSky, finished: player.finished, z: player.z };
-        record('level-three-rendered-finish', beforeFinish.world === 'underwater' && afterFinish.world === 'underwater' && afterFinish.finished && beforeFinish.sky.length > 0 && JSON.stringify(beforeFinish.sky) === JSON.stringify(afterFinish.sky), { beforeFinish, afterFinish });
+        const afterFinish = { world: getDreamWorld(Math.floor(player.z / SEGMENT_LENGTH)), sky: paintedSky, finished: player.finished, z: player.z };
+        record('dream-odyssey-rendered-finish', beforeFinish.world === 'underwater' && afterFinish.world === 'underwater' && afterFinish.finished && beforeFinish.sky.length > 0 && JSON.stringify(beforeFinish.sky) === JSON.stringify(afterFinish.sky), { beforeFinish, afterFinish });
       } finally {
         ctx.createLinearGradient = createGradient;
         ctx.fillRect = fillRect;
@@ -101,7 +101,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
 
       // The exit climbs over a crest. Glass ribs above the hidden road must
       // already be painted while the camera is still inside the opaque tunnel.
-      reset(3); opponents.length = 0;
+      reset(5); opponents.length = 0;
       player.z = 2330 * SEGMENT_LENGTH; player.pitch = 32;
       const drawRoad = drawRoadSegment;
       const curve = ctx.bezierCurveTo;
@@ -129,7 +129,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
       // Observe the white checker cells and the finish label actually painted,
       // rather than merely checking a flag on the final segment.
       const paintedFinishes = [];
-      for (const level of [1, 2, 3, 4]) {
+      for (const level of [1, 2, 3, 4, 5, 6]) {
         reset(level); opponents.length = 0;
         player.z = TRACK_LENGTH - 10 * SEGMENT_LENGTH;
         const drawStrip = trapezoid, drawLabel = ctx.fillText;
@@ -157,13 +157,13 @@ module.exports = async function runMechanics(browser, baseUrl) {
         }
       }
       record('all-levels-paint-checkered-finish', paintedFinishes.every(sample => sample.whiteCells >= 10), paintedFinishes);
-      record('level-three-paints-finish-banner', paintedFinishes.find(sample => sample.level === 3).finishLabels === 1, paintedFinishes);
+      record('dream-odyssey-paints-finish-banner', paintedFinishes.find(sample => sample.level === 5).finishLabels === 1, paintedFinishes);
 
       const glassWall = 0.8;
       const wallContacts = [];
       for (const side of [-1, 1]) {
         for (const boosted of [false, true]) {
-          reset(3); opponents.length = 0;
+          reset(5); opponents.length = 0;
           player.z = 2650 * SEGMENT_LENGTH; player.x = side * 0.79;
           player.speed = player.maxSpeed; player.boosts = boosted ? 1 : 0;
           keys.left = side < 0; keys.right = side > 0; keys.boost = boosted;
@@ -180,16 +180,16 @@ module.exports = async function runMechanics(browser, baseUrl) {
 
       const entries = [];
       for (const side of [-1, 1]) {
-        reset(3); opponents.length = 0;
+        reset(5); opponents.length = 0;
         player.z = 2350 * SEGMENT_LENGTH - 1; player.x = side * 1.02;
         player.speed = player.maxSpeed; tick();
-        entries.push({ side, zone: getLvl3Zone(Math.floor(player.z / SEGMENT_LENGTH)), x: player.x });
+        entries.push({ side, zone: getDreamZone(Math.floor(player.z / SEGMENT_LENGTH)), x: player.x });
       }
       record('underwater-glass-walls-apply-on-entry', entries.every(sample => sample.zone === 'underwater' && Math.abs(sample.x) <= glassWall), entries);
 
       const pushes = [];
       for (const side of [-1, 1]) {
-        reset(3);
+        reset(5);
         const opponent = opponents[0]; opponents.length = 1;
         player.z = 2820 * SEGMENT_LENGTH; player.x = side * 0.799;
         player.speed = player.maxSpeed;
@@ -205,7 +205,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
 
       const runout = [];
       for (const side of [-1, 1]) {
-        reset(3); opponents.length = 0;
+        reset(5); opponents.length = 0;
         player.finished = true; player.z = TRACK_LENGTH + 10 * SEGMENT_LENGTH;
         player.x = side * 1.2; player.speed = player.maxSpeed; tick();
         runout.push({ side, x: player.x, finished: player.finished });
@@ -214,10 +214,10 @@ module.exports = async function runMechanics(browser, baseUrl) {
 
       const otherZones = [];
       for (const segment of [100, 1000, 1750, 2250]) {
-        reset(3); opponents.length = 0;
+        reset(5); opponents.length = 0;
         player.z = segment * SEGMENT_LENGTH; player.x = 1.02;
         player.speed = 0; tick();
-        otherZones.push({ segment, x: player.x, zone: getLvl3Zone(segment), world: getLvl3World(segment) });
+        otherZones.push({ segment, x: player.x, zone: getDreamZone(segment), world: getDreamWorld(segment) });
       }
       record('underwater-glass-walls-leave-other-zones-open', otherZones.every(sample => sample.x > 1), otherZones);
 

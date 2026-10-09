@@ -1,6 +1,6 @@
 # Dash Racer
 
-Ein Arcade-Rennspiel im Retro-Neonstil mit vier Strecken, fünf Gegnern und
+Ein Arcade-Rennspiel im Retro-Neonstil mit sechs Strecken, fünf Gegnern und
 Boosts. Es läuft vollständig im Browser mit Canvas 2D. Vite dient zum
 Entwickeln und Erstellen der statischen Ausgabe. Es gibt aktuell keinen
 Anwendungsserver und keine Gemini-Integration.
@@ -25,6 +25,28 @@ npm run preview -- --host 127.0.0.1
 Keine API-Schlüssel oder `.env.local` sind für das aktuelle Spiel nötig. Die
 Schriftart wird von Google Fonts geladen; ohne Zugriff erscheint eine
 Ersatzschrift. `DISABLE_HMR=true` schaltet HMR und Dateibeobachtung aus.
+
+## Strecken
+
+Der erste Themenblock **NEON AFTERGLOW** umfasst vier Synthwave-Strecken:
+
+| Level | Strecke | Atmosphäre |
+| --- | --- | --- |
+| 1 | Neon City | Neonlichter, Innenstadt und Brücke |
+| 2 | Ocean Drive | Küste, Palmen und wechselnder Abendhimmel |
+| 3 | Sunset Hills | Beverly Hills der 80er, Villen, Pools und geschwungene Hügelstraßen |
+| 4 | Midnight Highway | Violett-schwarze Nacht, Sci-Fi-Neonzeichen, Gegenverkehr und Überführungen |
+
+Die bisherigen Sonderwelten sind weiterhin als Level 5 **Dream Odyssey**
+(Tundra, Arktis, Dalí und Unterwasser) und Level 6 **Space Wave** spielbar.
+Alle sechs Strecken sind in dieser ersten Version frei auswählbar. Medaillen,
+gespeicherter Fortschritt und Freischaltschwellen sind noch nicht implementiert.
+
+Der Highway hat eine getrennte Gegenfahrbahn und Leitplanken auf der Rennstrecke.
+Autos fahren über zwei Hochstraßen, und Schnellzüge werden bei der Annäherung
+an zwei Bahnüberführungen einmal je Runde ausgelöst. Dieser Umgebungsverkehr
+fährt außerhalb der Rennspuren; die fünf Renngegner verwenden das gemeinsame
+Kollisionsmodell. Beide neuen Strecken sind Rundkurse mit drei Runden.
 
 ## Steuerung
 
@@ -54,10 +76,11 @@ den Pages-Einstellungen und im Deployment des Workflows.
 ## Ausgangspunkt für die Weiterentwicklung
 
 - [Architektur und Spielregeln](docs/architecture.md)
+- [NEON AFTERGLOW und die neuen Strecken](docs/neon-afterglow.md)
 - [Bestandsaufnahme, Prüfungen und priorisierte Aufgaben](docs/assessment.md)
 - [Messdaten des Ausgangsstands](docs/evidence/baseline-2026-10-08.json)
 
-Die Bestandsaufnahme verändert das Spielverhalten nicht. Bekannte Probleme
-bleiben sichtbar, damit die Stabilisierung gezielt und überprüfbar erfolgt.
+Die historischen Messdaten bleiben als Ausgangspunkt erhalten. Nachträge
+beschreiben die inzwischen umgesetzten Änderungen und aktuelle Prüfungen.
 Es gibt noch keinen CI-Testlauf. Die Browser-Prüfskripte und ihre zusätzlichen
 Voraussetzungen sind in der Bestandsaufnahme beschrieben.
