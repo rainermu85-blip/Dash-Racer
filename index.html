@@ -251,6 +251,9 @@ const HIGHWAY_CROSSINGS = [
 const HIGHWAY_TRAIN_DURATION = 3.2;
 const CLEAN_SPEED_LIMIT = 0.2;
 const CLEAN_SPEED_BUILD_TIME = 10;
+const BRIDGE_RAIL_HEIGHT = 108;
+const BRIDGE_MASTS = [950, 1030];
+const BRIDGE_STAY_DISTANCES = [8, 18, 28];
 const HIGHWAY_NEON_COLORS = ['#ff527f', '#ffd65c', '#7aff9e', '#35ddff', '#568cff', '#bb80ff', '#ff54dc', '#ff9853'];
 // Each business has one coherent identity, drawn consistently on every pass.
 const HIGHWAY_AD_STYLES = [
@@ -2236,7 +2239,7 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         // Low, continuous side rails frame the wider bridge deck over the water.
         for (const side of [-1, 1]) {
             const railX1 = x1 + side * w1 * 1.25, railX2 = x2 + side * w2 * 1.25;
-            const h1 = w1 * 0.08, h2 = w2 * 0.08;
+            const h1 = p1Scale * BRIDGE_RAIL_HEIGHT * H / 2, h2 = p2Scale * BRIDGE_RAIL_HEIGHT * H / 2;
             const t1 = Math.max(0.6, w1 * 0.008), t2 = Math.max(0.6, w2 * 0.008);
             ctx.fillStyle = '#294351';
             trapezoid(railX1 - t1, y1 - h1, railX1 + t1,
@@ -7670,28 +7673,53 @@ function render(ts) {
     }
   }
 
-  // Check for pillars that are behind the camera (up to 35 segments behind) so their forward cables are drawn
-  for (let i = 1; i <= 35; i++) {
-    const segIdx = currentLevel === LEVEL_DREAM ? (startSegIdx - i) : (startSegIdx - i + SEGMENT_COUNT) % SEGMENT_COUNT;
-    const seg = segments[segIdx];
-    if (seg && seg.isPillar) {
-      const s = getCleanSpriteFromPool();
-      s.type = 'pillar';
-      s.x = 0;
-      s.y = 0;
-      s.sc = 0.0001; // Tiny scale so we don't draw the physical pillar
-      s.w = 0;
-      s.depth = 9999; // Draw first
-      s.segIdx = segIdx;
-      s.clipY = segments[startSegIdx] && segments[startSegIdx].clipY !== undefined ? segments[startSegIdx].clipY : H;
-      
-      let lapOffset = 0;
-      if (currentLevel !== LEVEL_DREAM && segIdx > startSegIdx) {
-        lapOffset = -TRACK_LENGTH;
+  // Draw stays in the depth order of the road they cross, rather than at the
+  // mast's single depth. This keeps their feet attached during the whole pass.
+  const bridgeStays = new Map();
+  if (currentLevel === 1) for (const mast of BRIDGE_MASTS) {
+    if (!segments[mast]?.isPillar) continue;
+    const mastZ = mast * SEGMENT_LENGTH, mastY = segments[mast].worldY;
+    for (const d of BRIDGE_STAY_DISTANCES) for (const direction of [-1, 1]) {
+      const anchorIndex = mast + d * direction, anchor = segments[anchorIndex];
+      if (!anchor?.isBridge) continue;
+      const anchorZ = anchorIndex * SEGMENT_LENGTH;
+      const topY = mastY + 11500 * (0.35 + d / 28 * 0.52);
+      const point = (z, side) => {
+        const t = (z - mastZ) / (anchorZ - mastZ);
+        return [side * ROAD_WIDTH * (2.15 + (1.25 - 2.15) * t),
+                topY + (anchor.worldY + BRIDGE_RAIL_HEIGHT - topY) * t, z];
+      };
+      for (let index = Math.min(mast, anchorIndex); index < Math.max(mast, anchorIndex); index++) {
+        const road = segments[index];
+        if (!road?.visibleInFrame) continue;
+        const z1 = index * SEGMENT_LENGTH, z2 = z1 + SEGMENT_LENGTH;
+        if (z2 <= camZ + 64) continue;
+        const lines = [-1, 1].map(side => projectBridgeLine(point(z1, side), point(z2, side))).filter(Boolean);
+        if (!lines.length) continue;
+        let stays = bridgeStays.get(index);
+        if (!stays) { stays = []; bridgeStays.set(index, stays); }
+        stays.push({ lines, clipY: road.clipY });
       }
-      s.worldZ = seg.worldZ + lapOffset;
     }
   }
+  const drawBridgeStays = index => {
+    const stays = bridgeStays.get(index);
+    if (!stays) return;
+    ctx.save();
+    if (stays[0].clipY !== undefined) { ctx.beginPath(); ctx.rect(0, 0, W, stays[0].clipY); ctx.clip(); }
+    ctx.lineCap = 'butt';
+    for (const stay of stays) {
+      ctx.beginPath();
+      for (const line of stay.lines) {
+        ctx.moveTo(line.a.x, line.a.y); ctx.lineTo(line.b.x, line.b.y);
+      }
+      const width = Math.max(0.7, Math.min(6, stay.lines[0].scale * W / 2 * 70));
+      ctx.strokeStyle = 'rgba(33,212,253,0.16)'; ctx.lineWidth = width * 3.5; ctx.stroke();
+      ctx.strokeStyle = 'rgba(33,212,253,0.8)'; ctx.lineWidth = width; ctx.stroke();
+      ctx.strokeStyle = 'rgba(230,255,255,0.9)'; ctx.lineWidth = Math.max(0.45, width * 0.35); ctx.stroke();
+    }
+    ctx.restore();
+  };
 
   // Define the comprehensive helper to draw any sprite type
   function drawSprite(s) {
@@ -7939,31 +7967,7 @@ function render(ts) {
             ctx.restore();
         }
 
-        // Project each stay once, then reuse its path for halo, tube and core.
-        for (const d of [8, 18, 28]) for (const direction of [-1, 1]) {
-            const index = (s.segIdx + d * direction + SEGMENT_COUNT) % SEGMENT_COUNT;
-            const anchor = segments[index];
-            if (!anchor?.isBridge) continue;
-            const anchorZ = Z_p + d * direction * SEGMENT_LENGTH;
-            if (anchorZ >= camZ + 64 && !anchor.visibleInFrame) continue;
-            const mastY = Y_road + mastH * (0.35 + d / 28 * 0.52);
-            const left = projectBridgeLine([-mastW, mastY, Z_p], [-ROAD_WIDTH * 1.12, anchor.worldY, anchorZ]);
-            const right = projectBridgeLine([mastW, mastY, Z_p], [ROAD_WIDTH * 1.12, anchor.worldY, anchorZ]);
-            if (!left && !right) continue;
-            ctx.save();
-            const clipY = anchorZ >= camZ + 64 ? anchor.clipY : segments[startSegIdx]?.clipY;
-            if (clipY !== undefined) { ctx.beginPath(); ctx.rect(0, 0, W, clipY); ctx.clip(); }
-            ctx.beginPath();
-            for (const line of [left, right]) if (line) {
-                ctx.moveTo(line.a.x, line.a.y); ctx.lineTo(line.b.x, line.b.y);
-            }
-            const width = Math.max(0.7, Math.min(6, (left || right).scale * W / 2 * 70));
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = 'rgba(33,212,253,0.16)'; ctx.lineWidth = width * 3.5; ctx.stroke();
-            ctx.strokeStyle = 'rgba(33,212,253,0.8)'; ctx.lineWidth = width; ctx.stroke();
-            ctx.strokeStyle = 'rgba(230,255,255,0.9)'; ctx.lineWidth = Math.max(0.45, width * 0.35); ctx.stroke();
-            ctx.restore();
-        }
+
     }
   }
 
@@ -7997,6 +8001,9 @@ function render(ts) {
     // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
     drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
     
+    // Cable slices share this segment's depth, including after a passed mast.
+    if (roadSeg.isBridge) drawBridgeStays(roadSeg.segIdx);
+
     // 2. Draw any sprites positioned precisely on this segment index
     const segSprites = spritesBySegment.get(roadSeg.segIdx);
     if (segSprites) {
