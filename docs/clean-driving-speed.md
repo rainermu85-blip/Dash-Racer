@@ -40,3 +40,11 @@ beide Turbo-Maxima, Rückkehr nach Turbo, Pylonen, Offroad, Pause und Neustart.
 Die Modi `mechanics`, `collisions`, `chapter` und `races` prüfen die übrige
 Mechanik und vollständige Rennen. Browserinstallation und Befehle stehen in
 [assessment.md](assessment.md#prüfungen-wiederholen).
+
+Prüfung am 10. Oktober: 21 Tempo-, 29 Kollisions-, 23 Mechanik- und 21
+Kapitelprüfungen bestehen. Alle sechs Rennen liefen mit einem per Tasteneingabe
+steuernden Browserfahrer vom Start bis zum Ergebnis durch, ohne Tempo- oder
+Positionsüberschreibungen. Rundenzeiten, Platzierung und Zieleinlauf bestanden;
+es gab keine JavaScript-Fehler. Der Fahrer gewann alle sechs Rennen. Das zeigt
+den Abschluss der Rennen; eine Bewertung der Schwierigkeit braucht zusätzlich
+Spieltests mit Menschen.

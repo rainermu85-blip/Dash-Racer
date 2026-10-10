@@ -2232,8 +2232,23 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         }
     }
     
-    if (isBridge && p1Scale && p2Scale) {
-        // Die Brücke hat nun kein Seitengeländer (rail) mehr, nur noch den erweiterten schwarzen Rand
+    if (isVisible && isBridge && p1Scale && p2Scale) {
+        // Low, continuous side rails frame the wider bridge deck over the water.
+        for (const side of [-1, 1]) {
+            const railX1 = x1 + side * w1 * 1.25, railX2 = x2 + side * w2 * 1.25;
+            const h1 = w1 * 0.08, h2 = w2 * 0.08;
+            const t1 = Math.max(0.6, w1 * 0.008), t2 = Math.max(0.6, w2 * 0.008);
+            ctx.fillStyle = '#294351';
+            trapezoid(railX1 - t1, y1 - h1, railX1 + t1,
+                      railX2 - t2, y2 - h2, railX2 + t2);
+            ctx.fillStyle = 'rgba(90,225,238,0.38)';
+            trapezoid(railX1 - t1 * 0.45, y1 - h1 - w1 * 0.008, railX1 + t1 * 0.45,
+                      railX2 - t2 * 0.45, y2 - h2 - w2 * 0.008, railX2 + t2 * 0.45);
+            if (segIdx % 4 === 0) {
+                ctx.fillStyle = '#203645';
+                ctx.fillRect(railX1 - t1 * 0.5, y1 - h1, t1, h1);
+            }
+        }
     }
 }
 
@@ -7507,7 +7522,20 @@ function render(ts) {
     };
   };
 
-  const currentFrameBridgePoints = [];
+  // Clip every cable once in world space before perspective division. This
+  // also keeps the forward half visible after its mast has passed the camera.
+  const projectBridgeLine = (from, to) => {
+    const nearZ = camZ + 64;
+    if (from[2] < nearZ && to[2] < nearZ) return null;
+    const cut = (a, b) => {
+      const t = (nearZ - a[2]) / (b[2] - a[2]);
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, nearZ];
+    };
+    if (from[2] < nearZ) from = cut(from, to);
+    if (to[2] < nearZ) to = cut(to, from);
+    const a = project3D(...from), b = project3D(...to);
+    return a && b ? { a, b, scale: Math.min(a.scale, b.scale) } : null;
+  };
 
   const segmentsToDraw = [];
 
@@ -7575,9 +7603,6 @@ function render(ts) {
       isVisible: isVisible
     });
 
-    if (seg.isBridge && n % 4 === 0) {
-        currentFrameBridgePoints.push({ xL: rx1 - p1.w * 1.25, xR: rx1 + p1.w * 1.25, y: p1.y, segIdx: segIdx, scale: p1.scale });
-    }
     if (seg.isPillar) {
         const s = getCleanSpriteFromPool(); s.type = 'pillar'; s.x = rx2; s.y = p2.y; s.sc = p2.scale; s.w = p2.w; s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY; s.worldZ = segWorldZ;
     }
@@ -7875,261 +7900,69 @@ function render(ts) {
     else if (s.type === 'pillar') {
         const pSeg = segments[s.segIdx];
         if (!pSeg) return;
-        
         const Z_p = s.worldZ !== undefined ? s.worldZ : s.segIdx * SEGMENT_LENGTH;
-        const Y_road = pSeg.worldY;
-        
-        const mastH = 11500;
-        const mastW = ROAD_WIDTH * 2.15;
-        
+        const Y_road = pSeg.worldY, mastH = 11500, mastW = ROAD_WIDTH * 2.15;
         const pBaseL = project3D(-mastW, Y_road - 800, Z_p);
         const pTopL = project3D(-mastW, Y_road + mastH, Z_p);
-        
         const pBaseR = project3D(mastW, Y_road - 800, Z_p);
         const pTopR = project3D(mastW, Y_road + mastH, Z_p);
-        
-        if (!pBaseL || !pTopL || !pBaseR || !pTopR) return;
-        
-        ctx.save();
-        if (s.clipY !== undefined) {
+
+        // The tower can be behind us while its forward stays are still visible.
+        if (Z_p >= camZ + 64 && pBaseL && pTopL && pBaseR && pTopR) {
+            ctx.save();
+            if (s.clipY !== undefined) { ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip(); }
+            const mastThickness = Math.max(3, pBaseL.scale * W / 2 * 900);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#1d0c31'; ctx.lineWidth = mastThickness;
             ctx.beginPath();
-            ctx.rect(0, 0, W, s.clipY);
-            ctx.clip();
-        }
-
-        const mastThickness = Math.max(30.0, s.sc * 32500); 
-        
-        ctx.save();
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        
-        ctx.beginPath();
-        ctx.moveTo(pBaseL.x, pBaseL.y);
-        ctx.lineTo(pTopL.x, pTopL.y);
-        ctx.lineWidth = mastThickness;
-        ctx.strokeStyle = '#1d0c31'; 
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(pBaseR.x, pBaseR.y);
-        ctx.lineTo(pTopR.x, pTopR.y);
-        ctx.lineWidth = mastThickness;
-        ctx.strokeStyle = '#1d0c31';
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(pBaseL.x - mastThickness * 0.18, pBaseL.y); ctx.lineTo(pTopL.x - mastThickness * 0.18, pTopL.y);
-        ctx.moveTo(pBaseR.x + mastThickness * 0.18, pBaseR.y); ctx.lineTo(pTopR.x + mastThickness * 0.18, pTopR.y);
-        ctx.lineWidth = mastThickness * 0.22;
-        ctx.strokeStyle = '#58219c'; 
-        ctx.stroke();
-
-        const crossYTop = Y_road + mastH * 0.88;
-        const pCrossTopL = project3D(-mastW, crossYTop, Z_p);
-        const pCrossTopR = project3D(mastW, crossYTop, Z_p);
-        
-        const crossYBottom = Y_road + mastH * 0.38;
-        const pCrossBottomL = project3D(-mastW, crossYBottom, Z_p);
-        const pCrossBottomR = project3D(mastW, crossYBottom, Z_p);
-        
-        if (pCrossTopL && pCrossTopR && pCrossBottomL && pCrossBottomR) {
-            ctx.strokeStyle = '#1d0c31';
-            ctx.lineWidth = mastThickness * 0.7;
-            
+            ctx.moveTo(pBaseL.x, pBaseL.y); ctx.lineTo(pTopL.x, pTopL.y);
+            ctx.moveTo(pBaseR.x, pBaseR.y); ctx.lineTo(pTopR.x, pTopR.y); ctx.stroke();
+            ctx.strokeStyle = '#58219c'; ctx.lineWidth = mastThickness * 0.22;
             ctx.beginPath();
-            ctx.moveTo(pCrossTopL.x, pCrossTopL.y);
-            ctx.lineTo(pCrossTopR.x, pCrossTopR.y);
-            ctx.stroke();
-            
-            ctx.beginPath();
-            ctx.moveTo(pCrossBottomL.x, pCrossBottomL.y);
-            ctx.lineTo(pCrossBottomR.x, pCrossBottomR.y);
-            ctx.stroke();
-            
-            ctx.strokeStyle = '#3d1666';
-            ctx.lineWidth = mastThickness * 0.35;
-            ctx.beginPath();
-            ctx.moveTo(pCrossBottomL.x, pCrossBottomL.y); ctx.lineTo(pCrossTopR.x, pCrossTopR.y);
-            ctx.moveTo(pCrossBottomR.x, pCrossBottomR.y); ctx.lineTo(pCrossTopL.x, pCrossTopL.y);
-            ctx.stroke();
-        }
-        ctx.restore();
-        ctx.restore();
+            ctx.moveTo(pBaseL.x - mastThickness * 0.18, pBaseL.y); ctx.lineTo(pTopL.x - mastThickness * 0.18, pTopL.y);
+            ctx.moveTo(pBaseR.x + mastThickness * 0.18, pBaseR.y); ctx.lineTo(pTopR.x + mastThickness * 0.18, pTopR.y); ctx.stroke();
 
-        const cableDists = [8, 18, 28];
-        
-        for (const d of cableDists) {
-            for (const sign of [-1, 1]) {
-                const sIdx = (s.segIdx + d * sign + SEGMENT_COUNT) % SEGMENT_COUNT;
-                if (sIdx >= 930 && sIdx <= 1050 && segments[sIdx]) {
-                    const brSeg = segments[sIdx];
-                    const Z_s = Z_p + d * sign * SEGMENT_LENGTH;
-                    const Y_s = Y_road; 
-                    const cableMastY = Y_road + mastH * (0.35 + (d / 28) * 0.52);
-
-                    let pMastL = null, pRoadL = null;
-                    let pMastR = null, pRoadR = null;
-                    let clipYToUse = undefined;
-
-                    if (Z_p >= camZ && Z_s >= camZ) {
-                        if (brSeg.visibleInFrame) {
-                            pMastL = project3D(-mastW, cableMastY, Z_p);
-                            pRoadL = project3D(-ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            pMastR = project3D(mastW, cableMastY, Z_p);
-                            pRoadR = project3D(ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            clipYToUse = brSeg.clipY;
-                        }
-                    } else if (Z_p >= camZ && Z_s < camZ) {
-                        const Z_clip = camZ + 1.0;
-                        const t = (Z_clip - Z_s) / (Z_p - Z_s);
-                        
-                        const roadX_clip_L = -ROAD_WIDTH * 1.12 + (-mastW - (-ROAD_WIDTH * 1.12)) * t;
-                        const roadY_clip_L = Y_s + (cableMastY - Y_s) * t;
-                        
-                        const roadX_clip_R = ROAD_WIDTH * 1.12 + (mastW - ROAD_WIDTH * 1.12) * t;
-                        const roadY_clip_R = Y_s + (cableMastY - Y_s) * t;
-
-                        pMastL = project3D(-mastW, cableMastY, Z_p);
-                        pRoadL = project3D(roadX_clip_L, roadY_clip_L, Z_clip);
-                        
-                        pMastR = project3D(mastW, cableMastY, Z_p);
-                        pRoadR = project3D(roadX_clip_R, roadY_clip_R, Z_clip);
-                        
-                        if (segments[startSegIdx]) {
-                            clipYToUse = segments[startSegIdx].clipY;
-                        }
-                    } else if (Z_p < camZ && Z_s >= camZ) {
-                        if (brSeg.visibleInFrame) {
-                            const Z_clip = camZ + 1.0;
-                            const t = (Z_clip - Z_s) / (Z_p - Z_s);
-                            
-                            const mastX_clip_L = -ROAD_WIDTH * 1.12 + (-mastW - (-ROAD_WIDTH * 1.12)) * t;
-                            const mastY_clip_L = Y_s + (cableMastY - Y_s) * t;
-                            
-                            const mastX_clip_R = ROAD_WIDTH * 1.12 + (mastW - ROAD_WIDTH * 1.12) * t;
-                            const mastY_clip_R = Y_s + (cableMastY - Y_s) * t;
-
-                            pMastL = project3D(mastX_clip_L, mastY_clip_L, Z_clip);
-                            pRoadL = project3D(-ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            
-                            pMastR = project3D(mastX_clip_R, mastY_clip_R, Z_clip);
-                            pRoadR = project3D(ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            
-                            clipYToUse = brSeg.clipY;
-                        }
-                    }
-
-                    if ((pMastL && pRoadL) || (pMastR && pRoadR)) {
-                        ctx.save();
-                        if (clipYToUse !== undefined) {
-                            ctx.beginPath();
-                            ctx.rect(0, 0, W, clipYToUse);
-                            ctx.clip();
-                        }
-                        ctx.beginPath();
-                        if (pMastL && pRoadL) {
-                            ctx.moveTo(pMastL.x, pMastL.y);
-                            ctx.lineTo(pRoadL.x, pRoadL.y);
-                        }
-                        if (pMastR && pRoadR) {
-                            ctx.moveTo(pMastR.x, pMastR.y);
-                            ctx.lineTo(pRoadR.x, pRoadR.y);
-                        }
-                        ctx.strokeStyle = 'rgba(33, 212, 253, 0.45)';
-                        ctx.lineWidth = Math.max(6.0, s.sc * 6500); 
-                        ctx.shadowBlur = 10; ctx.shadowColor = '#21d4fd';
-                        ctx.stroke();
-                        ctx.shadowBlur = 0;
-                        ctx.restore();
-                    }
-                }
+            const topL = project3D(-mastW, Y_road + mastH * 0.88, Z_p);
+            const topR = project3D(mastW, Y_road + mastH * 0.88, Z_p);
+            const bottomL = project3D(-mastW, Y_road + mastH * 0.38, Z_p);
+            const bottomR = project3D(mastW, Y_road + mastH * 0.38, Z_p);
+            if (topL && topR && bottomL && bottomR) {
+                ctx.strokeStyle = '#1d0c31'; ctx.lineWidth = mastThickness * 0.7;
+                ctx.beginPath();
+                ctx.moveTo(topL.x, topL.y); ctx.lineTo(topR.x, topR.y);
+                ctx.moveTo(bottomL.x, bottomL.y); ctx.lineTo(bottomR.x, bottomR.y); ctx.stroke();
+                ctx.strokeStyle = '#3d1666'; ctx.lineWidth = mastThickness * 0.35;
+                ctx.beginPath();
+                ctx.moveTo(bottomL.x, bottomL.y); ctx.lineTo(topR.x, topR.y);
+                ctx.moveTo(bottomR.x, bottomR.y); ctx.lineTo(topL.x, topL.y); ctx.stroke();
             }
+            ctx.restore();
         }
-        
-        for (const d of cableDists) {
-            for (const sign of [-1, 1]) {
-                const sIdx = (s.segIdx + d * sign + SEGMENT_COUNT) % SEGMENT_COUNT;
-                if (sIdx >= 930 && sIdx <= 1050 && segments[sIdx]) {
-                    const brSeg = segments[sIdx];
-                    const Z_s = Z_p + d * sign * SEGMENT_LENGTH;
-                    const Y_s = Y_road; 
-                    const cableMastY = Y_road + mastH * (0.35 + (d / 28) * 0.52);
 
-                    let pMastL = null, pRoadL = null;
-                    let pMastR = null, pRoadR = null;
-                    let clipYToUse = undefined;
-
-                    if (Z_p >= camZ && Z_s >= camZ) {
-                        if (brSeg.visibleInFrame) {
-                            pMastL = project3D(-mastW, cableMastY, Z_p);
-                            pRoadL = project3D(-ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            pMastR = project3D(mastW, cableMastY, Z_p);
-                            pRoadR = project3D(ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            clipYToUse = brSeg.clipY;
-                        }
-                    } else if (Z_p >= camZ && Z_s < camZ) {
-                        const Z_clip = camZ + 1.0;
-                        const t = (Z_clip - Z_s) / (Z_p - Z_s);
-                        
-                        const roadX_clip_L = -ROAD_WIDTH * 1.12 + (-mastW - (-ROAD_WIDTH * 1.12)) * t;
-                        const roadY_clip_L = Y_s + (cableMastY - Y_s) * t;
-                        
-                        const roadX_clip_R = ROAD_WIDTH * 1.12 + (mastW - ROAD_WIDTH * 1.12) * t;
-                        const roadY_clip_R = Y_s + (cableMastY - Y_s) * t;
-
-                        pMastL = project3D(-mastW, cableMastY, Z_p);
-                        pRoadL = project3D(roadX_clip_L, roadY_clip_L, Z_clip);
-                        
-                        pMastR = project3D(mastW, cableMastY, Z_p);
-                        pRoadR = project3D(roadX_clip_R, roadY_clip_R, Z_clip);
-                        
-                        if (segments[startSegIdx]) {
-                            clipYToUse = segments[startSegIdx].clipY;
-                        }
-                    } else if (Z_p < camZ && Z_s >= camZ) {
-                        if (brSeg.visibleInFrame) {
-                            const Z_clip = camZ + 1.0;
-                            const t = (Z_clip - Z_s) / (Z_p - Z_s);
-                            
-                            const mastX_clip_L = -ROAD_WIDTH * 1.12 + (-mastW - (-ROAD_WIDTH * 1.12)) * t;
-                            const mastY_clip_L = Y_s + (cableMastY - Y_s) * t;
-                            
-                            const mastX_clip_R = ROAD_WIDTH * 1.12 + (mastW - ROAD_WIDTH * 1.12) * t;
-                            const mastY_clip_R = Y_s + (cableMastY - Y_s) * t;
-
-                            pMastL = project3D(mastX_clip_L, mastY_clip_L, Z_clip);
-                            pRoadL = project3D(-ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            
-                            pMastR = project3D(mastX_clip_R, mastY_clip_R, Z_clip);
-                            pRoadR = project3D(ROAD_WIDTH * 1.12, Y_s, Z_s);
-                            
-                            clipYToUse = brSeg.clipY;
-                        }
-                    }
-
-                    if ((pMastL && pRoadL) || (pMastR && pRoadR)) {
-                        ctx.save();
-                        if (clipYToUse !== undefined) {
-                            ctx.beginPath();
-                            ctx.rect(0, 0, W, clipYToUse);
-                            ctx.clip();
-                        }
-                        ctx.beginPath();
-                        if (pMastL && pRoadL) {
-                            ctx.moveTo(pMastL.x, pMastL.y);
-                            ctx.lineTo(pRoadL.x, pRoadL.y);
-                        }
-                        if (pMastR && pRoadR) {
-                            ctx.moveTo(pMastR.x, pMastR.y);
-                            ctx.lineTo(pRoadR.x, pRoadR.y);
-                        }
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-                        ctx.lineWidth = Math.max(2.0, s.sc * 2200); 
-                        ctx.stroke();
-                        ctx.restore();
-                    }
-                }
+        // Project each stay once, then reuse its path for halo, tube and core.
+        for (const d of [8, 18, 28]) for (const direction of [-1, 1]) {
+            const index = (s.segIdx + d * direction + SEGMENT_COUNT) % SEGMENT_COUNT;
+            const anchor = segments[index];
+            if (!anchor?.isBridge) continue;
+            const anchorZ = Z_p + d * direction * SEGMENT_LENGTH;
+            if (anchorZ >= camZ + 64 && !anchor.visibleInFrame) continue;
+            const mastY = Y_road + mastH * (0.35 + d / 28 * 0.52);
+            const left = projectBridgeLine([-mastW, mastY, Z_p], [-ROAD_WIDTH * 1.12, anchor.worldY, anchorZ]);
+            const right = projectBridgeLine([mastW, mastY, Z_p], [ROAD_WIDTH * 1.12, anchor.worldY, anchorZ]);
+            if (!left && !right) continue;
+            ctx.save();
+            const clipY = anchorZ >= camZ + 64 ? anchor.clipY : segments[startSegIdx]?.clipY;
+            if (clipY !== undefined) { ctx.beginPath(); ctx.rect(0, 0, W, clipY); ctx.clip(); }
+            ctx.beginPath();
+            for (const line of [left, right]) if (line) {
+                ctx.moveTo(line.a.x, line.a.y); ctx.lineTo(line.b.x, line.b.y);
             }
+            const width = Math.max(0.7, Math.min(6, (left || right).scale * W / 2 * 70));
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'rgba(33,212,253,0.16)'; ctx.lineWidth = width * 3.5; ctx.stroke();
+            ctx.strokeStyle = 'rgba(33,212,253,0.8)'; ctx.lineWidth = width; ctx.stroke();
+            ctx.strokeStyle = 'rgba(230,255,255,0.9)'; ctx.lineWidth = Math.max(0.45, width * 0.35); ctx.stroke();
+            ctx.restore();
         }
     }
   }

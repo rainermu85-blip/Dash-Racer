@@ -5,8 +5,8 @@ const os = require('node:os');
 const path = require('node:path');
 
 const mode = process.argv[2] || 'edges';
-if (!['edges', 'races', 'mechanics', 'collisions', 'chapter', 'pace'].includes(mode)) {
-  console.error('Usage: node scripts/assess-game.cjs [edges|races|mechanics|collisions|chapter|pace]');
+if (!['edges', 'races', 'mechanics', 'collisions', 'chapter', 'pace', 'bridge'].includes(mode)) {
+  console.error('Usage: node scripts/assess-game.cjs [edges|races|mechanics|collisions|chapter|pace|bridge]');
   process.exit(2);
 }
 const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:3000';
@@ -165,7 +165,7 @@ async function main() {
       }, { viewport: { width: 480, height: 800 }, isMobile: false, hasTouch: false })));
     } else {
       // Fixed-frame mechanics fixtures live separately to make their scope explicit.
-      const runMechanics = require(mode === 'pace' ? './assessment-pace.cjs' : mode === 'chapter' ? './assessment-chapter.cjs' : mode === 'collisions' ? './assessment-collisions.cjs' : './assessment-mechanics.cjs');
+      const runMechanics = require(mode === 'bridge' ? './assessment-bridge.cjs' : mode === 'pace' ? './assessment-pace.cjs' : mode === 'chapter' ? './assessment-chapter.cjs' : mode === 'collisions' ? './assessment-collisions.cjs' : './assessment-mechanics.cjs');
       results.push(...await runMechanics(browser, baseUrl));
       fs.writeFileSync(path.join(output, `${mode}.json`), JSON.stringify(results, null, 2));
       for (const result of results) console.log(JSON.stringify(result));
