@@ -43,12 +43,18 @@ Bilddateien werden dafür nicht benötigt.
 Die Reklame mischt zwölf Gestaltungen: kräftige oder dünne Schrift, ein oder
 zwei Spalten, einfache und doppelte Rahmen, offene Rahmenecken und rahmenlose
 Schilder. Manche haben kleine Kreise, Sonnen, Pfeile, Sterne oder Rauten.
-Jedes Schild verwendet eine feste Palette aus einer oder zwei Neonfarben;
+Schilder auf dunklem Grund verwenden eine feste Palette aus einer oder zwei Neonfarben;
 zwei der zwölf Gestaltungen verwenden drei Farben. Buchstaben eines
 Schriftzugs bleiben gleichfarbig; zusätzliche Farben kennzeichnen etwa
 die zweite Spalte, den Rahmen oder ein Symbol. Die Mischung aus acht
 verfügbaren Neonfarben entsteht zwischen den unterschiedlichen Reklamen.
 Die Gestaltung bleibt bei jeder Vorbeifahrt gleich.
+
+Seit dem 10. Oktober hat jedes fünfte Schild stattdessen eine leuchtende
+Farbfläche aus der vorhandenen Neonpalette. Darauf stehen dunkle Zeichen,
+Wortmarken und Symbole ohne helle Neonkerne. Die gleiche Regel gilt für
+Strecken-, Fassaden-, Laden- und Dachschilder. An der Strecke sind 15 von
+74 Schildern farbig hinterlegt, also rund 20 Prozent.
 
 74 abwechselnd links und rechts platzierte Schilder ersetzen die bisherigen
 23 Schilder auf der rechten Seite. Schmale Schilder stehen am Mittelstreifen
@@ -59,13 +65,16 @@ durch gestaffelte Linien; die Zeichenkonturen werden gemeinsam verwendet,
 um unnötige Arbeit pro Bild zu vermeiden. Der violett-schwarze Untergrund
 bleibt der Kontrast dazu.
 
-Produktionsbuild und die 21 Kapitelprüfungen bestehen. Eine temporäre
-Browserkontrolle zeichnete 400 Streckenansichten bei 390 und 480 Pixel
-Breite ohne JavaScript-Fehler; alle acht Farben wurden tatsächlich gezeichnet.
-Alle zwölf Gestaltungen, Skyline und Überführungen wurden zusätzlich visuell geprüft.
+Produktionsbuild und die 21 Kapitelprüfungen bestehen. Die erste Browserkontrolle
+der zwölf Gestaltungen zeichnete 400 Streckenansichten ohne JavaScript-Fehler.
+Die Überarbeitung vom 10. Oktober wurde bei 390 und 480 Pixel breiter Spielfläche
+sowie in einem Desktopfenster geprüft. 27 geometrische Kontrollen bestätigten
+Brückenenden außerhalb des Bildes und waagerechte Zugwagen, auch bei seitlich
+versetzter Projektion. Die Inhalte der farbigen Schilder erreichten mindestens
+4,77:1 Farbkontrast; alle acht möglichen Flächenfarben wurden visuell geprüft.
 Ein zehnsekündiger Lauf mit regulären Browserbildern erreichte auf der
-Cloud-Prüfumgebung etwa 58 FPS ohne JavaScript-Fehler; die Renderzeit lag
-im Median bei 5,5 ms und beim 95. Perzentil bei 10 ms. Dies ist eine
+Cloud-Prüfumgebung etwa 59 FPS ohne JavaScript-Fehler; die Renderzeit lag
+im Median bei 5,6 ms und beim 95. Perzentil bei 8,2 ms. Dies ist eine
 Umgebungsbeobachtung und keine Zusage für jedes Endgerät.
 
 Die Gegenfahrbahn liegt links neben der Rennstrecke, durch einen Mittelstreifen
@@ -76,10 +85,14 @@ aus. Leitplanken begrenzen Spieler und Renngegner auf `[-0.88, 0.88]`;
 Wandkontakt verwendet das vorhandene Stoß- und Reibungsmodell.
 
 Bei den Segmenten 215 und 735 queren Autos auf Hochstraßen die Strecke.
-Bei 475 und 995 stehen Bahnüberführungen. Ein Schnellzug startet einmal
+Die Brücken reichen auf beiden Seiten über den sichtbaren Bildrand hinaus;
+die Länge berücksichtigt Projektion, Kurven und Bildschirmbreite. Bei 475
+und 995 stehen waagerechte Bahnüberführungen mit ebenso waagerechten Gleisen
+und Zugwagen. Ein Schnellzug startet einmal
 pro Runde bei der Annäherung des Spielers; der Auslöseabstand berücksichtigt
-das Tempo. Die Durchfahrt dauert 4,2 Simulationssekunden und beginnt und
-endet vollständig außerhalb der Brücke. Verkehr, Zugphasen und Leuchtreklamen
+das Tempo. Die Durchfahrt dauert jetzt 3,2 statt 4,2 Simulationssekunden und
+beginnt und endet mit dem gesamten Zug außerhalb des sichtbaren Bildes.
+Verkehr, Zugphasen und Leuchtreklamen
 verwenden `chapterTime` und bleiben während einer Pause stehen. Ein Neustart
 setzt alle Fahrzeuge und Ereignisse zurück.
 

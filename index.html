@@ -248,6 +248,7 @@ const HIGHWAY_CROSSINGS = [
   { index: 215, kind: 'road' }, { index: 475, kind: 'train' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
+const HIGHWAY_TRAIN_DURATION = 3.2;
 const HIGHWAY_NEON_COLORS = ['#ff527f', '#ffd65c', '#7aff9e', '#35ddff', '#568cff', '#bb80ff', '#ff54dc', '#ff9853'];
 // Each business has one coherent identity, drawn consistently on every pass.
 const HIGHWAY_AD_STYLES = [
@@ -920,7 +921,7 @@ function crossingTrainPhase(index) {
     const upcomingLap = index * SEGMENT_LENGTH < player.z ? player.lap + 1 : player.lap;
     // Keep the current pass while the camera travels beneath its deck.
     const event = crossingEvents.get(`${player.lap}:${index}`) || crossingEvents.get(`${upcomingLap}:${index}`);
-    return event ? Math.min(1.01, event.elapsed / 4.2) : null;
+    return event ? Math.min(1.01, event.elapsed / HIGHWAY_TRAIN_DURATION) : null;
 }
 
 const keys = { left: false, right: false, boost: false };
@@ -1154,7 +1155,12 @@ function drawFantasyGlyph(x, y, size, seed, strokeWidth = 1.6) {
     ctx.restore();
 }
 
-function drawNeonGlyph(x, y, size, seed, color, weight = 1.9) {
+function drawNeonGlyph(x, y, size, seed, color, weight = 1.9, illuminated = true) {
+    if (!illuminated) {
+        ctx.save(); ctx.strokeStyle = color;
+        drawFantasyGlyph(x, y, size, seed, weight);
+        ctx.restore(); return;
+    }
     // Layered strokes give a colored halo and a hot core without per-letter
     // shadow filters on every distant building.
     ctx.save();
@@ -1208,13 +1214,15 @@ function drawAdvertSymbol(x, y, size, shape, color) {
 function drawHighwayAdvert(x, y, width, height, seed) {
     const style = getHighwayAdStyle(seed);
     const base = (seed * 5 + Math.floor(seed / 12)) % HIGHWAY_NEON_COLORS.length;
-    const primary = HIGHWAY_NEON_COLORS[base];
-    const secondary = style.colors > 1 ? HIGHWAY_NEON_COLORS[(base + 3) % HIGHWAY_NEON_COLORS.length] : primary;
-    const accent = style.colors > 2 ? HIGHWAY_NEON_COLORS[(base + 6) % HIGHWAY_NEON_COLORS.length] : secondary;
+    // One in five signs is a backlit color panel with dark, high-contrast ink.
+    const coloredBackground = seed % 5 === 2;
+    const primary = coloredBackground ? '#10091c' : HIGHWAY_NEON_COLORS[base];
+    const secondary = style.colors > 1 ? (coloredBackground ? '#2b143e' : HIGHWAY_NEON_COLORS[(base + 3) % HIGHWAY_NEON_COLORS.length]) : primary;
+    const accent = style.colors > 2 ? (coloredBackground ? '#341949' : HIGHWAY_NEON_COLORS[(base + 6) % HIGHWAY_NEON_COLORS.length]) : secondary;
     const tall = height > width * 1.15, weight = style.bold ? 3.8 : 1.35;
     ctx.save();
     // Frameless signs have a quiet mounting plate; their lettering is the light.
-    ctx.fillStyle = style.frame === 'none' ? '#120b1f' : '#080613';
+    ctx.fillStyle = coloredBackground ? HIGHWAY_NEON_COLORS[base] : (style.frame === 'none' ? '#120b1f' : '#080613');
     ctx.fillRect(x, y, width, height);
     if (style.frame === 'single' || style.frame === 'double') {
         drawNeonFrame(x + 1, y + 1, width - 2, height - 2, secondary, secondary);
@@ -1243,7 +1251,7 @@ function drawHighwayAdvert(x, y, width, height, seed) {
             for (let row = 0; row < rows; row++) {
                 const gx = x + width * (col + 0.5) / style.columns;
                 const gy = y + top + rowHeight * (row + 0.5);
-                drawNeonGlyph(gx, gy, size, seed + col * 3 + row, col === 0 ? primary : secondary, weight);
+                drawNeonGlyph(gx, gy, size, seed + col * 3 + row, col === 0 ? primary : secondary, weight, !coloredBackground);
             }
         }
     } else {
@@ -1258,7 +1266,7 @@ function drawHighwayAdvert(x, y, width, height, seed) {
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.strokeStyle = primary; ctx.lineWidth = fontSize * 0.12;
             const alpha = ctx.globalAlpha; ctx.globalAlpha = alpha * 0.18;
-            ctx.strokeText(brand, textX + textWidth / 2, centerY);
+            if (!coloredBackground) ctx.strokeText(brand, textX + textWidth / 2, centerY);
             ctx.globalAlpha = alpha; ctx.fillStyle = primary;
             ctx.fillText(brand, textX + textWidth / 2, centerY);
         } else {
@@ -1267,7 +1275,7 @@ function drawHighwayAdvert(x, y, width, height, seed) {
             for (let col = 0; col < columns; col++) for (let row = 0; row < rows; row++) {
                 drawNeonGlyph(textX + textWidth * (col + 0.5) / columns,
                     centerY + (row - (rows - 1) / 2) * height * 0.34, size, seed + col + row * 3,
-                    style.columns === 2 && col === 1 ? secondary : primary, weight);
+                    style.columns === 2 && col === 1 ? secondary : primary, weight, !coloredBackground);
             }
         }
     }
@@ -1342,25 +1350,34 @@ function drawOncomingCar(x, y, scale, color) {
 
 function drawHighwayCrossing(x, y, roadWidth, kind, phase, ts) {
     if (roadWidth < 2) return;
-    beginChapterSprite(x, y, roadWidth / 120);
-    // The crossing spans both carriageways; supports sit outside the race lanes.
+    const scale = roadWidth / 120;
+    // Continue beyond both screen edges, even on curves and distant approaches.
+    const left = Math.min(-1000, (-80 - x) / scale);
+    const right = Math.max(1000, (W + 80 - x) / scale);
+    const slope = kind === 'train' ? 0 : 0.055;
+    const frontY = px => -158 + px * slope;
+    const deckY = px => -171 + px * slope;
+    beginChapterSprite(x, y, scale);
     ctx.fillStyle = '#161226';
-    ctx.beginPath(); ctx.moveTo(-455, -183); ctx.lineTo(455, -133); ctx.lineTo(455, -108); ctx.lineTo(-455, -158); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(left, frontY(left)); ctx.lineTo(right, frontY(right));
+    ctx.lineTo(right, frontY(right) + 25); ctx.lineTo(left, frontY(left) + 25); ctx.fill();
     for (const px of [-164, 164]) {
-        const top = -147 + px * 0.055;
+        const top = frontY(px) + 11;
         ctx.fillStyle = '#201a31'; ctx.fillRect(px - 8, top, 16, -top);
         ctx.fillStyle = '#403052'; ctx.fillRect(px - 8, top, 3, -top);
         ctx.fillStyle = '#a964d1'; ctx.fillRect(px - 7, -35, 2, 23);
     }
     ctx.fillStyle = '#393049';
-    ctx.beginPath(); ctx.moveTo(-455, -183); ctx.lineTo(-431, -208); ctx.lineTo(455, -158); ctx.lineTo(455, -133); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(left, frontY(left)); ctx.lineTo(left + 24, frontY(left + 24) - 25);
+    ctx.lineTo(right, frontY(right) - 25); ctx.lineTo(right, frontY(right)); ctx.fill();
     ctx.strokeStyle = '#d38bff'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-455, -161); ctx.lineTo(455, -111); ctx.stroke();
-    // Traffic is clipped to the crossing deck, including the train's departure.
-    ctx.save(); ctx.beginPath(); ctx.rect(-450, -260, 900, 160); ctx.clip();
-    const deckY = px => -197 + px * 0.055;
+    ctx.beginPath(); ctx.moveTo(left, frontY(left) + 22); ctx.lineTo(right, frontY(right) + 22); ctx.stroke();
+    ctx.save();
+    // Clip to the visible span; the complete train enters and leaves offscreen.
+    const viewLeft = (-60 - x) / scale, viewRight = (W + 60 - x) / scale;
+    ctx.beginPath(); ctx.rect(viewLeft, -10000, viewRight - viewLeft, 20000); ctx.clip();
     if (kind === 'train' && phase !== null && phase >= 0 && phase <= 1) {
-        const lead = -650 + phase * 1900;
+        const lead = viewLeft - 32 + phase * (viewRight - viewLeft + 812);
         for (let i = 0; i < 6; i++) {
             const tx = lead - i * 113, ty = deckY(tx);
             ctx.fillStyle = '#d7d0ef';
@@ -1373,10 +1390,13 @@ function drawHighwayCrossing(x, y, roadWidth, kind, phase, ts) {
         }
         ctx.strokeStyle = 'rgba(199,146,255,.3)'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(lead - 760, deckY(lead) - 13); ctx.lineTo(lead - 660, deckY(lead) - 13); ctx.stroke();
-    } else if (kind === 'road') {
-        for (let i = 0; i < 5; i++) {
-            const tx = ((ts * 0.08 + i * 213) % 1060) - 530, ty = deckY(tx);
-            ctx.fillStyle = ['#7855ae', '#c569a4', '#7797b2'][i % 3]; ctx.fillRect(tx - 18, ty - 14, 39, 11);
+    } else if (kind === 'road' && scale >= 0.06) {
+        // Repeat traffic along the longer deck, with no visible reset at its ends.
+        const offset = (ts * 0.08) % 213;
+        const start = Math.floor((viewLeft - offset) / 213) * 213 + offset;
+        for (let tx = start; tx < viewRight + 40; tx += 213) {
+            const ty = deckY(tx), car = Math.round((tx - offset) / 213);
+            ctx.fillStyle = ['#7855ae', '#c569a4', '#7797b2'][((car % 3) + 3) % 3]; ctx.fillRect(tx - 18, ty - 14, 39, 11);
             ctx.fillStyle = '#161b30'; ctx.fillRect(tx - 9, ty - 23, 19, 10);
             ctx.fillStyle = '#fff1b9'; ctx.fillRect(tx + 17, ty - 10, 4, 4);
             ctx.fillStyle = '#ff548e'; ctx.fillRect(tx - 18, ty - 10, 3, 4);
@@ -1384,11 +1404,15 @@ function drawHighwayCrossing(x, y, roadWidth, kind, phase, ts) {
     }
     ctx.restore();
     ctx.strokeStyle = '#7c6093'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(-431, -225); ctx.lineTo(455, -175); ctx.stroke();
-    for (let px = -425; px < 455; px += 32) { ctx.beginPath(); ctx.moveTo(px, -225 + (px + 431) * 0.055); ctx.lineTo(px, -209 + (px + 431) * 0.055); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(left, frontY(left) - 42); ctx.lineTo(right, frontY(right) - 42); ctx.stroke();
+    // Only draw railing posts that can be visible, regardless of bridge length.
+    const postSpacing = Math.max(32, Math.ceil(3 / scale / 32) * 32);
+    for (let px = Math.ceil(viewLeft / postSpacing) * postSpacing; px < viewRight; px += postSpacing) {
+        ctx.beginPath(); ctx.moveTo(px, frontY(px) - 42); ctx.lineTo(px, frontY(px) - 26); ctx.stroke();
+    }
     if (kind === 'train') {
         ctx.strokeStyle = '#5f527d'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(-450, -244); ctx.lineTo(450, -194); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(left, frontY(left) - 61); ctx.lineTo(right, frontY(right) - 61); ctx.stroke();
     }
     ctx.restore();
 }
