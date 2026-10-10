@@ -34,6 +34,16 @@ außerhalb des Space-Levels gilt weiterhin der kleine vorhandene Tempoverlust,
 im Space-Level bleiben sie Energie-Pickups. Pause friert den Aufbau ein,
 ein Neustart setzt ihn zurück.
 
+Hohes Normaltempo hat einen eigenen dezenten Hinweis: vier dünne, blass
+cyanfarbene Strömungslinien an den äußeren Bildrändern. Bewegte Lichtsegmente
+laufen gleichmäßig darüber; ihre Stärke steigt weich mit dem Tempo von
+102 bis 120 Prozent. Die Zeit kommt aus `chapterTime`, sodass Pause den
+Effekt ebenfalls einfriert. Es gibt keine zufälligen Richtungswechsel,
+Blitze, zusätzliche Kamerabewegung oder Turbo-Verbreiterung des Sichtfeldes.
+Die kräftigen radialen Warp-Linien erscheinen nur bei einem aktiven Turbo;
+der Chevron-Turbo behält seinen eigenen Effekt. Geschwindigkeitsziele und
+Beschleunigung ändern sich durch diese Darstellung nicht.
+
 `scripts/assess-game.cjs pace` prüft Zeitverlauf und Maximum bei 30, 60 und
 120 Bildern pro Sekunde, leichte und deutliche Kontakte, harte Hindernisse,
 beide Turbo-Maxima, Rückkehr nach Turbo, Pylonen, Offroad, Pause und Neustart.
@@ -48,3 +58,11 @@ Positionsüberschreibungen. Rundenzeiten, Platzierung und Zieleinlauf bestanden;
 es gab keine JavaScript-Fehler. Der Fahrer gewann alle sechs Rennen. Das zeigt
 den Abschluss der Rennen; eine Bewertung der Schwierigkeit braucht zusätzlich
 Spieltests mit Menschen.
+
+Die anschließende Darstellungskorrektur besteht erneut die 21 Tempo- und
+23 Mechanikprüfungen sowie sechs Brückenprüfungen. Normalfahrt bei 335 und
+402 km/h und beide Turboeffekte wurden bei 390 und 480 Pixel Breite im Browser
+verglichen. Bei gleicher Simulationszeit bleibt das Strömungsmuster identisch;
+die Linien sind 0,8 Pixel dünn. Eine achtsekündige reguläre Durchfahrt durch
+die korrigierte Brücke erreichte auf der Cloud-Prüfumgebung rund 60 FPS ohne
+JavaScript-Fehler, mit 2,2 ms medianer Renderzeit und 4 ms beim 95. Perzentil.
