@@ -249,6 +249,8 @@ const HIGHWAY_CROSSINGS = [
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
 const HIGHWAY_TRAIN_DURATION = 3.2;
+const CLEAN_SPEED_LIMIT = 0.2;
+const CLEAN_SPEED_BUILD_TIME = 10;
 const HIGHWAY_NEON_COLORS = ['#ff527f', '#ffd65c', '#7aff9e', '#35ddff', '#568cff', '#bb80ff', '#ff54dc', '#ff9853'];
 // Each business has one coherent identity, drawn consistently on every pass.
 const HIGHWAY_AD_STYLES = [
@@ -863,7 +865,7 @@ function getSeg(z) {
     return segments[(idx % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
 }
 
-const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, wallContactSide:0, wallHitCooldown:0 };
+const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, cleanSpeedBonus:0, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, wallContactSide:0, wallHitCooldown:0 };
 
 // --- EINSTELLUNGEN FÜR DICH ZUM SPIELEN ---
 const STEER_SENSITIVITY = 2.0; // steering speed multiplier
@@ -8724,6 +8726,7 @@ function startRace() {
     player.boosts = 0; player.isBoosting = false; player.boostTimer = 0; player.isSparking = false;
     player.energyBallsCollected = 0; player.isChevronBoosting = false; player.chevronBoostTimer = 0; player.lastChevronPanelIdx = -1;
     player.wallContactSide = 0; player.wallHitCooldown = 0;
+    player.cleanSpeedBonus = 0;
     bgOffset = 0; lastTime = 0; state = 'countdown'; cntVal = 3; cntTimer = 0; paused = false;
     document.getElementById('pauseOverlay').classList.add('hide');
     const ov = document.getElementById('overlay');
@@ -8822,6 +8825,15 @@ function getRoadLimits(z) {
   return { left, right };
 }
 
+function loseCleanSpeed(severity) {
+  // A graze loses part of the earned headroom; a substantial hit loses it all.
+  // Boosts keep their existing collision response and absolute speed targets.
+  player.cleanSpeedBonus = severity < 0.18 ? player.cleanSpeedBonus * 0.65 : 0;
+  if (!player.isBoosting && !player.isChevronBoosting) {
+    player.speed = Math.min(player.speed, player.maxSpeed * (1 + player.cleanSpeedBonus));
+  }
+}
+
 function applyRoadContact(dt, lateralSpeed = 0) {
   const limits = getRoadLimits(player.z);
   const boundedX = clamp(player.x, -limits.left, limits.right);
@@ -8834,6 +8846,7 @@ function applyRoadContact(dt, lateralSpeed = 0) {
   if (player.wallContactSide !== side && player.wallHitCooldown <= 0) {
     const severity = clamp(Math.abs(lateralSpeed) / 3, 0, 1);
     player.speed *= 1 - (0.03 + severity * 0.12);
+    loseCleanSpeed(severity);
     player.hitFlash = Math.max(player.hitFlash, 0.2 + severity * 0.3);
     player.wallHitCooldown = 0.2;
   }
@@ -8867,7 +8880,10 @@ function hitBarrier(car, barrier) {
     car.speed *= 1 - (0.35 + severity * 0.35);
     car.collisionCooldown = 0.35 + severity * 0.15;
     car.isBoosting = car.isChevronBoosting = false;
-    if (car === player) player.hitFlash = Math.max(player.hitFlash, 0.45 + severity * 0.55);
+    if (car === player) {
+      loseCleanSpeed(1);
+      player.hitFlash = Math.max(player.hitFlash, 0.45 + severity * 0.55);
+    }
   }
   barrier.state = 'blinking'; barrier.timer = 0.15;
   blinkingBarriers.push(barrier);
@@ -8905,6 +8921,7 @@ function checkOpponentCollision(previousPlayer, previousOpponents, dt) {
         opp.speed = Math.max(0, opp.speed + hit.side * transfer);
         if (severity > 0.55) player.isBoosting = player.isChevronBoosting = false;
       }
+      loseCleanSpeed(severity);
       player.hitFlash = Math.max(player.hitFlash, 0.15 + severity * 0.65);
       player.collisionCooldown = opp.collisionCooldown = 0.18 + severity * 0.22;
       opp.contactAxis = hit.axis; opp.contactSide = hit.side;
@@ -8994,12 +9011,23 @@ function loop(ts) {
     const steerInput = player.finished ? 0 : ((keys.right ? 1 : 0) - (keys.left ? 1 : 0));
     player.steerLean += (steerInput - player.steerLean) * Math.min(1, dt * 9.5);
     
-    // Topspeed auf exakt 165% gedrosselt (für Lvl 4 Chevron Boost 231% = 1.65 * 1.40)
-    let currentMax = player.maxSpeed;
+    const boosted = player.isBoosting || player.isChevronBoosting;
+    const earnedMax = player.maxSpeed * (1 + player.cleanSpeedBonus);
+    if (!player.finished && !boosted) {
+      if (offroad || player.wallContactSide !== 0) {
+        player.cleanSpeedBonus = Math.max(0, player.cleanSpeedBonus - CLEAN_SPEED_LIMIT / 3 * dt);
+      } else if (player.collisionCooldown <= 0 && player.wallHitCooldown <= 0 &&
+                 player.speed >= player.maxSpeed - 0.01 && player.speed <= earnedMax + 0.01) {
+        player.cleanSpeedBonus = Math.min(CLEAN_SPEED_LIMIT,
+          player.cleanSpeedBonus + CLEAN_SPEED_LIMIT / CLEAN_SPEED_BUILD_TIME * dt);
+      }
+    }
+    // Both turbo targets remain relative to the original 335 km/h baseline.
+    let currentMax = player.maxSpeed * (1 + player.cleanSpeedBonus);
     if (player.isChevronBoosting) {
-        currentMax *= 2.31;
+        currentMax = player.maxSpeed * 2.31;
     } else if (player.isBoosting) {
-        currentMax *= 1.65;
+        currentMax = player.maxSpeed * 1.65;
     }
     
     let targetSpeed = offroad ? currentMax * 0.36 : currentMax;
@@ -9009,7 +9037,10 @@ function loop(ts) {
     const accelMod = player.isChevronBoosting ? 7.0 : (player.isBoosting ? 5.0 : Math.max(0.5, 2.8 - speedRatio * 2.3)); 
 
     if (player.speed < targetSpeed) {
-        player.speed = Math.min(targetSpeed, player.speed + player.accel * accelMod * dt);
+        const acceleration = !boosted && player.speed >= player.maxSpeed
+          ? Math.min(player.accel * accelMod, player.maxSpeed * CLEAN_SPEED_LIMIT / CLEAN_SPEED_BUILD_TIME)
+          : player.accel * accelMod;
+        player.speed = Math.min(targetSpeed, player.speed + acceleration * dt);
     } else {
         const decelMod = (offroad ? 3.8 : 2.3) + (player.speed > player.maxSpeed ? 4.0 : 0);
         player.speed = Math.max(targetSpeed, player.speed - player.accel * decelMod * dt);
