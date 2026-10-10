@@ -297,20 +297,17 @@ let weatherParticles = [];
 function getDreamZone(idx) {
   // Dream Odyssey is a point-to-point route; the runout stays in the final world.
   const i = Math.max(0, Math.trunc(idx));
-  if (i < 450) return 'steppe';
-  if (i >= 450 && i < 750) return 'tunnel';
-  if (i >= 750 && i < 1250) return 'arctic';
+  if (i < 1250) return 'arctic';
   if (i >= 1250 && i < 1550) return 'tunnel';
   if (i >= 1550 && i < 2050) return 'dali';
   if (i >= 2050 && i < 2350) return 'tunnel';
   return 'underwater';
 }
 
-// The three Dream Odyssey tunnels are portals: each one sits between two completely
+// The two Dream Odyssey tunnels are portals: each one sits between two completely
 // different worlds and morphs from the palette of the world it leaves to the
 // palette of the world it opens into.
 const DREAM_TUNNELS = [
-  { start: 450,  end: 750,  from: 'steppe', to: 'arctic' },
   { start: 1250, end: 1550, from: 'arctic', to: 'dali' },
   { start: 2050, end: 2350, from: 'dali',   to: 'underwater' }
 ];
@@ -351,11 +348,11 @@ function getTunnelStyle(segIdx) {
     ? interpolateColor(a.accent, CORE, p * 2)
     : interpolateColor(CORE, b.accent, (p - 0.5) * 2);
   return {
-    p, entry, exit,
+    p, entry, exit, start: t.start, end: t.end, from: t.from, to: t.to,
     accent,
     light,
-    // Mouths of the portal glow in the light of the world on that side.
-    wall: interpolateColor(wall, light, Math.max(entry, exit) * 0.45)
+    // Continuous material, without bright/dark striping at segment boundaries.
+    wall
   };
 }
 
@@ -572,40 +569,39 @@ function buildSegments() {
     } else {
         // Dream Odyssey Arctic Tunnel and Snow Desert
         // alternating zones:
-        // Zone 1: Tech Outpost [0, 450)
-        // Zone 2: Portal Tunnel 1 [450, 750)
-        // Zone 3: Arctic Aurora Desert [750, 1250)
-        // Zone 4: Portal Tunnel 2 [1250, 1550)
-        // Zone 5: Dali Surreal Landscape [1550, 2050)
-        // Zone 6: Portal Tunnel 3 [2050, 2350)
-        // Zone 7: Deep Underwater Dome [2350, 2875]
+        // Arctic Aurora Desert starts at segment 0 and continues to 1250.
+        // The old first portal is now an open mountain pass.
+        // Dalí Portal [1250, 1550)
+        // Dalí Surreal Landscape [1550, 2050)
+        // Sea Portal [2050, 2350)
+        // Deep Underwater Dome [2350, 2875]
         trackDef = [
-            // Zone 1: Tech Outpost (450 segments)
+            // Arctic starting landscape (450 segments)
             ...makeSection(150, 0, 0),       // starting flat straight
             ...makeSection(100, 0.15, 0),    // gentle curve left
             ...makeSection(100, -0.2, 0),    // gentle curve right
             ...makeSection(50, 0, 8),        // gentle hill
             ...makeSection(50, 0, -8),       // gentle downhill
             
-            // Zone 2: Portal Tunnel 1 (300 segments)
-            ...makeSection(50, 0, -30),      // steep descent into the deep tech-shaft
-            ...makeSection(100, -0.4, 0),    // flat deep curve left inside tunnel
-            ...makeSection(100, 0.45, 0),    // flat deep curve right inside tunnel
-            ...makeSection(50, 0, 30),       // steep ascent out of the tunnel
+            // Open arctic mountain pass (300 segments)
+            ...makeSection(50, 0, -30),      // descent into the open arctic pass
+            ...makeSection(100, -0.4, 0),    // sweeping left through the pass
+            ...makeSection(100, 0.45, 0),    // sweeping right through the pass
+            ...makeSection(50, 0, 30),       // ascent from the pass
 
-            // Zone 3: Arctic Aurora Desert (500 segments)
+            // Arctic Aurora Desert continues (500 segments)
             ...makeSection(100, 0, 0),       // flat straight snowy road
             ...makeSection(150, 0.35, 6),    // sweeping right curve climbing the snow pass
             ...makeSection(150, -0.4, -6),   // sweeping left curve descending the snow valley
             ...makeSection(100, 0, 0),       // flat snow straight
 
-            // Zone 4: Portal Tunnel 2 (300 segments)
+            // Dalí Portal (300 segments)
             ...makeSection(50, 0, -22),      // gentle dip into surreal portal
             ...makeSection(100, 0.3, 0),     // curve right inside surreal tunnel
             ...makeSection(100, -0.3, 0),    // curve left inside surreal tunnel
             ...makeSection(50, 0, 22),       // climb out of surreal portal
 
-            // Zone 5: Dali Surreal Landscape (500 segments)
+            // Dalí Surreal Landscape (500 segments)
             // Undulating wave pattern: 150 segments of hills
             ...makeSection(50, 0, 12),       // surreal climb
             ...makeSection(50, 0, -18),      // surreal drop
@@ -616,13 +612,13 @@ function buildSegments() {
             // Flat majestic straight
             ...makeSection(200, 0, 0),       // flat straight looking at the melted sun
 
-            // Zone 6: Portal Tunnel 3 (300 segments)
+            // Sea Portal (300 segments)
             ...makeSection(50, 0, -32),      // deep dive into underwater trench portal
             ...makeSection(100, -0.35, 0),   // sweeping curve left inside dome portal
             ...makeSection(100, 0.35, 0),    // sweeping curve right inside dome portal
             ...makeSection(50, 0, 32),       // climb up into the subaquatic dome base
 
-            // Zone 7: Deep Underwater Dome (525 segments)
+            // Deep Underwater Dome (525 segments)
             ...makeSection(150, 0, -5),      // gentle underwater rollercoaster dip
             ...makeSection(150, 0.35, 5),    // curving through beautiful glass arches
             ...makeSection(150, -0.35, 0),   // sweeping back to center under water shafts
@@ -747,8 +743,8 @@ function buildSegments() {
                         spriteX = Math.random() < 0.5 ? (-1.55 - Math.random() * 0.9) : (1.55 + Math.random() * 0.9);
                     }
                 } else if (zone === 'arctic') {
-                    if (Math.random() < 0.12) {
-                        sprite = 'tree'; // Will draw snow pine tree automatically for Dream Odyssey
+                    if (Math.random() < (i < 750 ? 0.06 : 0.12)) {
+                        sprite = i < 750 ? (Math.random() < 0.7 ? 'tundra_shrub' : 'rock') : 'tree';
                         spriteX = Math.random() < 0.5 ? (-1.6 - Math.random() * 0.9) : (1.6 + Math.random() * 0.9);
                     }
                 } else if (zone === 'dali') {
@@ -1738,6 +1734,192 @@ function drawChapterBackdrop(horizonY, ts) {
     }
 }
 
+// Faceted vaults use world-space height: their proportions stay consistent on
+// portrait and landscape displays. All fittings are scenery, never colliders.
+const DREAM_TUNNEL_HEIGHT = 2100;
+function dreamTunnelProfile(marine) {
+    return marine
+        ? [[-1.22,0],[-1.30,0.55],[-1.12,0.88],[-0.65,1.08],[0,1.14],[0.65,1.08],[1.12,0.88],[1.30,0.55],[1.22,0]]
+        : [[-1.22,0],[-1.34,0.52],[-1.12,0.87],[-0.65,1.10],[0,1.18],[0.65,1.10],[1.12,0.87],[1.34,0.52],[1.22,0]];
+}
+function paintDreamPolygon(points, color, seal = false) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath(); ctx.fill();
+    if (seal) { ctx.strokeStyle = color; ctx.lineWidth = 0.8; ctx.stroke(); }
+}
+function drawDreamTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, index, visible, tun) {
+    const nearScale = (CAMERA_DEPTH + player.fovOffset) / 64;
+    if (p2Scale > nearScale) return;
+    if (p1Scale > nearScale) {
+        const ratio = nearScale / p1Scale;
+        x1 = W / 2 + (x1 - W / 2) * ratio; w1 *= ratio; p1Scale = nearScale;
+    }
+    const h1 = p1Scale * DREAM_TUNNEL_HEIGHT * H / 2, h2 = p2Scale * DREAM_TUNNEL_HEIGHT * H / 2;
+    const near = (lane, h = 0) => ({ x: x1 + lane * w1, y: y1 - h * h1 });
+    const far = (lane, h = 0) => ({ x: x2 + lane * w2, y: y2 - h * h2 });
+    const band = (left, right, h, color) => paintDreamPolygon([near(left,h), near(right,h), far(right,h), far(left,h)], color);
+    const wallBand = (side, low, high, color) => {
+        const marine = tun.to === 'underwater';
+        const lane = h => side * (1.22 + (marine ? 0.08 * h / 0.55 : 0.12 * h / 0.52));
+        paintDreamPolygon([near(lane(low),low),near(lane(high),high),far(lane(high),high),far(lane(low),low)],color);
+    };
+    const marine = tun.to === 'underwater', phase = index - tun.start;
+    const profile = dreamTunnelProfile(marine);
+    if (visible) {
+        // Only local road surfaces: no full-screen bands or lighting overlays.
+        band(-1.22,1.22,0,marine ? '#182d32' : '#383039');
+        band(-1,1,0,marine ? '#0b171d' : '#16131c');
+        for (const side of [-1,1]) band(side < 0 ? -1 : 0.977,side < 0 ? -0.977 : 1,0,tun.accent);
+        if (Math.floor(index / 4) % 2 === 0) for (const lane of [-1/3,1/3]) band(lane-0.008,lane+0.008,0,interpolateColor(tun.light,'#8b8b96',0.35));
+    }
+    // Continuous material per surface replaces alternating bright/dark slices.
+    for (let j = 0; j < profile.length - 1; j++) {
+        const a = profile[j], b = profile[j+1], wall = j === 0 || j === 7;
+        const shade = wall ? 0 : j === 1 || j === 6 ? 0.20 : 0.57;
+        const color = interpolateColor(tun.wall,'#070a11',shade);
+        paintDreamPolygon([near(...a),near(...b),far(...b),far(...a)],color,true);
+    }
+    for (const side of [-1,1]) {
+        wallBand(side,0.055,0.10,marine ? '#405f62' : '#66565b');
+        wallBand(side,0.125,0.137,interpolateColor(tun.accent,tun.wall,0.32));
+        if (marine) wallBand(side,0.22,0.245,'#867955'); // brass pressure line
+    }
+    // Broad structural vaults about a second apart, with thickness in depth.
+    if (phase % 30 < 2) {
+        const rib = marine ? '#4b686b' : interpolateColor('#b7ada0',tun.accent,0.16);
+        for (let j = 0; j < profile.length - 1; j++) {
+            const a = profile[j], b = profile[j+1];
+            const inset = p => [p[0] * 0.975,p[1] - 0.018];
+            paintDreamPolygon([near(...a),near(...b),near(...inset(b)),near(...inset(a))],rib);
+            paintDreamPolygon([near(...inset(a)),near(...inset(b)),far(...inset(b)),far(...inset(a))],marine ? '#304b50' : '#726b69');
+        }
+    }
+    if (w1 < 6 || w1 > W * 10) return;
+    // Small fixtures illuminate themselves. They do not paint cones over cars.
+    if (phase % 18 === 8) for (const lane of [-0.62,0.62]) {
+        const ceiling = marine ? 1.078 : 1.097;
+        band(lane-0.115,lane+0.115,ceiling-0.012,marine ? '#48646b' : '#70605a');
+        band(lane-0.071,lane+0.071,ceiling-0.018,tun.light);
+    }
+    if (phase % 30 === 12) {
+        for (const side of [-1,1]) {
+            const at = near(side * (marine ? 1.278 : 1.312),0.40), rw = Math.max(1,w1*0.065), rh = h1*0.16;
+            ctx.save(); ctx.translate(at.x,at.y);
+            if (marine) {
+                // Bronze-rimmed windows show slow silhouettes and caustics.
+                ctx.fillStyle = '#b5a374'; ctx.beginPath(); ctx.ellipse(0,0,rw,rh,0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#05242d'; ctx.beginPath(); ctx.ellipse(0,0,rw*0.72,rh*0.82,0,0,Math.PI*2); ctx.fill();
+                ctx.save(); ctx.beginPath(); ctx.ellipse(0,0,rw*0.70,rh*0.80,0,0,Math.PI*2); ctx.clip();
+                const drift = Math.sin(chapterTime*0.00022+index)*rh*0.12;
+                ctx.strokeStyle = '#388e90'; ctx.lineWidth = Math.max(0.5,rw*0.12);
+                for (let k = -1; k <= 1; k++) {
+                    ctx.beginPath(); ctx.moveTo(-rw,rh*(k*0.37)+drift); ctx.quadraticCurveTo(0,rh*(k*0.37-0.2)+drift,rw,rh*(k*0.37)+drift); ctx.stroke();
+                }
+                ctx.fillStyle = '#65afa9'; ctx.beginPath(); ctx.ellipse(0,rh*0.17+drift,rw*0.32,rh*0.045,0,0,Math.PI*2); ctx.fill();
+                ctx.restore();
+                ctx.fillStyle = '#e1cb91';
+                for (let k = 0; k < 8; k++) { const a = k*Math.PI/4; ctx.beginPath(); ctx.arc(Math.cos(a)*rw*0.86,Math.sin(a)*rh*0.92,Math.max(0.6,rw*0.10),0,Math.PI*2); ctx.fill(); }
+            } else {
+                // An eye-shaped niche holds an impossible floating pearl.
+                ctx.fillStyle = '#382834'; ctx.beginPath(); ctx.ellipse(0,0,rw,rh,0,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#ad9178'; ctx.lineWidth = Math.max(1,w1*0.007); ctx.stroke();
+                const float = Math.sin(chapterTime*0.00048+index)*rh*0.10;
+                const pearl = ctx.createLinearGradient(-rw*0.4,-rh*0.4,rw*0.5,rh*0.5);
+                pearl.addColorStop(0,'#fff0c9'); pearl.addColorStop(0.5,'#b6a3c7'); pearl.addColorStop(1,'#735779');
+                ctx.fillStyle = pearl; ctx.beginPath(); ctx.ellipse(0,float,rw*0.46,rh*0.53,0,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#d8b78b'; ctx.beginPath(); ctx.ellipse(0,rh*0.62,rw*0.65,rh*0.055,0,0,Math.PI*2); ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+    if (marine && phase % 48 === 24) {
+        // Inset pressure dial and four tiny phosphorescent tube cells.
+        const at = near(-1.27,0.39), rw = Math.max(1,w1*0.045), rh = h1*0.085;
+        ctx.fillStyle = '#bdad81'; ctx.beginPath(); ctx.ellipse(at.x,at.y,rw,rh,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#172d32'; ctx.beginPath(); ctx.ellipse(at.x,at.y,rw*0.75,rh*0.8,0,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#e7d5a4'; ctx.lineWidth = Math.max(0.6,w1*0.004); ctx.beginPath(); ctx.moveTo(at.x,at.y); ctx.lineTo(at.x+rw*0.35,at.y-rh*0.45); ctx.stroke();
+        for (let k = 0; k < 4; k++) wallBand(1,0.31+k*0.035,0.328+k*0.035,k%2 ? '#449caa' : '#5cc4ac');
+    }
+    if (!marine && phase % 48 === 24) {
+        // A gilded suspended mobile: two offset ellipses orbit a small orb.
+        const at = near(0,1.035), rw = w1*0.12, rh = h1*0.05;
+        ctx.strokeStyle = '#ab916e'; ctx.lineWidth = Math.max(0.7,w1*0.007);
+        ctx.beginPath(); ctx.moveTo(at.x,y1-h1*1.18); ctx.lineTo(at.x,at.y); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(at.x,at.y,rw,rh,0.12*Math.sin(chapterTime*0.0003+index),0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(at.x,at.y,rw*0.55,rh*1.25,-0.28,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle = '#f0d8af'; ctx.beginPath(); ctx.arc(at.x,at.y,Math.max(1,w1*0.022),0,Math.PI*2); ctx.fill();
+    }
+}
+function drawDreamTunnelPortal(x,y,w,h,marine,exit) {
+    const profile = dreamTunnelProfile(marine);
+    const pt = (lane,height) => ({x:x+lane*w,y:y-height*h});
+    // Filled facade around a transparent vaulted opening. A single substantial
+    // mouth replaces dozens of luminous nested frames.
+    const silhouette = marine
+        ? [[-5.5,0],[-4.4,0.9],[-2.5,1.3],[-1.8,1.62],[0,1.78],[1.8,1.62],[2.5,1.3],[4.4,0.9],[5.5,0]]
+        : [[-5.5,0],[-4.6,0.65],[-3.3,1.25],[-2.4,1.48],[-1.4,1.82],[-0.35,1.58],[0.7,1.95],[1.8,1.57],[3.4,1.12],[5.5,0]];
+    const stone = exit ? '#806c69' : '#6f747e';
+    paintDreamPolygon([...silhouette.map(p=>pt(...p)),...profile.slice().reverse().map(p=>pt(...p))],marine ? '#2d4b56' : stone,true);
+    // Rock strata at the Dalí entrance; a rounded, plated pressure vessel at
+    // the sea entrance. Both facades keep every decoration outside the slot.
+    if (marine) {
+        for (const side of [-1,1]) {
+            paintDreamPolygon([[side*1.6,0.03],[side*3.2,0.03],[side*3.2,1.10],[side*2.4,1.32],[side*1.7,1.56]].map(p=>pt(...p)),'#3e616b');
+            paintDreamPolygon([[side*3.2,0.03],[side*5.5,0],[side*4.4,0.88],[side*3.2,1.10]].map(p=>pt(...p)),'#1d3c47');
+            for (let k=0;k<3;k++) paintDreamPolygon([[side*2.4,0.27+k*0.19],[side*4.4,0.20+k*0.19],[side*4.4,0.22+k*0.19],[side*2.4,0.29+k*0.19]].map(p=>pt(...p)),'#52737a');
+        }
+        paintDreamPolygon([[-1.7,1.50],[-0.85,1.68],[0,1.75],[0.85,1.68],[1.7,1.50],[0.65,1.33],[-0.65,1.33]].map(p=>pt(...p)),'#365966');
+    } else {
+        for (const side of [-1,1]) {
+            paintDreamPolygon([[side*1.6,0.05],[side*3.7,0.08],[side*3.4,1.08],[side*1.8,1.48]].map(p=>pt(...p)),exit ? '#a08a78' : '#8e949b');
+            paintDreamPolygon([[side*3.7,0.08],[side*5.45,0.01],[side*4.4,0.66],[side*3.4,1.08]].map(p=>pt(...p)),'#525e6d');
+            paintDreamPolygon([[side*1.45,1.31],[side*2.4,1.45],[side*1.4,1.76],[side*0.65,1.40]].map(p=>pt(...p)),exit ? '#b89d85' : '#a4aab0');
+        }
+        paintDreamPolygon([[-0.6,1.37],[0.7,1.87],[1.35,1.55],[0.6,1.32]].map(p=>pt(...p)),exit ? '#9d8576' : '#9199a5');
+    }
+    for (let j = 0; j < profile.length - 1; j++) {
+        const a = profile[j], b = profile[j+1];
+        const outer = p => [p[0]*(marine ? 1.19 : 1.18),p[1]+0.13];
+        paintDreamPolygon([pt(...a),pt(...outer(a)),pt(...outer(b)),pt(...b)],marine ? (j<2||j>5 ? '#80918b' : '#74837d') : (j<2||j>5 ? '#c2b99d' : '#ded6bb'),true);
+        const mid = p => [p[0]*1.07,p[1]+0.04];
+        paintDreamPolygon([pt(...a),pt(...mid(a)),pt(...mid(b)),pt(...b)],marine ? '#436c73' : '#94846f');
+    }
+    // Exterior details stay on the facade and above/outside the driving slot.
+    for (const side of [-1,1]) {
+        const wing = [[side*1.75,0.08],[side*2.13,0.08],[side*2.13,1.18],[side*1.82,1.39]];
+        paintDreamPolygon(wing.map(p=>pt(...p)),marine ? '#1d3945' : '#8d9098');
+        if (marine) {
+            for (let k=0;k<4;k++) {
+                const at=pt(side*1.94,0.30+k*0.17);
+                ctx.fillStyle=k%2 ? '#628c95' : '#a9bbad'; ctx.beginPath(); ctx.ellipse(at.x,at.y,w*0.085,h*0.035,0,0,Math.PI*2); ctx.fill();
+            }
+            const at=pt(side*2.8,0.55);
+            ctx.strokeStyle='#a59570'; ctx.lineWidth=Math.max(1,w*0.045); ctx.beginPath(); ctx.ellipse(at.x,at.y,w*0.27,h*0.22,0,0,Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(at.x-w*0.18,at.y); ctx.lineTo(at.x+w*0.18,at.y); ctx.moveTo(at.x,at.y-h*0.14); ctx.lineTo(at.x,at.y+h*0.14); ctx.stroke();
+        } else {
+            // Carved strata and asymmetric obelisks embedded in the rock face.
+            paintDreamPolygon([[side*2.7,0.05],[side*3.03,0.05],[side*2.96,1.30],[side*2.82,1.48]].map(p=>pt(...p)),'#c1c2be');
+            for (let k=0;k<3;k++) paintDreamPolygon([[side*3.3,0.2+k*0.18],[side*4.5,0.1+k*0.18],[side*4.1,0.18+k*0.18],[side*3.3,0.27+k*0.18]].map(p=>pt(...p)),'#565d6b');
+        }
+    }
+    const jewel=pt(0,marine ? 1.52 : 1.49);
+    if (marine) {
+        ctx.fillStyle='#a89872'; ctx.beginPath(); ctx.ellipse(jewel.x,jewel.y,w*0.13,h*0.095,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#112e39'; ctx.beginPath(); ctx.ellipse(jewel.x,jewel.y,w*0.103,h*0.073,0,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='#a8ded4'; ctx.lineWidth=Math.max(0.7,w*0.012); ctx.beginPath(); ctx.moveTo(jewel.x,jewel.y); ctx.lineTo(jewel.x+w*0.058,jewel.y-h*0.047); ctx.stroke();
+        for (let j=0;j<profile.length-1;j++) {
+            const a=profile[j],b=profile[j+1],bolt=pt((a[0]+b[0])*0.55,(a[1]+b[1])*0.5+0.095);
+            ctx.fillStyle='#b0b6a2'; ctx.beginPath(); ctx.ellipse(bolt.x,bolt.y,w*0.024,h*0.017,0,0,Math.PI*2); ctx.fill();
+        }
+    } else {
+        ctx.fillStyle='#423947';
+        ctx.beginPath(); ctx.moveTo(jewel.x-w*0.25,jewel.y); ctx.quadraticCurveTo(jewel.x,jewel.y-h*0.13,jewel.x+w*0.25,jewel.y); ctx.quadraticCurveTo(jewel.x,jewel.y+h*0.13,jewel.x-w*0.25,jewel.y); ctx.fill();
+        ctx.fillStyle='#d6b6df'; ctx.beginPath(); ctx.ellipse(jewel.x,jewel.y,w*0.07,h*0.05,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#253747'; ctx.beginPath(); ctx.ellipse(jewel.x,jewel.y,w*0.023,h*0.035,0,0,Math.PI*2); ctx.fill();
+    }
+}
+
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
     if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
         if (isVisible) drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, segIdx);
@@ -1752,212 +1934,7 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         const tun = getTunnelStyle(segIdx);
 
         if (tun) {
-            // Tunnel cross-section: walls rise from the road edge (1.18) out to the
-            // ceiling corner (1.35) at height 1.9. wallPt walks that profile so every
-            // fitting below can be hung at a height fraction instead of hardcoded.
-            const CEIL = 1.9, BASE = 1.18, TOP = 1.35;
-            const wallPt = (x, w, y, h, side) => ({
-                x: x + side * w * (BASE + (TOP - BASE) * h),
-                y: y - w * CEIL * h
-            });
-            const drawPoly = (points, color) => {
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.moveTo(points[0].x, points[0].y);
-                for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
-                ctx.closePath();
-                ctx.fill();
-            };
-            // Longitudinal band running the full length of the tunnel at height h.
-            // Consecutive segments chain into one continuous line converging on the
-            // vanishing point — this is what sells the sensation of gliding through.
-            const conduit = (h, thick, color) => {
-                for (let side = -1; side <= 1; side += 2) {
-                    const a = wallPt(x1, w1, y1, h, side), b = wallPt(x2, w2, y2, h, side);
-                    drawPoly([
-                        { x: a.x, y: a.y },
-                        { x: a.x, y: a.y + w1 * thick },
-                        { x: b.x, y: b.y + w2 * thick },
-                        { x: b.x, y: b.y }
-                    ], color);
-                }
-            };
-
-            const wallCol = isAlt ? interpolateColor(tun.wall, '#ffffff', 0.07) : tun.wall;
-            const ceilCol = interpolateColor(tun.wall, '#000000', isAlt ? 0.3 : 0.4);
-            const deepCol = interpolateColor(tun.wall, '#000000', 0.55);
-
-            // Cavern void behind everything; the far end already carries the glow of
-            // the world this portal opens into.
-            if (isVisible) {
-                ctx.fillStyle = interpolateColor('#06030c', tun.light, tun.exit * 0.2);
-                ctx.fillRect(0, y2 - 1.2, W, y1 - y2 + 1.5);
-            }
-
-            if (isVisible) {
-                // Outer margin slabs
-                ctx.fillStyle = interpolateColor(isAlt ? '#1c1b26' : '#12121b', tun.wall, 0.4);
-                trapezoid(x1 - w1 * 1.18, y1, x1 + w1 * 1.18, x2 - w2 * 1.18, y2, x2 + w2 * 1.18);
-
-                // Asphalt
-                ctx.fillStyle = isAlt ? '#0e0e15' : '#09090e';
-                trapezoid(x1 - w1, y1, x1 + w1, x2 - w2, y2, x2 + w2);
-
-                // Edge stripes in the portal's accent colour
-                ctx.fillStyle = isAlt ? tun.accent : interpolateColor(tun.accent, '#000000', 0.45);
-                const e1 = w1 * 0.038, e2 = w2 * 0.038;
-                trapezoid(x1 - w1, y1, x1 - w1 + e1, x2 - w2, y2, x2 - w2 + e2);
-                trapezoid(x1 + w1 - e1, y1, x1 + w1, x2 + w2 - e2, y2, x2 + w2);
-
-                // Centre dashes
-                if (!isAlt) {
-                    ctx.fillStyle = interpolateColor(tun.light, '#000000', 0.3);
-                    const d1 = w1 * 0.015, d2 = w2 * 0.015;
-                    trapezoid(x1 - d1, y1, x1 + d1, x2 - d2, y2, x2 + d2);
-                }
-
-                // Lane separators
-                ctx.fillStyle = interpolateColor(tun.accent, '#000000', 0.6);
-                for (let l = 1; l < LANES; l++) {
-                    const lr = l / LANES;
-                    const lx1 = x1 - w1 + 2 * w1 * lr;
-                    const lx2 = x2 - w2 + 2 * w2 * lr;
-                    const lw1 = Math.max(1, w1 * 0.007);
-                    const lw2 = Math.max(1, w2 * 0.007);
-                    trapezoid(lx1 - lw1, y1, lx1 + lw1, lx2 - lw2, y2, lx2 + lw2);
-                }
-            }
-
-            // Shell: left wall, right wall, ceiling
-            drawPoly([
-                { x: x1 - w1 * TOP, y: y1 - w1 * CEIL },
-                { x: x1 - w1 * BASE, y: y1 },
-                { x: x2 - w2 * BASE, y: y2 },
-                { x: x2 - w2 * TOP, y: y2 - w2 * CEIL }
-            ], wallCol);
-            drawPoly([
-                { x: x1 + w1 * BASE, y: y1 },
-                { x: x1 + w1 * TOP, y: y1 - w1 * CEIL },
-                { x: x2 + w2 * TOP, y: y2 - w2 * CEIL },
-                { x: x2 + w2 * BASE, y: y2 }
-            ], wallCol);
-            drawPoly([
-                { x: x1 - w1 * TOP, y: y1 - w1 * CEIL },
-                { x: x1 + w1 * TOP, y: y1 - w1 * CEIL },
-                { x: x2 + w2 * TOP, y: y2 - w2 * CEIL },
-                { x: x2 - w2 * TOP, y: y2 - w2 * CEIL }
-            ], ceilCol);
-
-            // --- Rhythm layers, fastest to slowest ---
-            // Far segments are only a few pixels wide, where this detail would just
-            // alias, so it is skipped there rather than drawn sub-pixel.
-            const fineDetail = w1 > 10;
-
-            // Continuous: kerb line, guide rail, cable duct
-            if (fineDetail) {
-                conduit(0.04, 0.016, interpolateColor(tun.accent, '#000000', 0.35));
-                conduit(0.50, 0.020, interpolateColor(tun.accent, tun.wall, 0.35));
-                conduit(0.72, 0.045, deepCol);
-            }
-
-            // Every 3: wall panel seams
-            if (fineDetail && segIdx % 3 === 0) {
-                ctx.strokeStyle = deepCol;
-                ctx.lineWidth = Math.max(1, w1 * 0.008);
-                ctx.beginPath();
-                for (let side = -1; side <= 1; side += 2) {
-                    const b = wallPt(x1, w1, y1, 0, side), t = wallPt(x1, w1, y1, 1, side);
-                    ctx.moveTo(b.x, b.y); ctx.lineTo(t.x, t.y);
-                }
-                ctx.stroke();
-            }
-
-            // Every 6: arch ribs
-            if (segIdx % 6 === 0) {
-                const bl = wallPt(x1, w1, y1, 0, -1), tl = wallPt(x1, w1, y1, 1, -1);
-                const tr = wallPt(x1, w1, y1, 1, 1), br = wallPt(x1, w1, y1, 0, 1);
-                ctx.strokeStyle = tun.accent;
-                ctx.lineWidth = Math.max(2.5, w1 * 0.045);
-                ctx.beginPath();
-                ctx.moveTo(bl.x, bl.y); ctx.lineTo(tl.x, tl.y);
-                ctx.lineTo(tr.x, tr.y); ctx.lineTo(br.x, br.y);
-                ctx.stroke();
-                ctx.strokeStyle = tun.light;
-                ctx.lineWidth = Math.max(1, w1 * 0.012);
-                ctx.stroke();
-            }
-
-            // Every 12: overhead light fixtures
-            if (segIdx % 12 === 0) {
-                const rxL1 = x1 - w1 * 0.28;
-                const rxR1 = x1 + w1 * 0.28;
-                const ry1  = y1 - w1 * CEIL;
-                const rxL2 = x2 - w2 * 0.28;
-                const rxR2 = x2 + w2 * 0.28;
-                const ry2  = y2 - w2 * CEIL;
-                // Volumetric beam cone onto the road
-                ctx.save();
-                const gGrad = ctx.createLinearGradient(0, ry1, 0, ry1 + w1 * 0.85);
-                gGrad.addColorStop(0, withAlpha(tun.light, 0.22));
-                gGrad.addColorStop(1, withAlpha(tun.light, 0));
-                drawPoly([
-                    { x: rxL1, y: ry1 },
-                    { x: rxR1, y: ry1 },
-                    { x: rxR1 + w1 * 0.12, y: ry1 + w1 * 0.85 },
-                    { x: rxL1 - w1 * 0.12, y: ry1 + w1 * 0.85 }
-                ], gGrad);
-                ctx.restore();
-
-                // Fixture casing
-                drawPoly([
-                    { x: rxL1 - w1 * 0.02, y: ry1 - 2 },
-                    { x: rxR1 + w1 * 0.02, y: ry1 - 2 },
-                    { x: rxR2 + w2 * 0.02, y: ry2 + 2 },
-                    { x: rxL2 - w2 * 0.02, y: ry2 + 2 }
-                ], '#1a1a1c');
-
-                // Tube core + bloom
-                drawPoly([
-                    { x: rxL1, y: ry1 }, { x: rxR1, y: ry1 },
-                    { x: rxR2, y: ry2 }, { x: rxL2, y: ry2 }
-                ], '#ffffff');
-                ctx.save();
-                ctx.shadowColor = tun.light;
-                ctx.shadowBlur = Math.max(15, w1 * 0.35);
-                drawPoly([
-                    { x: rxL1, y: ry1 }, { x: rxR1, y: ry1 },
-                    { x: rxR2, y: ry2 }, { x: rxL2, y: ry2 }
-                ], tun.light);
-                ctx.restore();
-            }
-
-            // Every 24: service niche plate on the right wall — the slow beat that
-            // makes the faster rhythms readable as distance covered.
-            if (fineDetail && segIdx % 24 === 0) {
-                const a = wallPt(x1, w1, y1, 0.30, 1), b = wallPt(x2, w2, y2, 0.30, 1);
-                drawPoly([
-                    { x: a.x, y: a.y },
-                    { x: a.x, y: a.y + w1 * 0.16 },
-                    { x: b.x, y: b.y + w2 * 0.16 },
-                    { x: b.x, y: b.y }
-                ], interpolateColor(tun.light, tun.wall, 0.35));
-            }
-
-            // Portal mouths: a bright ring of the world on that side of the tunnel
-            const mouth = Math.max(tun.entry, tun.exit);
-            if (mouth > 0.02) {
-                const bl = wallPt(x1, w1, y1, 0, -1), tl = wallPt(x1, w1, y1, 1, -1);
-                const tr = wallPt(x1, w1, y1, 1, 1), br = wallPt(x1, w1, y1, 0, 1);
-                ctx.save();
-                ctx.globalAlpha = mouth;
-                ctx.strokeStyle = tun.light;
-                ctx.lineWidth = Math.max(2, w1 * 0.05);
-                ctx.beginPath();
-                ctx.moveTo(bl.x, bl.y); ctx.lineTo(tl.x, tl.y);
-                ctx.lineTo(tr.x, tr.y); ctx.lineTo(br.x, br.y);
-                ctx.stroke();
-                ctx.restore();
-            }
+            drawDreamTunnelSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx,isVisible,tun);
         } else {
             // --- OUTSIDE THE TUNNEL: STEPPE, ARCTIC, DALI, OR UNDERWATER ---
             const zone = getDreamZone(segIdx);
@@ -2042,9 +2019,13 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
             // the road beneath them is hidden. Nearer road/tunnel segments still
             // occlude their bases through the normal back-to-front drawing.
             if (zone === 'underwater') {
-                if (segIdx % 8 === 0 || segIdx === DREAM_TUNNELS[2].end) drawUnderwaterArch(x1, y1, w1);
+                if (segIdx % 8 === 0 || segIdx === DREAM_TUNNELS[DREAM_TUNNELS.length - 1].end) drawUnderwaterArch(x1, y1, w1);
                 if (segIdx === SEGMENT_COUNT - 1) drawUnderwaterFinish(x2, y2, w2);
             }
+        }
+        const mouth = DREAM_TUNNELS.find(t => segIdx === t.start || segIdx === t.end);
+        if (mouth && player.z < segIdx * SEGMENT_LENGTH - 64) {
+            drawDreamTunnelPortal(x1,y1,w1,p1Scale * DREAM_TUNNEL_HEIGHT * H / 2,mouth.to === 'underwater',segIdx === mouth.end);
         }
         return;
     }
