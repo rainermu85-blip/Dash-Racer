@@ -50,6 +50,23 @@ die zweite Spalte, den Rahmen oder ein Symbol. Die Mischung aus acht
 verfügbaren Neonfarben entsteht zwischen den unterschiedlichen Reklamen.
 Die Gestaltung bleibt bei jeder Vorbeifahrt gleich.
 
+Das Geschwindigkeitsgefühl wird durch kleine Leuchtreflektoren an beiden
+Leitplanken und kurze, schwache Reflexe auf dem Asphalt unterstützt. Die
+Farben folgen der vorhandenen Neonpalette und bleiben an festen
+Streckenpositionen. Schmale Randmarkierungen, dezente Asphaltfugen und
+kürzere Fahrbahnstriche liefern zusätzliche Bezugspunkte beim Vorbeifahren.
+Diese Details teilen Projektion, Höhenverlauf und Tiefenreihenfolge der
+Straße. Sie blinken nicht zeitgesteuert und überdecken die Ziellinie nicht.
+Kameraposition, Sichtwinkel, Geschwindigkeit und Boost-Effekte bleiben
+unverändert.
+
+Die Details wurden zusammen mit der kontinuierlichen Gegnerdarstellung
+bei 390 und 480 Pixel Spielfeldbreite kontrolliert. Ein achtsekündiger
+regulärer Browserlauf mit Renngegnern erreichte auf der Cloud-Prüfumgebung
+rund 60 FPS ohne JavaScript-Fehler; die Renderzeit lag im Median bei
+5,4 ms und beim 95. Perzentil bei 8,6 ms. Die passende Testgruppe bestand
+132 Prüfungen. Das sind Beobachtungen dieser Prüfumgebung.
+
 Seit dem 10. Oktober hat jedes fünfte Schild stattdessen eine leuchtende
 Farbfläche aus der vorhandenen Neonpalette. Darauf stehen dunkle Zeichen,
 Wortmarken und Symbole ohne helle Neonkerne. Die gleiche Regel gilt für

@@ -1494,6 +1494,47 @@ function drawHighwayCrossing(x, y, roadWidth, kind, phase, ts) {
     ctx.restore();
 }
 
+function drawHighwaySpeedDetails(x1, y1, w1, x2, y2, w2, index) {
+    // World-fixed details share the road's perspective and depth order.
+    // Their motion comes from driving, with no timed pulsing or camera changes.
+    const strip = (left, right, start, end, color, height = 0) => {
+        const ax = x1 + (x2 - x1) * start, ay = y1 + (y2 - y1) * start, aw = w1 + (w2 - w1) * start;
+        const bx = x1 + (x2 - x1) * end, by = y1 + (y2 - y1) * end, bw = w1 + (w2 - w1) * end;
+        if (Math.abs(ay - by) < 0.5 || aw < 10) return;
+        ctx.fillStyle = color;
+        trapezoid(ax + left * aw, ay - height * aw, ax + right * aw,
+                  bx + left * bw, by - height * bw, bx + right * bw);
+    };
+    // Narrow shoulder dashes and occasional low-contrast pavement joints.
+    if (index % 3 === 0) {
+        for (const side of [-1, 1]) strip(side * 0.95 - 0.006, side * 0.95 + 0.006, 0.1, 0.65, '#736185');
+    }
+    if (index % 17 === 0) {
+        strip(-0.97, 0.97, 0.42, 0.47, 'rgba(2,1,8,.28)');
+        strip(-0.97, 0.97, 0.47, 0.49, 'rgba(160,135,190,.07)');
+    }
+    // Small light chips on both rails, with short pools on the asphalt below.
+    if (index % 4 === 0) {
+        for (const side of [-1, 1]) {
+            const colorIndex = (Math.floor(index / 64) * 3 + (side < 0 ? 3 : 0)) % HIGHWAY_NEON_COLORS.length;
+            const color = HIGHWAY_NEON_COLORS[colorIndex], edge = side * 1.06;
+            ctx.save();
+            ctx.globalAlpha = 0.1;
+            strip(edge - 0.025, edge + 0.025, 0.05, 0.65, color, 0.09);
+            ctx.globalAlpha = 0.82;
+            strip(edge - 0.009, edge + 0.009, 0.22, 0.38, color, 0.09);
+            ctx.globalAlpha = 0.65;
+            strip(edge - 0.003, edge + 0.003, 0.24, 0.36, '#e6f6ff', 0.09);
+            const inner = side * 0.88;
+            ctx.globalAlpha = 0.04;
+            strip(Math.min(inner, side), Math.max(inner, side), 0.02, 0.72, color);
+            ctx.globalAlpha = 0.11;
+            strip(side * 0.94 - 0.009, side * 0.94 + 0.009, 0.12, 0.52, color);
+            ctx.restore();
+        }
+    }
+}
+
 function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     const highway = currentLevel === LEVEL_HIGHWAY;
     const band = (left, right, color, height = 0) => {
@@ -1523,7 +1564,7 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     else band(-1, 1, highway ? (isAlt ? '#171222' : '#120e1c') : (isAlt ? '#3b303f' : '#342b3b'));
     const edge = highway ? '#ad77fa' : '#ffd0ad';
     band(-1.025, -0.995, edge); band(0.995, 1.025, edge);
-    if (!isStart && Math.floor(index / 5) % 2 === 0) {
+    if (!isStart && Math.floor(index / (highway ? 3 : 5)) % 2 === 0) {
         for (const lane of [-1 / 3, 1 / 3]) band(lane - 0.008, lane + 0.008, highway ? '#c8bce1' : '#efc6b3');
     }
     // Thin, broken reflection streaks on the violet asphalt.
@@ -1537,6 +1578,7 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
             band(edgeX - 0.035, edgeX + 0.035, '#c094f0', 0.09);
             if (index % 9 === 0) band(edgeX - 0.006, edgeX + 0.006, '#756487', 0.065);
         }
+        if (!isStart) drawHighwaySpeedDetails(x1, y1, w1, x2, y2, w2, index);
     }
 }
 
@@ -7644,6 +7686,13 @@ function render(ts) {
 
   const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : DRAW_DISTANCE;
   const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
+  const projectVehicle = (worldZ, laneX, seg, segmentZ, curveStart, curveEnd) => {
+    if (worldZ - camZ < 64) return null;
+    const t = clamp((worldZ - segmentZ) / SEGMENT_LENGTH, 0, 1);
+    const p = project(worldZ, laneX * ROAD_WIDTH, seg.worldY + seg.hillDelta * t, camZ, camX, camY, horizonY);
+    if (p) p.x += curveStart + (curveEnd - curveStart) * t - lookOffset;
+    return p;
+  };
   for (let n = 0; n < currentDrawDistance; n++) {
     const segIdx = currentLevel === LEVEL_DREAM ? (startSegIdx + n) : (startSegIdx + n) % SEGMENT_COUNT;
     const seg = segments[segIdx] || segments[segments.length - 1];
@@ -7723,12 +7772,12 @@ function render(ts) {
             const trafficZ = car.police ? car.z - (player.lap - 1) * TRACK_LENGTH
                 : car.z + (car.z < player.z ? TRACK_LENGTH : 0);
             if (trafficZ >= segWorldZ && trafficZ < segWorldZ + SEGMENT_LENGTH) {
+                const p = projectVehicle(trafficZ, car.x, seg, segWorldZ, seg.curveOffset, curveOffset);
+                if (!p) continue;
                 const s = getCleanSpriteFromPool(); s.type = 'oncoming_car';
-                const t = (trafficZ - segWorldZ) / SEGMENT_LENGTH;
-                const carWidth = p1.w + (p2.w - p1.w) * t;
-                s.x = (rx1 + (rx2 - rx1) * t) + car.x * carWidth; s.y = p1.y + (p2.y - p1.y) * t;
-                s.sc = Math.min(2, (p1.scale + (p2.scale - p1.scale) * t) * 3400) * responsiveFactor;
-                s.color = car.color; s.police = !!car.police; s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY;
+                s.x = p.x; s.y = p.y;
+                s.sc = Math.min(2, p.scale * 3400) * responsiveFactor;
+                s.color = car.color; s.police = !!car.police; s.depth = n + (trafficZ - segWorldZ) / SEGMENT_LENGTH; s.segIdx = segIdx; s.clipY = segmentClipY;
             }
         }
     }
@@ -7768,10 +7817,12 @@ function render(ts) {
       const oppWorldZ = opp.z + (opp.lap - player.lap) * TRACK_LENGTH;
       if (oppWorldZ >= segWorldZ && oppWorldZ < segWorldZ + SEGMENT_LENGTH) {
         if (oppWorldZ >= player.z) {
-          const s = getCleanSpriteFromPool(); s.type = 'car'; 
-          s.x = rx2 + opp.x * p2.w; s.y = p2.y; 
-          s.sc = Math.min(1.8, p2.scale * (692 * H / Math.max(10, H * 0.5 - 76))) * responsiveFactor; 
-          s.color = opp.color; s.depth = n; s.isOppBoosting = opp.isBoosting; s.isOppChevronBoosting = opp.isChevronBoosting; s.clipY = segmentClipY; s.segIdx = segIdx;
+          const p = projectVehicle(oppWorldZ, opp.x, seg, segWorldZ, seg.curveOffset, curveOffset);
+          if (!p) continue;
+          const s = getCleanSpriteFromPool(); s.type = 'car';
+          s.x = p.x; s.y = p.y;
+          s.sc = Math.min(1.8, p.scale * (692 * H / Math.max(10, H * 0.5 - 76))) * responsiveFactor;
+          s.color = opp.color; s.depth = n + (oppWorldZ - segWorldZ) / SEGMENT_LENGTH; s.isOppBoosting = opp.isBoosting; s.isOppChevronBoosting = opp.isChevronBoosting; s.clipY = segmentClipY; s.segIdx = segIdx;
         }
       }
     }
