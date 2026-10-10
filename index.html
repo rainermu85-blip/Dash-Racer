@@ -248,7 +248,9 @@ const HIGHWAY_CROSSINGS = [
   { index: 215, kind: 'road' }, { index: 475, kind: 'train' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
-const HIGHWAY_TRAIN_DURATION = 3.2;
+const HIGHWAY_TRAIN_DURATION = 1.6;
+const HIGHWAY_POLICE_TRIGGER = 650;
+const HIGHWAY_POLICE_SPEED = 7200;
 const CLEAN_SPEED_LIMIT = 0.2;
 const CLEAN_SPEED_BUILD_TIME = 10;
 const BRIDGE_RAIL_HEIGHT = 108;
@@ -283,6 +285,7 @@ const HIGHWAY_NEON_GLYPHS = [
   [[-7,-9],[-7,9],[0,3],[7,9],[7,-9],[0,-3],[-7,-9]]
 ];
 let highwayTraffic = [], crossingEvents = new Map(), chapterTime = 0;
+let highwayPolice = null, highwayPoliceLaps = new Set();
 const BG_W = 1400; const bgMountains = []; const bgBuildings = []; const bgBirds = []; let bgOffset = 0; 
 
 let activeFlyingPylons = [];
@@ -898,6 +901,8 @@ function initOpponents() {
 function initChapterTraffic() {
     chapterTime = 0;
     crossingEvents = new Map();
+    highwayPolice = null;
+    highwayPoliceLaps = new Set();
     highwayTraffic = currentLevel === LEVEL_HIGHWAY ? Array.from({ length: 22 }, (_, i) => ({
         z: (i * TRACK_LENGTH / 22 + 3000) % TRACK_LENGTH,
         x: i % 2 ? -2.9 : -1.9,
@@ -910,6 +915,17 @@ function updateChapterTraffic(dt) {
     chapterTime += dt * 1000;
     if (currentLevel !== LEVEL_HIGHWAY) return;
     for (const car of highwayTraffic) car.z = (car.z - car.speed * dt + TRACK_LENGTH) % TRACK_LENGTH;
+    // One fly-by per player lap. Absolute race distance prevents a departed
+    // patrol car from wrapping around and appearing a second time.
+    const raceZ = getRaceDistance(player);
+    if (!player.finished && player.z >= HIGHWAY_POLICE_TRIGGER * SEGMENT_LENGTH && !highwayPoliceLaps.has(player.lap)) {
+        highwayPoliceLaps.add(player.lap);
+        highwayPolice = { z: raceZ + 14000, x: -1.9, speed: HIGHWAY_POLICE_SPEED, color: '#e1e5f2', police: true };
+    }
+    if (highwayPolice) {
+        highwayPolice.z -= highwayPolice.speed * dt;
+        if (highwayPolice.z < raceZ - 1800) highwayPolice = null;
+    }
     for (const event of crossingEvents.values()) event.elapsed += dt;
     for (const crossing of HIGHWAY_CROSSINGS) {
         if (crossing.kind !== 'train' || player.finished) continue;
@@ -1337,7 +1353,7 @@ function drawNeonTower(x, y, scale, seed, ts) {
     ctx.restore();
 }
 
-function drawOncomingCar(x, y, scale, color) {
+function drawOncomingCar(x, y, scale, color, police = false, ts = 0) {
     if (scale < 0.025) return;
     beginChapterSprite(x, y, scale);
     ctx.fillStyle = 'rgba(179,162,255,.12)';
@@ -1350,6 +1366,64 @@ function drawOncomingCar(x, y, scale, color) {
     ctx.fillStyle = '#090911'; ctx.fillRect(-16, -15, 32, 6);
     ctx.fillStyle = '#fff1c4'; ctx.fillRect(-27, -19, 10, 5); ctx.fillRect(17, -19, 10, 5);
     ctx.fillStyle = '#9c83ce'; ctx.fillRect(-29, -7, 58, 2);
+    if (police) {
+        // Black-and-white pursuit sedan: hood, grille, badge and roof lightbar.
+        ctx.fillStyle = '#eff3ff';
+        ctx.beginPath(); ctx.moveTo(-24, -27); ctx.lineTo(24, -27); ctx.lineTo(28, -20); ctx.lineTo(-28, -20); ctx.fill();
+        ctx.fillStyle = '#10111c'; ctx.fillRect(-17, -16, 34, 8);
+        ctx.fillStyle = '#8897b9';
+        for (let gx = -14; gx <= 14; gx += 4) ctx.fillRect(gx, -14, 2, 3);
+        ctx.fillStyle = '#f2d37d';
+        ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(3, -22); ctx.lineTo(0, -19); ctx.lineTo(-3, -22); ctx.fill();
+        ctx.fillStyle = '#202335'; ctx.fillRect(-18, -50, 36, 5);
+        for (const [side, rgb] of [[-1, '255,55,89'], [1, '55,139,255']]) {
+            const strength = 0.18 + 0.82 * Math.pow(Math.max(0, Math.sin(ts * 0.018 + (side > 0 ? Math.PI : 0))), 2);
+            const lx = side * 11, ly = -50;
+            // Glow stays within a few car widths, with small asphalt reflections.
+            const glow = ctx.createRadialGradient(lx, ly, 1, lx, ly, 26);
+            glow.addColorStop(0, `rgba(${rgb},${strength * 0.65})`);
+            glow.addColorStop(1, `rgba(${rgb},0)`);
+            ctx.fillStyle = glow; ctx.fillRect(lx - 26, ly - 26, 52, 52);
+            ctx.fillStyle = `rgba(${rgb},${strength})`; ctx.fillRect(lx - 7, ly - 3, 14, 4);
+            ctx.fillStyle = `rgba(${rgb},${strength * 0.12})`;
+            ctx.beginPath(); ctx.ellipse(side * 21, 13, 28, 8, side * 0.18, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = `rgba(${rgb},${strength * 0.07})`;
+            ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(side * 66, -30); ctx.lineTo(side * 66, -17); ctx.closePath(); ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+function drawCrossingCar(x, y, color, variant, slope) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan(slope));
+    // A low 1980s silhouette, resting on its tyres rather than floating blocks.
+    const sedan = variant === 1;
+    ctx.fillStyle = '#100d19';
+    ctx.beginPath(); ctx.ellipse(0, 0, 35, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.moveTo(-33, -7); ctx.lineTo(-31, -15);
+    ctx.lineTo(-20, -16); ctx.lineTo(sedan ? -14 : -9, -27);
+    ctx.lineTo(sedan ? 9 : 5, -27); ctx.lineTo(18, -16);
+    ctx.lineTo(32, -12); ctx.lineTo(35, -7); ctx.lineTo(32, -3); ctx.lineTo(-31, -3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#12182b';
+    ctx.beginPath(); ctx.moveTo(-17, -17); ctx.lineTo(sedan ? -12 : -7, -25);
+    ctx.lineTo(sedan ? 8 : 4, -25); ctx.lineTo(14, -17); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#86a4c3'; ctx.lineWidth = 0.65;
+    ctx.beginPath(); ctx.moveTo(-13, -23); ctx.lineTo(3, -23); ctx.stroke();
+    ctx.strokeStyle = '#383044'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(1, -8); ctx.lineTo(-14, -8); ctx.stroke();
+    ctx.fillStyle = '#d1accd'; ctx.fillRect(-4, -15, 4, 1);
+    ctx.strokeStyle = '#b7a0c9';
+    ctx.beginPath(); ctx.moveTo(-30, -6); ctx.lineTo(32, -6); ctx.stroke();
+    for (const wheelX of [-21, 23]) {
+        ctx.fillStyle = '#07060b'; ctx.beginPath(); ctx.arc(wheelX, -4, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#768092'; ctx.beginPath(); ctx.arc(wheelX, -4, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#c6c2d1'; ctx.fillRect(wheelX - 1, -5, 2, 2);
+    }
+    ctx.fillStyle = '#fff1b9'; ctx.fillRect(31, -11, 3, 3);
+    ctx.fillStyle = '#ff548e'; ctx.fillRect(-32, -13, 3, 3);
+    ctx.fillStyle = '#201b2c'; ctx.fillRect(31, -5, 4, 2); ctx.fillRect(-34, -5, 4, 2);
+    if (variant === 2) { ctx.fillStyle = '#45314f'; ctx.fillRect(-32, -18, 11, 2); }
     ctx.restore();
 }
 
@@ -1401,10 +1475,8 @@ function drawHighwayCrossing(x, y, roadWidth, kind, phase, ts) {
         const start = Math.floor((viewLeft - offset) / 213) * 213 + offset;
         for (let tx = start; tx < viewRight + 40; tx += 213) {
             const ty = deckY(tx), car = Math.round((tx - offset) / 213);
-            ctx.fillStyle = ['#7855ae', '#c569a4', '#7797b2'][((car % 3) + 3) % 3]; ctx.fillRect(tx - 18, ty - 14, 39, 11);
-            ctx.fillStyle = '#161b30'; ctx.fillRect(tx - 9, ty - 23, 19, 10);
-            ctx.fillStyle = '#fff1b9'; ctx.fillRect(tx + 17, ty - 10, 4, 4);
-            ctx.fillStyle = '#ff548e'; ctx.fillRect(tx - 18, ty - 10, 3, 4);
+            const variant = ((car % 3) + 3) % 3;
+            drawCrossingCar(tx, ty - 1, ['#7855ae', '#c569a4', '#7797b2'][variant], variant, slope);
         }
     }
     ctx.restore();
@@ -7571,6 +7643,7 @@ function render(ts) {
   const segmentsToDraw = [];
 
   const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : DRAW_DISTANCE;
+  const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
   for (let n = 0; n < currentDrawDistance; n++) {
     const segIdx = currentLevel === LEVEL_DREAM ? (startSegIdx + n) : (startSegIdx + n) % SEGMENT_COUNT;
     const seg = segments[segIdx] || segments[segments.length - 1];
@@ -7646,13 +7719,16 @@ function render(ts) {
             s.kind = crossing.kind; s.phase = crossingTrainPhase(segIdx);
             s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY;
         }
-        for (const car of highwayTraffic) {
-            const trafficZ = car.z + (car.z < player.z ? TRACK_LENGTH : 0);
+        for (const car of visibleHighwayTraffic) {
+            const trafficZ = car.police ? car.z - (player.lap - 1) * TRACK_LENGTH
+                : car.z + (car.z < player.z ? TRACK_LENGTH : 0);
             if (trafficZ >= segWorldZ && trafficZ < segWorldZ + SEGMENT_LENGTH) {
                 const s = getCleanSpriteFromPool(); s.type = 'oncoming_car';
-                s.x = rx2 + car.x * p2.w; s.y = p2.y;
-                s.sc = Math.min(2, p2.scale * 3400) * responsiveFactor;
-                s.color = car.color; s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY;
+                const t = (trafficZ - segWorldZ) / SEGMENT_LENGTH;
+                const carWidth = p1.w + (p2.w - p1.w) * t;
+                s.x = (rx1 + (rx2 - rx1) * t) + car.x * carWidth; s.y = p1.y + (p2.y - p1.y) * t;
+                s.sc = Math.min(2, (p1.scale + (p2.scale - p1.scale) * t) * 3400) * responsiveFactor;
+                s.color = car.color; s.police = !!car.police; s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY;
             }
         }
     }
@@ -7762,7 +7838,7 @@ function render(ts) {
         else if (s.type === 'hills_lamp' || s.type === 'highway_lamp') drawChapterLamp(s.x, s.y, s.sc, s.type === 'highway_lamp');
         else if (s.type === 'neon_tower') drawNeonTower(s.x, s.y, s.sc, s.segIdx, chapterTime);
         else if (s.type === 'fantasy_sign') drawFantasySign(s.x, s.y, s.sc, s.segIdx, chapterTime);
-        else if (s.type === 'oncoming_car') drawOncomingCar(s.x, s.y, s.sc, s.color);
+        else if (s.type === 'oncoming_car') drawOncomingCar(s.x, s.y, s.sc, s.color, s.police, chapterTime);
         else drawHighwayCrossing(s.x, s.y, s.w, s.kind, s.phase, chapterTime);
         ctx.restore();
     }
@@ -9014,7 +9090,7 @@ function loop(ts) {
             rot: 0, rotSpeed: (Math.random()-0.5)*20
           });
         } else {
-          player.speed *= 0.97; 
+          // Cones are playful scenery: launch them without a speed penalty.
           activeFlyingPylons.push({
             x: W/2 + object.x * W * 0.55, y: H - 90,
             vx: steerInput * 1600 + (Math.random() - 0.5) * 800, 
@@ -9186,7 +9262,6 @@ function loop(ts) {
               vx: (Math.random()-0.5)*800, vy: -1500, scale: 1.0, rot: 0, rotSpeed: 15
             });
          } else {
-            opp.speed *= 0.97;
             activeFlyingPylons.push({
               x: W/2 + object.x * W * 0.55, y: H * 0.65,
               vx: (Math.random()-0.5)*800, vy: -1500, scale: 1.0, rot: 0, rotSpeed: 15

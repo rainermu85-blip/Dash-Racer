@@ -85,16 +85,32 @@ aus. Leitplanken begrenzen Spieler und Renngegner auf `[-0.88, 0.88]`;
 Wandkontakt verwendet das vorhandene Stoß- und Reibungsmodell.
 
 Bei den Segmenten 215 und 735 queren Autos auf Hochstraßen die Strecke.
+Die Seitenansichten haben jetzt niedrige 80er-Karosserien, zwei sichtbare
+Räder mit Felgen, geteilte Fenster, Türen, Stoßfänger und kleine Scheinwerfer.
+Coupés und Limousinen unterscheiden sich; die Fahrzeuge stehen mit ihren
+Reifen auf der Fahrbahn und folgen deren Neigung.
 Die Brücken reichen auf beiden Seiten über den sichtbaren Bildrand hinaus;
 die Länge berücksichtigt Projektion, Kurven und Bildschirmbreite. Bei 475
 und 995 stehen waagerechte Bahnüberführungen mit ebenso waagerechten Gleisen
 und Zugwagen. Ein Schnellzug startet einmal
 pro Runde bei der Annäherung des Spielers; der Auslöseabstand berücksichtigt
-das Tempo. Die Durchfahrt dauert jetzt 3,2 statt 4,2 Simulationssekunden und
+das Tempo. Die Durchfahrt dauert jetzt 1,6 statt zuvor 3,2 Simulationssekunden und
 beginnt und endet mit dem gesamten Zug außerhalb des sichtbaren Bildes.
 Verkehr, Zugphasen und Leuchtreklamen
 verwenden `chapterTime` und bleiben während einer Pause stehen. Ein Neustart
 setzt alle Fahrzeuge und Ereignisse zurück.
+
+Ab Segment 650 rast einmal je Runde ein Polizeiwagen auf der inneren
+Gegenspur vorbei, nach dem Ende der mittleren Baustelle. Er fährt mit
+7.200 Welteinheiten pro Sekunde gegenüber 1.850–2.450 beim normalen
+Gegenverkehr. Seine Position verwendet die gesamte Renndistanz; ein
+vorbeigefahrenes Polizeiauto wird nicht um den Kurs zurückprojiziert.
+Rot und Blau wechseln auf dem Dachbalken. Kleine Lichtkegel, Halos und
+Reflexe bleiben am Auto und auf dem Asphalt daneben. Es gibt dafür
+keine bildschirmfüllende Farbfläche und keinen Eingriff in das Kollisionsmodell.
+Pause friert Fahrt und Lichter ein; Neustart und Levelwechsel löschen
+die bereits ausgelösten Runden. Gegenverkehr wird innerhalb der
+Straßensegmente interpoliert, damit die schnelle Fahrt gleichmäßig erscheint.
 
 ## Umfang und Prüfung
 
@@ -107,6 +123,19 @@ Leitplanken mit Boost, Gegenverkehr, Zugauslösung, Wiederholung pro Runde,
 Pause, Reset, alte Sonderwelten und die Auswahl nach dem Rennen.
 `mechanics` und `collisions` verwenden die neuen IDs der erhaltenen Welten;
 die Ziellinienprüfung und `races` umfassen alle sechs Strecken.
+
+Für die schnelle Polizeifahrt und die Hütchenkorrektur bestanden insgesamt
+130 Browserprüfungen: 27 Kapitel-, 59 Kollisions-, 21 Tempo- und
+23 Mechanikprüfungen. Die neuen Kontrollen beobachten genau eine
+Polizeifahrt je Runde, ihren Abgang ohne erneutes Auftauchen, Pause und
+Reset sowie den roten/blauen Lichtwechsel. Ein Pixelvergleich prüft,
+dass die Polizeibeleuchtung innerhalb weniger Autobreiten bleibt.
+Die Brücken- und Polizeiansichten wurden bei 390 und 480 Pixel breitem
+Spielfeld sowie im Desktopfenster kontrolliert. Ein regulärer Lauf
+auf der Cloud-Prüfumgebung zeichnete 358 Bilder in sechs Sekunden ohne
+JavaScript-Fehler; das Polizeiauto war beim Vorbeirasen in 27 Bildern
+sichtbar, ohne Trefferfeedback oder Tempoverlust beim Spieler.
+Der Produktionsbuild und die Prüfung auf überflüssige Leerzeichen bestanden.
 
 ```sh
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs chapter

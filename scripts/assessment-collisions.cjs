@@ -45,6 +45,46 @@ module.exports = async function runCollisions(browser, baseUrl) {
         return opponent;
       };
       try {
+        // Compare identical empty-track frames with and without the object.
+        // This isolates pickup effects from acceleration and boost timers.
+        for (const frameRate of [30, 60, 120]) {
+          for (const mode of ['normal', 'earned', 'turbo']) {
+            const sample = type => {
+              setup(1, frameRate);
+              player.cleanSpeedBonus = mode === 'earned' ? 0.2 : 0;
+              player.speed = player.maxSpeed * (mode === 'earned' ? 1.2 : mode === 'turbo' ? 1.65 : 1);
+              player.isBoosting = mode === 'turbo'; player.boostTimer = 1;
+              player.z = 300 * SEGMENT_LENGTH + 30 - getPlayerContactDistance();
+              const object = { active: true, x: 0, state: 'idle', blinkCount: 0 };
+              if (type) segments[300][type] = object;
+              tick();
+              return { speed: player.speed, bonus: player.cleanSpeedBonus, boosts: player.boosts,
+                boosting: player.isBoosting, active: object.active, state: object.state,
+                flying: activeFlyingPylons.length, flash: player.hitFlash };
+            };
+            const control = sample(null);
+            for (const type of ['pylon', 'lightning', 'barrier']) {
+              const hit = sample(type);
+              const pass = type === 'barrier'
+                ? hit.speed < control.speed * 0.4 && hit.bonus === 0 && !hit.boosting && hit.state === 'blinking' && hit.flash > 0
+                : !hit.active && Math.abs(hit.speed - control.speed) < 1e-8 && hit.bonus === control.bonus
+                  && hit.boosting === control.boosting && (type === 'pylon' ? hit.flying === 1 : hit.boosts === control.boosts + 1);
+              record(`${type}-${mode}-${frameRate}fps`, pass, { control, hit });
+            }
+          }
+          const opponentSample = withCone => {
+            setup(1, frameRate); player.z -= 2000;
+            const opp = addOpponent({ relZ: 1500, speed: 3400 });
+            opp.z = 300 * SEGMENT_LENGTH + 30;
+            const cone = { active: true, x: 0 };
+            if (withCone) segments[300].pylon = cone;
+            tick();
+            return { speed: opp.speed, active: cone.active, flying: activeFlyingPylons.length };
+          };
+          const control = opponentSample(false), hit = opponentSample(true);
+          record(`opponent-cone-has-no-speed-penalty-${frameRate}fps`, !hit.active && hit.flying === 1 && Math.abs(hit.speed - control.speed) < 1e-8, { control, hit });
+        }
+
         for (const frameRate of [30, 60, 120]) {
           for (const type of ['lightning', 'pylon', 'barrier']) {
             setup(6, frameRate);
