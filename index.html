@@ -249,6 +249,8 @@ const HIGHWAY_CROSSINGS = [
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
 const HIGHWAY_TRAIN_DURATION = 1.6;
+const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
+const HIGHWAY_ONCOMING_LANES = [-3.2, -2.5, -1.8];
 const HIGHWAY_POLICE_TRIGGER = 650;
 const HIGHWAY_POLICE_SPEED = 7200;
 const CLEAN_SPEED_LIMIT = 0.2;
@@ -636,7 +638,7 @@ function buildSegments() {
         const def = trackDef[i]; const isStartLine = i < 3 || i > SEGMENT_COUNT - 3;
         const isBridge = currentLevel === 1 && (i >= 930 && i <= 1050);
         const isPillar = currentLevel === 1 && (i === 950 || i === 1030);
-        const isTunnel = currentLevel === LEVEL_DREAM && (getDreamZone(i) === 'tunnel');
+        const isTunnel = isHighwayTunnel(i) || (currentLevel === LEVEL_DREAM && getDreamZone(i) === 'tunnel');
         
         let sprite = null;
         let spriteX = 0;
@@ -723,7 +725,7 @@ function buildSegments() {
                 if ([105, 545, 1065].includes(i)) { sprite = 'beverly_sign'; spriteX = 1.85; }
             }
         } else if (currentLevel === LEVEL_HIGHWAY) {
-            if (!isStartLine) {
+            if (!isStartLine && !isHighwayTunnel(i)) {
                 if (i % 52 === 8) {
                     sprite = 'neon_tower'; spriteX = 1.85 + (Math.floor(i / 52) % 3) * 0.25;
                 } else if (i % 16 === 14) {
@@ -905,7 +907,7 @@ function initChapterTraffic() {
     highwayPoliceLaps = new Set();
     highwayTraffic = currentLevel === LEVEL_HIGHWAY ? Array.from({ length: 22 }, (_, i) => ({
         z: (i * TRACK_LENGTH / 22 + 3000) % TRACK_LENGTH,
-        x: i % 2 ? -2.9 : -1.9,
+        x: HIGHWAY_ONCOMING_LANES[i % HIGHWAY_ONCOMING_LANES.length],
         speed: 1850 + (i % 5) * 150,
         color: ['#a68acc', '#df8cab', '#809ebe', '#ddd0bb'][i % 4]
     })) : [];
@@ -920,7 +922,7 @@ function updateChapterTraffic(dt) {
     const raceZ = getRaceDistance(player);
     if (!player.finished && player.z >= HIGHWAY_POLICE_TRIGGER * SEGMENT_LENGTH && !highwayPoliceLaps.has(player.lap)) {
         highwayPoliceLaps.add(player.lap);
-        highwayPolice = { z: raceZ + 14000, x: -1.9, speed: HIGHWAY_POLICE_SPEED, color: '#e1e5f2', police: true };
+        highwayPolice = { z: raceZ + 14000, x: HIGHWAY_ONCOMING_LANES[2], speed: HIGHWAY_POLICE_SPEED, color: '#e1e5f2', police: true };
     }
     if (highwayPolice) {
         highwayPolice.z -= highwayPolice.speed * dt;
@@ -1494,49 +1496,145 @@ function drawHighwayCrossing(x, y, roadWidth, kind, phase, ts) {
     ctx.restore();
 }
 
-function drawHighwaySpeedDetails(x1, y1, w1, x2, y2, w2, index) {
-    // World-fixed details share the road's perspective and depth order.
-    // Their motion comes from driving, with no timed pulsing or camera changes.
-    const strip = (left, right, start, end, color, height = 0) => {
-        const ax = x1 + (x2 - x1) * start, ay = y1 + (y2 - y1) * start, aw = w1 + (w2 - w1) * start;
-        const bx = x1 + (x2 - x1) * end, by = y1 + (y2 - y1) * end, bw = w1 + (w2 - w1) * end;
-        if (Math.abs(ay - by) < 0.5 || aw < 10) return;
-        ctx.fillStyle = color;
-        trapezoid(ax + left * aw, ay - height * aw, ax + right * aw,
-                  bx + left * bw, by - height * bw, bx + right * bw);
-    };
-    // Narrow shoulder dashes and occasional low-contrast pavement joints.
-    if (index % 3 === 0) {
-        for (const side of [-1, 1]) strip(side * 0.95 - 0.006, side * 0.95 + 0.006, 0.1, 0.65, '#736185');
+function isHighwayTunnel(index) {
+    return currentLevel === LEVEL_HIGHWAY && index >= HIGHWAY_TUNNEL.start && index < HIGHWAY_TUNNEL.end;
+}
+
+function paintHighwayPolygon(points, color, seal = false) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath(); ctx.fill();
+    if (seal) { ctx.strokeStyle = color; ctx.lineWidth = 0.8; ctx.stroke(); }
+}
+
+function drawHighwayTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, index) {
+    const nearScale = (CAMERA_DEPTH + player.fovOffset) / 64;
+    if (p2Scale > nearScale) return;
+    if (p1Scale > nearScale) {
+        const ratio = nearScale / p1Scale;
+        x1 = W / 2 + (x1 - W / 2) * ratio; w1 *= ratio; p1Scale = nearScale;
     }
-    if (index % 17 === 0) {
-        strip(-0.97, 0.97, 0.42, 0.47, 'rgba(2,1,8,.28)');
-        strip(-0.97, 0.97, 0.47, 0.49, 'rgba(160,135,190,.07)');
+    const h1 = p1Scale * HIGHWAY_TUNNEL.height * H / 2, h2 = p2Scale * HIGHWAY_TUNNEL.height * H / 2;
+    const near = (lane, height = 0) => ({ x: x1 + lane * w1, y: y1 - height * h1 });
+    const far = (lane, height = 0) => ({ x: x2 + lane * w2, y: y2 - height * h2 });
+    const band = (left, right, height, color, seal = false) => paintHighwayPolygon([near(left, height), near(right, height), far(right, height), far(left, height)], color, seal);
+    const wall = (lane, low, high, color) => paintHighwayPolygon([near(lane, low), near(lane, high), far(lane, high), far(lane, low)], color, low === 0 && high === 1);
+    const wallGradient = ctx.createLinearGradient(0, y1 - h1, 0, y1);
+    wallGradient.addColorStop(0, '#9e6718'); wallGradient.addColorStop(0.22, '#dda72e');
+    wallGradient.addColorStop(0.72, '#b77a1b'); wallGradient.addColorStop(1, '#514536');
+    wall(-3.62, 0, 1, wallGradient); wall(1.14, 0, 1, wallGradient);
+    band(-3.62, 1.14, 1, '#0c0c0d', true);
+    // Six lanes under one ceiling, with separate ducts over both carriageways.
+    for (const lane of [-3.25, -1.6, -0.85, 0.8]) band(lane - 0.018, lane + 0.018, 0.985, '#302b26');
+    wall(-3.62, 0.04, 0.075, '#8c7b5b'); wall(1.14, 0.04, 0.075, '#8c7b5b');
+    wall(-3.62, 0.09, 0.105, '#e5ad3d'); wall(1.14, 0.09, 0.105, '#e5ad3d');
+    if (w1 > 10 && w1 < W * 10) {
+        if (index % 8 === 0) {
+            ctx.strokeStyle = '#805820'; ctx.lineWidth = Math.max(0.5, Math.min(3, w1 * 0.007));
+            ctx.beginPath();
+            for (const lane of [-3.62, 1.14]) {
+                const a = near(lane, 0.12), b = near(lane, 0.95);
+                ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            }
+            ctx.stroke();
+        }
+        if (index % 12 === 0) {
+            for (const lane of [...HIGHWAY_ONCOMING_LANES, -2 / 3, 0, 2 / 3]) {
+                band(lane - 0.13, lane + 0.13, 0.982, '#55452b');
+                band(lane - 0.095, lane + 0.095, 0.975, '#ffc35f');
+                band(lane - 0.064, lane + 0.064, 0.972, '#fff0ad');
+            }
+        }
+        if (index % 36 === 12) {
+            const at = near(1.14, 0.48), width = Math.max(2, w1 * 0.035), height = Math.max(4, h1 * 0.11);
+            ctx.fillStyle = '#152e26'; ctx.fillRect(at.x - width, at.y, width, height);
+            ctx.fillStyle = '#64ec9a'; ctx.fillRect(at.x - width * 0.82, at.y + height * 0.15, width * 0.55, height * 0.68);
+            ctx.fillStyle = '#e1f5c5'; ctx.fillRect(at.x - width * 0.65, at.y + height * 0.25, width * 0.17, height * 0.3);
+        }
     }
-    // Small light chips on both rails, with short pools on the asphalt below.
-    if (index % 4 === 0) {
-        for (const side of [-1, 1]) {
-            const colorIndex = (Math.floor(index / 64) * 3 + (side < 0 ? 3 : 0)) % HIGHWAY_NEON_COLORS.length;
-            const color = HIGHWAY_NEON_COLORS[colorIndex], edge = side * 1.06;
-            ctx.save();
-            ctx.globalAlpha = 0.1;
-            strip(edge - 0.025, edge + 0.025, 0.05, 0.65, color, 0.09);
-            ctx.globalAlpha = 0.82;
-            strip(edge - 0.009, edge + 0.009, 0.22, 0.38, color, 0.09);
-            ctx.globalAlpha = 0.65;
-            strip(edge - 0.003, edge + 0.003, 0.24, 0.36, '#e6f6ff', 0.09);
-            const inner = side * 0.88;
-            ctx.globalAlpha = 0.04;
-            strip(Math.min(inner, side), Math.max(inner, side), 0.02, 0.72, color);
-            ctx.globalAlpha = 0.11;
-            strip(side * 0.94 - 0.009, side * 0.94 + 0.009, 0.12, 0.52, color);
-            ctx.restore();
+    // Columns fill only the divider. Three consecutive road slices give each
+    // support depth, while the gaps preserve views of approaching traffic.
+    const columnPhase = (index - HIGHWAY_TUNNEL.start - 6 + 16) % 16;
+    if (columnPhase < 3) {
+        wall(-1.415, 0, 1, '#4c4132'); wall(-1.095, 0, 1, '#b49154');
+        band(-1.415, -1.095, 0.025, '#6b5b43');
+        if (columnPhase === 0) {
+            paintHighwayPolygon([near(-1.415), near(-1.415, 1), near(-1.095, 1), near(-1.095)], '#d1ad68');
+            paintHighwayPolygon([near(-1.13), near(-1.13, 1), near(-1.095, 1), near(-1.095)], '#e0c084');
+            const a = near(-1.415, 0.16), b = near(-1.095, 0.16);
+            ctx.strokeStyle = '#4d4438'; ctx.lineWidth = Math.max(1, Math.min(5, w1 * 0.02));
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+    }
+}
+
+function drawHighwayTunnelPortal(x, y, width, height, exit) {
+    if (width < 2) return;
+    const point = (lane, level) => ({ x: x + lane * width, y: y + level * height });
+    const poly = (vertices, color) => paintHighwayPolygon(vertices.map(([lane, level]) => point(lane, level)), color);
+    // A cut through a wide urban podium: retaining wings, service terraces,
+    // plant rooms and a deep lintel, with the full six-lane slot left open.
+    poly([[-9,-1],[-9,-2.1],[-7.1,-2.1],[-6.3,-2.65],[-3.8,-2.65],[-3.8,-2.3],
+          [-0.1,-2.3],[-0.1,-2.6],[2.7,-2.6],[3.5,-1.95],[6.2,-1.95],[7.3,-1.6],[8,-1.6],[8,-1]], '#292638');
+    poly([[-9,-1],[-9,-0.1],[-4.2,-0.1],[-3.62,0],[-3.62,-1]], '#484149');
+    poly([[1.14,-1],[1.14,0],[1.8,-0.1],[8,-0.1],[8,-1]], '#484149');
+    poly([[-8.5,-1.07],[-8.5,-1.73],[-6.5,-2.17],[-6.5,-1.07]], '#3a3545');
+    poly([[3.2,-1.07],[3.2,-1.8],[6.5,-1.38],[6.5,-1.07]], '#3a3545');
+    poly([[-6.3,-2.65],[-6.05,-2.78],[-3.65,-2.78],[-3.8,-2.65]], '#655966');
+    poly([[-0.1,-2.6],[0.1,-2.72],[2.8,-2.72],[2.7,-2.6]], '#655966');
+    // Deep recessed lip around the opening, rather than a freestanding box.
+    poly([[-3.75,-1.15],[1.28,-1.15],[1.14,-1],[-3.62,-1]], '#70615a');
+    poly([[-3.75,-1.15],[-3.62,-1],[-3.62,0],[-3.75,-0.06]], '#615340');
+    poly([[1.14,-1],[1.28,-1.15],[1.28,-0.06],[1.14,0]], '#a88038');
+    poly([[-3.62,-1],[-3.62,-0.975],[1.14,-0.975],[1.14,-1]], '#bc9146');
+    if (width > 6 && width < W * 6) {
+        ctx.strokeStyle = '#5c5360'; ctx.lineWidth = Math.max(0.65, Math.min(3, width * 0.012));
+        ctx.beginPath();
+        for (const level of [-1.55, -1.8, -2.05]) {
+            const a = point(-6.15, level), b = point(3.05, level);
+            ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        }
+        for (const lane of [-5.8,-4.8,2.3,3.3,4.3]) {
+            const a = point(lane, -0.12), b = point(lane, -0.94);
+            ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        }
+        ctx.stroke();
+        ctx.strokeStyle = '#675e69';
+        ctx.beginPath();
+        for (const level of [-0.2, -0.4, -0.6, -0.8]) {
+            for (const [left, right] of [[-9, -3.8], [1.3, 8]]) {
+                const a = point(left, level), b = point(right, level);
+                ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            }
+        }
+        ctx.stroke();
+        for (const lane of [-6.5, -4.6, 2.1, 4.3, 6.5]) {
+            poly([[lane,-0.1],[lane,-0.95],[lane+0.12,-0.95],[lane+0.12,-0.1]], '#645966');
+            poly([[lane+0.12,-0.95],[lane+0.21,-0.9],[lane+0.21,-0.16],[lane+0.12,-0.1]], '#312b37');
+        }
+        // Vent banks and rooftop plant cabinets anchor the facade in the city.
+        for (const lane of [-5.9, 0.4, 1.4]) {
+            const a = point(lane, -2.44);
+            ctx.fillStyle = '#191923'; ctx.fillRect(a.x, a.y, width * 0.7, height * 0.29);
+            ctx.fillStyle = '#544c57';
+            for (let i = 0; i < 4; i++) ctx.fillRect(a.x + width * 0.08, a.y + height * (0.035 + i * 0.06), width * 0.54, Math.max(0.5, height * 0.013));
+        }
+        ctx.fillStyle = '#b9acb6'; ctx.font = `bold ${Math.max(5, Math.min(54, height * 0.14))}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(exit ? 'MIDTOWN / EAST' : 'MIDTOWN LINK', x - 1.24 * width, y - 1.38 * height);
+        for (const lane of [-2 / 3, 0, 2 / 3]) {
+            const a = point(lane, -1.035), size = Math.max(1, width * 0.035);
+            ctx.fillStyle = '#1c3027'; ctx.fillRect(a.x - size * 1.7, a.y, size * 3.4, size * 2.8);
+            ctx.strokeStyle = '#7df2a2'; ctx.lineWidth = Math.max(0.6, Math.min(3, size * 0.4));
+            ctx.beginPath(); ctx.moveTo(a.x, a.y + size * 0.4); ctx.lineTo(a.x, a.y + size * 2.1);
+            ctx.moveTo(a.x - size * 0.8, a.y + size * 1.3); ctx.lineTo(a.x, a.y + size * 2.1); ctx.lineTo(a.x + size * 0.8, a.y + size * 1.3); ctx.stroke();
         }
     }
 }
 
 function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     const highway = currentLevel === LEVEL_HIGHWAY;
+    const tunnel = isHighwayTunnel(index);
     const band = (left, right, color, height = 0) => {
         ctx.fillStyle = color;
         trapezoid(x1 + left * w1, y1 - height * w1, x1 + right * w1,
@@ -1546,9 +1644,9 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     ctx.fillRect(0, y2 - 1, W, y1 - y2 + 1.5);
     if (highway) {
         // Two real carriageways with a broad central divider. Approaching
-        // traffic uses only the left pair of lanes, outside the race road.
+        // traffic uses the three left lanes, outside the race road.
         band(-3.55, -1.45, isAlt ? '#1b142c' : '#171022');
-        if (Math.floor(index / 5) % 2 === 0) band(-2.52, -2.49, '#9d8bbd');
+        if (Math.floor(index / 3) % 2 === 0) for (const lane of [-2.85, -2.15]) band(lane - 0.01, lane + 0.01, tunnel ? '#e3d4ae' : '#9d8bbd');
         band(-3.55, -3.52, '#716786'); band(-1.48, -1.45, '#716786');
         band(-1.45, -1.06, '#28182d');
         band(-1.4, -1.14, '#4e3154', 0.08);
@@ -1561,15 +1659,14 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
         band(1.08, 1.19, isAlt ? '#ffd1b7' : '#eaad9f');
     }
     if (isStart) drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt);
-    else band(-1, 1, highway ? (isAlt ? '#171222' : '#120e1c') : (isAlt ? '#3b303f' : '#342b3b'));
-    const edge = highway ? '#ad77fa' : '#ffd0ad';
+    else band(-1, 1, tunnel ? (isAlt ? '#24201b' : '#211c18') : highway ? (isAlt ? '#171222' : '#120e1c') : (isAlt ? '#3b303f' : '#342b3b'));
+    const edge = tunnel ? '#d4ba77' : highway ? '#ad77fa' : '#ffd0ad';
     band(-1.025, -0.995, edge); band(0.995, 1.025, edge);
     if (!isStart && Math.floor(index / (highway ? 3 : 5)) % 2 === 0) {
-        for (const lane of [-1 / 3, 1 / 3]) band(lane - 0.008, lane + 0.008, highway ? '#c8bce1' : '#efc6b3');
-    }
-    // Thin, broken reflection streaks on the violet asphalt.
-    if (highway && index % 13 === 0 && !isStart) {
-        band(0.66, 0.86, 'rgba(206,94,255,.12)'); band(-0.9, -0.77, 'rgba(109,171,255,.10)');
+        for (const lane of [-1 / 3, 1 / 3]) {
+            const halfWidth = highway ? 0.01 : 0.008;
+            band(lane - halfWidth, lane + halfWidth, tunnel ? '#f0e5c9' : highway ? '#c8bce1' : '#efc6b3');
+        }
     }
     if (highway) {
         for (const side of [-1, 1]) {
@@ -1578,7 +1675,6 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
             band(edgeX - 0.035, edgeX + 0.035, '#c094f0', 0.09);
             if (index % 9 === 0) band(edgeX - 0.006, edgeX + 0.006, '#756487', 0.065);
         }
-        if (!isStart) drawHighwaySpeedDetails(x1, y1, w1, x2, y2, w2, index);
     }
 }
 
@@ -1645,6 +1741,10 @@ function drawChapterBackdrop(horizonY, ts) {
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
     if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
         if (isVisible) drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, segIdx);
+        if (isHighwayTunnel(segIdx)) drawHighwayTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, segIdx);
+        if (currentLevel === LEVEL_HIGHWAY && [HIGHWAY_TUNNEL.start, HIGHWAY_TUNNEL.end].includes(segIdx) && player.z < segIdx * SEGMENT_LENGTH - 64) {
+            drawHighwayTunnelPortal(x1, y1, w1, p1Scale * HIGHWAY_TUNNEL.height * H / 2, segIdx === HIGHWAY_TUNNEL.end);
+        }
         return;
     }
     if (currentLevel === LEVEL_DREAM) {

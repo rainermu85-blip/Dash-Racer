@@ -46,7 +46,7 @@ module.exports = async function runChapter(browser, baseUrl) {
       reset(4); opponents.length = 0;
       const trafficBefore = highwayTraffic.map(car => ({ ...car })); tick(60);
       const travelled = highwayTraffic.map((car, i) => (trafficBefore[i].z - car.z + TRACK_LENGTH) % TRACK_LENGTH);
-      record('highway-oncoming-moves-in-separated-lanes', highwayTraffic.length === 22 && highwayTraffic.every((car, i) => car.x <= -1.9 && car.x >= -2.9 && car.z >= 0 && car.z < TRACK_LENGTH && travelled[i] > 1700 && travelled[i] < 2600), { positions: highwayTraffic.slice(0, 4), travelled: travelled.slice(0, 4) });
+      record('highway-oncoming-moves-in-separated-lanes', highwayTraffic.length === 22 && new Set(highwayTraffic.map(car => car.x)).size === 3 && highwayTraffic.every((car, i) => HIGHWAY_ONCOMING_LANES.includes(car.x) && car.z >= 0 && car.z < TRACK_LENGTH && travelled[i] > 1700 && travelled[i] < 2600), { positions: highwayTraffic.slice(0, 4), travelled: travelled.slice(0, 4) });
       const approaches = [];
       for (const boosted of [false, true]) {
         reset(4); opponents.length = 0;
@@ -88,7 +88,7 @@ module.exports = async function runChapter(browser, baseUrl) {
         updateChapterTraffic(1);
         flybys.push({ lap, moved, x, departed, respawned: highwayPolice !== null });
       }
-      record('highway-police-fast-separated-once-per-lap', flybys.every(s => s.moved === 7200 && s.x === -1.9 && s.departed && !s.respawned) && highwayPoliceLaps.size === 3, flybys);
+      record('highway-police-fast-separated-once-per-lap', flybys.every(s => s.moved === 7200 && s.x === HIGHWAY_ONCOMING_LANES[2] && s.departed && !s.respawned) && highwayPoliceLaps.size === 3, flybys);
       reset(4); opponents.length = 0; player.z = HIGHWAY_POLICE_TRIGGER * SEGMENT_LENGTH; player.speed = player.maxSpeed; tick(1);
       const policeBeforePause = { z: highwayPolice.z, time: chapterTime, laps: [...highwayPoliceLaps] };
       togglePause(); tick(120);

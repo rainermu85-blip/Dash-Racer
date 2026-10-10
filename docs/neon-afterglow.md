@@ -50,31 +50,30 @@ die zweite Spalte, den Rahmen oder ein Symbol. Die Mischung aus acht
 verfügbaren Neonfarben entsteht zwischen den unterschiedlichen Reklamen.
 Die Gestaltung bleibt bei jeder Vorbeifahrt gleich.
 
-Das Geschwindigkeitsgefühl wird durch kleine Leuchtreflektoren an beiden
-Leitplanken und kurze, schwache Reflexe auf dem Asphalt unterstützt. Die
-Farben folgen der vorhandenen Neonpalette und bleiben an festen
-Streckenpositionen. Schmale Randmarkierungen, dezente Asphaltfugen und
-kürzere Fahrbahnstriche liefern zusätzliche Bezugspunkte beim Vorbeifahren.
-Diese Details teilen Projektion, Höhenverlauf und Tiefenreihenfolge der
-Straße. Sie blinken nicht zeitgesteuert und überdecken die Ziellinie nicht.
-Kameraposition, Sichtwinkel, Geschwindigkeit und Boost-Effekte bleiben
-unverändert.
+Die zusätzlichen Leuchtreflektoren, Asphaltfugen und Lichtreflexe wurden
+auf Nutzerwunsch wieder entfernt. Die kürzeren Fahrbahnstriche bleiben
+und sind auf Midnight Highway um 25 Prozent breiter. Kameraposition,
+Sichtwinkel, Geschwindigkeit und Boost-Effekte bleiben unverändert.
 
-Die Details wurden zusammen mit der kontinuierlichen Gegnerdarstellung
-bei 390 und 480 Pixel Spielfeldbreite kontrolliert. Ein achtsekündiger
-regulärer Browserlauf mit Renngegnern erreichte auf der Cloud-Prüfumgebung
-rund 60 FPS ohne JavaScript-Fehler; die Renderzeit lag im Median bei
-5,4 ms und beim 95. Perzentil bei 8,6 ms. Die passende Testgruppe bestand
-132 Prüfungen. Das sind Beobachtungen dieser Prüfumgebung.
+Von Segment 490 bis 719 führt MIDTOWN LINK durch einen gemeinsamen Tunnel
+für beide dreispurigen Fahrbahnen. Bei 402 km/h dauert die Passage ungefähr
+acht Sekunden. Warmgelbe Wände, dunkle Decke, sechs Reihen Deckenleuchten
+und grüne Notausgangsdetails orientieren sich an der fotografischen Referenz.
+Dicke Säulen stehen ausschließlich im Mittelstreifen; zwischen ihnen bleibt
+der Gegenverkehr sichtbar. Die Portale sind Schlitze in breiten städtischen
+Betonbauwerken mit Stützwänden, gestaffelten Technikaufbauten und Lüftungsbänken.
+Straßenreklamen stehen nur außerhalb des Tunnels.
+Für Geometrie, Dauer und Prüfungen siehe [MIDTOWN LINK](midtown-tunnel.md).
 
 Seit dem 10. Oktober hat jedes fünfte Schild stattdessen eine leuchtende
 Farbfläche aus der vorhandenen Neonpalette. Darauf stehen dunkle Zeichen,
 Wortmarken und Symbole ohne helle Neonkerne. Die gleiche Regel gilt für
-Strecken-, Fassaden-, Laden- und Dachschilder. An der Strecke sind 15 von
-74 Schildern farbig hinterlegt, also rund 20 Prozent.
+Strecken-, Fassaden-, Laden- und Dachschilder. Seit der Tunnelergänzung
+sind an der offenen Strecke 12 von 59 Schildern farbig hinterlegt,
+also rund 20 Prozent.
 
-74 abwechselnd links und rechts platzierte Schilder ersetzen die bisherigen
-23 Schilder auf der rechten Seite. Schmale Schilder stehen am Mittelstreifen
+59 abwechselnd links und rechts platzierte Schilder stehen außerhalb des
+Tunnels. Schmale Schilder stehen am Mittelstreifen
 oder äußeren Rand; breite Billboards außerhalb der beiden Fahrbahnen.
 Zusätzliche Fassaden-, Laden- und Dachreklamen verwenden ebenfalls die
 unterschiedlichen Gestaltungen. Farbige Halos und helle Kerne entstehen
@@ -95,8 +94,8 @@ im Median bei 5,6 ms und beim 95. Perzentil bei 8,2 ms. Dies ist eine
 Umgebungsbeobachtung und keine Zusage für jedes Endgerät.
 
 Die Gegenfahrbahn liegt links neben der Rennstrecke, durch einen Mittelstreifen
-getrennt. 22 Fahrzeuge fahren entgegen der Rennrichtung auf den Spuren
-`x = -1.9` und `x = -2.9` und werden über dieselbe Segmentprojektion wie die
+getrennt. 22 Fahrzeuge fahren entgegen der Rennrichtung auf drei Spuren
+`x = -3.2`, `x = -2.5` und `x = -1.8` und werden über dieselbe Segmentprojektion wie die
 Renngegner dargestellt. Sie gehören zur Umgebung und lösen keine Rennkontakte
 aus. Leitplanken begrenzen Spieler und Renngegner auf `[-0.88, 0.88]`;
 Wandkontakt verwendet das vorhandene Stoß- und Reibungsmodell.
@@ -118,7 +117,8 @@ verwenden `chapterTime` und bleiben während einer Pause stehen. Ein Neustart
 setzt alle Fahrzeuge und Ereignisse zurück.
 
 Ab Segment 650 rast einmal je Runde ein Polizeiwagen auf der inneren
-Gegenspur vorbei, nach dem Ende der mittleren Baustelle. Er fährt mit
+Gegenspur vorbei, innerhalb der Tunnelpassage und nach dem Ende der
+mittleren Baustelle. Er fährt mit
 7.200 Welteinheiten pro Sekunde gegenüber 1.850–2.450 beim normalen
 Gegenverkehr. Seine Position verwendet die gesamte Renndistanz; ein
 vorbeigefahrenes Polizeiauto wird nicht um den Kurs zurückprojiziert.
