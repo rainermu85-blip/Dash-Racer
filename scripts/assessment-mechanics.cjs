@@ -57,7 +57,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
       record('lap-wrap', player.lap === 2 && player.z < TRACK_LENGTH && lapTimes[0] > 0, { lap: player.lap, z: player.z, times: [...lapTimes] });
       reset(5);
       const zones = [0, 450, 750, 1250, 1550, 2050, 2350].map(i => getDreamZone(i));
-      record('dream-odyssey-zones', JSON.stringify(zones) === JSON.stringify(['arctic', 'arctic', 'arctic', 'tunnel', 'dali', 'tunnel', 'underwater']), { zones, segments: segments.length });
+      record('dream-odyssey-zones', JSON.stringify(zones) === JSON.stringify(['steppe', 'tunnel', 'arctic', 'tunnel', 'dali', 'tunnel', 'underwater']), { zones, segments: segments.length });
       const finishIndices = [SEGMENT_COUNT - 1, SEGMENT_COUNT, segments.length - 1, SEGMENT_COUNT + 600];
       const finishWorlds = finishIndices.map(index => ({
         index, zone: getDreamZone(index), world: getDreamWorld(index),

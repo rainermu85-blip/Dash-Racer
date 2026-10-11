@@ -16,18 +16,19 @@ module.exports = async function runPortals(browser, baseUrl) {
         player.hitFlash = 0; chapterTime = 4000;
         for (const s of segments) s.lightning = s.pylon = s.barrier = null;
         const results = [], record = (name, pass, actual) => results.push({ name: `${name}-${W}x${H}`, pass, actual });
-        record('open-arctic-start-and-mountain-pass', getDreamWorld(0) === 'arctic' && [0,450,600,750,1249].every(i => !segments[i].isTunnel && getDreamZone(i) === 'arctic'), { start: getDreamWorld(0), tunnelSegments: segments.filter(s => s.isTunnel).length });
+        record('tundra-granite-pass-snowy-pines-sequence', getDreamWorld(0) === 'steppe' && !segments[449].isTunnel && segments[450].isTunnel && segments[749].isTunnel && !segments[750].isTunnel && getDreamZone(750) === 'arctic' && segments.slice(0,450).every(s => !s.sprite || ['rock','tundra_shrub'].includes(s.sprite)) && segments.slice(750,1250).some(s => s.sprite === 'tree'), { start: getDreamWorld(0), tunnelSegments: segments.filter(s => s.isTunnel).length, firstTunnel: DREAM_TUNNELS[0] });
 
-        for (const marine of [false, true]) {
+        for (const kind of ['alpine','dali','sea']) {
+          const marine = kind === 'sea', alpine = kind === 'alpine';
           const x = W / 2, y = H * 0.82, w = W / 13, h = H * 0.16;
           for (const exit of [false, true]) {
             ctx.fillStyle = '#ff00ff'; ctx.fillRect(0,0,W,H);
-            drawDreamTunnelPortal(x,y,w,h,marine,exit);
+            drawDreamTunnelPortal(x,y,w,h,marine,exit,alpine);
             const pixel = (px,py) => [...ctx.getImageData(Math.round(px),Math.round(py),1,1).data].slice(0,3).join(',');
             const slots = [-0.95,-1/3,0,1/3,0.95].flatMap(lane => [0.1,0.5,0.8].map(height => pixel(x+lane*w,y-height*h)));
             const facade = [-2.4,2.4].map(lane => pixel(x+lane*w,y-h*0.5));
             facade.push(pixel(x,y-h*1.4));
-            record(`${marine ? 'sea' : 'dali'}-${exit ? 'exit' : 'entry'}-facade-keeps-road-open`, slots.every(p => p === '255,0,255') && facade.every(p => p !== '255,0,255'), { slots, facade });
+            record(`${kind}-${exit ? 'exit' : 'entry'}-facade-keeps-road-open`, slots.every(p => p === '255,0,255') && facade.every(p => p !== '255,0,255'), { slots, facade });
           }
         }
 
@@ -47,7 +48,7 @@ module.exports = async function runPortals(browser, baseUrl) {
             player.z = (tunnel.start-25)*SEGMENT_LENGTH; polygons = []; render(1000);
             approaching.push(polygons.length);
           }
-          record('both-portals-draw-before-entry', approaching.every(n => n > 0), approaching);
+          record('all-three-portals-draw-before-entry', approaching.every(n => n > 0), approaching);
         } finally { paintDreamPolygon = original; }
 
         const fingerprint = () => JSON.stringify({ x:player.x,z:player.z,speed:player.speed,bonus:player.cleanSpeedBonus,fov:player.fovOffset,boosts:player.boosts,limits:getRoadLimits(player.z),items:segments.filter(s => s.pylon || s.barrier || s.lightning).length });

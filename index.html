@@ -297,6 +297,8 @@ let weatherParticles = [];
 function getDreamZone(idx) {
   // Dream Odyssey is a point-to-point route; the runout stays in the final world.
   const i = Math.max(0, Math.trunc(idx));
+  if (i < 450) return 'steppe';
+  if (i < 750) return 'tunnel';
   if (i < 1250) return 'arctic';
   if (i >= 1250 && i < 1550) return 'tunnel';
   if (i >= 1550 && i < 2050) return 'dali';
@@ -304,10 +306,11 @@ function getDreamZone(idx) {
   return 'underwater';
 }
 
-// The two Dream Odyssey tunnels are portals: each one sits between two completely
+// The three Dream Odyssey tunnels are portals: each one sits between two completely
 // different worlds and morphs from the palette of the world it leaves to the
 // palette of the world it opens into.
 const DREAM_TUNNELS = [
+  { start: 450, end: 750, from: 'steppe', to: 'arctic' },
   { start: 1250, end: 1550, from: 'arctic', to: 'dali' },
   { start: 2050, end: 2350, from: 'dali',   to: 'underwater' }
 ];
@@ -338,12 +341,13 @@ function getTunnelStyle(segIdx) {
   const a = DREAM_PORTAL_PALETTE[t.from], b = DREAM_PORTAL_PALETTE[t.to];
   const entry = clamp(1 - p / 0.07, 0, 1);
   const exit = clamp((p - 0.88) / 0.12, 0, 1);
-  const wall = interpolateColor(a.wall, b.wall, p);
+  const alpine = t.to === 'arctic';
+  const wall = alpine ? interpolateColor('#555960','#394b5c',p) : interpolateColor(a.wall, b.wall, p);
   const light = interpolateColor(a.light, b.light, p);
   // Interpolating one accent straight into the other passes through mud at the
   // midpoint. Routing it through a vivid core instead makes the middle of the
   // tunnel — the point furthest from either world — read as the portal itself.
-  const CORE = '#d8c2ff';
+  const CORE = alpine ? '#bac4ca' : '#d8c2ff';
   const accent = p < 0.5
     ? interpolateColor(a.accent, CORE, p * 2)
     : interpolateColor(CORE, b.accent, (p - 0.5) * 2);
@@ -569,27 +573,26 @@ function buildSegments() {
     } else {
         // Dream Odyssey Arctic Tunnel and Snow Desert
         // alternating zones:
-        // Arctic Aurora Desert starts at segment 0 and continues to 1250.
-        // The old first portal is now an open mountain pass.
+        // Tundra [0, 450), granite pass [450, 750), snowy pines [750, 1250).
         // Dalí Portal [1250, 1550)
         // Dalí Surreal Landscape [1550, 2050)
         // Sea Portal [2050, 2350)
         // Deep Underwater Dome [2350, 2875]
         trackDef = [
-            // Arctic starting landscape (450 segments)
+            // Sparse tundra (450 segments)
             ...makeSection(150, 0, 0),       // starting flat straight
             ...makeSection(100, 0.15, 0),    // gentle curve left
             ...makeSection(100, -0.2, 0),    // gentle curve right
             ...makeSection(50, 0, 8),        // gentle hill
             ...makeSection(50, 0, -8),       // gentle downhill
             
-            // Open arctic mountain pass (300 segments)
-            ...makeSection(50, 0, -30),      // descent into the open arctic pass
-            ...makeSection(100, -0.4, 0),    // sweeping left through the pass
-            ...makeSection(100, 0.45, 0),    // sweeping right through the pass
+            // Alpine granite tunnel (300 segments)
+            ...makeSection(50, 0, -30),      // descent into the granite pass
+            ...makeSection(100, -0.4, 0),    // sweeping left inside the mountain
+            ...makeSection(100, 0.45, 0),    // sweeping right inside the mountain
             ...makeSection(50, 0, 30),       // ascent from the pass
 
-            // Arctic Aurora Desert continues (500 segments)
+            // Snow and pines (500 segments)
             ...makeSection(100, 0, 0),       // flat straight snowy road
             ...makeSection(150, 0.35, 6),    // sweeping right curve climbing the snow pass
             ...makeSection(150, -0.4, -6),   // sweeping left curve descending the snow valley
@@ -743,8 +746,8 @@ function buildSegments() {
                         spriteX = Math.random() < 0.5 ? (-1.55 - Math.random() * 0.9) : (1.55 + Math.random() * 0.9);
                     }
                 } else if (zone === 'arctic') {
-                    if (Math.random() < (i < 750 ? 0.06 : 0.12)) {
-                        sprite = i < 750 ? (Math.random() < 0.7 ? 'tundra_shrub' : 'rock') : 'tree';
+                    if (Math.random() < 0.12) {
+                        sprite = 'tree';
                         spriteX = Math.random() < 0.5 ? (-1.6 - Math.random() * 0.9) : (1.6 + Math.random() * 0.9);
                     }
                 } else if (zone === 'dali') {
@@ -1737,7 +1740,8 @@ function drawChapterBackdrop(horizonY, ts) {
 // Faceted vaults use world-space height: their proportions stay consistent on
 // portrait and landscape displays. All fittings are scenery, never colliders.
 const DREAM_TUNNEL_HEIGHT = 2100;
-function dreamTunnelProfile(marine) {
+function dreamTunnelProfile(marine, alpine = false) {
+    if (alpine) return [[-1.22,0],[-1.30,0.50],[-1.16,0.78],[-0.83,1.03],[-0.35,1.17],[0.26,1.18],[0.76,1.05],[1.09,0.85],[1.28,0.56],[1.22,0]];
     return marine
         ? [[-1.22,0],[-1.30,0.55],[-1.12,0.88],[-0.65,1.08],[0,1.14],[0.65,1.08],[1.12,0.88],[1.30,0.55],[1.22,0]]
         : [[-1.22,0],[-1.34,0.52],[-1.12,0.87],[-0.65,1.10],[0,1.18],[0.65,1.10],[1.12,0.87],[1.34,0.52],[1.22,0]];
@@ -1761,38 +1765,38 @@ function drawDreamTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, index,
     const band = (left, right, h, color) => paintDreamPolygon([near(left,h), near(right,h), far(right,h), far(left,h)], color);
     const wallBand = (side, low, high, color) => {
         const marine = tun.to === 'underwater';
-        const lane = h => side * (1.22 + (marine ? 0.08 * h / 0.55 : 0.12 * h / 0.52));
+        const lane = h => side * (1.22 + (tun.to === 'arctic' ? (side<0 ? 0.08*h/0.50 : 0.06*h/0.56) : marine ? 0.08*h/0.55 : 0.12*h/0.52));
         paintDreamPolygon([near(lane(low),low),near(lane(high),high),far(lane(high),high),far(lane(low),low)],color);
     };
-    const marine = tun.to === 'underwater', phase = index - tun.start;
-    const profile = dreamTunnelProfile(marine);
+    const marine = tun.to === 'underwater', alpine = tun.to === 'arctic', phase = index - tun.start;
+    const profile = dreamTunnelProfile(marine,alpine);
     if (visible) {
         // Only local road surfaces: no full-screen bands or lighting overlays.
-        band(-1.22,1.22,0,marine ? '#182d32' : '#383039');
-        band(-1,1,0,marine ? '#0b171d' : '#16131c');
+        band(-1.22,1.22,0,alpine ? '#343d45' : marine ? '#182d32' : '#383039');
+        band(-1,1,0,alpine ? '#181e25' : marine ? '#0b171d' : '#16131c');
         for (const side of [-1,1]) band(side < 0 ? -1 : 0.977,side < 0 ? -0.977 : 1,0,tun.accent);
         if (Math.floor(index / 4) % 2 === 0) for (const lane of [-1/3,1/3]) band(lane-0.008,lane+0.008,0,interpolateColor(tun.light,'#8b8b96',0.35));
     }
     // Continuous material per surface replaces alternating bright/dark slices.
     for (let j = 0; j < profile.length - 1; j++) {
-        const a = profile[j], b = profile[j+1], wall = j === 0 || j === 7;
-        const shade = wall ? 0 : j === 1 || j === 6 ? 0.20 : 0.57;
+        const a = profile[j], b = profile[j+1], wall = j === 0 || j === profile.length - 2;
+        const shade = wall ? 0 : j === 1 || j === profile.length - 3 ? 0.20 : 0.57;
         const color = interpolateColor(tun.wall,'#070a11',shade);
         paintDreamPolygon([near(...a),near(...b),far(...b),far(...a)],color,true);
     }
     for (const side of [-1,1]) {
-        wallBand(side,0.055,0.10,marine ? '#405f62' : '#66565b');
+        wallBand(side,0.055,0.10,alpine ? '#727d84' : marine ? '#405f62' : '#66565b');
         wallBand(side,0.125,0.137,interpolateColor(tun.accent,tun.wall,0.32));
         if (marine) wallBand(side,0.22,0.245,'#867955'); // brass pressure line
     }
     // Broad structural vaults about a second apart, with thickness in depth.
     if (phase % 30 < 2) {
-        const rib = marine ? '#4b686b' : interpolateColor('#b7ada0',tun.accent,0.16);
+        const rib = alpine ? '#89959e' : marine ? '#4b686b' : interpolateColor('#b7ada0',tun.accent,0.16);
         for (let j = 0; j < profile.length - 1; j++) {
             const a = profile[j], b = profile[j+1];
             const inset = p => [p[0] * 0.975,p[1] - 0.018];
             paintDreamPolygon([near(...a),near(...b),near(...inset(b)),near(...inset(a))],rib);
-            paintDreamPolygon([near(...inset(a)),near(...inset(b)),far(...inset(b)),far(...inset(a))],marine ? '#304b50' : '#726b69');
+            paintDreamPolygon([near(...inset(a)),near(...inset(b)),far(...inset(b)),far(...inset(a))],alpine ? '#495660' : marine ? '#304b50' : '#726b69');
         }
     }
     if (w1 < 6 || w1 > W * 10) return;
@@ -1802,7 +1806,8 @@ function drawDreamTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, index,
         band(lane-0.115,lane+0.115,ceiling-0.012,marine ? '#48646b' : '#70605a');
         band(lane-0.071,lane+0.071,ceiling-0.018,tun.light);
     }
-    if (phase % 30 === 12) {
+    if (alpine) drawAlpineTunnelDetails(near,w1,h1,phase);
+    if (!alpine && phase % 30 === 12) {
         for (const side of [-1,1]) {
             const at = near(side * (marine ? 1.278 : 1.312),0.40), rw = Math.max(1,w1*0.065), rh = h1*0.16;
             ctx.save(); ctx.translate(at.x,at.y);
@@ -1841,7 +1846,7 @@ function drawDreamTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, index,
         ctx.strokeStyle = '#e7d5a4'; ctx.lineWidth = Math.max(0.6,w1*0.004); ctx.beginPath(); ctx.moveTo(at.x,at.y); ctx.lineTo(at.x+rw*0.35,at.y-rh*0.45); ctx.stroke();
         for (let k = 0; k < 4; k++) wallBand(1,0.31+k*0.035,0.328+k*0.035,k%2 ? '#449caa' : '#5cc4ac');
     }
-    if (!marine && phase % 48 === 24) {
+    if (!marine && !alpine && phase % 48 === 24) {
         // A gilded suspended mobile: two offset ellipses orbit a small orb.
         const at = near(0,1.035), rw = w1*0.12, rh = h1*0.05;
         ctx.strokeStyle = '#ab916e'; ctx.lineWidth = Math.max(0.7,w1*0.007);
@@ -1851,7 +1856,91 @@ function drawDreamTunnelSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, index,
         ctx.fillStyle = '#f0d8af'; ctx.beginPath(); ctx.arc(at.x,at.y,Math.max(1,w1*0.022),0,Math.PI*2); ctx.fill();
     }
 }
-function drawDreamTunnelPortal(x,y,w,h,marine,exit) {
+// Sculptures and carvings live entirely on the rock facade or tunnel walls.
+function drawAlpineIbex(x,y,width,height,facing,color) {
+    ctx.save(); ctx.translate(x,y); ctx.scale(width*facing,height);
+    const body = [[-0.55,-0.16],[-0.4,-0.31],[0.08,-0.28],[0.24,-0.40],[0.30,-0.58],[0.46,-0.57],[0.56,-0.46],[0.44,-0.40],[0.29,-0.28],[0.27,0],[0.18,0],[0.13,-0.17],[-0.21,-0.15],[-0.30,0],[-0.4,0],[-0.35,-0.19],[-0.52,-0.10]];
+    ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(...body[0]);
+    for (let i=1;i<body.length;i++) ctx.lineTo(...body[i]); ctx.closePath(); ctx.fill();
+    // Thick backward-curving, ridged horns distinguish an ibex from a deer.
+    ctx.lineCap='round'; ctx.strokeStyle=color; ctx.lineWidth=0.07;
+    for (const offset of [0,0.065]) {
+        ctx.beginPath(); ctx.moveTo(0.34+offset,-0.56); ctx.bezierCurveTo(0.31+offset,-0.97,-0.16+offset,-1.04,-0.30+offset,-0.79); ctx.stroke();
+    }
+    ctx.strokeStyle='#596167'; ctx.lineWidth=0.018;
+    for (let k=0;k<6;k++) {
+        const t=k/6, u=1-t;
+        const hx=u*u*u*0.34+3*u*u*t*0.31-3*u*t*t*0.16-t*t*t*0.30;
+        const hy=-u*u*u*0.56-3*u*u*t*0.97-3*u*t*t*1.04-t*t*t*0.79;
+        ctx.beginPath();ctx.moveTo(hx-0.035,hy-0.005);ctx.lineTo(hx+0.035,hy+0.025);ctx.stroke();
+    }
+    ctx.fillStyle='#3e464d';ctx.beginPath();ctx.ellipse(0.44,-0.51,0.018,0.015,0,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+}
+function drawAlpineEdelweiss(x,y,width,height) {
+    ctx.save();ctx.translate(x,y);ctx.scale(width,height);
+    ctx.fillStyle='#cdd0c7';
+    for (let k=0;k<7;k++) { const a=k*Math.PI*2/7;ctx.beginPath();ctx.ellipse(Math.cos(a)*0.43,Math.sin(a)*0.43,0.45,0.14,a,0,Math.PI*2);ctx.fill(); }
+    ctx.fillStyle='#c6b379';
+    for (const [px,py] of [[0,0],[-0.13,-0.08],[0.12,-0.08],[0,0.14]]) {ctx.beginPath();ctx.arc(px,py,0.09,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+}
+function drawAlpineTunnelDetails(near,w,h,phase) {
+    // Local broken mineral seams and quartz inclusions, never random per frame.
+    if (phase%12===5) for (const side of [-1,1]) {
+        const at=near(side*1.27,0.50);
+        ctx.strokeStyle='#6f7b83';ctx.lineWidth=Math.max(0.5,w*0.005);ctx.beginPath();
+        ctx.moveTo(at.x,at.y-h*0.23);ctx.lineTo(at.x+side*w*0.035,at.y-h*0.10);ctx.lineTo(at.x-side*w*0.015,at.y);ctx.lineTo(at.x+side*w*0.026,at.y+h*0.10);ctx.stroke();
+        ctx.fillStyle='#aeb6ba';ctx.beginPath();ctx.ellipse(at.x+side*w*0.02,at.y-h*0.08,w*0.012,h*0.035,side*0.20,0,Math.PI*2);ctx.fill();
+    }
+    if (phase%48===16) {
+        for (const side of [-1,1]) {
+            const at=near(side*1.275,0.36);
+            ctx.fillStyle='#3b424b';ctx.beginPath();ctx.ellipse(at.x,at.y,w*0.07,h*0.17,0,0,Math.PI*2);ctx.fill();
+            if (side<0) drawAlpineIbex(at.x,at.y+h*0.08,w*0.095,h*0.22,-1,'#c2c6c5');
+            else drawAlpineEdelweiss(at.x,at.y,w*0.06,h*0.12);
+        }
+    }
+    if (phase%36===20) {
+        // Rock-cut ledge with a tiny amber bronze lantern.
+        for (const side of [-1,1]) {
+            const at=near(side*1.28,0.25),rw=w*0.035,rh=h*0.07;
+            ctx.fillStyle='#384047';ctx.fillRect(at.x-rw,at.y-rh,rw*2,rh*1.6);
+            ctx.fillStyle='#d4ba86';ctx.fillRect(at.x-rw*0.42,at.y-rh*0.72,rw*0.84,rh*0.95);
+        }
+    }
+}
+function drawAlpineTunnelPortal(x,y,w,h,exit) {
+    const pt=(lane,height)=>({x:x+lane*w,y:y-height*h});
+    const profile=dreamTunnelProfile(false,true);
+    const ridge=[[-6.5,0],[-5.5,0.8],[-4.3,1.16],[-3.5,1.9],[-2.65,1.55],[-1.55,2.18],[-0.3,1.76],[1.05,2.08],[2.5,1.67],[3.2,2.05],[4.1,1.42],[5.6,0.8],[6.5,0]];
+    paintDreamPolygon([...ridge.map(p=>pt(...p)),...profile.slice().reverse().map(p=>pt(...p))],'#69727b',true);
+    for (const side of [-1,1]) {
+        paintDreamPolygon([[side*1.6,0],[side*3.1,0],[side*3.5,1.88],[side*2.65,1.55],[side*1.55,2.15],[side*1.45,1.3]].map(p=>pt(...p)),side<0 ? '#889198' : '#525e69');
+        paintDreamPolygon([[side*3.1,0],[side*5.6,0.78],[side*4.1,1.40],[side*3.5,1.88]].map(p=>pt(...p)),side<0 ? '#535f6a' : '#7b858c');
+        for(let k=0;k<4;k++) paintDreamPolygon([[side*2.4,0.12+k*0.28],[side*4.1,0.3+k*0.25],[side*4.0,0.32+k*0.25],[side*2.4,0.15+k*0.28]].map(p=>pt(...p)),'#424e58');
+        // Sparse snow caps; most of the exposed rock stays recognizably granite.
+        paintDreamPolygon([[side*3.48,1.89],[side*3.18,1.60],[side*3.36,1.67],[side*3.57,1.61],[side*3.77,1.64]].map(p=>pt(...p)),exit ? '#ecf2f3' : '#b8c0c2');
+    }
+    paintDreamPolygon([[-1.55,2.18],[-0.3,1.76],[-0.5,1.3],[-1.2,1.3]].map(p=>pt(...p)),'#99a2a7');
+    for(let j=0;j<profile.length-1;j++) {
+        const a=profile[j],b=profile[j+1],outer=p=>[p[0]*1.14,p[1]+0.12];
+        paintDreamPolygon([pt(...a),pt(...outer(a)),pt(...outer(b)),pt(...b)],j%3 ? '#9ca5aa' : '#b1b9bc',true);
+        const mid=p=>[p[0]*1.055,p[1]+0.035];
+        paintDreamPolygon([pt(...a),pt(...mid(a)),pt(...mid(b)),pt(...b)],'#596771');
+    }
+    // Relief sculptures are in front of the completed facade, not buried
+    // beneath a later rock facet.
+    for (const side of [-1,1]) {
+        const base=pt(side*0.65,1.56);
+        paintDreamPolygon([[side*0.32,1.48],[side*0.97,1.48],[side*0.89,1.57],[side*0.39,1.57]].map(p=>pt(...p)),'#b1b7b9');
+        drawAlpineIbex(base.x,base.y,w*0.55,h*0.34,-side,'#d3d6d4');
+    }
+    const badge=pt(0,1.51);drawAlpineEdelweiss(badge.x,badge.y,w*0.17,h*0.11);
+}
+
+function drawDreamTunnelPortal(x,y,w,h,marine,exit,alpine = false) {
+    if (alpine) { drawAlpineTunnelPortal(x,y,w,h,exit); return; }
     const profile = dreamTunnelProfile(marine);
     const pt = (lane,height) => ({x:x+lane*w,y:y-height*h});
     // Filled facade around a transparent vaulted opening. A single substantial
@@ -2025,7 +2114,7 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         }
         const mouth = DREAM_TUNNELS.find(t => segIdx === t.start || segIdx === t.end);
         if (mouth && player.z < segIdx * SEGMENT_LENGTH - 64) {
-            drawDreamTunnelPortal(x1,y1,w1,p1Scale * DREAM_TUNNEL_HEIGHT * H / 2,mouth.to === 'underwater',segIdx === mouth.end);
+            drawDreamTunnelPortal(x1,y1,w1,p1Scale * DREAM_TUNNEL_HEIGHT * H / 2,mouth.to === 'underwater',segIdx === mouth.end,mouth.to === 'arctic');
         }
         return;
     }
