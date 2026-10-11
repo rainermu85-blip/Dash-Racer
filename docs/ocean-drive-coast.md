@@ -73,6 +73,25 @@ geteilt und zusammen mit Strand, Wasser und davorliegendem Gelände
 gezeichnet. Eine gemeinsame seitliche Projektion hält den Steg gerade.
 Die Nahgrenze schneidet auch die Modellflächen in Weltkoordinaten ab.
 
+## Miami-Palmen
+
+Die Küstenpalmen besitzen jetzt geschlossene dunkle Silhouetten mit dünneren,
+gebogenen Stämmen und hängenden, gefiederten Wedeln. Schmale, gekrümmte
+Blattfiedern lassen kleine Zwischenräume frei; die alten neonfarbenen
+Drahtspeichen entfallen. Dunkles Türkisgrün, einzelne cyanfarbene Lichtkanten
+und pinke Akzente greifen den Miami-Synthwave-Stil auf. Bei Nacht verdunkeln
+sich die Blattflächen, während ausgewählte beleuchtete Kanten sichtbar bleiben.
+
+Acht feste Kronen- und Stammvarianten werden anhand der Streckenposition
+gewählt. Die Geometrie wird einmal als Canvaspfade angelegt und wiederverwendet.
+Ein sanfter Wind bewegt nur die Krone um ihren Ansatz in einem ungefähr
+14 Sekunden langen Zyklus; der Stammfuß bleibt fest auf dem Boden.
+Sunset Hills verwendet dieselben organischen Formen in wärmeren Grün- und
+Rosétönen. Die bestehende Platzierung und Perspektivskalierung bleiben erhalten.
+
+Tag, Nacht, nahe und entfernte Ansichten wurden bei 390 und 480 Pixeln Breite
+in Ocean Drive geprüft; Sunset Hills wurde ebenfalls in Fahransichten geprüft.
+
 ## Flotte und Buchten
 
 32 verankerte Boote verteilen sich auf sechs unterschiedlich dicht belegte
