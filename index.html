@@ -255,6 +255,26 @@ const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
 const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
 const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'cabanas'],[390,'loungers'],
     [488,'lifeguard'],[558,'surfboards'],[795,'cabanas'],[875,'loungers'],[923,'lifeguard'],[950,'surfboards']]);
+// Uneven anchorages: lengths and offshore clearances are in metres, with a
+// nearby opponent's 1.9 m width providing the visual scale reference.
+const OCEAN_BOAT_BAYS = [
+    { name:'sunset', boats:[[78,'motorboat',4.2,3,0,1],[87,'sailboat',6.2,7,0,-1],
+        [94,'yacht',12.8,12,0,1],[101,'cruiser',7.2,5,1,-1],[111,'sailboat',7.4,14,1,1],
+        [121,'yacht',10.5,7,1,-1],[130,'motorboat',3.6,5,2,1]] },
+    { name:'flowers', boats:[[310,'cruiser',6.8,4,0,1],[320,'sailboat',6.6,9,0,-1],
+        [329,'yacht',14.2,15,2,1],[344,'motorboat',4.5,4,1,-1],[351,'sailboat',5.8,6,1,1],
+        [365,'yacht',11.5,9,1,-1],[378,'cruiser',8.2,16,2,1]] },
+    { name:'rock-exit', boats:[[588,'sailboat',5.4,3,2,-1],[603,'motorboat',3.8,4,0,1]] },
+    { name:'whale-cove', boats:[[594,'motorboat',4.1,4,1,-1],[611,'sailboat',7.0,10,2,1],
+        [626,'yacht',11.8,8,0,-1],[638,'cruiser',7.6,14,1,1],[656,'sailboat',5.6,6,0,-1]] },
+    { name:'palm-bay', boats:[[806,'cruiser',8.0,5,2,1],[817,'sailboat',7.6,12,1,-1],
+        [827,'yacht',15.0,15,2,1],[837,'motorboat',3.4,4,0,-1],[847,'yacht',11.0,8,1,-1],
+        [860,'sailboat',6.4,7,0,1],[877,'cruiser',6.5,16,0,-1],[891,'motorboat',4.6,5,2,1]] },
+    { name:'marina', boats:[[941,'yacht',12.0,18,1,1],[969,'sailboat',6.0,12,2,-1],
+        [982,'cruiser',7.4,9,0,1]] }
+];
+const OCEAN_BOATS_BY_SEGMENT = new Map(OCEAN_BOAT_BAYS.flatMap(bay=>bay.boats.map(
+    ([index,kind,length,offshore,variant,heading])=>[index,{kind,length,offshore,variant,heading,bay:bay.name}])));
 const OCEAN_ROCK_DAY = ['#39202b','#572a35','#733941','#48232f','#301b27','#98534d','#281421'];
 const OCEAN_ROCK_NIGHT = ['#160e19','#281522','#371d2b','#22121e','#170e18','#542b38','#120b15'];
 let oceanCliffProfiles = [], oceanCliffVegetation = [], oceanPierSlices = [], oceanRockPalette = OCEAN_ROCK_DAY.slice();
@@ -698,33 +718,15 @@ function buildSegments() {
                 }
             }
 
-            // Distribute beautiful yachts, sailboats, and windsurfers on the ocean (closer to the beach so they are fully visible!)
-            // Cluster 1 (Yachts): around segment 80 to 110 (straight)
-            if (i === 85) { seaSprite = 'yacht'; seaSpriteX = 4.5; }
-            else if (i === 92) { seaSprite = 'yacht'; seaSpriteX = 5.2; }
-            else if (i === 98) { seaSprite = 'yacht'; seaSpriteX = 4.8; }
-            else if (i === 108) { seaSprite = 'yacht'; seaSpriteX = 4.4; } // Beautiful yacht framing the new gnarled tree
-            // Cluster 2 (Sailboats): around segment 320 to 365 (left curve)
-            else if (i === 325) { seaSprite = 'sailboat'; seaSpriteX = 4.2; }
-            else if (i === 332) { seaSprite = 'sailboat'; seaSpriteX = 5.1; }
-            else if (i === 340) { seaSprite = 'sailboat'; seaSpriteX = 4.6; }
-            else if (i === 348) { seaSprite = 'sailboat'; seaSpriteX = 5.4; }
-            else if (i === 358) { seaSprite = 'sailboat'; seaSpriteX = 4.9; }
-            // Windsurfers and the Shark victim distributed here and there
-            else if (i === 6) { seaSprite = 'windsurfer'; seaSpriteX = 3.6; } // Visible during start countdown and after finishing
-            else if (i === SEGMENT_COUNT - 8) { seaSprite = 'windsurfer'; seaSpriteX = 3.8; } // Visible right before/at finishing
+            // Keep the existing surfers and shark encounter between anchorages.
+            if (i === 6) { seaSprite = 'windsurfer'; seaSpriteX = 3.6; }
+            else if (i === SEGMENT_COUNT - 8) { seaSprite = 'windsurfer'; seaSpriteX = 3.8; }
             else if (i === 200) { seaSprite = 'windsurfer'; seaSpriteX = 4.1; }
             else if (i === 215) { seaSprite = 'windsurfer'; seaSpriteX = 4.6; }
-            else if (i === 335) { seaSprite = 'windsurfer_victim'; seaSpriteX = 4.3; } // Shark attack target (moved to segment 335)!
+            else if (i === 335) { seaSprite = 'windsurfer_victim'; seaSpriteX = 4.3; }
             else if (i === 650) { seaSprite = 'windsurfer'; seaSpriteX = 4.8; }
             else if (i === 670) { seaSprite = 'windsurfer'; seaSpriteX = 4.2; }
             else if (i === 740) { seaSprite = 'windsurfer'; seaSpriteX = 4.5; }
-            // Cluster 3 (Yachts & Sailboats): around segment 815 to 870 (left curve)
-            else if (i === 815) { seaSprite = 'yacht'; seaSpriteX = 4.3; }
-            else if (i === 824) { seaSprite = 'sailboat'; seaSpriteX = 5.0; }
-            else if (i === 842) { seaSprite = 'yacht'; seaSpriteX = 4.7; }
-            else if (i === 855) { seaSprite = 'sailboat'; seaSpriteX = 5.3; }
-            else if (i === 865) { seaSprite = 'sailboat'; seaSpriteX = 4.5; }
         } else if (currentLevel === LEVEL_HILLS) {
             if (!isStartLine) {
                 if (i % 56 === 20) {
@@ -802,6 +804,7 @@ function buildSegments() {
             index: i, worldZ: i * SEGMENT_LENGTH, worldY: worldY, curve: def.curve, hillDelta: def.hill, color: i % 2, isStart: isStartLine,
             sprite: sprite, spriteX: spriteX,
             seaSprite: seaSprite, seaSpriteX: seaSpriteX,
+            oceanBoat: currentLevel === 2 ? OCEAN_BOATS_BY_SEGMENT.get(i) : null,
             isBridge: isBridge, isPillar: isPillar,
             isTunnel: isTunnel
         });
@@ -5104,127 +5107,101 @@ function drawGnarledTreeSprite(sx, sy, sc) {
   ctx.restore();
 }
 
-function drawSailboatSprite(sx, sy, sc) {
-  const w = ~~(sc * 120); if (w < 4) return;
-  ctx.save();
-  
-  // Symmetrischer, sanfter Wellenglow unter dem Boot (als schöne Reflexion)
-  ctx.strokeStyle = 'rgba(0, 255, 210, 0.25)';
-  ctx.lineWidth = Math.max(1, ~~(sc * 2.5));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 45, sy + sc * 8);
-  ctx.lineTo(sx + sc * 35, sy + sc * 8);
-  ctx.moveTo(sx - sc * 30, sy + sc * 13);
-  ctx.lineTo(sx + sc * 20, sy + sc * 13);
-  ctx.stroke();
-
-  // Rumpf (Schnittig, elegant)
-  ctx.fillStyle = '#110515';
-  ctx.strokeStyle = '#ff007f';
-  ctx.lineWidth = Math.max(1.5, ~~(sc * 3));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 35, sy - sc * 5);
-  ctx.lineTo(sx + sc * 30, sy - sc * 5);
-  ctx.lineTo(sx + sc * 15, sy + sc * 5);
-  ctx.lineTo(sx - sc * 25, sy + sc * 5);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Mast
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = Math.max(1.5, ~~(sc * 3));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 5, sy - sc * 5);
-  ctx.lineTo(sx - sc * 5, sy - sc * 85);
-  ctx.stroke();
-
-  // Hauptsegel (glowing cyan)
-  ctx.fillStyle = '#00ffd2';
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 5, sy - sc * 80);
-  ctx.quadraticCurveTo(sx - sc * 18, sy - sc * 50, sx - sc * 28, sy - sc * 20);
-  ctx.lineTo(sx - sc * 6, sy - sc * 20);
-  ctx.closePath();
-  ctx.fill();
-
-  // Vorsegel / Focksegel (glowing pink)
-  ctx.fillStyle = '#ff00c1';
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 3, sy - sc * 65);
-  ctx.quadraticCurveTo(sx + sc * 10, sy - sc * 40, sx + sc * 18, sy - sc * 15);
-  ctx.lineTo(sx - sc * 3, sy - sc * 15);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
+function drawSailboatSprite(sx,sy,sc,variant=0,night=0) {
+    if(sc*65<4)return;
+    beginChapterSprite(sx,sy,sc);
+    const sails=[['#00e5ce','#ff46b7'],['#ffe5b6','#36d3de'],['#f49cca','#efe6bf']][variant%3];
+    const poly=(points,color)=>paintOceanPolygon(points.map(([x,y])=>({x,y})),color);
+    // The familiar two curved sails remain, above a shaded cream hull.
+    poly([[-35,-10],[30,-10],[15,0],[-25,0]],night>.7?'#86929f':'#f5dcb9');
+    poly([[-35,-10],[30,-10],[24,-7],[-32,-7]],'#de608e');
+    poly([[-20,-11],[3,-11],[0,-17],[-13,-17]],'#526879');
+    ctx.fillStyle='#133144';ctx.fillRect(-14,-15,11,3);
+    ctx.strokeStyle='#cddddd';ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.moveTo(-5,-10);ctx.lineTo(-5,-90);ctx.stroke();
+    ctx.fillStyle=sails[0];ctx.beginPath();ctx.moveTo(-6,-85);
+    ctx.quadraticCurveTo(-19,-55,-29,-25);ctx.lineTo(-6,-25);ctx.closePath();ctx.fill();
+    ctx.fillStyle=sails[1];ctx.beginPath();ctx.moveTo(-3,-70);
+    ctx.quadraticCurveTo(11,-45,19,-20);ctx.lineTo(-3,-20);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(255,250,223,.55)';ctx.lineWidth=.6;
+    ctx.beginPath();ctx.moveTo(-7,-64);ctx.lineTo(-22,-39);ctx.moveTo(-2,-52);ctx.lineTo(12,-30);ctx.stroke();
+    ctx.strokeStyle='#9db5bc';ctx.lineWidth=.7;
+    ctx.beginPath();ctx.moveTo(-5,-89);ctx.lineTo(-31,-10);ctx.moveTo(-5,-89);ctx.lineTo(26,-10);ctx.stroke();
+    ctx.restore();
 }
 
-function drawYachtSprite(sx, sy, sc) {
-  const w = ~~(sc * 200); if (w < 6) return;
-  ctx.save();
-  
-  // Neon-Wellen-Wake
-  ctx.strokeStyle = 'rgba(255, 0, 193, 0.25)';
-  ctx.lineWidth = Math.max(1, ~~(sc * 3));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 80, sy + sc * 10);
-  ctx.lineTo(sx + sc * 60, sy + sc * 10);
-  ctx.moveTo(sx - sc * 60, sy + sc * 15);
-  ctx.lineTo(sx + sc * 40, sy + sc * 15);
-  ctx.stroke();
-
-  // Hauptrumpf
-  ctx.fillStyle = '#0d041a';
-  ctx.strokeStyle = '#00ffd2';
-  ctx.lineWidth = Math.max(1.5, ~~(sc * 4));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 60, sy - sc * 8);
-  ctx.lineTo(sx + sc * 45, sy - sc * 8);
-  ctx.lineTo(sx + sc * 65, sy - sc * 18);
-  ctx.lineTo(sx + sc * 75, sy - sc * 18);
-  ctx.lineTo(sx + sc * 55, sy + sc * 8);
-  ctx.lineTo(sx - sc * 50, sy + sc * 8);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Kajütaufbaudeck
-  ctx.fillStyle = '#220835';
-  ctx.strokeStyle = '#ff00c1';
-  ctx.lineWidth = Math.max(1.5, ~~(sc * 3));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 35, sy - sc * 18);
-  ctx.lineTo(sx + sc * 30, sy - sc * 18);
-  ctx.lineTo(sx + sc * 45, sy - sc * 32);
-  ctx.lineTo(sx - sc * 25, sy - sc * 32);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Kleine glühende Kabinenfenster
-  ctx.fillStyle = '#00ffd2';
-  for (let xOff = -15; xOff <= 25; xOff += 15) {
-    ctx.fillRect(sx + sc * xOff, sy - sc * 26, sc * 8, sc * 4);
-  }
-
-  // Neon-Heckflagge
-  ctx.strokeStyle = '#ffb700';
-  ctx.lineWidth = Math.max(1, ~~(sc * 2));
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 45, sy - sc * 18);
-  ctx.lineTo(sx - sc * 45, sy - sc * 36);
-  ctx.stroke();
-  
-  ctx.fillStyle = '#ff00c1';
-  ctx.beginPath();
-  ctx.moveTo(sx - sc * 45, sy - sc * 36);
-  ctx.lineTo(sx - sc * 57, sy - sc * 31);
-  ctx.lineTo(sx - sc * 45, sy - sc * 26);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.restore();
+function drawOceanBoatSprite(sx,sy,pixelsPerMetre,boat,night=0) {
+    const size=pixelsPerMetre*boat.length;
+    if(size<4)return;
+    ctx.save();ctx.translate(sx,sy);
+    // Anchored boats have small local ripples, rather than a moving wake.
+    ctx.strokeStyle=night>.7?'rgba(75,161,197,.22)':'rgba(138,217,230,.34)';
+    ctx.lineWidth=Math.max(.6,pixelsPerMetre*.05);
+    for(let i=0;i<3;i++){
+        ctx.beginPath();ctx.ellipse(0,pixelsPerMetre*(.08+i*.16),size*(.43-i*.07),pixelsPerMetre*(.08+i*.025),0,.15,Math.PI-.15);ctx.stroke();
+    }
+    ctx.scale(boat.heading,1);
+    if(boat.kind==='sailboat'){
+        drawSailboatSprite(0,0,size/65,boat.variant,night);ctx.restore();return;
+    }
+    ctx.scale(size,size);
+    const poly=(points,color)=>paintOceanPolygon(points.map(([x,y])=>({x,y})),color);
+    const accent=['#24bfc1','#df709e','#7697d1'][boat.variant%3];
+    const hull=night>.7?'#a1a6b7':'#f7e6cf',light=night>.7?'#c4cad5':'#fff2dd';
+    const glass=night>.7?'#284c68':'#17394c';
+    const rail=(points)=>{
+        ctx.strokeStyle=night>.7?'#8d99aa':'#d1d9d8';ctx.lineWidth=.007;ctx.beginPath();
+        for(let i=0;i<points.length;i++){const [x,y]=points[i];if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);}ctx.stroke();
+    };
+    if(boat.kind==='motorboat'){
+        // Open runabout: low windshield, cockpit, bench and an outboard engine.
+        poly([[-.48,-.12],[.25,-.11],[.5,-.18],[.41,-.045],[.30,0],[-.40,0]],hull);
+        poly([[-.43,-.065],[.39,-.07],[.33,-.035],[-.41,-.03]],accent);
+        poly([[-.31,-.12],[.22,-.12],[.11,-.19],[-.24,-.19]],'#40566b');
+        poly([[.07,-.14],[.17,-.14],[.08,-.31],[-.05,-.31]],'#80c6d0');
+        poly([[-.27,-.15],[-.10,-.15],[-.10,-.23],[-.25,-.23]],'#deb498');
+        poly([[-.47,-.07],[-.55,-.07],[-.55,-.22],[-.49,-.22]],'#263544');
+        rail([[.17,-.16],[.40,-.18],[.47,-.21]]);
+    }else{
+        // The pointed bow, shaded hull and teak deck read as a solid boat.
+        poly([[-.5,-.135],[.27,-.135],[.5,-.20],[.39,-.045],[.25,0],[-.43,0]],hull);
+        poly([[-.47,-.065],[.40,-.075],[.36,-.04],[-.45,-.035]],accent);
+        poly([[-.5,-.14],[.27,-.14],[.47,-.20],[.22,-.19],[-.43,-.19]],'#c99b72');
+        poly([[-.33,-.15],[.23,-.15],[.14,-.31],[-.22,-.31]],light);
+        poly([[-.21,-.29],[.10,-.29],[.18,-.20],[-.30,-.20]],glass);
+        poly([[-.12,-.29],[-.105,-.29],[-.16,-.20],[-.175,-.20]],'#d5d6d1');
+        poly([[.045,-.29],[.06,-.29],[.115,-.20],[.10,-.20]],'#d5d6d1');
+        if(boat.kind==='yacht'){
+            // Flybridge, shaded overhang, radar arch and a small stern flag.
+            poly([[-.25,-.315],[.12,-.315],[.085,-.355],[-.20,-.355]],hull);
+            poly([[-.25,-.315],[.12,-.315],[.11,-.30],[-.27,-.30]],'#767d90');
+            poly([[-.17,-.355],[-.05,-.355],[-.06,-.405],[-.16,-.405]],glass);
+            rail([[-.26,-.355],[-.26,-.40],[.07,-.40],[.09,-.355]]);
+            rail([[-.10,-.40],[-.10,-.47],[.025,-.47],[.05,-.40]]);
+            ctx.fillStyle='#d5dfdf';ctx.fillRect(-.04,-.51,.075,.026);
+            rail([[-.43,-.19],[-.43,-.32]]);
+            poly([[-.43,-.32],[-.52,-.30],[-.43,-.27]],accent);
+            // Aft sunbed and swimming platform make the stern distinct.
+            poly([[-.43,-.19],[-.30,-.19],[-.31,-.235],[-.41,-.235]],'#dfa1af');
+            poly([[-.50,-.025],[-.57,-.025],[-.57,-.055],[-.50,-.065]],'#ac805f');
+        }else{
+            poly([[-.24,-.315],[.16,-.315],[.13,-.345],[-.21,-.345]],accent);
+            rail([[-.08,-.34],[-.07,-.43]]);
+        }
+        for(let j=0;j<(boat.kind==='yacht'?5:3);j++){
+            const x=-.31+j*.115;ctx.fillStyle=glass;ctx.beginPath();ctx.ellipse(x,-.10,.025,.013,0,0,Math.PI*2);ctx.fill();
+        }
+        rail([[-.46,-.17],[-.46,-.23],[-.34,-.23]]);
+        rail([[.18,-.20],[.43,-.25],[.46,-.23]]);
+        for(const x of[.22,.32,.42])rail([[x,-.18],[x,-.24]]);
+        if(night>.45){
+            ctx.fillStyle='rgba(255,221,157,.78)';ctx.fillRect(-.20,-.245,.035,.015);ctx.fillRect(.02,-.245,.035,.015);
+        }
+    }
+    // Navigation lights stay on the boat; no scene-wide flashing or bloom.
+    ctx.fillStyle='#e8668c';ctx.beginPath();ctx.arc(-.40,-.145,.009,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#69dfc7';ctx.beginPath();ctx.arc(.34,-.18,.009,0,Math.PI*2);ctx.fill();
+    ctx.restore();
 }
 
 function drawWindsurferSprite(sx, sy, sc, ts) {
@@ -8382,6 +8359,18 @@ function render(ts) {
         s.spriteX = seg.spriteX;
     }
 
+    if (seg.oceanBoat) {
+        const boat=seg.oceanBoat;
+        const carScale=p2.scale*(692*H/Math.max(10,H*.5-76))*responsiveFactor;
+        const metres=carScale*136/1.9;
+        // The full hull lies beyond the actual sand/water boundary at lane 3.8.
+        const x=rx2+3.8*p2.w+(boat.offshore+boat.length*.5)*metres;
+        if(x-boat.length*metres*.58<W+3 && x+boat.length*metres*.58>-3){
+            const s=getCleanSpriteFromPool();s.type='ocean_boat';s.x=x;s.y=p2.y;s.sc=metres;
+            s.boat=boat;s.depth=n;s.clipY=segmentClipY;s.segIdx=segIdx;
+        }
+    }
+
     if (seg.seaSprite) {
         const s = getCleanSpriteFromPool();
         s.type = seg.seaSprite; // 'sailboat' or 'yacht'
@@ -8611,12 +8600,10 @@ function render(ts) {
         drawStrandedWhaleSprite(s.x, s.y, s.sc, ts, s.rx2, s.w);
         ctx.restore();
     }
-    else if (s.type === 'sailboat') {
+    else if (s.type === 'ocean_boat') {
         ctx.save();
-        if (s.clipY !== undefined) {
-            ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
-        }
-        drawSailboatSprite(s.x, s.y, s.sc);
+        if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
+        drawOceanBoatSprite(s.x,s.y,s.sc,s.boat,currentProgressRatio);
         ctx.restore();
     }
     else if (s.type === 'windsurfer') {
@@ -8633,14 +8620,6 @@ function render(ts) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
         drawSharkAttackSprite(s.x, s.y, s.sc, ts);
-        ctx.restore();
-    }
-    else if (s.type === 'yacht') {
-        ctx.save();
-        if (s.clipY !== undefined) {
-            ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
-        }
-        drawYachtSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
     else if (s.type === 'pylon') {

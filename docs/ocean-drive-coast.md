@@ -73,6 +73,35 @@ geteilt und zusammen mit Strand, Wasser und davorliegendem Gelände
 gezeichnet. Eine gemeinsame seitliche Projektion hält den Steg gerade.
 Die Nahgrenze schneidet auch die Modellflächen in Weltkoordinaten ab.
 
+## Flotte und Buchten
+
+32 verankerte Boote verteilen sich auf sechs unterschiedlich dicht belegte
+Küstenbereiche: sieben in der Sonnenuntergangsbucht, sieben an der blühenden
+Felsküste, zwei nach der Felsdurchfahrt, fünf in der Umgebung der Walbucht,
+acht in der großen Palmenbucht und drei weiter draußen beim Pier. Die beiden
+am Pier festgemachten Boote ergänzen diese Flotte. Abstände entlang der
+Küste, Entfernung vom Strand, Blickrichtung, Größe und Akzentfarbe wechseln.
+
+Die neuen Motorjachten haben helle, schattierte Rümpfe, Teakdecks, dunkle
+Fensterbänder, Bullaugen, Reling, Oberdeck und Radaraufbau. Kleinere Kajütboote
+tragen einen flacheren Aufbau; offene Motorboote haben Cockpit, Windschutzscheibe
+und Außenborder. Die vertrauten zwei geschwungenen Segel bleiben erhalten,
+mit drei Farbkombinationen, einem hellen Rumpf und feiner Takelage.
+
+Die angenäherte Größenreferenz ist ein Auto von 1,9 Metern Breite auf derselben
+projizierten Entfernung. Motorboote entsprechen etwa 3,4–4,6 Metern Länge,
+Kajütboote 6,5–8,2 Metern, Segelboote 5,4–7,6 Metern und Jachten 10,5–15 Metern.
+Entfernte Boote werden perspektivisch kleiner. Die komplette Rumpfbreite wird
+bei der Platzierung hinter der tatsächlichen Wassergrenze berücksichtigt;
+größere Jachten reichen dadurch nicht auf den Strand. Kleine örtliche Wellen
+und gedimmte Rümpfe mit einzelnen warmen Fenstern ergänzen die Nachtansicht.
+
+Die Verteilung ist fest und bleibt über Runden und Neustarts stabil.
+Die Surfer und die Haibegegnung behalten ihre bisherigen Plätze. Boote
+erscheinen ausschließlich in Ocean Drive. Normale Fahransichten bei 390 und
+480 Pixeln Breite sowie bei Tag und Nacht wurden geprüft; zusätzlich wurde
+die Sichtbarkeit der kleinen Gruppe hinter der Felsdurchfahrt gemessen.
+
 ## Party und weitere Strandplätze
 
 Die Party steht bei Segment 75 auf der langen Startgeraden. Die größere
