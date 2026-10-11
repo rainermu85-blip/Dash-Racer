@@ -251,6 +251,11 @@ const HIGHWAY_CROSSINGS = [
 const HIGHWAY_TRAIN_DURATION = 1.6;
 const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
+const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
+const OCEAN_PIER_INDEX = 375, OCEAN_PARTY_INDEX = 840;
+const OCEAN_ROCK_DAY = ['#2e2235','#49384b','#5c4558','#3d2e43','#292033','#775d72','#261c2d'];
+const OCEAN_ROCK_NIGHT = ['#12101b','#242032','#30283c','#1e192b','#171323','#44384f','#12101a'];
+let oceanCliffProfiles = [], oceanRockPalette = OCEAN_ROCK_DAY.slice();
 const HIGHWAY_ONCOMING_LANES = [-3.2, -2.5, -1.8];
 const HIGHWAY_POLICE_TRIGGER = 650;
 const HIGHWAY_POLICE_SPEED = 7200;
@@ -632,13 +637,14 @@ function buildSegments() {
     while (trackDef.length < SEGMENT_COUNT) trackDef = [...trackDef, ...trackDef];
     trackDef = trackDef.slice(0, SEGMENT_COUNT);
 
+    oceanCliffProfiles = currentLevel === 2 ? Array.from({ length: SEGMENT_COUNT }, (_, i) => makeOceanCliffProfile(i)) : [];
     segments = []; let worldY = 0;
     let underwaterPlantCount = 0;
     for (let i = 0; i < SEGMENT_COUNT; i++) {
         const def = trackDef[i]; const isStartLine = i < 3 || i > SEGMENT_COUNT - 3;
         const isBridge = currentLevel === 1 && (i >= 930 && i <= 1050);
         const isPillar = currentLevel === 1 && (i === 950 || i === 1030);
-        const isTunnel = isHighwayTunnel(i) || (currentLevel === LEVEL_DREAM && getDreamZone(i) === 'tunnel');
+        const isTunnel = isHighwayTunnel(i) || isOceanRockTunnel(i) || (currentLevel === LEVEL_DREAM && getDreamZone(i) === 'tunnel');
         
         let sprite = null;
         let spriteX = 0;
@@ -663,20 +669,25 @@ function buildSegments() {
             } else if (i === 577) {
                 sprite = 'stranded_whale';
                 spriteX = 2.3; // Placed perfectly on the beach, close enough to the track to be fully visible!
-            } else if (i === 935) {
+            } else if (i === OCEAN_PIER_INDEX) {
+                sprite = 'ocean_pier'; spriteX = 2.05;
+            } else if (i === OCEAN_PARTY_INDEX) {
                 sprite = 'beach_party';
-                spriteX = 2.1;
-            } else if (i === 952) {
+                spriteX = 1.85;
+            } else if (i === OCEAN_PARTY_INDEX + 12) {
                 sprite = 'beach_volleyball';
                 spriteX = 2.4;
-            } else if (i === 960) {
+            } else if (i === OCEAN_PARTY_INDEX + 20) {
                 sprite = 'beach_jeep';
                 spriteX = 2.6;
-            } else if (Math.random() < 0.075 && !isStartLine) {
+            } else if (!isTunnel && !isStartLine && i % 37 === 17) {
+                sprite = 'coastal_boulder'; spriteX = -1.85;
+            } else if (Math.random() < 0.075 && !isStartLine && !isTunnel) {
                 const nearSpot1 = (i >= 286 && i <= 310);
-                const nearSpot2 = (i >= 935 && i <= 965);
+                const nearSpot2 = (i >= OCEAN_PARTY_INDEX - 35 && i <= OCEAN_PARTY_INDEX + 30);
+                const nearPier = (i >= OCEAN_PIER_INDEX - 32 && i <= OCEAN_PIER_INDEX + 12);
                 const nearSpotWhale = (i >= 573 && i <= 581);
-                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale) {
+                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier) {
                     sprite = 'tree';
                     // Level 2: palm trees ONLY on the right-side beach (1.45 to 2.55) to prevent wall clipping on the left
                     spriteX = 1.45 + Math.random() * 1.1;
@@ -2199,6 +2210,218 @@ function drawDreamTunnelPortal(x,y,w,h,marine,exit,alpine = false) {
     }
 }
 
+function isOceanRockTunnel(index) {
+    return currentLevel === 2 && index >= OCEAN_ROCK_TUNNEL.start && index < OCEAN_ROCK_TUNNEL.end;
+}
+
+function makeOceanCliffProfile(index) {
+    // Integer harmonics close the headland at the lap seam. Broad coves and
+    // shorter ribs vary the silhouette without random changes between frames.
+    const t = index / SEGMENT_COUNT * Math.PI * 2;
+    const cove = Math.pow((1 + Math.sin(t * 5 + 0.6)) / 2, 6);
+    const rib = Math.sin(t * 23) * 0.5 + Math.sin(t * 37 + 0.8) * 0.25;
+    const peak = 5900 + Math.sin(t * 7 + 0.3) * 1100 + rib * 420 - cove * 2100;
+    return [[-1.2 - cove * 0.22,0],[-1.5 - rib * 0.08 - cove * 0.4,550 + rib * 140],
+            [-1.85 - rib * 0.2 - cove * 0.5,1800 + rib * 350 + Math.sin(t * 19 + .9) * 300],
+            [-2.35 - Math.sin(t * 13) * 0.18 - cove * 0.7,peak * (0.59 + Math.sin(t * 17) * .1)],
+            [-3.1 - Math.sin(t * 9) * 0.3 - cove * 0.8,peak]];
+}
+
+function paintOceanPolygon(points, color, seal = false) {
+    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(points[0].x,points[0].y);
+    for (let i=1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
+    ctx.closePath(); ctx.fill();
+    if (seal) { ctx.strokeStyle = color; ctx.lineWidth = 0.8; ctx.stroke(); }
+}
+
+function clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale) {
+    const nearScale = (CAMERA_DEPTH + player.fovOffset) / 64;
+    if (p2Scale > nearScale) return null;
+    if (p1Scale > nearScale) {
+        const ratio = nearScale / p1Scale, horizon = H * 0.5 + player.pitch * 1.5;
+        x1 = W/2 + (x1-W/2)*ratio; y1 = horizon + (y1-horizon)*ratio;
+        w1 *= ratio; p1Scale = nearScale;
+    }
+    return [x1,y1,w1,x2,y2,w2,p1Scale,p2Scale];
+}
+
+function drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
+    const clipped = clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale);
+    if (!clipped) return;
+    [x1,y1,w1,x2,y2,w2,p1Scale,p2Scale] = clipped;
+    const a = oceanCliffProfiles[index], b = oceanCliffProfiles[(index+1)%SEGMENT_COUNT];
+    if (!a || !b) return;
+    const near = ([lane,height]) => ({x:x1+lane*w1,y:y1-height*p1Scale*H/2});
+    const far = ([lane,height]) => ({x:x2+lane*w2,y:y2-height*p2Scale*H/2});
+    const face = (band,t,z) => {
+        const laneA=a[band][0]+(a[band+1][0]-a[band][0])*t, laneB=b[band][0]+(b[band+1][0]-b[band][0])*t;
+        const heightA=a[band][1]+(a[band+1][1]-a[band][1])*t, heightB=b[band][1]+(b[band+1][1]-b[band][1])*t;
+        const pa=near([laneA,heightA]),pb=far([laneB,heightB]);
+        return {x:pa.x+(pb.x-pa.x)*z,y:pa.y+(pb.y-pa.y)*z};
+    };
+    const topA=near(a[4]),topB=far(b[4]),footA=near(a[0]),footB=far(b[0]);
+    // A grounded rock apron covers the gap behind recessed toes.
+    paintOceanPolygon([{x:0,y:y1},footA,footB,{x:0,y:y2}],oceanRockPalette[0],true);
+    paintOceanPolygon([topA,{x:0,y:topA.y},{x:0,y:topB.y},topB],oceanRockPalette[4],true);
+    if (Math.min(footA.x,footB.x)>W && Math.min(topA.x,topB.x)>W) return;
+    for (let band=0;band<4;band++) {
+        const color = oceanRockPalette[[0,2,1,3][band]];
+        paintOceanPolygon([near(a[band]),near(a[band+1]),far(b[band+1]),far(b[band])],color,true);
+        if (w2 > 7) {
+            // Broad slanted slabs are clipped across successive road slices,
+            // instead of repeating a tiny triangle on each face.
+            const cell=index+band*9, phase=(cell%17)/17, nextPhase=(cell%17+1)/17;
+            const low=.08+Math.sin(Math.floor(cell/17)*1.7)*.06;
+            const level=low+.7*phase, nextLevel=low+.7*nextPhase;
+            const shade=oceanRockPalette[(Math.floor(cell/17)+band)%3===0?3:1];
+            paintOceanPolygon([face(band,low,0),face(band,level,0),face(band,nextLevel,1),face(band,low,1)],shade);
+            if (cell%17<16) paintOceanPolygon([face(band,level,0),face(band,level+.018,0),face(band,nextLevel+.018,1),face(band,nextLevel,1)],oceanRockPalette[5]);
+            if ((index+band*7) % 23 === 0) {
+                ctx.strokeStyle=oceanRockPalette[6]; ctx.lineWidth=Math.max(0.6,Math.min(2,w2*0.009));
+                ctx.beginPath(); const p=face(band,0.1,0.25),q=face(band,0.5,0.57),r=face(band,0.95,0.76);
+                ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.lineTo(r.x,r.y);ctx.stroke();
+            }
+        }
+    }
+    // Plants grow in loose groups on ledges, with trailing stems and occasional
+    // pink flowers. Every anchor belongs to the actual projected rock surface.
+    if (index % 5 !== 0 || w2 < 7 || Math.sin(index*0.049)+Math.sin(index*0.113)*0.5 < -0.45) return;
+    const band = index % 3, color = index % 4 ? '#38654b' : '#527257';
+    const stem=[];
+    for (let j=0;j<7;j++) stem.push(face(band,0.18+j*0.075,0.4+Math.sin(j*1.6+index)*0.18));
+    ctx.strokeStyle='#243b36';ctx.lineWidth=Math.max(0.7,Math.min(2,w2*0.015));ctx.beginPath();
+    ctx.moveTo(stem[0].x,stem[0].y);for (const p of stem.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();
+    for (let j=0;j<stem.length;j++) {
+        const p=stem[j], r=Math.min(25,Math.max(1,p2Scale*H/2*(36+j%3*16)));
+        if (p.x < -r*2 || p.x > W+r*2 || p.y < -r*2 || p.y > H+r*2) continue;
+        ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(p.x-r*.5,p.y,r*1.25,r*.55,-0.55,0,Math.PI*2);ctx.ellipse(p.x+r*.6,p.y-r*.4,r,r*.5,.35,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#719277';ctx.beginPath();ctx.ellipse(p.x-r*.55,p.y-r*.15,r*.6,r*.2,-.55,0,Math.PI*2);ctx.fill();
+        if (index % 25 === 0 && j % 3 === 0) {
+            ctx.fillStyle='#cf6598';ctx.beginPath();ctx.arc(p.x+r*.6,p.y-r*.5,r*.35,0,Math.PI*2);ctx.fill();
+        }
+    }
+}
+
+function oceanRockArchProfile() {
+    return [[-1.22,0],[-1.28,0.32],[-1.25,0.62],[-1.05,0.86],[-0.65,1.06],[-0.14,1.11],[0.36,1.09],[0.84,0.95],[1.16,0.73],[1.27,0.38],[1.22,0]];
+}
+
+function drawOceanRockTunnelSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
+    const clipped = clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale);
+    if (!clipped) return;
+    [x1,y1,w1,x2,y2,w2,p1Scale,p2Scale] = clipped;
+    const profile=oceanRockArchProfile(), height=OCEAN_ROCK_TUNNEL.height;
+    const near=(lane,h)=>({x:x1+lane*w1,y:y1-h*height*p1Scale*H/2});
+    const far=(lane,h)=>({x:x2+lane*w2,y:y2-h*height*p2Scale*H/2});
+    for(let j=0;j<profile.length-1;j++){
+        const a=profile[j],b=profile[j+1];
+        const color=oceanRockPalette[j<3?1:j>7?3:6];
+        paintOceanPolygon([near(...a),near(...b),far(...b),far(...a)],color,true);
+        if(w2>12 && (index+j)%8===0){
+            const mid=[(a[0]+b[0])*.5,(a[1]+b[1])*.5];
+            paintOceanPolygon([near(...a),far(...mid),near(...b)],oceanRockPalette[0]);
+        }
+    }
+    // Low natural rock shelves sit outside the full three-lane opening.
+    for(const side of[-1,1]){
+        paintOceanPolygon([near(side*1.22,0),near(side*1.24,.065),far(side*1.24,.065),far(side*1.22,0)],oceanRockPalette[5],true);
+    }
+}
+
+function drawOceanRockPortal(x,y,w,h) {
+    const profile=oceanRockArchProfile(),pt=(lane,height)=>({x:x+lane*w,y:y-height*h});
+    const bank=[[-6.5,0],[-6.1,2.9],[-4.8,3.6],[-3.6,3.15],[-2.8,2.55],[-1.5,2.32],[-.3,2.1],[1.1,1.92],[2.3,1.65],[3.15,1.05],[3.7,0]];
+    paintOceanPolygon([...bank.map(p=>pt(...p)),...profile.slice().reverse().map(p=>pt(...p))],oceanRockPalette[1],true);
+    const facets=[[[1.4,.04],[3.7,0],[3.15,1.05],[2.3,1.65],[1.45,1.4]],
+                  [[-1.55,1.35],[-2.8,2.55],[-4.8,3.6],[-3.7,1.7]],
+                  [[-.3,2.1],[1.1,1.92],[2.3,1.65],[.9,1.3],[-.6,1.37]],
+                  [[-6.5,0],[-6.1,2.9],[-3.7,1.7],[-2.1,.15]]];
+    facets.forEach((f,i)=>paintOceanPolygon(f.map(p=>pt(...p)),oceanRockPalette[i%2?3:2]));
+    // Hand-hewn, uneven stone around the hole, with no rectangular building.
+    for(let j=0;j<profile.length-1;j++){
+        const a=profile[j],b=profile[j+1];
+        paintOceanPolygon([pt(...a),pt(a[0]*1.12,a[1]*1.07+.07),pt(b[0]*1.12,b[1]*1.07+.07),pt(...b)],oceanRockPalette[j%3===0?5:2]);
+    }
+    for(let j=0;j<7;j++){
+        const side=j<4?-1:1, lane=side*(1.65+j%3*.44),high=1.3+j%3*.22;
+        const a=pt(lane,high),b=pt(lane+side*.2,high-.4),c=pt(lane+side*.09,high-.67);
+        ctx.strokeStyle=oceanRockPalette[6];ctx.lineWidth=Math.max(.7,w*.012);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.stroke();
+    }
+    for(const side of[-1,1])for(let j=0;j<5;j++){
+        const p=pt(side*(1.55+j*.17),.11+j*.08),r=w*(.045+j%2*.012);
+        ctx.fillStyle=j%2?'#365b4c':'#486252';ctx.beginPath();ctx.ellipse(p.x,p.y,r*1.4,r*.55,-side*.5,0,Math.PI*2);ctx.fill();
+    }
+}
+
+function drawCoastalBoulder(x,y,scale,seed) {
+    if (scale < .035) return;
+    beginChapterSprite(x,y,scale);
+    const tall=seed%3===0, height=tall?166:108;
+    // Rounded weathered shoulders break up the long rock face at its foot.
+    ctx.fillStyle=oceanRockPalette[1];ctx.beginPath();ctx.moveTo(-78,0);
+    ctx.quadraticCurveTo(-84,-height*.35,-61,-height*.68);
+    ctx.quadraticCurveTo(-49,-height-15,-15,-height);
+    ctx.lineTo(18,-height*.83);ctx.quadraticCurveTo(60,-height*.7,72,-39);
+    ctx.lineTo(83,-4);ctx.closePath();ctx.fill();
+    ctx.fillStyle=oceanRockPalette[2];ctx.beginPath();ctx.moveTo(-61,-height*.68);ctx.lineTo(-15,-height);ctx.lineTo(18,-height*.83);ctx.lineTo(-3,-height*.39);ctx.lineTo(-42,-22);ctx.fill();
+    ctx.fillStyle=oceanRockPalette[3];ctx.beginPath();ctx.moveTo(-3,-height*.39);ctx.lineTo(18,-height*.83);ctx.lineTo(57,-height*.55);ctx.lineTo(83,-4);ctx.lineTo(23,-8);ctx.fill();
+    ctx.strokeStyle=oceanRockPalette[6];ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-15,-height);ctx.lineTo(-24,-height*.7);ctx.lineTo(-4,-height*.52);ctx.lineTo(-18,-height*.27);ctx.stroke();
+    // Small coastal shrubs nestle against the ledge instead of covering it.
+    for(let j=0;j<6;j++){
+        const px=-60+j*17,py=-8-Math.sin(j*.9+seed)*5;
+        ctx.fillStyle=j%2?'#4e7355':'#2c5342';ctx.beginPath();ctx.ellipse(px,py,14,8,-.3,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#839375';ctx.beginPath();ctx.ellipse(px-3,py-3,7,2,-.3,0,Math.PI*2);ctx.fill();
+        if(seed%3===1 && j%2===0){ctx.fillStyle='#cf6598';ctx.beginPath();ctx.arc(px+5,py-5,2.5,0,Math.PI*2);ctx.fill();}
+    }
+    ctx.restore();
+}
+
+function drawOceanPier(x,y,scale) {
+    if(scale<.035)return;
+    beginChapterSprite(x,y,scale);
+    // A timber jetty runs from the beach to a pavilion above the water.
+    const deck=[[-112,0],[-64,0],[-50,-81],[-86,-81]];
+    ctx.fillStyle='#503048';ctx.beginPath();ctx.moveTo(...deck[0]);for(const p of deck.slice(1))ctx.lineTo(...p);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#ce9c81';ctx.lineWidth=2;
+    for(let i=0;i<18;i++){
+        const t=i/17,lx=-112+26*t,rx=-64+14*t,py=-81*t;
+        ctx.beginPath();ctx.moveTo(lx,py);ctx.lineTo(rx,py);ctx.stroke();
+    }
+    // Pilings anchor the deck in the ocean; small reflection strokes stay local.
+    for(let i=0;i<6;i++)for(const side of[0,1]){
+        const t=i/5,px=(side?-64:-112)+(side?14:26)*t,py=-81*t;
+        ctx.fillStyle='#39243b';ctx.fillRect(px-3,py,6,17);
+        ctx.strokeStyle='rgba(110,206,226,.25)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px-7,py+18);ctx.lineTo(px+8,py+18);ctx.stroke();
+        ctx.strokeStyle='#ddaf92';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py-22);ctx.stroke();
+    }
+    for(const side of[0,1]){
+        ctx.strokeStyle='#cfb0a4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(side?-64:-112,-22);ctx.lineTo(side?-50:-86,-103);ctx.stroke();
+    }
+    ctx.save(); ctx.translate(-251,-25);
+    ctx.fillStyle='#4b344a';ctx.fillRect(134,-71,99,13);
+    ctx.fillStyle='#eac0a0';ctx.fillRect(148,-137,8,66);ctx.fillRect(214,-137,8,66);
+    ctx.fillStyle='#402c47';ctx.fillRect(155,-109,59,38);
+    ctx.fillStyle='#71c5d0';ctx.fillRect(160,-103,22,24);ctx.fillRect(188,-103,20,24);
+    ctx.fillStyle='#925777';ctx.beginPath();ctx.moveTo(126,-138);ctx.lineTo(183,-175);ctx.lineTo(243,-138);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#f3a584';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(126,-138);ctx.lineTo(183,-175);ctx.lineTo(243,-138);ctx.stroke();
+    ctx.fillStyle='#241e36';ctx.fillRect(133,-135,105,22);
+    ctx.strokeStyle='#ff75c3';ctx.lineWidth=1.5;ctx.strokeRect(133,-135,105,22);
+    ctx.fillStyle='#ffe2bb';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('OCEAN PIER',185,-124);
+    ctx.restore();
+    // A few warm lamps become stronger as the sky turns to night.
+    for(const t of[.15,.5,.85]){
+        const px=-112+26*t,py=-81*t-25;
+        ctx.fillStyle='#ffe3ac';ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=.12+currentProgressRatio*.14;ctx.fillStyle='#ffd18b';ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    }
+    ctx.save(); ctx.translate(-251,-25);
+    // A lifebuoy gives the pavilion a readable nautical detail.
+    ctx.strokeStyle='#ffe3be';ctx.lineWidth=4;ctx.beginPath();ctx.arc(218,-92,9,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#ff789c';ctx.lineWidth=4;ctx.beginPath();ctx.arc(218,-92,9,0,.9);ctx.arc(218,-92,9,Math.PI,Math.PI+.9);ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+}
+
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
     if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
         if (isVisible) drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, segIdx);
@@ -2340,190 +2563,8 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
             trapezoid(waveX1, y1, waveX1 + waveW1, waveX2, y2, waveX2 + waveW2);
         }
 
-        // 3. Left side: Steep Rocky Cliff (with robust off-screen expansion and scale capping to prevent full-screen flashes)
-        const cliffR1 = x1 - w1 * 1.15;
-        const cliffR2 = x2 - w2 * 1.15;
-        const topL1 = x1 - w1 * 3.2;
-        const topL2 = x2 - w2 * 3.2;
-        const capP1Scale = Math.min(0.012, p1Scale);
-        const capP2Scale = Math.min(0.012, p2Scale);
-        const topY1 = y1 - capP1Scale * 6500 * (H / 2);
-        const topY2 = y2 - capP2Scale * 6500 * (H / 2);
-        
-        // Rock wall face
-        ctx.fillStyle = isAlt ? '#1a1220' : '#140d1a';
-        ctx.beginPath();
-        ctx.moveTo(cliffR1, y1);
-        ctx.lineTo(topL1, topY1);
-        ctx.lineTo(topL2, topY2 - 1.2);
-        ctx.lineTo(cliffR2, y2 - 1.2);
-        ctx.closePath();
-        ctx.fill();
-        
-        // Fill everything to the left of the cliff edge to avoid gaps
-        ctx.fillStyle = isAlt ? '#140c1a' : '#0f0814';
-        ctx.beginPath();
-        ctx.moveTo(topL1, topY1);
-        ctx.lineTo(0, topY1);
-        ctx.lineTo(0, topY2 - 1.2);
-        ctx.lineTo(topL2, topY2 - 1.2);
-        ctx.closePath();
-        ctx.fill();
-
-        // 4. Bushwork (organic climbing vines & flora lying perfectly flat on the slanted rock face!)
-        const placementNoise = Math.sin(segIdx * 0.45) * Math.cos(segIdx * 0.17);
-        if (placementNoise > 0.2) { // Organic, clumped distribution
-            // Place the vine clump at an organic center offset on the wall (between 1.3 and 2.6)
-            const centerOffset = 1.3 + Math.abs(Math.sin(segIdx * 0.73)) * 1.3;
-            
-            // The vine clump has a broader, highly visible width along the slope
-            const halfWidth = 0.15 + Math.abs(Math.cos(segIdx * 1.1)) * 0.22;
-            
-            const offsetA = Math.max(1.15, centerOffset - halfWidth);
-            const offsetB = Math.min(3.2, centerOffset + halfWidth);
-            
-            // Helper function to get 2D screen coordinates for a point on the slanted cliff wall of a segment
-            const getWallPoint = (x, w, pScale, y, offset) => {
-                const normOffset = (offset - 1.15) / (3.2 - 1.15);
-                const hFactor = normOffset * 6500;
-                const cappedScale = Math.min(0.012, pScale);
-                return {
-                    x: x - w * offset,
-                    y: y - cappedScale * hFactor * (H / 2)
-                };
-            };
-            
-            // Get the 4 corners of the vine patch lying flat on the wall
-            const ptA1 = getWallPoint(x1, w1, capP1Scale, y1, offsetA);
-            const ptB1 = getWallPoint(x1, w1, capP1Scale, y1, offsetB);
-            const ptA2 = getWallPoint(x2, w2, capP2Scale, y2, offsetA);
-            const ptB2 = getWallPoint(x2, w2, capP2Scale, y2, offsetB);
-            
-            // Choose colors: a beautiful mix of synthwave cyber green, deep jungle green, and neon magenta flower blooms!
-            const flowerBloom = Math.sin(segIdx * 2.3) > 0.45;
-            
-            // 55% of the pink clusters are replaced by a darker green shade
-            const isPink = flowerBloom && (Math.sin(segIdx * 8.9) > 0.1);
-            const isDarkGreen = flowerBloom && !isPink;
-            
-            let leafColors;
-            if (isPink) {
-                leafColors = ['#4a0033', '#7a005c', '#ad0072', '#e60087', '#ff33a3']; // Pink/Magenta
-            } else if (isDarkGreen) {
-                leafColors = ['#01140a', '#022111', '#04381c', '#065228', '#0b8f47']; // Darker Green shade
-            } else {
-                leafColors = ['#042114', '#063b21', '#0a5c32', '#108c4a', '#24c96e']; // Standard Green
-            }
-            
-            // Draw thin organic vine stems climbing from bottom of segment (y1) to top (y2)
-            ctx.strokeStyle = isPink ? '#26001a' : '#021a0f';
-            ctx.lineWidth = Math.max(1.2, capP1Scale * 15);
-            ctx.beginPath();
-            
-            const numStems = 2;
-            for (let s = 0; s < numStems; s++) {
-                const startOffset = offsetA + (offsetB - offsetA) * (0.2 + s * 0.6);
-                const endOffset = offsetA + (offsetB - offsetA) * (0.1 + (1 - s) * 0.7);
-                const cpOffset = startOffset + Math.sin(segIdx + s) * halfWidth * 0.5;
-                
-                const pStart = getWallPoint(x1, w1, capP1Scale, y1, startOffset);
-                const pEnd = getWallPoint(x2, w2, capP2Scale, y2, endOffset);
-                const pControl = getWallPoint(x1 + (x2 - x1) * 0.5, w1 + (w2 - w1) * 0.5, capP1Scale + (capP2Scale - capP1Scale) * 0.5, y1 + (y2 - y1) * 0.5, cpOffset);
-                
-                ctx.moveTo(pStart.x, pStart.y);
-                ctx.quadraticCurveTo(pControl.x, pControl.y, pEnd.x, pEnd.y);
-            }
-            ctx.stroke();
-            
-            // Populate the vine with larger individual leafy blobs (layered from dark/large to light/small)
-            const numLeaves = 24;
-            for (let i = 0; i < numLeaves; i++) {
-                const t = i / (numLeaves - 1); // vertical progression
-                const horizontalOffset = offsetA + (offsetB - offsetA) * (0.1 + Math.abs(Math.sin(segIdx * 3 + i * 2.5)) * 0.8);
-                const pt = getWallPoint(
-                    x1 + (x2 - x1) * t, 
-                    w1 + (w2 - w1) * t, 
-                    capP1Scale + (capP2Scale - capP1Scale) * t, 
-                    y1 + (y2 - y1) * t, 
-                    horizontalOffset
-                );
-                
-                const baseRadius = (13.5 + Math.abs(Math.sin(segIdx * 1.5 + i * 1.1)) * 27) * capP1Scale * 1050;
-                if (baseRadius < 0.6) continue;
-                
-                if (isPink) {
-                    // Pink remains circular
-                    // Dark base shade
-                    ctx.fillStyle = leafColors[0];
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, baseRadius, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Medium shade
-                    ctx.fillStyle = leafColors[2];
-                    ctx.beginPath();
-                    ctx.arc(pt.x - baseRadius * 0.15, pt.y - baseRadius * 0.15, baseRadius * 0.7, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Highlight shade
-                    ctx.fillStyle = leafColors[4];
-                    ctx.beginPath();
-                    ctx.arc(pt.x - baseRadius * 0.25, pt.y - baseRadius * 0.25, baseRadius * 0.45, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    // Green and Darker Green are drawn as gorgeous digons!
-                    const rot = -0.4 + Math.sin(segIdx * 1.3 + i * 0.7) * 0.4;
-                    const rx = baseRadius * 1.35;
-                    const ry = baseRadius * 0.72;
-                    
-                    const drawDigonLeaf = (cx, cy, lx, ly, fillStyle) => {
-                        ctx.fillStyle = fillStyle;
-                        ctx.save();
-                        ctx.translate(cx, cy);
-                        ctx.rotate(rot);
-                        ctx.beginPath();
-                        ctx.moveTo(-lx, 0);
-                        // Upper curved arc
-                        ctx.quadraticCurveTo(0, -ly * 1.8, lx, 0);
-                        // Lower curved arc
-                        ctx.quadraticCurveTo(0, ly * 1.8, -lx, 0);
-                        ctx.closePath();
-                        ctx.fill();
-                        ctx.restore();
-                    };
-                    
-                    // Dark base shade
-                    drawDigonLeaf(pt.x, pt.y, rx, ry, leafColors[0]);
-                    
-                    // Medium shade
-                    drawDigonLeaf(
-                        pt.x - rx * 0.12 * Math.cos(rot - Math.PI/4), 
-                        pt.y - ry * 0.12 * Math.sin(rot - Math.PI/4), 
-                        rx * 0.72, 
-                        ry * 0.72, 
-                        leafColors[2]
-                    );
-                    
-                    // Highlight shade
-                    drawDigonLeaf(
-                        pt.x - rx * 0.22 * Math.cos(rot - Math.PI/4), 
-                        pt.y - ry * 0.22 * Math.sin(rot - Math.PI/4), 
-                        rx * 0.45, 
-                        ry * 0.45, 
-                        leafColors[4]
-                    );
-                }
-            }
-            
-            // Draw a glowing neon yellow flower bud accent
-            if (isPink && capP1Scale > 0.003) {
-                const budPt = getWallPoint(x1, w1, capP1Scale, y1, centerOffset);
-                ctx.fillStyle = '#ffdf00';
-                ctx.beginPath();
-                ctx.arc(budPt.x, budPt.y, Math.max(3, capP1Scale * 65), 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
+        // Stratified headlands and attached vegetation share the road's depth.
+        drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);
     } else {
         // --- LEVEL 1: STANDARD CITY/BRIDGE VOID SURROUNDINGS ---
         if (isVisible) {
@@ -2710,6 +2751,13 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         }
     }
     
+    if (currentLevel === 2) {
+        if (isOceanRockTunnel(segIdx)) drawOceanRockTunnelSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);
+        if ([OCEAN_ROCK_TUNNEL.start,OCEAN_ROCK_TUNNEL.end].includes(segIdx) && player.z < segIdx * SEGMENT_LENGTH - 64) {
+            drawOceanRockPortal(x1,y1,w1,p1Scale * OCEAN_ROCK_TUNNEL.height * H / 2);
+        }
+    }
+
     if (isVisible && isBridge && p1Scale && p2Scale) {
         // Low, continuous side rails frame the wider bridge deck over the water.
         for (const side of [-1, 1]) {
@@ -7135,6 +7183,7 @@ function render(ts) {
   const progressRatio = clamp(progressDist / (maxLaps * TRACK_LENGTH), 0, 1.0);
 
   currentProgressRatio = progressRatio;
+  if (currentLevel === 2) oceanRockPalette = OCEAN_ROCK_DAY.map((color, i) => interpolateColor(color, OCEAN_ROCK_NIGHT[i], progressRatio));
 
   const sunBuffer = sunR * 2, sunLoopW = W + sunBuffer * 2;
   let sunX = (W / 2) - (bgOffset * 0.15);
@@ -8343,6 +8392,13 @@ function render(ts) {
         drawBeachJeepSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
+    else if (s.type === 'ocean_pier' || s.type === 'coastal_boulder') {
+        ctx.save();
+        if (s.clipY !== undefined) { ctx.beginPath(); ctx.rect(0,0,W,s.clipY); ctx.clip(); }
+        if (s.type === 'ocean_pier') drawOceanPier(s.x,s.y,s.sc);
+        else drawCoastalBoulder(s.x,s.y,s.sc,s.segIdx);
+        ctx.restore();
+    }
     else if (s.type === 'beach_party') {
         ctx.save();
         if (s.clipY !== undefined) {
@@ -9175,7 +9231,7 @@ function sweepContact(x0, z0, x1, z1, halfWidth, minZ, maxZ) {
 
 function getRoadLimits(z) {
   const segment = getSeg(z);
-  const enclosed = segment.isBridge || (currentLevel === LEVEL_DREAM && segment.isTunnel);
+  const enclosed = segment.isBridge || isOceanRockTunnel(segment.index) || (currentLevel === LEVEL_DREAM && segment.isTunnel);
   let left = enclosed ? 1.05 : 1.45, right = left;
   if (currentLevel === 2) left = 1.05;
   if (currentLevel === LEVEL_HIGHWAY) left = right = 0.88;
