@@ -252,12 +252,12 @@ const HIGHWAY_TRAIN_DURATION = 1.6;
 const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
-const OCEAN_PIER_INDEX = 820, OCEAN_PIER_LENGTH = 40, OCEAN_PARTY_INDEX = 75;
+const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
 const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'cabanas'],[390,'loungers'],
     [488,'lifeguard'],[558,'surfboards'],[795,'cabanas'],[875,'loungers'],[923,'lifeguard'],[950,'surfboards']]);
 const OCEAN_ROCK_DAY = ['#39202b','#572a35','#733941','#48232f','#301b27','#98534d','#281421'];
 const OCEAN_ROCK_NIGHT = ['#160e19','#281522','#371d2b','#22121e','#170e18','#542b38','#120b15'];
-let oceanCliffProfiles = [], oceanRockPalette = OCEAN_ROCK_DAY.slice();
+let oceanCliffProfiles = [], oceanCliffVegetation = [], oceanPierSlices = [], oceanRockPalette = OCEAN_ROCK_DAY.slice();
 const HIGHWAY_ONCOMING_LANES = [-3.2, -2.5, -1.8];
 const HIGHWAY_POLICE_TRIGGER = 650;
 const HIGHWAY_POLICE_SPEED = 7200;
@@ -640,6 +640,8 @@ function buildSegments() {
     trackDef = trackDef.slice(0, SEGMENT_COUNT);
 
     oceanCliffProfiles = currentLevel === 2 ? Array.from({ length: SEGMENT_COUNT }, (_, i) => makeOceanCliffProfile(i)) : [];
+    oceanCliffVegetation = currentLevel === 2 ? makeOceanCliffVegetation() : [];
+    oceanPierSlices = currentLevel === 2 ? makeOceanPierSlices() : [];
     segments = []; let worldY = 0;
     let underwaterPlantCount = 0;
     for (let i = 0; i < SEGMENT_COUNT; i++) {
@@ -2287,34 +2289,60 @@ function drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
             }
         }
     }
-    // Dense, separate vine gardens hang down the volcanic ledges. Large pointed
-    // leaves and pink bougainvillea bracts keep the Madeira palette readable.
-    const garden=index%29;
-    if (index%2 || garden>16 || w2<7) return;
-    for (let vine=0;vine<2;vine++) {
-        const band=(Math.floor(index/29)+vine)%3;
-        const stem=[];
-        for(let j=0;j<10;j++)stem.push(face(band,.92-j*.082,.45+Math.sin(j*.65+index*.2+vine)*.18));
-        ctx.strokeStyle='#118646';ctx.lineWidth=Math.max(.8,Math.min(3,w2*.02));ctx.beginPath();
-        ctx.moveTo(stem[0].x,stem[0].y);for(const p of stem.slice(1))ctx.lineTo(p.x,p.y);ctx.stroke();
-        for(let j=0;j<stem.length;j++){
-            const p=stem[j],r=Math.min(38,Math.max(1,p2Scale*H/2*(105+(j+vine)%3*35)));
-            if(p.x < -r*3 || p.x>W+r*3 || p.y < -r*3 || p.y>H+r*3)continue;
-            for(const side of[-1,1]){
-                const tip={x:p.x+side*r*1.45,y:p.y-r*(.5+(j%3)*.12)};
-                paintOceanPolygon([p,tip,{x:p.x+side*r*.65,y:p.y+r*.4}],j%3?'#0c6336':'#084b2b');
-                paintOceanPolygon([p,tip,{x:p.x+side*r*.7,y:p.y-r*.05}],j%3?'#21b960':'#16974f');
-            }
-            if((index+j*3+vine)%7<2){
-                const fx=p.x+r*.5,fy=p.y-r*.6;
-                for(let petal=0;petal<3;petal++){
-                    const a=petal*Math.PI*2/3,dx=Math.cos(a)*r*.65,dy=Math.sin(a)*r*.65;
-                    paintOceanPolygon([{x:fx+dx*.3-dy*.65,y:fy+dy*.3+dx*.65},{x:fx+dx*1.8,y:fy+dy*1.8},{x:fx+dx*.3+dy*.65,y:fy+dy*.3-dx*.65}],petal%2?'#ff2faa':'#dc007d');
-                }
-                ctx.fillStyle='#ffe2b6';ctx.beginPath();ctx.arc(fx,fy,Math.max(.7,r*.13),0,Math.PI*2);ctx.fill();
-            }
+    if(w2<7)return;
+    for(const leaf of oceanCliffVegetation[index]){
+        if(leaf.z<cut)continue;
+        const along=(leaf.z-cut)/(1-cut),scale=1/((1-along)/p1Scale+along/p2Scale);
+        const band=Math.min(3,Math.floor(leaf.u)),p=face(band,leaf.u-band,along*scale/p2Scale);
+        const r=Math.min(48,scale*H/2*leaf.radius);
+        if(r<.6 || p.x < -r*2 || p.x>W+r*2 || p.y < -r*2 || p.y>H+r*2)continue;
+        const leafShape=(size,color,dx=0,dy=0)=>{
+            const vx=Math.cos(leaf.angle)*r*size,vy=Math.sin(leaf.angle)*r*size;
+            const px=p.x+dx*r,py=p.y+dy*r;
+            ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(px-vx,py-vy);
+            ctx.quadraticCurveTo(px-vy*.92,py+vx*.92,px+vx,py+vy);
+            ctx.quadraticCurveTo(px+vy*.92,py-vx*.92,px-vx,py-vy);ctx.fill();
+        };
+        if(leaf.flower){
+            // Uneven rounded magenta blooms echo the original cliff planting.
+            // Their size, aspect and highlights vary across each loose cluster.
+            ctx.fillStyle='#4a0033';ctx.beginPath();ctx.ellipse(p.x,p.y,r,r*leaf.aspect,leaf.angle,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#ad0072';ctx.beginPath();ctx.ellipse(p.x-r*.12,p.y-r*.1,r*.77,r*leaf.aspect*.72,leaf.angle+.2,0,Math.PI*2);ctx.fill();
+            ctx.fillStyle='#ff33a3';ctx.beginPath();ctx.ellipse(p.x-r*.22,p.y-r*.18,r*.48,r*leaf.aspect*.48,leaf.angle-.18,0,Math.PI*2);ctx.fill();
+            if(leaf.bud){ctx.fillStyle='#ffdf77';ctx.beginPath();ctx.arc(p.x-r*.1,p.y-r*.15,Math.max(.8,r*.13),0,Math.PI*2);ctx.fill();}
+        }else{
+            leafShape(1.35,leaf.dark?'#022111':'#042114');
+            leafShape(.98,leaf.dark?'#065228':'#108c4a',-.08,-.08);
+            leafShape(.54,leaf.dark?'#0b8f47':'#24c96e',-.16,-.17);
         }
     }
+}
+
+function makeOceanCliffVegetation() {
+    const foliage=Array.from({length:SEGMENT_COUNT},()=>[]);
+    let seed=0x4d414445;
+    const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+    // Broad, overlapping islands of growth have jagged edges and bare pockets.
+    // Fractional anchors and independent scatter remove segment/height rows.
+    for(let center=-8;center<SEGMENT_COUNT;center+=5+random()*18){
+        const u=.25+random()*3.15,width=.28+random()*.63,span=3+random()*9;
+        const phase=random()*Math.PI*2,bloom=random()<.31,dark=random()<.37;
+        const count=65+Math.floor(random()*100);
+        for(let j=0;j<count;j++){
+            const angle=random()*Math.PI*2,radius=Math.sqrt(random());
+            let z=center+Math.cos(angle)*radius*span;
+            const slope=u+Math.sin(angle)*radius*width+Math.sin((z-center)*.75+phase)*.16;
+            // Holes within a patch and satellite tufts give it an uneven outline.
+            if(random()<.14+Math.max(0,Math.sin(z*1.13+slope*4+phase))*.15)continue;
+            z=(z%SEGMENT_COUNT+SEGMENT_COUNT)%SEGMENT_COUNT;
+            const leaf={z:z%1,u:slope,radius:48+random()*105,
+                angle:-1.2+random()*2.4,aspect:.65+random()*.55,dark,
+                flower:bloom&&random()<.36,bud:random()<.16};
+            if(slope>=.06 && slope<=3.94)foliage[Math.floor(z)].push(leaf);
+        }
+    }
+    for(const leaves of foliage)leaves.sort((a,b)=>b.z-a.z);
+    return foliage;
 }
 
 function oceanRockArchProfile() {
@@ -2391,48 +2419,123 @@ function drawCoastalBoulder(x,y,scale,seed) {
     ctx.restore();
 }
 
-// A wooden jetty runs diagonally out to sea. Its footprint is clipped into
-// road-depth slices, so beach, water, deck and pilings share one projection.
+// Clip the complete marina mesh into depth slices once. Every component uses
+// the same coordinates: the house sits on the deck, and pilings meet the water.
+function makeOceanPierSlices() {
+    const slices=Array.from({length:OCEAN_PIER_LENGTH},()=>[]),faces=[];
+    const add=(points,color,role='deck')=>faces.push({points,color,role});
+    const flat=(left,right,back,front,height,color,role='deck')=>add([[left,height,back],[right,height,back],[right,height,front],[left,height,front]],color,role);
+    const box=(left,right,back,front,bottom,top,color,role)=>{
+        add([[left,bottom,back],[right,bottom,back],[right,top,back],[left,top,back]],color,role);
+        add([[left,bottom,back],[left,bottom,front],[left,top,front],[left,top,back]],color,role);
+        add([[right,bottom,back],[right,bottom,front],[right,top,front],[right,top,back]],color,role);
+        flat(left,right,back,front,top,color,role);
+    };
+    const center=OCEAN_PIER_CENTER-OCEAN_PIER_INDEX;
+    const support=(lane,z)=>box(lane-.035,lane+.035,z-.18,z+.18,-60,240,'#533338','support');
+    // A straight walkway across the beach, exactly perpendicular to the road.
+    for(let lane=2.05;lane<5.85;lane+=.15){
+        const next=Math.min(5.85,lane+.15),h=Math.min(240,(lane-2.05)*170),h2=Math.min(240,(next-2.05)*170);
+        add([[lane,h,center-2],[next,h2,center-2],[next,h2,center+2],[lane,h,center+2]],'#956342');
+        add([[lane,h,center-2],[next,h2,center-2],[next,h2-70,center-2],[lane,h-70,center-2]],'#4d3037');
+    }
+    box(4.15,5.85,center-5,center+5,165,240,'#9f704d','deck');
+    // Two narrow fingers branch along the shore for mooring small boats.
+    box(3.84,4.12,center-13,center-2,150,240,'#936344','berth');
+    box(5.35,5.63,center+2,center+13,150,240,'#936344','berth');
+    for(const z of[center-12,center-8,center-4,center+4,center+8,center+12]){
+        for(const lane of[z<center?3.98:5.49])support(lane,z);
+    }
+    for(const z of[center-5,center+5])for(const lane of[4.2,5.8])support(lane,z);
+    for(const z of[center-1.8,center+1.8])for(const lane of[3.55,4.4,5.3])support(lane,z);
+    // Planks continue across the landing and both boat fingers.
+    for(let z=center-13;z<=center+13;z+=.85){
+        if(Math.abs(z-center)<=5)flat(4.15,5.85,z,z+.06,241,'#d0a67b');
+        if(z<center-2)flat(3.84,4.12,z,z+.06,241,'#d0a67b','berth');
+        if(z>center+2)flat(5.35,5.63,z,z+.06,241,'#d0a67b','berth');
+    }
+    const rail=(lane,z,h)=>box(lane-.015,lane+.015,z-.07,z+.07,h,h+325,'#dfb68f','rail');
+    for(const z of[center-2,center+2]){
+        for(let lane=2.15;lane<4.15;lane+=.42)rail(lane,z,Math.min(240,(lane-2.05)*170));
+        for(let lane=2.15;lane<4.15;lane+=.1){
+            const h=Math.min(240,(lane-2.05)*170)+285;
+            add([[lane,h,z-.04],[lane+.1,Math.min(240,(lane+.1-2.05)*170)+285,z-.04],[lane+.1,Math.min(240,(lane+.1-2.05)*170)+310,z-.04],[lane,h+25,z-.04]],'#e8c39c','rail');
+        }
+    }
+    for(const z of[center-5,center+5]){
+        for(let lane=4.2;lane<5.85;lane+=.42)rail(lane,z,240);
+        add([[4.15,525,z],[5.85,525,z],[5.85,550,z],[4.15,550,z]],'#e8c39c','rail');
+    }
+    // Sea-blue boathouse with a gabled terracotta roof, fully on its platform.
+    box(4.35,5.55,center-3,center+3,240,1200,'#257e87','house');
+    add([[4.35,1200,center-3],[4.35,1850,center],[4.35,1200,center+3]],'#36a6a5','house');
+    add([[5.55,1200,center-3],[5.55,1850,center],[5.55,1200,center+3]],'#246471','house');
+    add([[4.15,1180,center-3.8],[5.75,1180,center-3.8],[5.75,1890,center],[4.15,1890,center]],'#c56672','roof');
+    add([[4.15,1890,center],[5.75,1890,center],[5.75,1180,center+3.8],[4.15,1180,center+3.8]],'#874451','roof');
+    // Door faces the walkway; near-side windows face the passing player.
+    add([[4.34,240,center-1],[4.34,930,center-1],[4.34,930,center+1],[4.34,240,center+1]],'#182e48','house');
+    for(const lane of[4.48,4.85,5.22]){
+        add([[lane,600,center-3.02],[lane+.23,600,center-3.02],[lane+.23,1010,center-3.02],[lane,1010,center-3.02]],'#ffe2a6','window');
+        add([[lane+.105,600,center-3.025],[lane+.125,600,center-3.025],[lane+.125,1010,center-3.025],[lane+.105,1010,center-3.025]],'#623d43','window');
+    }
+    // Low moored boats sit in the sea, alongside the fingers rather than on deck.
+    for(const [lane,z,color]of[[4.42,center-9,'#20c4bc'],[5.97,center+9,'#e86b9d']]){
+        const hull=[[lane-.22,60,z-3.3],[lane+.22,60,z-3.3],[lane+.3,60,z+1.8],[lane,60,z+3.7],[lane-.3,60,z+1.8]];
+        add(hull,'#f1dcad','boat');
+        for(let i=0;i<hull.length;i++){
+            const a=hull[i],b=hull[(i+1)%hull.length];
+            add([a,b,[b[0],-40,b[2]],[a[0],-40,a[2]]],color,'boat');
+        }
+        flat(lane-.15,lane+.15,z-1.8,z+1.3,90,'#25293e','boat');
+        add([[lane-.17,90,z-.9],[lane+.17,90,z-.9],[lane+.15,310,z-.35],[lane-.15,310,z-.35]],'#77c9d1','boat');
+        flat(lane-.15,lane+.15,z-.35,z+.75,310,'#f1dcad','boat');
+        if(lane>5){
+            box(lane-.012,lane+.012,z-.06,z+.06,90,2600,'#e6c998','boat');
+            add([[lane,2470,z],[lane+.73,330,z],[lane+.02,330,z]],'#ffe5bb','boat');
+            add([[lane-.025,2360,z],[lane-.48,420,z],[lane-.025,420,z]],'#f792b5','boat');
+        }
+        // Cleats and a short mooring line visibly tie each boat to the dock.
+        const dock=lane<5?4.1:5.62;
+        add([[dock,250,z-.08],[lane-.17,85,z-.08],[lane-.17,85,z+.04],[dock,250,z+.04]],'#f0cd9f','boat');
+    }
+    // Attach a lamp to either corner of the platform, above a rooted post.
+    for(const z of[center-5,center+5]){
+        box(4.2,4.23,z-.08,z+.08,240,900,'#d5b38e','rail');
+        box(4.16,4.27,z-.25,z+.25,860,990,'#ffdfa3','window');
+    }
+    for(const face of faces)for(let i=0;i<slices.length;i++){
+        const points=clipOceanPierPolygon(clipOceanPierPolygon(face.points,i,true),i+1,false);
+        if(points.length>=3)slices[i].push({...face,points});
+    }
+    const layers={support:0,deck:1,berth:1,boat:2,house:3,roof:4,rail:5,window:6};
+    for(const slice of slices)slice.sort((a,b)=>b.points.reduce((n,p)=>n+p[2],0)/b.points.length-a.points.reduce((n,p)=>n+p[2],0)/a.points.length||layers[a.role]-layers[b.role]);
+    return slices;
+}
+
+function clipOceanPierPolygon(points,z,greater) {
+        const out=[];
+        for(let i=0;i<points.length;i++){
+            const a=points[i],b=points[(i+1)%points.length],inside=greater?a[2]>=z:a[2]<=z,nextInside=greater?b[2]>=z:b[2]<=z;
+            if(inside)out.push(a);
+            if(inside!==nextInside){const t=(z-a[2])/(b[2]-a[2]);out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,z]);}
+        }
+        return out;
+}
+
 function drawOceanPier(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index,anchor) {
     const slice=index-OCEAN_PIER_INDEX;
-    if(currentLevel!==2 || slice<0 || slice>=OCEAN_PIER_LENGTH)return;
-    const point=(lane,height,far)=>({x:W/2+(anchor.rx1+anchor.lookOffset-W/2)*(far?p2Scale:p1Scale)/anchor.p1Scale-anchor.lookOffset+lane*(far?w2:w1),y:(far?y2:y1)-height*(far?p2Scale:p1Scale)*H/2});
-    const deckHeight=lane=>Math.min(230,Math.max(0,(lane-2.05)*140));
-    const line=(a,b,color,width=1)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();};
-    // The approach has a fixed four-segment width. A broad lookout terminates it.
-    let l1=Math.max(2.05,2.05+(slice-4)/5.7),r1=Math.min(7.65,2.05+slice/5.7);
-    let l2=Math.max(2.05,2.05+(slice-3)/5.7),r2=Math.min(7.65,2.05+(slice+1)/5.7);
-    if(slice>=32){l1=l2=6.5;r1=r2=7.65;}
-    const a=point(l1,deckHeight(l1),false),b=point(r1,deckHeight(r1),false),c=point(r2,deckHeight(r2),true),d=point(l2,deckHeight(l2),true);
-    // Foundations meet the same sea plane as the water under the deck.
-    if(slice>10 && slice%4===0){
-        for(const lane of[l1,r1]){
-            const foot=point(lane,-30,false);
-            line(point(lane,deckHeight(lane),false),foot,'#30202c',Math.max(1,w1*.027));
-            line({x:foot.x-4,y:foot.y},{x:foot.x+6,y:foot.y},'rgba(106,218,227,.45)');
-        }
-    }
-    paintOceanPolygon([a,b,c,d],slice%2?'#79503f':'#684136',true);
-    paintOceanPolygon([a,d,point(l2,deckHeight(l2)-70,true),point(l1,deckHeight(l1)-70,false)],'#3d2730',true);
-    line(a,b,'#d5a57d',Math.max(.6,w1*.006));
-    for(const [near,far]of[[l1,l2],[r1,r2]]){
-        // Rails run along the walkway, never across its beach entrance.
-        line(point(near,deckHeight(near)+300,false),point(far,deckHeight(far)+300,true),'#e2bba0',Math.max(.7,w1*.012));
-        line(point(near,deckHeight(near)+140,false),point(far,deckHeight(far)+140,true),'#ad8474',Math.max(.6,w1*.007));
-        if(slice%3===0){
-            const foot=point(near,deckHeight(near),false),head=point(near,deckHeight(near)+330,false);
-            line(foot,head,'#d6a990',Math.max(.8,w1*.015));
-            if(slice%9===0){
-                const r=Math.max(.8,p1Scale*H/2*36);
-                ctx.fillStyle='#ffe3ac';ctx.beginPath();ctx.arc(head.x,head.y,r,0,Math.PI*2);ctx.fill();
-            }
-        }
-    }
-    if(slice===OCEAN_PIER_LENGTH-1)line(point(l2,530,true),point(r2,530,true),'#e2bba0',Math.max(.7,w2*.012));
-    if(slice===35||slice===38){
-        const bench=[point(6.7,330,false),point(7.15,330,false),point(7.15,330,true),point(6.7,330,true)];
-        paintOceanPolygon(bench,'#cf9870',true);
-        for(const lane of[6.7,7.15])line(point(lane,330,false),point(lane,230,false),'#30202c');
+    if(currentLevel!==2 || slice<0 || slice>=OCEAN_PIER_LENGTH || !anchor)return;
+    const cut=clamp((player.z+64-segments[index].worldZReal)/SEGMENT_LENGTH,0,1);
+    for(const face of oceanPierSlices[slice]){
+        const visible=cut>0?clipOceanPierPolygon(face.points,slice+cut,true):face.points;
+        if(visible.length<3)continue;
+        const points=visible.map(([lane,height,z])=>{
+            const t=clamp((z-slice-cut)/(1-cut),0,1),scale=1/((1-t)/p1Scale+t/p2Scale),along=t*scale/p2Scale;
+            return {x:W/2+(anchor.rx1+anchor.lookOffset-W/2)*scale/anchor.p1Scale-anchor.lookOffset+lane*scale*ROAD_WIDTH*W/2,
+                y:y1+(y2-y1)*along-height*scale*H/2};
+        });
+        if(points.every(p=>p.x<-3)||points.every(p=>p.x>W+3)||points.every(p=>p.y<-3)||points.every(p=>p.y>H+3))continue;
+        paintOceanPolygon(points,face.color,true);
     }
 }
 

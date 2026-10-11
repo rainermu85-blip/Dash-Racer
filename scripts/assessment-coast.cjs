@@ -37,7 +37,7 @@ module.exports = async function runCoast(browser, baseUrl) {
         const paint=paintOceanPolygon;let points=[];const frames=[];
         paintOceanPolygon=(p,c,s)=>{points.push(...p);paint(p,c,s);};
         try {
-          for(const index of[.00001,37.99999,290,505.99999,506,506.00001,524,541.99999,542,542.00001,780,1149.99999]){
+          for(const index of[.00001,37.99999,290,505.99999,506,506.00001,524,541.99999,542,542.00001,780,OCEAN_PIER_INDEX-.00001,OCEAN_PIER_INDEX+.99999,OCEAN_PIER_CENTER-.00001,OCEAN_PIER_CENTER+.99999,OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH-.00001,1149.99999]){
             player.z=index*SEGMENT_LENGTH;points=[];render(ts);
             const values=points.flatMap(p=>[p.x,p.y]);frames.push({index,finite:values.every(Number.isFinite),peak:values.reduce((max,n)=>Math.max(max,Math.abs(n)),0)});
           }
@@ -53,12 +53,14 @@ module.exports = async function runCoast(browser, baseUrl) {
         // Compare final frames with and without a landmark, excluding the DOM
         // turbo display. This catches objects clipped or hidden by nearer rocks.
         const impact=pier=>{
+          const house=pier==='house',slices=oceanPierSlices;
           const draw=pier?drawOceanPier:drawBeachPartySprite, random=Math.random;
           try{
             Math.random=()=>.5;
-            if(pier)drawOceanPier=()=>{};else drawBeachPartySprite=()=>{};
+            if(house)oceanPierSlices=slices.map(s=>s.filter(f=>!['house','roof','window'].includes(f.role)));
+            else if(pier)drawOceanPier=()=>{};else drawBeachPartySprite=()=>{};
             render(ts);const before=ctx.getImageData(0,0,W,H).data;
-            if(pier)drawOceanPier=draw;else drawBeachPartySprite=draw;
+            if(house)oceanPierSlices=slices;else if(pier)drawOceanPier=draw;else drawBeachPartySprite=draw;
             render(ts);const after=ctx.getImageData(0,0,W,H).data;
             const canvas=C.getBoundingClientRect(), board=document.getElementById('boostContainer').getBoundingClientRect();
             let visible=0;
@@ -68,18 +70,19 @@ module.exports = async function runCoast(browser, baseUrl) {
               if(before[i]!==after[i]||before[i+1]!==after[i+1]||before[i+2]!==after[i+2])visible++;
             }
             return visible;
-          }finally{Math.random=random;if(pier)drawOceanPier=draw;else drawBeachPartySprite=draw;}
+          }finally{Math.random=random;oceanPierSlices=slices;if(pier)drawOceanPier=draw;else drawBeachPartySprite=draw;}
         };
         for(const [name,pier,lap,start,index] of [
-          ['pier-day',true,1,740,OCEAN_PIER_INDEX],['pier-night',true,3,740,OCEAN_PIER_INDEX],
+          ['pier-day',true,1,OCEAN_PIER_INDEX-110,OCEAN_PIER_CENTER],['pier-night',true,3,OCEAN_PIER_INDEX-110,OCEAN_PIER_CENTER],
           ['party-day',false,1,0,OCEAN_PARTY_INDEX],['party-night',false,3,0,OCEAN_PARTY_INDEX]
         ]){
           reset(2,lap);player.z=start*SEGMENT_LENGTH;const samples=[];
           for(let target=Math.max(start,index-80);target<=index-5;target+=7){
-            driveTo(target);samples.push({index:player.z/SEGMENT_LENGTH,visible:impact(pier)});
+            driveTo(target);samples.push({index:player.z/SEGMENT_LENGTH,visible:impact(pier),house:pier?impact('house'):undefined});
           }
           const visible=samples.filter(s=>s.visible>180),seconds=visible.length*7*SEGMENT_LENGTH/4320;
           record(`${name}-visible-during-normal-driving`,seconds>=1.4&&Math.max(...samples.map(s=>s.visible))>700,{seconds,samples});
+          if(pier)record(`${name}-boathouse-readable`,samples.filter(s=>s.house>300).length>=2&&Math.max(...samples.map(s=>s.house))>800,samples.map(s=>({index:s.index,house:s.house})));
         }
         // Paint only terrain over an impossible background color. Probe both
         // asphalt and the recessed cliff toe at uphill/crest camera poses.
@@ -105,15 +108,32 @@ module.exports = async function runCoast(browser, baseUrl) {
           seams.push({target,probes,holes});
         }
         record('asphalt-and-cliff-toes-have-no-uphill-gaps',seams.every(s=>s.probes>30&&s.holes===0),seams);
-        reset();player.z=30*SEGMENT_LENGTH;render(ts);
-        const vegetation=ctx.getImageData(0,0,Math.floor(W*.32),Math.floor(H*.65)).data;
-        let green=0,pink=0;
-        for(let n=0;n<vegetation.length;n+=4){
-          const [r,g,b]=vegetation.slice(n,n+3);
-          if(g>60&&g>r*1.6&&g>b*1.25)green++;
-          if(r>180&&g<85&&b>90&&b<210)pink++;
+        reset();const vegetationSamples=[];
+        for(const index of[0,15,30,60,90,285]){
+          player.z=index*SEGMENT_LENGTH;render(ts);
+          const pixels=ctx.getImageData(0,0,Math.floor(W*.32),Math.floor(H*.65)).data;
+          let green=0,pink=0;
+          for(let n=0;n<pixels.length;n+=4){
+            const r=pixels[n],g=pixels[n+1],b=pixels[n+2];
+            if(g>60&&g>r*1.6&&g>b*1.25)green++;
+            if(r>180&&g<85&&b>90&&b<210)pink++;
+          }
+          vegetationSamples.push({index,green,pink});
         }
-        record('lush-green-and-large-pink-flowers-readable',green>600&&pink>250,{green,pink});
+        record('wild-green-patches-and-original-style-blooms-readable',vegetationSamples.filter(s=>s.green>600).length>=3&&vegetationSamples.some(s=>s.pink>250),vegetationSamples);
+        // The boathouse floor must actually be covered by a deck, with
+        // foundations extending below sea level. This catches floating huts.
+        const parts=oceanPierSlices.flat(),house=parts.filter(f=>f.role==='house');
+        const floor=Math.min(...house.flatMap(f=>f.points.map(p=>p[1])));
+        const floorPoints=house.flatMap(f=>f.points.filter(p=>Math.abs(p[1]-floor)<.001));
+        const decks=parts.filter(f=>f.role==='deck'&&f.points.every(p=>Math.abs(p[1]-floor)<.001));
+        const covered=point=>decks.some(f=>{
+          const xs=f.points.map(p=>p[0]),zs=f.points.map(p=>p[2]);
+          return point[0]>=Math.min(...xs)-.001&&point[0]<=Math.max(...xs)+.001&&point[2]>=Math.min(...zs)-.001&&point[2]<=Math.max(...zs)+.001;
+        });
+        const supports=parts.filter(f=>f.role==='support'),boats=parts.filter(f=>f.role==='boat');
+        record('house-rests-on-supported-deck-and-boats-touch-sea',floorPoints.length>0&&floorPoints.every(covered)&&supports.some(f=>f.points.some(p=>p[1]<0))&&supports.some(f=>f.points.some(p=>p[1]===floor))&&boats.some(f=>f.points.some(p=>p[1]<0)),{floor,houseFaces:house.length,supportFaces:supports.length,boatFaces:boats.length});
+        record('pier-is-on-existing-long-straight',segments.slice(OCEAN_PIER_INDEX,OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH).every(s=>s.curve===0),{start:OCEAN_PIER_INDEX,center:OCEAN_PIER_CENTER});
         // All four kinds occupy real beach segments, with no tunnel intrusion.
         const beach=segments.filter(s=>/^beach_(loungers|surfboards|cabanas|lifeguard)$/.test(s.sprite));
         record('beach-has-four-varied-grounded-scenes',new Set(beach.map(s=>s.sprite)).size===4&&beach.every(s=>!s.isTunnel&&s.spriteX>1.18&&s.spriteX<3.8),beach.map(s=>({index:s.index,type:s.sprite})));
@@ -121,7 +141,7 @@ module.exports = async function runCoast(browser, baseUrl) {
         record('car-cannot-drive-through-right-rock-wall',player.x<=1.05+1e-9,{x:player.x,side:player.wallContactSide});
         for(const level of[1,3,4,5,6]){
           reset(level);
-          record(`opening-does-not-leak-to-level-${level}`,oceanCliffProfiles.length===0&&!isOceanRockTunnel(520)&&!segments.some(s=>s.sprite==='ocean_pier'||s.sprite==='coastal_boulder'),{level,profiles:oceanCliffProfiles.length});
+          record(`opening-does-not-leak-to-level-${level}`,oceanCliffProfiles.length===0&&oceanCliffVegetation.length===0&&oceanPierSlices.length===0&&!isOceanRockTunnel(520)&&!segments.some(s=>s.sprite==='ocean_pier'||s.sprite==='coastal_boulder'),{level,profiles:oceanCliffProfiles.length});
         }
         return checks;
       });

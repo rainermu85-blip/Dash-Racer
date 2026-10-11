@@ -26,29 +26,52 @@ Zur Nacht verdunkeln sie sich zu tiefen Rotvioletttönen. Unterschiedliche
 Querschnitte, Einbuchtungen, Vorsprünge, Bruchlinien und einzelne Felsblöcke
 bleiben sichtbar.
 
-Deutlich größere, kräftig grüne Blätter und neonpinke Bougainvillea-Blüten
-bilden einzelne üppige Gärten auf den Felsbändern. Hängende grüne Ranken,
-dreieckige Blätter, große dreieckige Blütenblätter und helle Blütenzentren
-ersetzen die kleinen, blassen Pflanzen. Die Gruppen wechseln ihre Höhe und
-lassen dazwischen die vulkanischen Felsen frei. Sämtliche Pflanzenankerpunkte
-liegen auf der projizierten Felsfläche. Auch die Büsche am Felsfuß und am
-Durchbruch haben kräftigere Grüntöne.
+Der Bewuchs verwendet wieder die weichen, geschwungenen Blätter und die
+runderen, mehrfach schattierten pinken Blüten der ursprünglichen Version
+(`f9ea55b`). Dunkles Dschungelgrün, kräftigeres Grün und Magenta mischen sich
+innerhalb unterschiedlich großer Gruppen.
 
-## Holzpier im Wasser
+Die Verteilung wird einmal beim Streckenaufbau erzeugt. Zufällige,
+überlappende Patches haben unterschiedliche Ausdehnung entlang der Straße,
+Höhe auf der Felsfläche und Breite. Innerhalb ihrer unregelmäßigen Ränder
+liegen freie Taschen, verstreute Einzelblätter und Ausläufer. Blattgröße,
+Drehung und Blütenform variieren; einige Gruppen blühen, andere bestehen
+überwiegend aus Grün. Es gibt keine festen Segmentabstände, Doppelranken
+oder gleichmäßig aufgereihten Blattpaare. Eine private, feste Zufallsfolge
+hält das Wachstum während der Fahrt und über die Runden stabil und beeinflusst
+die Verteilung anderer Spielobjekte nicht.
 
-Der Pier in den Segmenten 820–859 besteht aus räumlich projizierten
-Holzflächen. Ein schräger Steg führt vom Strand bei Straßenoffset 2,05 durch
-die Uferlinie bei 3,8 hinaus zu einer Aussichtsplattform bei 6,5–7,65.
-Geländer, Pfähle bis zur Wasserfläche, Lampen, Bohlen und zwei Bänke ergänzen
-ihn. Der Eingang steigt sanft vom Sand zur erhöhten Holzfläche an.
-Das bisherige Pavillon-Billboard entfällt.
+Die Blattanker liegen weiterhin auf den tatsächlichen Felsflächen und
+werden mit ihrer kontinuierlichen Tiefe projiziert. Die bereits behobenen
+Lücken zwischen Felswand und Fahrbahn sowie die warme Vulkanpalette bleiben
+erhalten.
 
-Der Steg wird nach seiner Tiefe in denselben Zeichenablauf wie Strand und
-Meer eingefügt. Die seitliche Projektion verwendet einen gemeinsamen
-Uferanker, damit sich die gerade Konstruktion nicht mit der Straße verbiegt.
-Nahgrenze und Verdeckung durch davorliegendes Gelände gelten auch für den
-Pier. Er steht im flachen Linksbogen und wurde während normaler Fahrt bei
-Tag und Nacht kontrolliert.
+## Rechtwinkliger Pier mit Haus und Bootsanlegern
+
+Der Pier steht in den Segmenten 943–970 auf der bestehenden langen Geraden
+nach der großen Linkskurve im hinteren Streckenteil. Der Bereich 900–979
+verläuft gerade; die gesamte Marina liegt darin. Dieser Platz bietet eine
+bessere Annäherung als die kurze mittlere Gerade an der Kuppe. Die andere
+mittlere Gerade enthält bereits den Felsdurchbruch. Für die vorhandene
+Strecke wurde die gut einsehbare lange Gerade gewählt.
+
+Der Holzsteg verläuft bei Segment 957 rechtwinklig zur Straße vom Strand
+aus ins Wasser. Eine größere Plattform trägt ein türkisfarbenes Bootshaus
+mit Satteldach, warmer Fensterbeleuchtung und einer Tür zum Steg.
+Hausboden und Plattform haben dieselbe Höhe. Holzpfähle unter Plattform
+und Steg reichen bis unter die Wasserfläche. Bohlen, Geländer und zwei
+Lampen ergänzen die Konstruktion.
+
+Zwei schmale Anleger zweigen entlang der Küste ab. Motorboot und Segelboot
+liegen neben ihnen im Wasser und sind mit kurzen Leinen verbunden. Die
+Rümpfe reichen unter die Wasserlinie; die Boote stehen nicht auf dem Deck.
+Der ehemalige diagonale Pier mit offener Aussichtsplattform entfällt.
+
+Steg, Plattform, Haus, Dach, Pfähle und Boote bilden ein zusammenhängendes
+räumliches Modell. Seine Flächen werden beim Aufbau in Tiefenabschnitte
+geteilt und zusammen mit Strand, Wasser und davorliegendem Gelände
+gezeichnet. Eine gemeinsame seitliche Projektion hält den Steg gerade.
+Die Nahgrenze schneidet auch die Modellflächen in Weltkoordinaten ab.
 
 ## Party und weitere Strandplätze
 
@@ -78,26 +101,28 @@ zusätzlichen Tempoverlust.
 
 ## Validierung
 
-120 Browserprüfungen bei unverändertem Fahrmodell:
+69 Browserprüfungen bei unverändertem Fahrmodell:
 
-- `node scripts/assess-game.cjs coast`: 38 bei 390 × 844 und 480 × 800 Pixel.
-- `node scripts/assess-game.cjs collisions`: 59.
+- `node scripts/assess-game.cjs coast`: 46 bei 390 × 844 und 480 × 800 Pixel.
 - `node scripts/assess-game.cjs mechanics`: 23.
 
-Die Küstenprüfung kontrolliert die Tunnelöffnung, freie Spuren, örtliche
-Begrenzung, sichere Projektion, Annäherung und Durchfahrt. Sie malt Gelände
-über einen eindeutig erkennbaren Testhintergrund und prüft Asphalt und
-Felsfüße an sieben Steigungs-/Kuppenpositionen pro Bildschirmgröße auf Lücken.
+Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
+Begrenzung, sichere Projektion einschließlich Pier und Haus an der Nahgrenze,
+Annäherung und Durchfahrt. Sie malt Gelände über einen erkennbaren
+Testhintergrund und prüft Asphalt und Felsfüße an sieben Steigungs- und
+Kuppenpositionen pro Bildschirmgröße auf Lücken.
 
-Die Sichtbarkeit wird mit der echten Fahrsimulation und ihrer normalen
-Kameraglättung bei vollem Normaltempo geprüft. Fertige Frames mit und ohne
-Landmarke werden außerhalb der Turboanzeige verglichen. Stichproben in
-Abständen von etwa 0,24 Sekunden ergeben rund 1,5 Sekunden sichtbaren Pier
-und gut 2 Sekunden sichtbare Party, nachts etwas länger. Weitere Prüfungen
-erfassen die deutlich sichtbaren grünen/pinken Pflanzen, vier Strandmotive,
-Felskontakt und die Trennung von den anderen Leveln.
+Fertige Fahransichten mit und ohne Pier sowie separat mit und ohne Haus
+werden außerhalb der Turboanzeige verglichen. Die Fahrsimulation und ihre
+Kameraglättung laufen dabei mit vollem Normaltempo. Die Marina bleibt in
+Stichproben rund zwei Sekunden sichtbar; die Hausdarstellung wird eigens
+auf ausreichend sichtbare Bildfläche geprüft. Fundament- und Deckprüfungen
+verifizieren den Boden des Hauses und die Wasserlinie der Boote. Der
+komplette Pier muss auf geraden Streckensegmenten liegen.
 
-Es traten keine JavaScript-Fehler auf. Produktionsbuild und Leerzeichenprüfung
-bestanden. Ein Vergleich mit dem vorherigen Commit bestätigt identische
-Streckenhöhen und Kurven, Kamerakonstanten, Geschwindigkeitseinstellungen
-und Sonnenuntergangsphasen.
+Weitere Prüfungen erfassen das sichtbare Grün und die Blüten an mehreren
+Standorten, die vier zusätzlichen Strandmotive, Felskontakt und die Trennung
+von den anderen Leveln. Es traten keine JavaScript-Fehler auf. Produktionsbuild
+und Leerzeichenprüfung bestanden. Ein Vergleich mit dem vorherigen Commit
+bestätigt identische Streckenhöhen und Kurven, Kamerakonstanten,
+Geschwindigkeitseinstellungen und Sonnenuntergangsphasen.
