@@ -18,7 +18,12 @@ module.exports = async function runCoast(browser, baseUrl) {
           opponents.length=0;for(const s of segments)s.pylon=s.barrier=s.lightning=null;
           keys.left=keys.right=keys.boost=false;
         };
-        const tick=()=>{keys.left=player.x>.035;keys.right=player.x<-.035;ts+=1000/60;loop(ts);};
+        // Advance the real simulation and its camera smoothing; only sampled frames
+        // need rasterization. This keeps visibility checks inexpensive.
+        const tick=()=>{keys.left=player.x>.035;keys.right=player.x<-.035;ts+=1000/60;
+          const draw=render;render=()=>{};try{loop(ts);}finally{render=draw;}
+        };
+        const driveTo=index=>{for(let n=0;player.z<index*SEGMENT_LENGTH&&n<1000;n++)tick();};
         reset();
         const tunnel=segments.filter(s=>s.isTunnel);
         record('short-rock-opening',tunnel.length===36&&tunnel[0].index===506&&tunnel.at(-1).index===541&&tunnel.every(s=>!s.sprite),{start:tunnel[0]?.index,end:tunnel.at(-1)?.index,count:tunnel.length,seconds:tunnel.length*SEGMENT_LENGTH/4320});
@@ -66,15 +71,52 @@ module.exports = async function runCoast(browser, baseUrl) {
           }finally{Math.random=random;if(pier)drawOceanPier=draw;else drawBeachPartySprite=draw;}
         };
         for(const [name,pier,lap,start,index] of [
-          ['pier-day',true,1,280,OCEAN_PIER_INDEX],['party-day',false,1,760,OCEAN_PARTY_INDEX],['party-night',false,3,760,OCEAN_PARTY_INDEX]
+          ['pier-day',true,1,740,OCEAN_PIER_INDEX],['pier-night',true,3,740,OCEAN_PIER_INDEX],
+          ['party-day',false,1,0,OCEAN_PARTY_INDEX],['party-night',false,3,0,OCEAN_PARTY_INDEX]
         ]){
           reset(2,lap);player.z=start*SEGMENT_LENGTH;const samples=[];
-          for(const gap of[32,25,20,16,12]){
-            for(let n=0;player.z<(index-gap)*SEGMENT_LENGTH&&n<600;n++)tick();
-            samples.push({index:player.z/SEGMENT_LENGTH,visible:impact(pier)});
+          for(let target=Math.max(start,index-80);target<=index-5;target+=7){
+            driveTo(target);samples.push({index:player.z/SEGMENT_LENGTH,visible:impact(pier)});
           }
-          record(`${name}-visible-during-normal-driving`,samples.filter(s=>s.visible>150).length>=2&&Math.max(...samples.map(s=>s.visible))>700,samples);
+          const visible=samples.filter(s=>s.visible>180),seconds=visible.length*7*SEGMENT_LENGTH/4320;
+          record(`${name}-visible-during-normal-driving`,seconds>=1.4&&Math.max(...samples.map(s=>s.visible))>700,{seconds,samples});
         }
+        // Paint only terrain over an impossible background color. Probe both
+        // asphalt and the recessed cliff toe at uphill/crest camera poses.
+        const seams=[];
+        for(const [start,target]of[[120,150.24],[120,199.2],[120,230.4],[210,256.32],[580,600.16],[580,646.24],[980,1035.36]]){
+          reset();player.z=start*SEGMENT_LENGTH;driveTo(target);
+          const draw=drawRoadSegment,calls=[];
+          drawRoadSegment=(...args)=>{calls.push(args);draw(...args);};
+          try{render(ts);}finally{drawRoadSegment=draw;}
+          ctx.fillStyle='#ff00ff';ctx.fillRect(0,0,W,H);
+          for(const args of calls)draw(...args);
+          const pixels=ctx.getImageData(0,0,W,H).data;let probes=0,holes=0;
+          for(const args of calls){
+            const [x1,y1,w1,x2,y2,w2]=args;if(!args[13])continue;
+            const low=Math.max(0,y2)+2,high=Math.min(H-20,y1)-2;if(high<=low)continue;
+            const y=(low+high)/2,t=(y-y2)/(y1-y2),x=x2+(x1-x2)*t,w=w2+(w1-w2)*t;
+            for(const lane of[-1.4,-1.3,-1.2,-1.15,-.9,-.6,0,.6,.9]){
+              const px=Math.round(x+lane*w),py=Math.round(y);if(px<2||px>=W-2)continue;
+              const offset=(py*W+px)*4;probes++;
+              if(pixels[offset]>245&&pixels[offset+1]<10&&pixels[offset+2]>245)holes++;
+            }
+          }
+          seams.push({target,probes,holes});
+        }
+        record('asphalt-and-cliff-toes-have-no-uphill-gaps',seams.every(s=>s.probes>30&&s.holes===0),seams);
+        reset();player.z=30*SEGMENT_LENGTH;render(ts);
+        const vegetation=ctx.getImageData(0,0,Math.floor(W*.32),Math.floor(H*.65)).data;
+        let green=0,pink=0;
+        for(let n=0;n<vegetation.length;n+=4){
+          const [r,g,b]=vegetation.slice(n,n+3);
+          if(g>60&&g>r*1.6&&g>b*1.25)green++;
+          if(r>180&&g<85&&b>90&&b<210)pink++;
+        }
+        record('lush-green-and-large-pink-flowers-readable',green>600&&pink>250,{green,pink});
+        // All four kinds occupy real beach segments, with no tunnel intrusion.
+        const beach=segments.filter(s=>/^beach_(loungers|surfboards|cabanas|lifeguard)$/.test(s.sprite));
+        record('beach-has-four-varied-grounded-scenes',new Set(beach.map(s=>s.sprite)).size===4&&beach.every(s=>!s.isTunnel&&s.spriteX>1.18&&s.spriteX<3.8),beach.map(s=>({index:s.index,type:s.sprite})));
         reset();player.z=520*SEGMENT_LENGTH;player.x=1.25;applyRoadContact(1/60,0);
         record('car-cannot-drive-through-right-rock-wall',player.x<=1.05+1e-9,{x:player.x,side:player.wallContactSide});
         for(const level of[1,3,4,5,6]){
