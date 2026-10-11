@@ -47,33 +47,61 @@ module.exports = async function runChapter(browser, baseUrl) {
       const trafficBefore = highwayTraffic.map(car => ({ ...car })); tick(60);
       const travelled = highwayTraffic.map((car, i) => (trafficBefore[i].z - car.z + TRACK_LENGTH) % TRACK_LENGTH);
       record('highway-oncoming-moves-in-separated-lanes', highwayTraffic.length === 22 && new Set(highwayTraffic.map(car => car.x)).size === 3 && highwayTraffic.every((car, i) => HIGHWAY_ONCOMING_LANES.includes(car.x) && car.z >= 0 && car.z < TRACK_LENGTH && travelled[i] > 1700 && travelled[i] < 2600), { positions: highwayTraffic.slice(0, 4), travelled: travelled.slice(0, 4) });
+      // Run the real countdown while observing the opening train on canvas.
+      reset(4); state = 'countdown';
+      const opening = HIGHWAY_CROSSINGS.find(c => c.countdown);
+      const trainPixels = () => {
+        const pixels = ctx.getImageData(0,0,W,H).data;
+        let count = 0;
+        for (let i=0;i<pixels.length;i+=4) if (pixels[i]===215 && pixels[i+1]===208 && pixels[i+2]===239) count++;
+        return count;
+      };
+      tick(45);
+      record('opening-train-waits-for-countdown-two', cntVal === 3 && crossingTrainPhase(opening.index) === null && player.z === 0, { count:cntVal, phase:crossingTrainPhase(opening.index), z:player.z });
+      tick(47);
+      const openingPhase = crossingTrainPhase(opening.index), openingPixels = trainPixels();
+      record('opening-train-visible-during-countdown-two', cntVal === 2 && openingPhase > 0.2 && openingPhase < 0.5 && openingPixels > 30 && player.z === 0 && player.speed === 0, { count:cntVal, phase:openingPhase, pixels:openingPixels, z:player.z, speed:player.speed });
+      const countdownBefore = { count:cntVal, timer:cntTimer, phase:openingPhase, z:player.z };
+      paused = true; tick(60);
+      const countdownAfter = { count:cntVal, timer:cntTimer, phase:crossingTrainPhase(opening.index), z:player.z };
+      paused = false;
+      record('opening-train-and-countdown-freeze-when-paused', JSON.stringify(countdownBefore) === JSON.stringify(countdownAfter), { before:countdownBefore, after:countdownAfter });
+      tick(100);
+      record('opening-train-leaves-before-race-start', state === 'countdown' && crossingTrainPhase(opening.index) > 1 && player.z === 0, { state, count:cntVal, phase:crossingTrainPhase(opening.index), z:player.z });
+      reset(4); opponents.length = 0; player.speed = 4320;
+      player.z = TRACK_LENGTH - 1500; updateChapterTraffic(0);
+      const upcomingPhase = crossingTrainPhase(opening.index);
+      player.lap = 2; player.z = 0; updateChapterTraffic(0.1);
+      record('opening-train-repeats-continuously-across-lap-seam', upcomingPhase === 0 && crossingTrainPhase(opening.index) > 0 && crossingEvents.size === 1 && crossingEvents.has(`2:${opening.index}`), { upcomingPhase, phase:crossingTrainPhase(opening.index), events:[...crossingEvents.keys()] });
       const approaches = [];
       for (const boosted of [false, true]) {
         reset(4); opponents.length = 0;
-        player.z = 475 * SEGMENT_LENGTH - (boosted ? 11000 : 8500); player.speed = player.maxSpeed;
+        player.z = 995 * SEGMENT_LENGTH - (boosted ? 11000 : 8500); player.speed = player.maxSpeed;
         if (boosted) { player.boosts = 1; keys.boost = true; }
         let triggerFrames = 0;
-        do { tick(1); triggerFrames++; } while (!crossingEvents.has('1:475') && triggerFrames < 120);
-        const start = crossingTrainPhase(475);
-        const distanceAtTrigger = 475 * SEGMENT_LENGTH - player.z;
-        tick(80);
-        const during = crossingTrainPhase(475);
+        do { tick(1); triggerFrames++; } while (!crossingEvents.has('1:995') && triggerFrames < 120);
+        const start = crossingTrainPhase(995);
+        const distanceAtTrigger = 995 * SEGMENT_LENGTH - player.z;
+        tick(30);
+        const visiblePixels = trainPixels();
+        tick(50);
+        const during = crossingTrainPhase(995);
         const eventCount = crossingEvents.size;
         tick(240);
-        approaches.push({ boosted, start, during, end: crossingTrainPhase(475), eventCount, triggerFrames, distanceAtTrigger });
+        approaches.push({ boosted, start, during, end: crossingTrainPhase(995), eventCount, triggerFrames, distanceAtTrigger, visiblePixels });
       }
-      record('highway-train-fires-on-approach-and-leaves', approaches.every(s => s.start !== null && s.start < 0.02 && s.during > 0.7 && s.during < 1 && s.end > 1 && s.eventCount === 1 && s.triggerFrames < 60 && s.distanceAtTrigger > 4000), approaches);
-      reset(4); player.z = 475 * SEGMENT_LENGTH - 7000; player.speed = player.maxSpeed;
+      record('highway-train-fires-on-approach-and-leaves', approaches.every(s => s.start !== null && s.start < 0.02 && s.during > 0.7 && s.during < 1 && (s.end === null || s.end > 1) && s.eventCount === 1 && s.triggerFrames < 60 && s.distanceAtTrigger > 4000 && s.visiblePixels > 30), approaches);
+      reset(4); player.z = 995 * SEGMENT_LENGTH - 5000; player.speed = player.maxSpeed;
       updateChapterTraffic(0); updateChapterTraffic(0.8);
-      record('highway-train-traversal-twice-as-fast', Math.abs(crossingTrainPhase(475) - 0.5) < 1e-9, { phaseAfterPointEightSeconds: crossingTrainPhase(475) });
-      reset(4); player.z = 475 * SEGMENT_LENGTH - 7000; player.speed = player.maxSpeed; tick(30);
-      const beforePause = { traffic: highwayTraffic.map(car => car.z), phase: crossingTrainPhase(475), time: chapterTime };
+      record('highway-train-traversal-twice-as-fast', Math.abs(crossingTrainPhase(995) - 0.5) < 1e-9, { phaseAfterPointEightSeconds: crossingTrainPhase(995) });
+      reset(4); player.z = 995 * SEGMENT_LENGTH - 5000; player.speed = player.maxSpeed; tick(30);
+      const beforePause = { traffic: highwayTraffic.map(car => car.z), phase: crossingTrainPhase(995), time: chapterTime };
       togglePause(); tick(120);
-      const pausedState = { traffic: highwayTraffic.map(car => car.z), phase: crossingTrainPhase(475), time: chapterTime };
+      const pausedState = { traffic: highwayTraffic.map(car => car.z), phase: crossingTrainPhase(995), time: chapterTime };
       togglePause(); tick(30);
-      record('highway-traffic-and-train-pause', JSON.stringify(beforePause) === JSON.stringify(pausedState) && chapterTime > pausedState.time && crossingTrainPhase(475) > pausedState.phase, { before: beforePause.time, paused: pausedState.time, resumed: chapterTime });
-      reset(4); player.lap = 2; player.z = 475 * SEGMENT_LENGTH - 7000; player.speed = player.maxSpeed; tick(1);
-      record('highway-train-repeats-next-lap', crossingEvents.has('2:475') && crossingTrainPhase(475) !== null, { keys: [...crossingEvents.keys()] });
+      record('highway-traffic-and-train-pause', JSON.stringify(beforePause) === JSON.stringify(pausedState) && chapterTime > pausedState.time && crossingTrainPhase(995) > pausedState.phase, { before: beforePause.time, paused: pausedState.time, resumed: chapterTime });
+      reset(4); player.lap = 2; player.z = 995 * SEGMENT_LENGTH - 5000; player.speed = player.maxSpeed; tick(1);
+      record('highway-train-repeats-next-lap', crossingEvents.has('2:995') && crossingTrainPhase(995) !== null, { keys: [...crossingEvents.keys()] });
       reset(4); opponents.length = 0; player.speed = player.maxSpeed;
       const flybys = [];
       for (const lap of [1, 2, 3]) {

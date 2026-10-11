@@ -245,10 +245,11 @@ const LEVELS = [
   { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350 }
 ];
 const HIGHWAY_CROSSINGS = [
-  { index: 215, kind: 'road' }, { index: 475, kind: 'train' },
+  { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
 ];
 const HIGHWAY_TRAIN_DURATION = 1.6;
+const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
 const HIGHWAY_ONCOMING_LANES = [-3.2, -2.5, -1.8];
 const HIGHWAY_POLICE_TRIGGER = 650;
@@ -932,22 +933,40 @@ function updateChapterTraffic(dt) {
         highwayPolice.z -= highwayPolice.speed * dt;
         if (highwayPolice.z < raceZ - 1800) highwayPolice = null;
     }
+    updateHighwayTrains(dt);
+}
+
+function updateHighwayTrains(dt, countdown = false) {
+    if (currentLevel !== LEVEL_HIGHWAY) return;
     for (const event of crossingEvents.values()) event.elapsed += dt;
     for (const crossing of HIGHWAY_CROSSINGS) {
         if (crossing.kind !== 'train' || player.finished) continue;
-        const distance = crossing.index * SEGMENT_LENGTH - player.z;
-        const key = `${player.lap}:${crossing.index}`;
-        // Trigger from approach distance, once per pass, even when boosting.
-        if (distance >= 0 && distance <= clamp(player.speed * 2.4, 4500, 12000) && !crossingEvents.has(key)) {
+        if (countdown) {
+            // One opening fly-by as "2" changes to "1". Only the train clock
+            // advances here; racing cars and the player remain on the grid.
+            const key = `1:${crossing.index}`;
+            if (crossing.countdown && cntVal === 2 && !crossingEvents.has(key)) {
+                crossingEvents.set(key, { elapsed: 0 });
+            }
+            continue;
+        }
+        const localDistance = crossing.index * SEGMENT_LENGTH - player.z;
+        const distance = localDistance < 0 ? localDistance + TRACK_LENGTH : localDistance;
+        const lap = localDistance < 0 ? player.lap + 1 : player.lap;
+        const key = `${lap}:${crossing.index}`;
+        // A shorter lead keeps the fast crossing visible on approach. Wrapped
+        // distance also schedules the opening bridge before later lap starts.
+        if (lap <= 3 && distance <= clamp(player.speed * HIGHWAY_TRAIN_APPROACH_TIME, 2500, 10500) && !crossingEvents.has(key)) {
             crossingEvents.set(key, { elapsed: 0 });
         }
     }
 }
 
 function crossingTrainPhase(index) {
-    const upcomingLap = index * SEGMENT_LENGTH < player.z ? player.lap + 1 : player.lap;
-    // Keep the current pass while the camera travels beneath its deck.
-    const event = crossingEvents.get(`${player.lap}:${index}`) || crossingEvents.get(`${upcomingLap}:${index}`);
+    // The last slice of the current deck stays ahead of the camera briefly;
+    // farther past it, a visible wrapped deck belongs to the following lap.
+    const lap = (index + 1) * SEGMENT_LENGTH <= player.z ? player.lap + 1 : player.lap;
+    const event = crossingEvents.get(`${lap}:${index}`);
     return event ? Math.min(1.01, event.elapsed / HIGHWAY_TRAIN_DURATION) : null;
 }
 
@@ -9311,6 +9330,7 @@ function loop(ts) {
   if (state === 'countdown') {
     cntTimer += dt;
     if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
+    if (state === 'countdown') updateHighwayTrains(dt, true);
   }
 
   if (state === 'playing') {

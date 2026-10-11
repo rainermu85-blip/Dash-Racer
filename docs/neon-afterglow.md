@@ -106,14 +106,15 @@ Räder mit Felgen, geteilte Fenster, Türen, Stoßfänger und kleine Scheinwerfe
 Coupés und Limousinen unterscheiden sich; die Fahrzeuge stehen mit ihren
 Reifen auf der Fahrbahn und folgen deren Neigung.
 Die Brücken reichen auf beiden Seiten über den sichtbaren Bildrand hinaus;
-die Länge berücksichtigt Projektion, Kurven und Bildschirmbreite. Bei 475
+die Länge berücksichtigt Projektion, Kurven und Bildschirmbreite. Bei 32
 und 995 stehen waagerechte Bahnüberführungen mit ebenso waagerechten Gleisen
-und Zugwagen. Ein Schnellzug startet einmal
+und Zugwagen. Der erste Schnellzug startet in der ersten Runde beim
+Countdownwert „2“. Beide Züge starten auf späteren Durchfahrten einmal
 pro Runde bei der Annäherung des Spielers; der Auslöseabstand berücksichtigt
-das Tempo. Die Durchfahrt dauert jetzt 1,6 statt zuvor 3,2 Simulationssekunden und
+das Tempo und entspricht normalerweise 1,7 statt zuvor 2,4 Sekunden Vorlauf. Die Durchfahrt dauert jetzt 1,6 statt zuvor 3,2 Simulationssekunden und
 beginnt und endet mit dem gesamten Zug außerhalb des sichtbaren Bildes.
 Verkehr, Zugphasen und Leuchtreklamen
-verwenden `chapterTime` und bleiben während einer Pause stehen. Ein Neustart
+verwenden die Simulationszeit und bleiben während einer Pause stehen. Ein Neustart
 setzt alle Fahrzeuge und Ereignisse zurück.
 
 Ab Segment 650 rast einmal je Runde ein Polizeiwagen auf der inneren
@@ -160,3 +161,30 @@ NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chrom
 
 Für die übrigen Prüfmodi und die Browserinstallation siehe
 [Bestandsaufnahme](assessment.md#prüfungen-wiederholen).
+
+
+## Zug-Timing vom 11. Oktober 2026
+
+Die erste Bahnüberführung wurde von Segment 475, unmittelbar vor dem
+Tunnel, nach Segment 32 versetzt. Sie liegt damit im Sichtfeld des
+stehenden Spielers. Beim Countdownwert „2“ startet ihre Durchfahrt;
+der Zug ist während des Übergangs zu „1“ sichtbar und vor Rennbeginn
+verschwunden. Dabei stehen Spieler und Renngegner weiterhin auf dem
+Startfeld. Eine Pause hält auch den Zug und den Countdown an.
+
+Der zweite Zug bleibt bei Segment 995. Bei normalem Tempo und Boost
+startet er mit 1,7 Sekunden Vorlauf rund 0,7 Sekunden später als zuvor.
+Die Durchfahrtsgeschwindigkeit bleibt bei 1,6 Sekunden. Die nächste
+Runde wird für die nahe am Start liegende Überführung bereits vor dem
+Rundenwechsel berücksichtigt. Die Phasenauswahl verwendet dann das
+Ereignis der kommenden Runde, statt den bereits abgefahrenen Zug der
+aktuellen Runde. Pro Durchfahrt wird genau ein Ereignis erzeugt.
+
+32 Kapitelprüfungen, 15 Tunnelprüfungen und 23 Mechanikprüfungen bestanden,
+ebenso der Produktionsbuild und die Leerzeichenprüfung. Die Kapitelprüfung
+beobachtet nun auch den tatsächlichen Countdown, sichtbare Zugpixel,
+Pause und Fortsetzung sowie die Auslösung über die Rundengrenze. Beim
+zweiten Zug werden sichtbare Wagen bei normalem Tempo und Boost geprüft.
+Zusätzlich wurden Ansichten beider Züge bei 390 × 844 Pixel Viewport
+kontrolliert; auch bei 402 km/h ist der zweite Zug während der Annäherung
+klar sichtbar. Es traten keine JavaScript-Fehler auf.
