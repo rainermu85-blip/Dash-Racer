@@ -84,6 +84,20 @@ module.exports = async function runCoast(browser, baseUrl) {
           record(`${name}-visible-during-normal-driving`,seconds>=1.4&&Math.max(...samples.map(s=>s.visible))>700,{seconds,samples});
           if(pier)record(`${name}-boathouse-readable`,samples.filter(s=>s.house>300).length>=2&&Math.max(...samples.map(s=>s.house))>800,samples.map(s=>({index:s.index,house:s.house})));
         }
+        // The next occurrence of the beach is already in view before the line.
+        // The old lap===3 switch replaced the daytime gathering only after crossing.
+        reset(2,2);player.z=1080*SEGMENT_LENGTH;driveTo(1148);
+        const illegal=drawIllegalBeachParty;let stages=0;
+        drawIllegalBeachParty=(...args)=>{stages++;illegal(...args);};
+        try{
+          const before={lap:player.lap,z:player.z/SEGMENT_LENGTH,pixels:impact(false),stages};
+          record('night-party-visible-before-third-lap',before.lap===2&&before.pixels>180&&before.stages>0,before);
+          for(let n=0;player.lap===2&&n<12;n++)tick();
+          stages=0;const after={lap:player.lap,z:player.z/SEGMENT_LENGTH,pixels:impact(false),stages};
+          player.lap=4;player.z=1*SEGMENT_LENGTH;player.finished=true;
+          stages=0;const finish={pixels:impact(false),stages};
+          record('party-stays-night-across-line-and-finish',after.lap===3&&after.pixels>180&&after.stages>0&&finish.stages>0,{after,finish});
+        }finally{drawIllegalBeachParty=illegal;}
         // Paint only terrain over an impossible background color. Probe both
         // asphalt and the recessed cliff toe at uphill/crest camera poses.
         const seams=[];

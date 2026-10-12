@@ -258,20 +258,20 @@ const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'caban
 // Uneven anchorages: lengths and offshore clearances are in metres, with a
 // nearby opponent's 1.9 m width providing the visual scale reference.
 const OCEAN_BOAT_BAYS = [
-    { name:'sunset', boats:[[78,'motorboat',4.2,3,0,1],[87,'sailboat',6.2,7,0,-1],
-        [94,'yacht',12.8,12,0,1],[101,'cruiser',7.2,5,1,-1],[111,'sailboat',7.4,14,1,1],
-        [121,'yacht',10.5,7,1,-1],[130,'motorboat',3.6,5,2,1]] },
-    { name:'flowers', boats:[[310,'cruiser',6.8,4,0,1],[320,'sailboat',6.6,9,0,-1],
-        [329,'yacht',14.2,15,2,1],[344,'motorboat',4.5,4,1,-1],[351,'sailboat',5.8,6,1,1],
-        [365,'yacht',11.5,9,1,-1],[378,'cruiser',8.2,16,2,1]] },
-    { name:'rock-exit', boats:[[588,'sailboat',5.4,3,2,-1],[603,'motorboat',3.8,4,0,1]] },
-    { name:'whale-cove', boats:[[594,'motorboat',4.1,4,1,-1],[611,'sailboat',7.0,10,2,1],
-        [626,'yacht',11.8,8,0,-1],[638,'cruiser',7.6,14,1,1],[656,'sailboat',5.6,6,0,-1]] },
-    { name:'palm-bay', boats:[[806,'cruiser',8.0,5,2,1],[817,'sailboat',7.6,12,1,-1],
-        [827,'yacht',15.0,15,2,1],[837,'motorboat',3.4,4,0,-1],[847,'yacht',11.0,8,1,-1],
-        [860,'sailboat',6.4,7,0,1],[877,'cruiser',6.5,16,0,-1],[891,'motorboat',4.6,5,2,1]] },
-    { name:'marina', boats:[[941,'yacht',12.0,18,1,1],[969,'sailboat',6.0,12,2,-1],
-        [982,'cruiser',7.4,9,0,1]] }
+    { name:'sunset', boats:[[78,'motorboat',4.2,6,0,1],[87,'sailboat',6.2,38,0,-1],
+        [94,'yacht',12.8,110,0,1],[101,'cruiser',7.2,52,1,-1],[111,'sailboat',7.4,72,1,1],
+        [121,'yacht',10.5,80,1,-1],[130,'motorboat',3.6,28,2,1]] },
+    { name:'flowers', boats:[[310,'cruiser',6.8,48,0,1],[320,'sailboat',6.6,55,0,-1],
+        [329,'yacht',14.2,120,2,1],[344,'motorboat',4.5,7,1,-1],[351,'sailboat',5.8,36,1,1],
+        [365,'yacht',11.5,85,1,-1],[378,'cruiser',8.2,70,2,1]] },
+    { name:'rock-exit', boats:[[588,'sailboat',5.4,24,2,-1],[603,'motorboat',3.8,5,0,1]] },
+    { name:'whale-cove', boats:[[594,'motorboat',4.1,25,1,-1],[611,'sailboat',7.0,64,2,1],
+        [626,'yacht',11.8,100,0,-1],[638,'cruiser',7.6,55,1,1],[656,'sailboat',5.6,36,0,-1]] },
+    { name:'palm-bay', boats:[[806,'cruiser',8.0,58,2,1],[817,'sailboat',7.6,72,1,-1],
+        [827,'yacht',15.0,130,2,1],[837,'motorboat',3.4,6,0,-1],[847,'yacht',11.0,95,1,-1],
+        [860,'sailboat',6.4,46,0,1],[877,'cruiser',6.5,82,0,-1],[891,'motorboat',4.6,28,2,1]] },
+    { name:'marina', boats:[[941,'yacht',12.0,115,1,1],[969,'sailboat',6.0,54,2,-1],
+        [982,'cruiser',7.4,65,0,1]] }
 ];
 const OCEAN_BOATS_BY_SEGMENT = new Map(OCEAN_BOAT_BAYS.flatMap(bay=>bay.boats.map(
     ([index,kind,length,offshore,variant,heading])=>[index,{kind,length,offshore,variant,heading,bay:bay.name}])));
@@ -6312,11 +6312,12 @@ function drawIllegalBeachParty(sx, sy, sc, ts) {
   ctx.restore();
 }
 
-function drawBeachPartySprite(sx, sy, sc, ts) {
+function drawBeachPartySprite(sx, sy, sc, ts, nightParty = player.lap >= 3) {
   const h = ~~(sc * 120); if (h < 5) return;
   
-  // If we are in Coastal Level and on Lap 3 (the dark night round), throw the illegal beach party!
-  if (currentLevel === 2 && player.lap === 3) {
+  // Select the scene for this occurrence of the beach, including the next lap
+  // already visible across the start line. Keep the night scene after finishing.
+  if (currentLevel === 2 && nightParty) {
     drawIllegalBeachParty(sx, sy, sc, ts);
     return;
   }
@@ -8350,6 +8351,7 @@ function render(ts) {
         s.x = rx2 + seg.spriteX * p2.w;
         s.y = p2.y;
         s.sc = Math.min(1.25, p2.scale * (seg.sprite === 'gnarled_tree' ? 3800 : 2800)) * responsiveFactor;
+        if(seg.sprite==='beach_party')s.partyLap=player.lap+lapOffset/TRACK_LENGTH;
         if (UNDERWATER_FLORA.includes(seg.sprite)) s.sc *= 0.86 + (seg.index % 5) * 0.055;
         s.depth = n;
         s.clipY = segmentClipY;
@@ -8361,12 +8363,18 @@ function render(ts) {
 
     if (seg.oceanBoat) {
         const boat=seg.oceanBoat;
-        const carScale=p2.scale*(692*H/Math.max(10,H*.5-76))*responsiveFactor;
-        const metres=carScale*136/1.9;
-        // The full hull lies beyond the actual sand/water boundary at lane 3.8.
+        // Open-bay billboards use their distance from the camera, including
+        // offshore clearance. A yacht cannot loom over the road as it passes.
+        const worldMetre=(692*H/Math.max(10,H*.5-76))*responsiveFactor*136/(1.9*W*.5);
+        const distance=Math.hypot(segWorldZ+SEGMENT_LENGTH-camZ,boat.offshore*worldMetre);
+        const scale=(CAMERA_DEPTH+player.fovOffset)/distance;
+        const metres=scale*worldMetre*W*.5;
+        // Keep the foot on this slice of the bay's water plane. Receding
+        // towards the sky horizon would lift boats onto opposite headlands.
         const x=rx2+3.8*p2.w+(boat.offshore+boat.length*.5)*metres;
+        const y=p2.y;
         if(x-boat.length*metres*.58<W+3 && x+boat.length*metres*.58>-3){
-            const s=getCleanSpriteFromPool();s.type='ocean_boat';s.x=x;s.y=p2.y;s.sc=metres;
+            const s=getCleanSpriteFromPool();s.type='ocean_boat';s.x=x;s.y=y;s.sc=metres;
             s.boat=boat;s.depth=n;s.clipY=segmentClipY;s.segIdx=segIdx;
         }
     }
@@ -8573,7 +8581,7 @@ function render(ts) {
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawBeachPartySprite(s.x, s.y, currentLevel===2?s.sc*1.45:s.sc, ts);
+        drawBeachPartySprite(s.x,s.y,currentLevel===2?s.sc*1.45:s.sc,ts,s.partyLap>=3);
         ctx.restore();
     }
     else if (s.type === 'beach_bar') {

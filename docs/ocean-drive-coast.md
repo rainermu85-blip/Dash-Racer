@@ -1,6 +1,6 @@
 # Ocean Drive: tropische Felsküste und Strand
 
-11. Oktober 2026. Die Küste verbindet wechselnde Felsquerschnitte, warme
+12. Oktober 2026. Die Küste verbindet wechselnde Felsquerschnitte, warme
 Vulkanfarben, üppigen Bewuchs und zusätzliche Strandplätze. Streckenprofil,
 Kamera, Fahrphysik, Normaltempo, Turbo und der Übergang vom Sonnenuntergang
 zur Nacht über drei Runden bleiben erhalten.
@@ -110,7 +110,15 @@ mit drei Farbkombinationen, einem hellen Rumpf und feiner Takelage.
 Die angenäherte Größenreferenz ist ein Auto von 1,9 Metern Breite auf derselben
 projizierten Entfernung. Motorboote entsprechen etwa 3,4–4,6 Metern Länge,
 Kajütboote 6,5–8,2 Metern, Segelboote 5,4–7,6 Metern und Jachten 10,5–15 Metern.
-Entfernte Boote werden perspektivisch kleiner. Die komplette Rumpfbreite wird
+Große Jachten liegen 80–130 Meter vom Ufer entfernt, Kajütboote 48–82 Meter
+und Segelboote 24–72 Meter. Nur vier kleine Motorboote bleiben mit 5–7 Metern
+Abstand in Strandnähe; die übrigen Motorboote liegen 25–28 Meter draußen.
+Die Entfernung vom Ufer fließt zusätzlich zur Entfernung entlang der Strecke
+in die perspektivische Größe ein. Eine Jacht bleibt dadurch beim Vorbeifahren
+klein, statt als großes Vordergrundobjekt den Blick auf die Bucht zu verdecken.
+Die Füße bleiben an der projizierten Wasserfläche des zugehörigen Küstenabschnitts;
+eine Verschiebung zum Himmelshorizont würde sie an Kuppen auf die gegenüberliegenden
+Felsen heben. Die komplette Rumpfbreite wird
 bei der Platzierung hinter der tatsächlichen Wassergrenze berücksichtigt;
 größere Jachten reichen dadurch nicht auf den Strand. Kleine örtliche Wellen
 und gedimmte Rümpfe mit einzelnen warmen Fenstern ergänzen die Nachtansicht.
@@ -127,7 +135,11 @@ Die Party steht bei Segment 75 auf der langen Startgeraden. Die größere
 Darstellung und der von Palmen freigehaltene Blick verlängern die Sichtbarkeit.
 Volleyball und Strandjeep folgen bei 87 und 95. Die Party behält ihre
 Darstellung mit Sonnenschirm tagsüber und DJ, Tänzern und lokalen Lichteffekten
-in Runde drei.
+in Runde drei. Die Nachtparty wird anhand der Runde des sichtbaren Strandabschnitts
+gewählt: Beim Ende von Runde zwei ist bereits die Party aus der folgenden
+Runde sichtbar. Sie erscheint deshalb vor der Ziellinie als DJ-Szene und
+wechselt beim Überfahren nicht plötzlich von der Tagesdarstellung zur Bühne.
+Nach dem Zieleinlauf bleibt sie ebenfalls eine Nachtparty.
 
 Zehn zusätzliche Strandplätze verteilen sich auf vier Motive: Liegen mit
 Sonnenschirm, farbige Surfbrettständer, Cabanas und offene Rettungssitze mit
@@ -149,9 +161,9 @@ zusätzlichen Tempoverlust.
 
 ## Validierung
 
-69 Browserprüfungen bei unverändertem Fahrmodell:
+73 Browserprüfungen bei unverändertem Fahrmodell:
 
-- `node scripts/assess-game.cjs coast`: 46 bei 390 × 844 und 480 × 800 Pixel.
+- `node scripts/assess-game.cjs coast`: 50 bei 390 × 844 und 480 × 800 Pixel.
 - `node scripts/assess-game.cjs mechanics`: 23.
 
 Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
@@ -167,6 +179,10 @@ Stichproben rund zwei Sekunden sichtbar; die Hausdarstellung wird eigens
 auf ausreichend sichtbare Bildfläche geprüft. Fundament- und Deckprüfungen
 verifizieren den Boden des Hauses und die Wasserlinie der Boote. Der
 komplette Pier muss auf geraden Streckensegmenten liegen.
+
+Zwei zusätzliche Prüfungen pro Bildschirmgröße beobachten die Nachtparty
+vor dem Wechsel in Runde drei und kontrollieren dieselbe Szene unmittelbar
+nach der Linie sowie nach dem Zieleinlauf.
 
 Weitere Prüfungen erfassen das sichtbare Grün und die Blüten an mehreren
 Standorten, die vier zusätzlichen Strandmotive, Felskontakt und die Trennung
