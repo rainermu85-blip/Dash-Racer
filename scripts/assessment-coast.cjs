@@ -151,6 +151,35 @@ module.exports = async function runCoast(browser, baseUrl) {
         // All four kinds occupy real beach segments, with no tunnel intrusion.
         const beach=segments.filter(s=>/^beach_(loungers|surfboards|cabanas|lifeguard)$/.test(s.sprite));
         record('beach-has-four-varied-grounded-scenes',new Set(beach.map(s=>s.sprite)).size===4&&beach.every(s=>!s.isTunnel&&s.spriteX>1.18&&s.spriteX<3.8),beach.map(s=>({index:s.index,type:s.sprite})));
+        // These final-frame comparisons catch the crest clipping and water
+        // overpainting which hid objects even though they were in the level data.
+        reset();player.z=210*SEGMENT_LENGTH;driveTo(250);
+        const boatDraw=drawOceanBoatSprite,random=Math.random;
+        const pixelDifference=(a,b)=>{let n=0;for(let i=0;i<a.length;i+=4)if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2])n++;return n;};
+        try{
+          Math.random=()=>.5;render(ts);const full=ctx.getImageData(0,0,W,H).data;
+          const fleet=[];
+          for(const boat of OCEAN_BOATS_BY_SEGMENT.values())if(boat.bay==='crest-bay'){
+            let width=0;drawOceanBoatSprite=(x,y,scale,b,night)=>{if(b===boat){width=scale*b.length;return;}boatDraw(x,y,scale,b,night);};
+            render(ts);fleet.push({kind:boat.kind,width,pixels:pixelDifference(full,ctx.getImageData(0,0,W,H).data)});
+          }
+          record('crest-bay-eleven-distant-boats-visible',fleet.length===11&&fleet.every(b=>b.pixels>3&&b.width<W*.12),fleet);
+        }finally{Math.random=random;drawOceanBoatSprite=boatDraw;}
+        reset();driveTo(35);
+        const personDraw=drawBeachPerson,partyDraw=drawBeachPartySprite;let inParty=false;const people=[];
+        drawBeachPerson=(x,y,scale,pose,options)=>{if(inParty)people.push({pose,left:x-scale*(pose==='lying'?22.5:13)});personDraw(x,y,scale,pose,options);};
+        drawBeachPartySprite=(...args)=>{inParty=true;try{partyDraw(...args);}finally{inParty=false;}};
+        try{render(ts);}finally{drawBeachPerson=personDraw;drawBeachPartySprite=partyDraw;}
+        const partySegment=segments[OCEAN_PARTY_INDEX],roadEdge=partySegment.proj_rx2+partySegment.proj_w2*1.18;
+        record('party-people-are-completely-off-road',people.length===2&&people.every(p=>p.left>roadEdge),{roadEdge,people});
+        reset();player.z=270*SEGMENT_LENGTH;driveTo(308);
+        const sharkDraw=drawSharkAttackSprite;let attack;
+        try{
+          Math.random=()=>.5;drawSharkAttackSprite=()=>{};render(ts);const before=ctx.getImageData(0,0,W,H).data;
+          drawSharkAttackSprite=(x,y,scale,time,cycle)=>{attack={x,y,cycle};sharkDraw(x,y,scale,time,cycle);};
+          render(ts);const pixels=pixelDifference(before,ctx.getImageData(0,0,W,H).data);
+          record('shark-bite-visible-on-normal-approach',attack?.cycle>4740&&attack?.cycle<5060&&pixels>200,{attack,pixels});
+        }finally{Math.random=random;drawSharkAttackSprite=sharkDraw;}
         reset();player.z=520*SEGMENT_LENGTH;player.x=1.25;applyRoadContact(1/60,0);
         record('car-cannot-drive-through-right-rock-wall',player.x<=1.05+1e-9,{x:player.x,side:player.wallContactSide});
         for(const level of[1,3,4,5,6]){

@@ -258,6 +258,12 @@ const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'caban
 // Uneven anchorages: lengths and offshore clearances are in metres, with a
 // nearby opponent's 1.9 m width providing the visual scale reference.
 const OCEAN_BOAT_BAYS = [
+    { name:'crest-bay', boats:[[483,'yacht',12.5,100,0,-1,1,-4],[487,'sailboat',6.8,55,1,1,14,-11],
+        [493,'cruiser',7.6,80,2,-1,7,-7],[499,'motorboat',4.4,55,1,1,30,-17],
+        [507,'sailboat',5.8,95,0,-1,37,-6],[512,'yacht',14,130,2,1,57,-14],
+        [518,'cruiser',8.1,60,0,1,79,-20],[524,'sailboat',7.1,110,2,-1,108,-8],
+        [529,'motorboat',3.8,70,0,-1,121,-24],[535,'yacht',11.2,95,1,1,149,-12],
+        [540,'sailboat',6.4,65,0,1,160,-17]] },
     { name:'sunset', boats:[[78,'motorboat',4.2,6,0,1],[87,'sailboat',6.2,38,0,-1],
         [94,'yacht',12.8,110,0,1],[101,'cruiser',7.2,52,1,-1],[111,'sailboat',7.4,72,1,1],
         [121,'yacht',10.5,80,1,-1],[130,'motorboat',3.6,28,2,1]] },
@@ -274,7 +280,7 @@ const OCEAN_BOAT_BAYS = [
         [982,'cruiser',7.4,65,0,1]] }
 ];
 const OCEAN_BOATS_BY_SEGMENT = new Map(OCEAN_BOAT_BAYS.flatMap(bay=>bay.boats.map(
-    ([index,kind,length,offshore,variant,heading])=>[index,{kind,length,offshore,variant,heading,bay:bay.name}])));
+    ([index,kind,length,offshore,variant,heading,spread=0,depth=0])=>[index,{kind,length,offshore,variant,heading,spread,depth,bay:bay.name}])));
 const OCEAN_ROCK_DAY = ['#39202b','#572a35','#733941','#48232f','#301b27','#98534d','#281421'];
 const OCEAN_ROCK_NIGHT = ['#160e19','#281522','#371d2b','#22121e','#170e18','#542b38','#120b15'];
 let oceanCliffProfiles = [], oceanCliffVegetation = [], oceanPierSlices = [], oceanRockPalette = OCEAN_ROCK_DAY.slice();
@@ -695,13 +701,15 @@ function buildSegments() {
                 spriteX = 2.3; // Placed perfectly on the beach, close enough to the track to be fully visible!
             } else if (i === OCEAN_PARTY_INDEX) {
                 sprite = 'beach_party';
-                spriteX = 1.65;
+                spriteX = 2.2;
             } else if (i === OCEAN_PARTY_INDEX + 12) {
                 sprite = 'beach_volleyball';
                 spriteX = 2.4;
             } else if (i === OCEAN_PARTY_INDEX + 20) {
                 sprite = 'beach_jeep';
                 spriteX = 2.6;
+            } else if (i===278 || i===814) {
+                sprite=i===278?'beach_jeep_red':'beach_jeep_yellow';spriteX=2.35;
             } else if (OCEAN_BEACH_SPOTS.has(i)) {
                 sprite = 'beach_' + OCEAN_BEACH_SPOTS.get(i); spriteX = 1.9;
             } else if (!isTunnel && !isStartLine && i % 37 === 17) {
@@ -711,7 +719,8 @@ function buildSegments() {
                 const nearSpot2 = (i >= OCEAN_PARTY_INDEX - 75 && i <= OCEAN_PARTY_INDEX + 30);
                 const nearPier = (i >= OCEAN_PIER_INDEX - 65 && i <= OCEAN_PIER_INDEX + OCEAN_PIER_LENGTH);
                 const nearSpotWhale = (i >= 573 && i <= 581);
-                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier) {
+                const nearShark=(i>=308 && i<=342);
+                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearShark) {
                     sprite = 'tree';
                     // Level 2: palm trees ONLY on the right-side beach (1.45 to 2.55) to prevent wall clipping on the left
                     spriteX = 1.45 + Math.random() * 1.1;
@@ -719,14 +728,17 @@ function buildSegments() {
             }
 
             // Keep the existing surfers and shark encounter between anchorages.
-            if (i === 6) { seaSprite = 'windsurfer'; seaSpriteX = 3.6; }
-            else if (i === SEGMENT_COUNT - 8) { seaSprite = 'windsurfer'; seaSpriteX = 3.8; }
+            if (i === 6) { seaSprite = 'windsurfer'; seaSpriteX = 4.1; }
+            else if (i === SEGMENT_COUNT - 8) { seaSprite = 'windsurfer'; seaSpriteX = 4.1; }
             else if (i === 200) { seaSprite = 'windsurfer'; seaSpriteX = 4.1; }
             else if (i === 215) { seaSprite = 'windsurfer'; seaSpriteX = 4.6; }
             else if (i === 335) { seaSprite = 'windsurfer_victim'; seaSpriteX = 4.3; }
             else if (i === 650) { seaSprite = 'windsurfer'; seaSpriteX = 4.8; }
             else if (i === 670) { seaSprite = 'windsurfer'; seaSpriteX = 4.2; }
             else if (i === 740) { seaSprite = 'windsurfer'; seaSpriteX = 4.5; }
+            else if ([268,281,362,376,600,615,795,810,841].includes(i)) {
+                seaSprite='windsurfer';seaSpriteX=4.08+(i%3)*.13;
+            }
         } else if (currentLevel === LEVEL_HILLS) {
             if (!isStartLine) {
                 if (i % 56 === 20) {
@@ -2523,6 +2535,22 @@ function drawOceanPier(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index,anchor) {
     }
 }
 
+function getOceanShoreLane(index) {
+    const distance=Math.abs(index-OCEAN_PIER_CENTER);
+    return distance<55?3.8-1.1*(1+Math.cos(Math.PI*distance/55))*.5:3.8;
+}
+
+function drawOceanWaterSegment(x1,y1,w1,x2,y2,w2,isAlt,index) {
+    const cut=clamp((player.z+64-segments[index].worldZReal)/SEGMENT_LENGTH,0,1);
+    const shore1=x1+w1*getOceanShoreLane(index+cut),shore2=x2+w2*getOceanShoreLane(index+1);
+    ctx.fillStyle=interpolateColor(isAlt?'#1a416b':'#122d4f',isAlt?'#060e18':'#040a12',currentProgressRatio);
+    trapezoid(shore1,y1,W,shore2,y2,W);
+    if(!isAlt && index%12===0){
+        ctx.fillStyle='rgba(33,212,253,.25)';
+        trapezoid(shore1+w1*.25,y1,shore1+w1*.70,shore2+w2*.25,y2,shore2+w2*.70);
+    }
+}
+
 function drawOceanBeachSpot(x,y,scale,kind,seed) {
     // Keep low beach furniture and board lengths in proportion to nearby cars.
     scale *= kind==='loungers' ? .6 : kind==='surfboards' ? .65 : 1;
@@ -2691,28 +2719,11 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         // 1. Right side: Golden Sandy Beach (40m strip)
         const beachL1 = x1 + w1 * 1.15;
         const beachL2 = x2 + w2 * 1.15;
-        const beachR1 = x1 + w1 * 3.8;
-        const beachR2 = x2 + w2 * 3.8;
-        
-        ctx.fillStyle = isAlt ? '#eac68a' : '#dfbe81';
-        trapezoid(beachL1, y1, beachR1, beachL2, y2, beachR2);
-        
-        // 2. Right side: Open Ocean (Sea beyond the beach extending off-screen)
-        // Dynamically interpolated ocean color: beautiful, vibrant twilight indigo/sapphire fading to a deep, dark midnight blue!
-        const seaAltCol = interpolateColor('#1a416b', '#060e18', currentProgressRatio);
-        const seaStdCol = interpolateColor('#122d4f', '#040a12', currentProgressRatio);
-        ctx.fillStyle = isAlt ? seaAltCol : seaStdCol;
-        trapezoid(beachR1, y1, W, beachR2, y2, W);
-        
-        // Dynamic cyan sea wave foam highlights
-        if (!isAlt && (segIdx % 12 === 0)) {
-            ctx.fillStyle = 'rgba(33, 212, 253, 0.25)';
-            const waveX1 = beachR1 + w1 * 0.25;
-            const waveX2 = beachR2 + w2 * 0.25;
-            const waveW1 = w1 * 0.45;
-            const waveW2 = w2 * 0.45;
-            trapezoid(waveX1, y1, waveX1 + waveW1, waveX2, y2, waveX2 + waveW2);
-        }
+        const cut=clamp((player.z+64-segments[segIdx].worldZReal)/SEGMENT_LENGTH,0,1);
+        const beachR1=x1+w1*getOceanShoreLane(segIdx+cut);
+        const beachR2=x2+w2*getOceanShoreLane(segIdx+1);
+        ctx.fillStyle=isAlt?'#eac68a':'#dfbe81';
+        trapezoid(beachL1,y1,beachR1,beachL2,y2,beachR2);
 
         // Stratified headlands and attached vegetation share the road's depth.
         drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);
@@ -5315,9 +5326,19 @@ function drawWindsurferSprite(sx, sy, sc, ts) {
   ctx.restore();
 }
 
-function drawSharkAttackSprite(sx, sy, sc, ts) {
+function getOceanSharkCycle(z) {
+    const index=z/SEGMENT_LENGTH;
+    const beats=[[270,0],[285,3000],[295,4500],[320,5300],[332,6500],[335,7999]];
+    for(let i=1;i<beats.length;i++){
+        const [start,a]=beats[i-1],[end,b]=beats[i];
+        if(index<=end)return a+(b-a)*clamp((index-start)/(end-start),0,1);
+    }
+    return 7999;
+}
+
+function drawSharkAttackSprite(sx, sy, sc, ts, encounterCycle = ts % 8000) {
   const wsc = sc * 0.45; // same scale as windsurfer
-  const cycle = ts % 8000;
+  const cycle = encounterCycle;
   
   ctx.save();
   
@@ -5838,6 +5859,37 @@ function drawBeachVolleyballSprite(sx, sy, sc, ts) {
   ctx.restore();
 }
 
+function drawClassicBeachJeep(sx,sy,sc,color) {
+    sc*=.85;if(sc<.025)return;
+    beginChapterSprite(sx,sy,sc);
+    const poly=(pts,c)=>paintOceanPolygon(pts.map(([x,y])=>({x,y})),c);
+    ctx.fillStyle='rgba(18,12,26,.28)';ctx.beginPath();ctx.ellipse(0,0,89,7,0,0,Math.PI*2);ctx.fill();
+    poly([[-78,-20],[61,-20],[69,-35],[61,-49],[15,-49],[10,-30],[-35,-30],[-37,-43],[-77,-43]],color);
+    poly([[61,-20],[78,-25],[78,-46],[51,-51],[69,-35]],'#633e48');
+    poly([[15,-49],[61,-49],[69,-42],[19,-42]],shadeColor(color,40));
+    ctx.fillStyle='#273044';ctx.fillRect(-36,-45,17,16);ctx.fillRect(-9,-46,17,16);
+    ctx.strokeStyle='#dfcdb6';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(-56,-30);ctx.lineTo(-56,-78);ctx.lineTo(8,-78);
+    ctx.moveTo(-56,-78);ctx.lineTo(-30,-80);ctx.lineTo(31,-80);
+    ctx.moveTo(8,-78);ctx.lineTo(15,-48);ctx.moveTo(31,-80);ctx.lineTo(40,-49);ctx.stroke();
+    poly([[11,-75],[29,-76],[36,-51],[17,-51]],'#65a6b0');
+    ctx.fillStyle='#172432';ctx.beginPath();ctx.ellipse(-79,-39,10,15,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#292237';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-83,-19);ctx.lineTo(76,-19);ctx.stroke();
+    for(const x of[-49,48]){
+        ctx.fillStyle='#111421';ctx.beginPath();ctx.arc(x,-14,14,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#665b6e';ctx.lineWidth=3;ctx.stroke();
+        ctx.fillStyle='#e9bc89';ctx.beginPath();ctx.arc(x,-14,7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#393a4b';ctx.beginPath();ctx.arc(x,-14,3,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#1c2432';ctx.fillRect(63,-42,12,20);
+    ctx.strokeStyle='#dbb98e';ctx.lineWidth=1;
+    for(let i=0;i<7;i++){ctx.beginPath();ctx.moveTo(64+i*1.5,-40);ctx.lineTo(64+i*1.5,-25);ctx.stroke();}
+    for(const [x,y]of[[59,-42],[76,-43]]){ctx.fillStyle='#ffe7a8';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();}
+    ctx.fillStyle='#f3c496';ctx.fillRect(-82,-37,5,7);
+    ctx.strokeStyle='#e16fa8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-71,-26);ctx.lineTo(39,-26);ctx.stroke();
+    ctx.restore();
+}
+
 function drawBeachJeepSprite(sx, sy, sc) {
   const w = ~~(sc * 150); if (w < 6) return;
   const h = ~~(sc * 100);
@@ -6329,44 +6381,23 @@ function drawBeachPartySprite(sx, sy, sc, ts, nightParty = player.lap >= 3) {
   ctx.ellipse(sx, sy, sc * 90, sc * 11, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Beach Umbrella
-  const umbPoleX = sx - sc * 25;
-  const umbY = sy - sc * 75;
-  
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = Math.max(1.5, sc * 3);
-  ctx.beginPath();
-  ctx.moveTo(umbPoleX, sy);
-  ctx.lineTo(umbPoleX, umbY);
-  ctx.stroke();
-  
-  ctx.save();
-  ctx.translate(umbPoleX, umbY);
-  const rUmb = sc * 45;
-  ctx.beginPath();
-  ctx.arc(0, 0, rUmb, Math.PI, 0, false);
-  ctx.closePath();
-  ctx.clip();
-  
-  const numStripes = 6;
-  const colors = ['#ff00c1', '#00ffd2', '#ff00c1', '#00ffd2', '#ff00c1', '#00ffd2'];
-  const stripeW = rUmb * 2 / numStripes;
-  for (let i = 0; i < numStripes; i++) {
-    ctx.fillStyle = colors[i];
-    ctx.fillRect(-rUmb + i * stripeW, -rUmb, stripeW + 1, rUmb * 1.2);
-  }
-  ctx.restore();
-  
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = Math.max(1, sc * 2.2);
-  ctx.beginPath();
-  ctx.arc(umbPoleX, umbY, rUmb, Math.PI, 0, false);
-  ctx.closePath();
-  ctx.stroke();
+  // Shaped fabric panels, scalloped edge and a warm pole replace the striped dome.
+  const ux=sx-sc*16,uy=sy-sc*72;
+  ctx.strokeStyle='#e8bf97';ctx.lineWidth=Math.max(.8,sc*2);
+  ctx.beginPath();ctx.moveTo(ux,sy);ctx.lineTo(ux,uy-sc*25);ctx.stroke();
+  const panel=(points,color)=>paintOceanPolygon(points.map(([x,y])=>({x:ux+x*sc,y:uy+y*sc})),color);
+  panel([[-49,0],[-25,-17],[0,-28],[29,-18],[48,1]],'#ee619b');
+  panel([[-49,0],[-25,-17],[0,-28],[-9,-2]],'#ffe4b4');
+  panel([[-9,-2],[0,-28],[29,-18],[25,0]],'#21bab1');
+  ctx.strokeStyle='#ffdec0';ctx.lineWidth=Math.max(.65,sc);
+  ctx.beginPath();ctx.moveTo(ux-sc*49,uy);
+  ctx.quadraticCurveTo(ux-sc*28,uy+sc*7,ux-sc*9,uy-sc*2);
+  ctx.quadraticCurveTo(ux+sc*7,uy+sc*7,ux+sc*25,uy);
+  ctx.quadraticCurveTo(ux+sc*37,uy+sc*7,ux+sc*48,uy+sc);ctx.stroke();
 
   // Towels
-  const t1L = sx - sc * 70;
-  const t1R = sx - sc * 40;
+  const t1L = sx - sc * 53;
+  const t1R = sx - sc * 5;
   ctx.fillStyle = '#00ffd2';
   ctx.strokeStyle = 'rgba(255,255,255,0.4)';
   ctx.lineWidth = Math.max(0.5, sc * 1);
@@ -6394,11 +6425,11 @@ function drawBeachPartySprite(sx, sy, sc, ts, nightParty = player.lap >= 3) {
   ctx.stroke();
 
   // Person 1: Tanning (laying on towel)
-  drawBeachPerson(sx - sc * 58, sy + sc * 1, sc, 'lying', { skin: '#ffcca3', clothing: '#ff00c1', hair: '#ffe259' });
+  drawBeachPerson(sx - sc * 32, sy + sc * 1, sc, 'lying', { skin: '#ffcca3', clothing: '#ff00c1', hair: '#ffe259' });
 
   // Person 2: Sitting on towel/lounger
   const bob = Math.sin(ts * 0.003) * sc * 1.5;
-  drawBeachPerson(sx + sc * 45, sy + bob, sc, 'sitting', { skin: '#e0ae85', clothing: '#00ffd2', hair: '#ff00c1' });
+  drawBeachPerson(sx + sc * 36, sy + bob, sc, 'sitting', { skin: '#e0ae85', clothing: '#00ffd2', hair: '#ff00c1' });
 
   // Bonfire
   const fireX = sx + sc * 3;
@@ -8366,16 +8397,18 @@ function render(ts) {
         // Open-bay billboards use their distance from the camera, including
         // offshore clearance. A yacht cannot loom over the road as it passes.
         const worldMetre=(692*H/Math.max(10,H*.5-76))*responsiveFactor*136/(1.9*W*.5);
-        const distance=Math.hypot(segWorldZ+SEGMENT_LENGTH-camZ,boat.offshore*worldMetre);
+        const shoreDepth=segWorldZ+SEGMENT_LENGTH-camZ;
+        const boatDepth=shoreDepth+boat.depth*worldMetre;
+        const distance=Math.hypot(boatDepth,boat.offshore*worldMetre);
         const scale=(CAMERA_DEPTH+player.fovOffset)/distance;
         const metres=scale*worldMetre*W*.5;
         // Keep the foot on this slice of the bay's water plane. Receding
         // towards the sky horizon would lift boats onto opposite headlands.
-        const x=rx2+3.8*p2.w+(boat.offshore+boat.length*.5)*metres;
-        const y=p2.y;
-        if(x-boat.length*metres*.58<W+3 && x+boat.length*metres*.58>-3){
+        const x=rx2+getOceanShoreLane(segIdx+1)*p2.w+(boat.offshore+boat.length*.5+boat.spread)*metres;
+        const y=horizonY+(p2.y-horizonY)*shoreDepth/Math.max(64,boatDepth);
+        if(boatDepth>=64 && x-boat.length*metres*.58<W+3 && x+boat.length*metres*.58>-3){
             const s=getCleanSpriteFromPool();s.type='ocean_boat';s.x=x;s.y=y;s.sc=metres;
-            s.boat=boat;s.depth=n;s.clipY=segmentClipY;s.segIdx=segIdx;
+            s.boat=boat;s.depth=n;s.segIdx=segIdx;
         }
     }
 
@@ -8384,9 +8417,8 @@ function render(ts) {
         s.type = seg.seaSprite; // 'sailboat' or 'yacht'
         s.x = rx2 + seg.seaSpriteX * p2.w;
         s.y = p2.y;
-        s.sc = Math.min(0.8, p2.scale * 2400) * responsiveFactor;
+        s.sc=Math.min(4.8,p2.scale*(692*H/Math.max(10,H*.5-76))*responsiveFactor*5.0);
         s.depth = n;
-        s.clipY = segmentClipY;
         s.segIdx = segIdx;
     }
 
@@ -8556,6 +8588,10 @@ function render(ts) {
         drawBeachVolleyballSprite(s.x, s.y, s.sc, ts);
         ctx.restore();
     }
+    else if(s.type==='beach_jeep_red'||s.type==='beach_jeep_yellow'){
+        ctx.save();if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
+        drawClassicBeachJeep(s.x,s.y,s.sc,s.type==='beach_jeep_red'?'#dd435c':'#f4c441');ctx.restore();
+    }
     else if (s.type === 'beach_jeep') {
         ctx.save();
         if (s.clipY !== undefined) {
@@ -8627,7 +8663,7 @@ function render(ts) {
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawSharkAttackSprite(s.x, s.y, s.sc, ts);
+        drawSharkAttackSprite(s.x,s.y,s.sc,ts,getOceanSharkCycle(player.z));
         ctx.restore();
     }
     else if (s.type === 'pylon') {
@@ -8709,6 +8745,12 @@ function render(ts) {
 
 
     }
+  }
+
+  // Paint the complete water surface before any floating objects. A nearer
+  // water strip must not erase boats in a bay visible over a road crest.
+  if(currentLevel===2)for(let i=segmentsToDraw.length-1;i>=0;i--){
+    const r=segmentsToDraw[i];drawOceanWaterSegment(r.rx1,r.y1,r.w1,r.rx2,r.y2,r.w2,r.color,r.segIdx);
   }
 
   // Group sprites from spritePool into those on visible road segments vs background/offscreen

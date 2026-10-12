@@ -58,7 +58,10 @@ Strecke wurde die gut einsehbare lange Gerade gewählt.
 Der Holzsteg verläuft bei Segment 957 rechtwinklig zur Straße vom Strand
 aus ins Wasser. Eine größere Plattform trägt ein türkisfarbenes Bootshaus
 mit Satteldach, warmer Fensterbeleuchtung und einer Tür zum Steg.
-Hausboden und Plattform haben dieselbe Höhe. Holzpfähle unter Plattform
+Hausboden und Plattform haben dieselbe Höhe. Eine sanfte Hafeneinbuchtung
+zieht die Wassergrenze von Lane 3,8 bis auf 2,7 am Steg zurück. Der Pier reicht
+weiterhin rechtwinklig ins Wasser; die Einbuchtung macht den langen Abschnitt
+über Wasser und die verankerte Plattform deutlicher sichtbar. Holzpfähle unter Plattform
 und Steg reichen bis unter die Wasserfläche. Bohlen, Geländer und zwei
 Lampen ergänzen die Konstruktion.
 
@@ -94,8 +97,8 @@ in Ocean Drive geprüft; Sunset Hills wurde ebenfalls in Fahransichten geprüft.
 
 ## Flotte und Buchten
 
-32 verankerte Boote verteilen sich auf sechs unterschiedlich dicht belegte
-Küstenbereiche: sieben in der Sonnenuntergangsbucht, sieben an der blühenden
+43 verankerte Boote verteilen sich auf sieben unterschiedlich dicht belegte
+Küstenbereiche: elf weit draußen in der bei Abschnitt 250 sichtbaren Bucht, sieben in der Sonnenuntergangsbucht, sieben an der blühenden
 Felsküste, zwei nach der Felsdurchfahrt, fünf in der Umgebung der Walbucht,
 acht in der großen Palmenbucht und drei weiter draußen beim Pier. Die beiden
 am Pier festgemachten Boote ergänzen diese Flotte. Abstände entlang der
@@ -116,6 +119,16 @@ Abstand in Strandnähe; die übrigen Motorboote liegen 25–28 Meter draußen.
 Die Entfernung vom Ufer fließt zusätzlich zur Entfernung entlang der Strecke
 in die perspektivische Größe ein. Eine Jacht bleibt dadurch beim Vorbeifahren
 klein, statt als großes Vordergrundobjekt den Blick auf die Bucht zu verdecken.
+Die neue Elferschiffsgruppe enthält Jachten, Kajütboote, Segelboote und kleine
+Motorboote. Sie ist seitlich und in der Tiefe versetzt. Ihre Darstellung wird
+bei Abschnitt 250 für jedes einzelne Boot auf tatsächliche sichtbare Bildfläche
+geprüft, einschließlich 390 und 480 Pixel Breite.
+
+Die Wasserfläche wird vor den Gelände- und Objektdurchgängen gezeichnet.
+Zuvor konnten spätere Wasserstreifen entfernte Boote übermalen. Außerdem
+verwenden Boote und Surfer die Kuppenbegrenzung der Straße nicht mehr; nähere
+Felsen, Strand und Straße verdecken sie weiterhin durch die Zeichnungsreihenfolge.
+Diese beiden Fehler machten die Bucht trotz vorhandener Boote leer.
 Die Füße bleiben an der projizierten Wasserfläche des zugehörigen Küstenabschnitts;
 eine Verschiebung zum Himmelshorizont würde sie an Kuppen auf die gegenüberliegenden
 Felsen heben. Die komplette Rumpfbreite wird
@@ -124,16 +137,34 @@ größere Jachten reichen dadurch nicht auf den Strand. Kleine örtliche Wellen
 und gedimmte Rümpfe mit einzelnen warmen Fenstern ergänzen die Nachtansicht.
 
 Die Verteilung ist fest und bleibt über Runden und Neustarts stabil.
-Die Surfer und die Haibegegnung behalten ihre bisherigen Plätze. Boote
+Neun zusätzliche Windsurfer ergänzen die sieben normalen Surfer und den
+Surfer der Haibegegnung. Ihre Bretter liegen auf dem Wasser dicht hinter der
+Uferlinie; die beiden zuvor auf der Strandkante stehenden Surfer wurden
+ebenfalls ins Wasser gerückt. Der Maßstab orientiert sich nun an den Autos.
+
+Die Haibegegnung bleibt bei Abschnitt 335. Der globale Achtsekunden-Timer
+wurde durch einen Annäherungsablauf ersetzt: zunächst der Surfer, dann die
+Flosse, der Biss mit „CHOMP!!“ und schließlich Wellen. Der Biss liegt im
+sichtbaren Annäherungsbereich um Abschnitt 305–312 und bleibt pro Runde
+an denselben Streckenabschnitt gekoppelt. Einzelne Palmen direkt davor
+werden freigehalten. Boote
 erscheinen ausschließlich in Ocean Drive. Normale Fahransichten bei 390 und
 480 Pixeln Breite sowie bei Tag und Nacht wurden geprüft; zusätzlich wurde
 die Sichtbarkeit der kleinen Gruppe hinter der Felsdurchfahrt gemessen.
 
 ## Party und weitere Strandplätze
 
-Die Party steht bei Segment 75 auf der langen Startgeraden. Die größere
+Die Party steht bei Segment 75 auf der langen Startgeraden. Die gesamte
+Gruppe ist weiter auf den Sand gerückt, und die liegende Person liegt auf
+einem breiteren Handtuch näher am Schirm. Beide Personen bleiben vollständig
+außerhalb der Fahrbahn. Der alte gestreifte Halbkreis-Schirm wurde durch eine
+geformte Stoffhaube mit warmen, pinken und türkisen Bahnen und geschwungener
+Kante ersetzt. Die größere
 Darstellung und der von Palmen freigehaltene Blick verlängern die Sichtbarkeit.
-Volleyball und Strandjeep folgen bei 87 und 95. Die Party behält ihre
+Volleyball und der bisherige Strandbuggy folgen bei 87 und 95.
+Zwei weitere, kantige offene 80er-Jeeps mit Überrollbügel, runden Scheinwerfern,
+Frontgrill, Ersatzrad und kräftigen Reifen stehen bei 278 in Rot und 814 in Gelb.
+Die Räder berühren den Sand; beide Fahrzeuge bleiben neben der Fahrbahn. Die Party behält ihre
 Darstellung mit Sonnenschirm tagsüber und DJ, Tänzern und lokalen Lichteffekten
 in Runde drei. Die Nachtparty wird anhand der Runde des sichtbaren Strandabschnitts
 gewählt: Beim Ende von Runde zwei ist bereits die Party aus der folgenden
@@ -161,9 +192,9 @@ zusätzlichen Tempoverlust.
 
 ## Validierung
 
-73 Browserprüfungen bei unverändertem Fahrmodell:
+79 Browserprüfungen bei unverändertem Fahrmodell:
 
-- `node scripts/assess-game.cjs coast`: 50 bei 390 × 844 und 480 × 800 Pixel.
+- `node scripts/assess-game.cjs coast`: 56 bei 390 × 844 und 480 × 800 Pixel.
 - `node scripts/assess-game.cjs mechanics`: 23.
 
 Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
@@ -179,6 +210,10 @@ Stichproben rund zwei Sekunden sichtbar; die Hausdarstellung wird eigens
 auf ausreichend sichtbare Bildfläche geprüft. Fundament- und Deckprüfungen
 verifizieren den Boden des Hauses und die Wasserlinie der Boote. Der
 komplette Pier muss auf geraden Streckensegmenten liegen.
+
+Drei weitere Prüfungen pro Bildschirmgröße kontrollieren die tatsächliche
+Sichtbarkeit aller elf Boote bei Abschnitt 250, den vollständigen Abstand
+der Personen zur Straße und den sichtbaren Haibiss bei normaler Annäherung.
 
 Zwei zusätzliche Prüfungen pro Bildschirmgröße beobachten die Nachtparty
 vor dem Wechsel in Runde drei und kontrollieren dieselbe Szene unmittelbar
