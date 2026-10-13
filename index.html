@@ -5,30 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Dash Racer</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/press-start-2p-latin-400-normal.woff2') format('woff2')}
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none}
 body{background:#000;display:flex;align-items:center;justify-content:center;height:100dvh;overflow:hidden;font-family:'Press Start 2P',monospace}
 #wrap{position:relative;width:100%;max-width:480px;height:100dvh}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%}
-#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:10px 14px;background:linear-gradient(to bottom,rgba(0,0,0,.85),transparent);pointer-events:none;z-index:5}
-.hb{display:flex;flex-direction:column;gap:3px}
-.hl{font-size:6px;color:#ff6b35;letter-spacing:2px;text-shadow:0 0 6px #ff6b35}
-.hv{font-size:13px;color:#fff;text-shadow:2px 2px 0 #000}
-#placeVal{color:#ffe066;text-shadow:2px 2px 0 #000,0 0 12px #ffe066}
-#progBar{position:absolute;top:56px;left:12px;right:12px;pointer-events:none;z-index:5}
-#progLabel{font-size:6px;color:#7ecbff;letter-spacing:2px;margin-bottom:3px}
-#progTrack{position:relative;height:3px;background:rgba(255,79,216,0.3);box-shadow:0 0 8px rgba(255,79,216,0.5);border-radius:2px;overflow:visible;margin-top:6px}
-.progMarker{position:absolute;top:-2.5px;width:8px;height:8px;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 6px currentColor;transition:left 0.1s linear}
-#markerPlayer::after{content:'P';position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:6px;font-family:'Press Start 2P',monospace;color:#ffe066;text-shadow:1px 1px 0 #000}
-#timeBoard{position:absolute;top:88px;right:12px;text-align:right;pointer-events:none;z-index:5;display:flex;flex-direction:column;gap:5px}
-#segmentBoard{position:absolute;top:88px;left:12px;text-align:left;pointer-events:none;z-index:5;display:flex;flex-direction:column;gap:5px}
-.segmentTitle{font-size:6px;color:#7ecbff;letter-spacing:2px;font-family:'Press Start 2P',monospace;text-shadow:0 0 6px #7ecbff}
-#segmentVal{font-size:12px;color:#fff;text-shadow:2px 2px 0 #000;font-family:'Press Start 2P',monospace}
-.lapTime{font-size:7px;color:rgba(255,255,255,0.6);text-shadow:1px 1px 0 #000;letter-spacing:1px;font-family:'Press Start 2P',monospace}
-.lapTime.best{color:#21d4fd;text-shadow:0 0 8px #21d4fd}
+#hud{position:absolute;top:0;left:0;right:0;display:grid;grid-template-columns:1fr .85fr 1fr 44px;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 14px;background:linear-gradient(to bottom,rgba(8,3,18,.85),rgba(8,3,18,.38) 70%,transparent);pointer-events:none;z-index:5}
+.hb{display:flex;flex-direction:column;gap:6px;min-width:0}
+.hl{font-size:7px;color:#a6c9e4;letter-spacing:1px;text-shadow:1px 1px 0 #000}
+.hv{font-size:20px;line-height:1.15;color:#f7edff;text-shadow:2px 2px 0 #10091b;font-variant-numeric:tabular-nums}
+#spdVal{font-size:22px}
+#placeVal{color:#ffe066;text-shadow:2px 2px 0 #10091b,0 0 6px rgba(255,224,102,.3)}
+#lapVal{color:#e3bdf0;font-size:18px}
+#progBar{position:absolute;top:76px;left:14px;right:14px;pointer-events:none;z-index:5}
+#progLabel{font-size:7px;color:#a6c9e4;letter-spacing:1px;margin-bottom:9px;text-shadow:1px 1px 0 #000}
+#racePercent{float:right;letter-spacing:0;color:#e4d6eb}
+#progTrack{position:relative;height:4px;background:rgba(255,79,216,.17);box-shadow:0 0 5px rgba(255,79,216,.25);border-radius:2px;overflow:visible}
+.progMarker{position:absolute;top:-1px;width:6px;height:6px;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 3px currentColor;transition:left .1s linear}
+#markerPlayer{width:9px;height:9px;top:-2.5px;border:1px solid #fff3b8}
+#timeBoard{position:absolute;top:111px;right:14px;text-align:right;pointer-events:none;z-index:5;display:flex;flex-direction:column;gap:7px}
+.lapTime{font-size:8px;line-height:1.35;color:rgba(232,216,239,.46);text-shadow:1px 1px 0 #000;letter-spacing:0;font-variant-numeric:tabular-nums}
+.lapTime.current{color:#f5eafa}
+.lapTime.best{color:#84dbe8}
+#segmentBoard{position:absolute;bottom:14px;left:14px;pointer-events:none;z-index:5;display:flex;align-items:baseline;gap:6px;opacity:.65}
+.segmentTitle{font-size:6px;color:#a6c9e4;letter-spacing:1px;text-shadow:1px 1px 0 #000}
+#segmentVal{font-size:8px;color:#e8d8ef;text-shadow:1px 1px 0 #000}
+#energyBoard{position:absolute;left:0;bottom:24px;margin:0!important;white-space:nowrap}
+#energyBoard .segmentTitle{font-size:7px;margin-bottom:6px}
+#energyVal{font-size:11px!important;color:#8ce5e8!important}
+@media(max-width:350px){#hud{gap:8px}.hv{font-size:18px}#spdVal{font-size:20px}#lapVal{font-size:16px}.hl{font-size:6px}}
 
 /* Boost Meter UI */
-#turboGauge{--turbo-bar-width:16px;--turbo-button-size:calc(var(--turbo-bar-width)*2.2);position:absolute;right:14px;top:38%;display:flex;flex-direction:column;align-items:center;z-index:10;background:rgba(0,0,0,.6);padding:8px;border-radius:12px 12px 25px 25px;box-shadow:0 0 10px rgba(0,0,0,.5)}
+#turboGauge{--turbo-bar-width:16px;--turbo-button-size:calc(var(--turbo-bar-width)*2.2);position:absolute;right:14px;top:48%;display:flex;flex-direction:column;align-items:center;z-index:10;background:rgba(0,0,0,.6);padding:8px;border-radius:12px 12px 25px 25px;box-shadow:0 0 10px rgba(0,0,0,.5)}
 #boostContainer{display:flex;justify-content:center;cursor:pointer;touch-action:none}
 #boostBarWrap{width:var(--turbo-bar-width);height:100px;background:rgba(255,255,255,0.1);border-radius:3px;display:flex;flex-direction:column-reverse;overflow:hidden;box-shadow:inset 0 0 5px #000;}
 .bSeg{width:100%;height:33.33%;border-bottom:2px solid #000;background:#2a0f62;transition:background 0.1s;}
@@ -46,11 +54,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 #turboButton.empty{filter:saturate(.65);opacity:.72}
 #turboButton.held,#turboButton.boosting{background:linear-gradient(#c52331,#e34336);box-shadow:inset 0 2px 5px rgba(70,0,10,.6),0 1px 0 #620d23,0 0 11px rgba(255,112,48,.4);opacity:1;filter:none}
 #turboButton.boosting svg{filter:drop-shadow(0 0 5px #ffe454)}
-#pauseButton{left:calc(75% - 22px);top:6px;width:44px;height:44px;border:1px solid rgba(146,188,218,.45);border-radius:7px;background:rgba(12,8,29,.6);display:flex;align-items:center;justify-content:center;color:#bfdfeb}
+#pauseButton{position:relative;pointer-events:auto;width:44px;height:44px;border:1px solid rgba(146,188,218,.45);border-radius:7px;background:rgba(12,8,29,.6);display:flex;align-items:center;justify-content:center;color:#bfdfeb}
 #pauseButton svg{width:17px;height:17px;fill:currentColor}
 #pauseButton:active{background:rgba(55,49,78,.8)}
 .race-control:focus-visible,#boostContainer:focus-visible{outline:2px solid #ffe066;outline-offset:3px}
-@media(max-height:720px){#turboGauge{top:28%;padding:6px}#boostBarWrap{height:78px}}
+@media(max-height:720px){#turboGauge{top:38%;padding:6px}#boostBarWrap{height:78px}}
 #overlay{position:absolute;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.92)}
 #overlay.hide{display:none}
 .menu-panel{width:90%;max-width:430px;margin:auto;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:18px}
@@ -101,9 +109,12 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     <div class="hb"><div class="hl">PLACE</div><div class="hv" id="placeVal">1ST</div></div>
     <div class="hb" style="text-align:center"><div class="hl">LAP</div><div class="hv" id="lapVal">1/3</div></div>
     <div class="hb" style="text-align:right"><div class="hl">KM/H</div><div class="hv" id="spdVal">0</div></div>
+  <button id="pauseButton" class="race-control" type="button" aria-label="Rennen pausieren" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg>
+  </button>
   </div>
   <div id="progBar">
-    <div id="progLabel">TRACK PROGRESS</div>
+    <div id="progLabel">RACE<span id="racePercent">0%</span></div>
     <div id="progTrack">
       <div id="markerPlayer" class="progMarker" style="background:#ffe066; z-index:10; box-shadow:0 0 10px #ffe066; left: 0%;"></div>
       <div id="markerOpp0" class="progMarker" style="background:#ff4466; left: 0%;"></div>
@@ -114,12 +125,12 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     </div>
   </div>
   <div id="timeBoard">
-    <div id="timeLap1" class="lapTime">LAP 1: --:--:--:--</div>
-    <div id="timeLap2" class="lapTime">LAP 2: --:--:--:--</div>
-    <div id="timeLap3" class="lapTime">LAP 3: --:--:--:--</div>
+    <div id="timeLap1" class="lapTime">L1  --:--.--</div>
+    <div id="timeLap2" class="lapTime">L2  --:--.--</div>
+    <div id="timeLap3" class="lapTime">L3  --:--.--</div>
   </div>
   <div id="segmentBoard">
-    <div class="segmentTitle">SEGMENT</div>
+    <div class="segmentTitle">SEG</div>
     <div id="segmentVal">0</div>
     <div id="energyBoard" style="margin-top: 10px; display: none;">
       <div class="segmentTitle" style="color: #00f0ff; text-shadow: 0 0 6px #00f0ff;">ENERGY</div>
@@ -139,9 +150,6 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8L21 9h-8z"/></svg>
     </button>
   </div>
-  <button id="pauseButton" class="race-control" type="button" aria-label="Rennen pausieren" aria-pressed="false">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg>
-  </button>
   <div id="btns">
     <div class="btn" id="bL"><span class="steerArrow" aria-hidden="true">&#9664;</span></div>
     <div class="btn" id="bR"><span class="steerArrow" aria-hidden="true">&#9654;</span></div>
@@ -1042,9 +1050,61 @@ function initOpponents() {
       speed: 1700 + i * 130, maxSpeed: player.maxSpeed * profile.pace, profile, cleanSpeedBonus: 0, lap: 1,
       isBoosting: false, boostTimer: 0, timeInLane: Math.random() * 5.0,
       chevronDecisions: {}, energyBallsCollected: 0, isChevronBoosting: false, chevronBoostTimer: 0, lastChevronPanelIdx: -1,
-      collisionCooldown: 0, contactSide: 0, contactAxis: null
+      collisionCooldown: 0, contactSide: 0, contactAxis: null,
+      chasing:false,racePace:0,attackTimer:0,attackCooldown:8+i*2,tailTime:0,attackLane:null,chaseLane:null,attackWindup:0
     };
   });
+}
+
+// Shared racecraft tuning for every course; no position teleports or player penalties.
+const RACECRAFT={catchupGap:3500,attackRange:450,attackDuration:4,attackCooldown:14};
+function findPassingLane(opp){
+    const total=getRaceDistance(opp),from=~~(opp.z/SEGMENT_LENGTH);
+    return [-.55,0,.55].filter(lane=>{
+        if(Math.abs(lane-player.x)<.4)return false;
+        if(opponents.some(other=>other!==opp&&Math.abs(getRaceDistance(other)-total)<1700&&Math.abs(other.x-lane)<.36))return false;
+        for(let i=1;i<25;i++){
+            const seg=getSeg((from+i)*SEGMENT_LENGTH);
+            if(seg.barrier?.active&&Math.abs(seg.barrier.x-lane)<.5)return false;
+        }
+        return true;
+    }).sort((a,b)=>Math.abs(a-opp.x)-Math.abs(b-opp.x))[0]??null;
+}
+function updateOpponentRacecraft(opp,dt,physicalGap,naturalSpeed){
+    const index=opp.oppIdx??0;
+    opp.attackTimer??=0;opp.attackCooldown??=8+index*2;opp.tailTime??=0;
+    opp.attackCooldown=Math.max(0,opp.attackCooldown-dt);
+    const eligible=!player.finished&&opp.collisionCooldown<=0&&Math.abs(opp.x)<.94&&!opp.isBoosting&&!opp.isChevronBoosting;
+    if(!eligible){if(opp.attackTimer>0)opp.attackCooldown=RACECRAFT.attackCooldown+index*2;opp.chasing=false;opp.attackTimer=0;opp.tailTime=0;opp.attackLane=null;opp.chaseLane=null;opp.racePace=opp.maxSpeed*(1+(opp.cleanSpeedBonus||0));return naturalSpeed;}
+    else{
+        if(physicalGap < -RACECRAFT.catchupGap)opp.chasing=true;
+        if(physicalGap>200)opp.chasing=false;
+        if(opp.attackTimer>0){
+            if(opp.attackWindup>0)opp.attackWindup=Math.max(0,opp.attackWindup-dt);
+            else opp.attackTimer=Math.max(0,opp.attackTimer-dt);
+            if(physicalGap>200)opp.attackTimer=0;
+            if(opp.attackTimer===0){opp.attackLane=null;opp.attackCooldown=RACECRAFT.attackCooldown+index*2;opp.chasing=false;}
+        }else if(physicalGap < -140 && physicalGap > -RACECRAFT.attackRange && opp.attackCooldown===0){
+            opp.tailTime+=dt;
+            if(opp.tailTime>.5+index*.2&&!opponents.some(other=>other!==opp&&other.attackTimer>0)){
+                const lane=findPassingLane(opp);
+                if(lane!==null){opp.attackLane=lane;opp.attackTimer=RACECRAFT.attackDuration;opp.attackWindup=.8;opp.tailTime=0;opp.chasing=false;}
+            }
+        }else opp.tailTime=0;
+    }
+    const reference=player.maxSpeed*(1+CLEAN_SPEED_LIMIT);
+    let target=naturalSpeed;
+    if(eligible&&opp.chasing)target=Math.max(target,reference*(1.018-index*.02));
+    if(eligible&&opp.attackTimer>0)target=Math.max(target,reference*(1.04-index*.005));
+    opp.chaseLane=null;
+    if(opp.chasing&&physicalGap>-1000&&physicalGap<0){
+        opp.chaseLane=findPassingLane(opp);
+        if(opp.chaseLane===null)target=Math.min(target,player.speed*.98);
+    }
+    if(!opp.racePace)opp.racePace=naturalSpeed;
+    opp.racePace+=(target-opp.racePace)*(1-Math.exp(-dt*(target>opp.racePace?(opp.attackTimer>0?3:1.5):.65)));
+    // Impacts and turbo retain their existing mechanics, without assistance overriding them.
+    return Math.max(Math.min(naturalSpeed,target),opp.racePace);
 }
 
 function initChapterTraffic() {
@@ -9291,7 +9351,7 @@ function updateHUD(ts) {
   if (dom.spd !== spdStr) { spdEl.textContent = spdStr; dom.spd = spdStr; }
   
   const pPct = Math.min(100, Math.max(0, (pTotal / totalDist) * 100)).toFixed(1) + '%';
-  if (dom.prog !== pPct) { mP.style.left = pPct; dom.prog = pPct; }
+  if (dom.prog !== pPct) { mP.style.left = pPct; document.getElementById('racePercent').textContent=Math.round(parseFloat(pPct))+'%'; dom.prog = pPct; }
   
   for (let i = 0; i < 5; i++) {
     const opp = opponents[i];
@@ -9316,9 +9376,9 @@ function updateHUD(ts) {
       }
       let t = lapTimes[i];
       if (player.lap - 1 === i && state === 'playing') t = currentLapTime;
-      const formatted = `LAP ${i+1}: ${formatTime(t)}`;
+      const formatted = `L${i+1}  ${formatHUDTime(t)}`;
       const isBest = t > 0 && t === bestLapTime;
-      const cls = isBest ? 'lapTime best' : 'lapTime';
+      const cls = 'lapTime'+(player.lap-1===i?' current':isBest?' best':'');
       
       if (dom.timeLapsText[i] !== formatted) {
           timeLaps[i].textContent = formatted;
@@ -9476,6 +9536,12 @@ function exitRace() {
   state = 'intro';
   showMainMenu();
   updateControlUI();
+}
+
+function formatHUDTime(t){
+    if(!t)return '--:--.--';
+    const minutes=Math.floor(t/60000),seconds=Math.floor(t/1000)%60,centiseconds=Math.floor(t/10)%100;
+    return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(centiseconds).padStart(2,'0')}`;
 }
 
 function formatTime(t) {
@@ -10056,10 +10122,13 @@ function loop(ts) {
       const oppMax=opp.maxSpeed*(opp.isChevronBoosting?2.31:opp.isBoosting?1.65:1+opp.cleanSpeedBonus);
       // Catch-up changes acceleration only; each driver keeps their own speed cap.
       const catchup=dist<-3500?1.04:1;
-      const oppTarget=oppMax*(oppOffroad?.36:1);
+      const physicalGap=oTotal-pTotal-getPlayerContactDistance();
+      const raceTarget=updateOpponentRacecraft(opp,dt,physicalGap,oppMax);
+      const oppTarget=raceTarget*(oppOffroad?.36:1);
+      const assisted=raceTarget>oppMax+1;
       const oppAccelMod=opp.isChevronBoosting?2.1:opp.isBoosting?1.5:1;
       if(opp.speed<oppTarget){
-        const acceleration=!oppBoosted&&opp.speed>=opp.maxSpeed-.01
+        const acceleration=!oppBoosted&&!assisted&&opp.speed>=opp.maxSpeed-.01
           ?opp.maxSpeed*CLEAN_SPEED_LIMIT/profile.buildTime:player.accel*profile.accel*oppAccelMod*catchup;
         opp.speed=Math.min(oppTarget,opp.speed+acceleration*dt);
       }else{
@@ -10145,6 +10214,8 @@ function loop(ts) {
           } else {
               opp.targetX = (upcomingChevron.side === 'left') ? 0.25 : -0.25;
           }
+      } else if((opp.attackTimer>0&&opp.attackLane!==null)||(opp.chasing&&opp.chaseLane!==null)){
+          opp.targetX=opp.attackTimer>0?opp.attackLane:opp.chaseLane;opp.baseX=opp.targetX;
       } else {
           const nearby=[...opponents.filter(other=>other!==opp),player];
           const blocked=nearby.some(other=>{
@@ -10164,7 +10235,7 @@ function loop(ts) {
           opp.targetX = opp.baseX + Math.sin(opp.z * 0.0015 + opp.color.charCodeAt(1)) * 0.15;
       }
       
-      const steerSpd = avoiding ? 3.5 : (upcomingChevron ? 3.0 : 1.2);
+      const steerSpd = avoiding ? 3.5 : (upcomingChevron || opp.attackTimer>0 || opp.chaseLane!==null ? 3.0 : 1.2);
       opp.x += (opp.targetX - opp.x) * dt * steerSpd;
       
       // Opponent Chevron crossing check

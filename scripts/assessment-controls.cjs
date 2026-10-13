@@ -6,6 +6,7 @@ module.exports=async function runControls(browser,baseUrl){
   try{
     await page.addInitScript(()=>window.requestAnimationFrame=()=>0);
     await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:90000});
+    await page.evaluate(()=>document.fonts.ready);
     await page.evaluate(()=>{
       showMainMenu();selectLevel(1);startRace();state='playing';opponents.length=0;
       for(const s of segments){s.curve=s.hillDelta=s.worldY=0;s.pylon=s.barrier=s.lightning=null;}
@@ -73,11 +74,24 @@ module.exports=async function runControls(browser,baseUrl){
       const geometry=await page.evaluate(()=>{
         const pause=pauseButton.getBoundingClientRect(),turbo=turboButton.getBoundingClientRect(),bar=document.getElementById('boostBarWrap').getBoundingClientRect(),gauge=document.getElementById('turboGauge').getBoundingClientRect(),labels=[document.getElementById('lapVal'),document.getElementById('spdVal'),document.getElementById('progBar')].map(e=>e.getBoundingClientRect());
         const overlaps=r=>pause.left<r.right&&pause.right>r.left&&pause.top<r.bottom&&pause.bottom>r.top;
-        return{pause:{x:pause.x,y:pause.y,width:pause.width,height:pause.height},turbo:{x:turbo.x,y:turbo.y,width:turbo.width,height:turbo.height},clear:labels.every(r=>!overlaps(r)),fits:turbo.right<=innerWidth&&turbo.bottom<=innerHeight,thermometer:Math.abs(turbo.width/bar.width-2.2)<.01&&Math.abs(turbo.x+turbo.width/2-bar.x-bar.width/2)<.1&&turbo.top>=bar.bottom-2&&gauge.bottom>=turbo.bottom&&!document.getElementById('boostIcon')&&!turboButton.textContent.trim()};
+        const readable=[...document.querySelectorAll('.hb')].every(e=>e.scrollWidth<=e.clientWidth+1);
+        const fontLoaded=document.fonts.check("20px 'Press Start 2P'");
+        const rowsSeparate=document.getElementById('hud').getBoundingClientRect().bottom<document.getElementById('progBar').getBoundingClientRect().top;
+        return{pause:{x:pause.x,y:pause.y,width:pause.width,height:pause.height},turbo:{x:turbo.x,y:turbo.y,width:turbo.width,height:turbo.height},readable,fontLoaded,rowsSeparate,lowered:Math.abs(gauge.top/innerHeight-(innerHeight<=720?.38:.48))<.001,clear:labels.every(r=>!overlaps(r)),fits:turbo.right<=innerWidth&&turbo.bottom<=innerHeight,thermometer:Math.abs(turbo.width/bar.width-2.2)<.01&&Math.abs(turbo.x+turbo.width/2-bar.x-bar.width/2)<.1&&turbo.top>=bar.bottom-2&&gauge.bottom>=turbo.bottom&&!document.getElementById('boostIcon')&&!turboButton.textContent.trim()};
       });
-      record(`controls-fit-without-covering-top-values-${width}`,geometry.clear&&geometry.fits&&geometry.pause.width>=44&&geometry.thermometer,geometry);
+      record(`controls-fit-without-covering-top-values-${width}`,geometry.clear&&geometry.fits&&geometry.pause.width>=44&&geometry.thermometer&&geometry.lowered&&geometry.readable&&geometry.fontLoaded&&geometry.rowsSeparate,geometry);
       await page.screenshot({path:`/tmp/controls-layout-${width}.png`});
     }
+    const times=await page.evaluate(()=>{
+      player.lap=2;player.z=TRACK_LENGTH/2;lapTimes[0]=54320;bestLapTime=54320;currentLapTime=65430;updateHUD(controlTime);
+      return{completed:document.getElementById('timeLap1').textContent,current:document.getElementById('timeLap2').textContent,best:document.getElementById('timeLap1').classList.contains('best'),active:document.getElementById('timeLap2').classList.contains('current'),progress:document.getElementById('racePercent').textContent};
+    });
+    record('hud-shows-compact-times-current-lap-best-and-progress',times.completed==='L1  00:54.32'&&times.current==='L2  01:05.43'&&times.best&&times.active&&times.progress==='50%',times);
+    const mapHUD=await page.evaluate(()=>[1,2,3,4,5,6].map(level=>{
+      selectLevel(level);startRace();state='playing';updateHUD(controlTime);
+      return{level,energy:getComputedStyle(document.getElementById('energyBoard')).display!=='none',rows:[...document.querySelectorAll('.lapTime')].filter(e=>getComputedStyle(e).display!=='none').length};
+    }));
+    record('hud-adapts-to-single-lap-and-space-energy',mapHUD.every(s=>s.rows===(s.level===5?1:3)&&s.energy===(s.level===6)),mapHUD);
     return checks.map(c=>({...c,errors,pass:c.pass&&errors.length===0}));
   }finally{await page.close();}
 };

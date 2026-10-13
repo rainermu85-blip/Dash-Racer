@@ -22,20 +22,34 @@ Skala starten keine Lenkung. Zeigeraufnahme hält eine begonnene Geste bis zum
 Loslassen; Abbruch, Fokusverlust, Pause, Neustart und Verlassen räumen Eingaben
 auf. Bildschirmmenüs und Buttons werden von der Lenkfläche ausgenommen.
 
-Die 44 × 44 Pixel große Pausetaste liegt oben zwischen Runde und Tempo.
+Die 44 × 44 Pixel große Pausetaste liegt in einer eigenen Zelle oben rechts.
 Sie pausiert auch den Countdown. Beim Fortsetzen bleiben die alten Eingaben
 freigegeben. Turbo, Pause, Tastatur und die Skala sind per Beschriftung für
 Hilfstechniken zugänglich. In Menüs bleiben die zusätzlichen Rennbuttons
 verborgen. Skala und Knopf stehen mittig auf einer gemeinsamen vertikalen Achse in einer
 halbtransparenten Thermometerform. Der Knopf ist 2,2-mal so breit wie die
 16-Pixel-Skala (35,2 Pixel). Er trägt nur einen Blitz, der frühere Blitz oberhalb
-der Skala entfällt. Bei kurzen Bildschirmen wird die Skala kompakter und höher.
+der Skala entfällt. Die gesamte Anzeige liegt bei 48 Prozent Bildschirmhöhe,
+zehn Prozentpunkte tiefer als vorher. Auf kurzen Bildschirmen gilt 38 statt
+28 Prozent; dort bleibt die Skala kompakter.
 
 `scripts/assess-game.cjs controls` verwendet echte Chromium-Touchereignisse.
 Die Prüfung beobachtet Lenkung im oberen Bildschirmteil, Seitenwechsel,
 unabhängige Finger und Tastatur, beide Turbo-Auslöser, Dauer des Knopffeedbacks,
 leere Ladungen, Abbruch, Fokusverlust, Pause, Countdown und Menüs. Fahransichten
 und Abstände werden bei 320 × 640, 390 × 844 und 480 × 800 kontrolliert.
+
+Der HUD zeigt Platzierung, Runde und Tempo in einer klaren oberen Zeile mit
+vergrößerten Werten. Darunter liegen die schlanke Rennfortschrittsanzeige mit
+Prozentwert und die Rundenzeiten im Format `mm:ss.cc`. Die laufende Runde wird
+hell hervorgehoben, die beste abgeschlossene Zeit cyan. Die Segmentangabe steht
+klein unten links, im Space-Level darüber die Energieanzeige. Die bereits
+verwendete Schrift Press Start 2P liegt jetzt lokal einschließlich OFL-Lizenz
+unter `public/fonts`, damit kein externer Schriftabruf erforderlich ist.
+
+Die Browserprüfung kontrolliert zusätzlich Schriftladen, Textbreiten, den
+Abstand der oberen Zeilen, die neue Turbo-Position, aktuelle/beste Rundenzeit,
+Fortschritt und die Anpassung an Dream Odyssey und Space.
 
 Countach-Grafiken bleiben unverändert. Kameravorschau und Gegnerprofile sind in
 `camera-and-opponent-balance.md` beschrieben.

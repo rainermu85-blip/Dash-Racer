@@ -15,7 +15,8 @@ Fliehkräfte noch Hintergrundbewegung. Die begrenzte seitliche Ausrichtung
 verschafft früher einen Blick in Kurven; sie hebt Sichtblockaden durch Felsen
 oder Kuppen nicht auf.
 
-Die fünf Gegner erhalten feste Leistungsprofile, zugeordnet zu ihren Farben:
+Die fünf Gegner behalten feste Leistungsprofile, zugeordnet zu ihren Farben.
+Die Tempoangaben gelten ohne zusätzliche Aufholhilfe und Überholangriffe:
 
 | Farbe | Grundtempo gegenüber vorher | Spitze ohne Turbo | Bonusaufbau | Turbochance pro Sekunde in Spielernähe |
 | --- | ---: | ---: | ---: | ---: |
@@ -28,9 +29,43 @@ Die fünf Gegner erhalten feste Leistungsprofile, zugeordnet zu ihren Farben:
 Alle haben außerdem unterschiedliche Beschleunigungen. Turbo- und
 Chevron-Multiplikatoren werden auf ihre jeweilige reduzierte Grundgeschwindigkeit
 angewendet. Der zufällige Turbo in Spielernähe dauert 1,2 statt 1,5 Sekunden.
-Die leichte Aufholhilfe beeinflusst weiterhin nur die Beschleunigung, nicht
-das Tempolimit. Die bisherige zusätzliche Bremsung weit vor dem Spieler entfällt,
-damit die Profile ihr eigenes Tempo halten und auseinanderziehen.
+Die bisherige zusätzliche Bremsung weit vor dem Spieler entfällt. Eine kleine
+Beschleunigungshilfe für zurückliegende Gegner bleibt bestehen.
+
+## Gemeinsame Aufholhilfe und Überholangriffe
+
+Alle sechs Strecken verwenden dieselben Regeln. Die Hilfe verändert nur das
+Tempo der Gegner und setzt keine Fahrzeuge um. Der Spieler erhält weder eine
+Strafe noch eine veränderte Höchstgeschwindigkeit. Als Bezug dient sein normales
+voll ausgebautes Spitzentempo (402 km/h), unabhängig von Turbo, Chevron oder
+momentanem Tempo nach einem Unfall.
+
+Bei mehr als 3500 Welteinheiten Rückstand beginnt eine sanfte Aufholphase.
+Je nach Fahrerprofil ist ihr Zieltempo 101,8 / 99,8 / 97,8 / 95,8 / 93,8 Prozent
+des normalen Spieler-Spitzentempos. Die unterschiedlichen Tempi verhindern,
+dass sich das ganze Feld gleich schnell hinter dem Spieler sammelt.
+
+In unmittelbarer Nähe zum Heck suchen Gegner nach einer freien Spur. Ein
+Überholangriff ist nach kurzer Beobachtung und abgelaufener Erholungszeit möglich.
+Es greift jeweils nur ein Gegner aktiv an. Der Angriff erhält eine kurze
+Anlaufphase von 0,8 Sekunden und höchstens vier Sekunden mit 2 bis 4 Prozent
+Tempovorteil, abhängig vom Fahrerprofil. Andere Wagen und kommende Baustellen
+werden bei der Spurwahl berücksichtigt. Hindernis-Ausweichen und Chevron-Ziele
+haben weiterhin Vorrang. Gibt es beim Aufholen keine freie Spur, reduziert der
+Gegner sein Zieltempo, statt durch die blockierte Lücke gedrückt zu werden.
+
+Nach einem erfolgreichen Vorbeiziehen oder abgelaufenen Angriff klingt das
+zusätzliche Tempo weich ab. Es folgen 14 bis 22 Sekunden Erholungszeit. Turbo,
+Chevron, Straßenrand und Fahrzeugkontakte setzen die Unterstützung aus;
+ein Unfall beendet den Angriff. Pause friert sämtliche Zeiten ein, Neustart
+setzt sie zurück. Die reduzierte Grundabstimmung bleibt die Basis.
+
+`scripts/assess-game.cjs racecraft` prüft mit der echten Physik erfolgreiche
+Überholmanöver in allen sechs Strecken und bei 30/60/120 FPS, freies Ausweichen,
+Begrenzung des Tempovorteils, Erholungszeit, Aufholen aus Abstand, blockierte
+Spuren, einen einzelnen Angreifer, weiches Abklingen, Pause und Neustart.
+Die Aufholhilfe darf den Spieler-Turbo nicht kopieren und keine Aufprallstrafe
+überschreiben.
 
 Bei einem vorausfahrenden Wagen suchen Gegner eine freie Nachbarspur. Dabei
 berücksichtigen sie Wagen vor und neben sich sowie die Spur des Spielers in
