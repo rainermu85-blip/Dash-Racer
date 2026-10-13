@@ -67,7 +67,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
               const hit = sample(type);
               const pass = type === 'barrier'
                 ? hit.speed < control.speed * 0.4 && hit.bonus === 0 && !hit.boosting && hit.state === 'blinking' && hit.flash > 0
-                : !hit.active && Math.abs(hit.speed - control.speed) < 1e-8 && hit.bonus === control.bonus
+                : !hit.active && Math.abs(hit.speed - control.speed * (type === 'pylon' ? .97 : 1)) < 1e-8 && (mode === 'earned' ? hit.bonus === control.bonus : hit.bonus <= control.bonus)
                   && hit.boosting === control.boosting && (type === 'pylon' ? hit.flying === 1 : hit.boosts === control.boosts + 1);
               record(`${type}-${mode}-${frameRate}fps`, pass, { control, hit });
             }
@@ -76,14 +76,27 @@ module.exports = async function runCollisions(browser, baseUrl) {
             setup(1, frameRate); player.z -= 2000;
             const opp = addOpponent({ relZ: 1500, speed: 3400 });
             opp.z = 300 * SEGMENT_LENGTH + 30;
+            let observedSpeed=opp.speed;const drops=[];
+            Object.defineProperty(opp,'speed',{get:()=>observedSpeed,set:value=>{if(value<observedSpeed-.01)drops.push(value/observedSpeed);observedSpeed=value;}});
             const cone = { active: true, x: 0 };
             if (withCone) segments[300].pylon = cone;
             tick();
-            return { speed: opp.speed, active: cone.active, flying: activeFlyingPylons.length };
+            return { speed: opp.speed, active: cone.active, flying: activeFlyingPylons.length, drops };
           };
           const control = opponentSample(false), hit = opponentSample(true);
-          record(`opponent-cone-has-no-speed-penalty-${frameRate}fps`, !hit.active && hit.flying === 1 && Math.abs(hit.speed - control.speed) < 1e-8, { control, hit });
+          record(`opponent-cone-loses-three-percent-${frameRate}fps`, !hit.active && hit.flying === 1 && hit.drops.length===1&&Math.abs(hit.drops[0]-.97)<1e-8&&control.drops.length===0, { control, hit });
         }
+
+        setup(1,120);player.speed=3600;
+        player.z=300*SEGMENT_LENGTH+30-getPlayerContactDistance();
+        segments[300].pylon={active:true,x:0};
+        tick();const firstConeSpeed=player.speed;tick(2);
+        record('same-cone-penalizes-only-once',Math.abs(firstConeSpeed-3600*.97)<1e-8&&player.speed===firstConeSpeed&&activeFlyingPylons.length===1,{first:firstConeSpeed,after:player.speed});
+        setup(1,120);player.speed=3600;
+        player.z=300*SEGMENT_LENGTH+30-getPlayerContactDistance();
+        segments[300].pylon={active:true,x:0};segments[301].pylon={active:true,x:0};
+        tick(40);
+        record('two-cones-apply-two-small-penalties',!segments[300].pylon.active&&!segments[301].pylon.active&&Math.abs(player.speed-3600*.97*.97)<1e-8,{speed:player.speed});
 
         for (const frameRate of [30, 60, 120]) {
           for (const type of ['lightning', 'pylon', 'barrier']) {

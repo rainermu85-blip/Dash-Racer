@@ -45,10 +45,17 @@ Prozentwert und die Rundenzeiten im Format `mm:ss.cc`. Die laufende Runde wird
 hell hervorgehoben, die beste abgeschlossene Zeit cyan. Die Segmentangabe steht
 klein unten links, im Space-Level darüber die Energieanzeige. Die Rundenzeiten sind 12 statt 8 Pixel groß (+50 Prozent). Gravity Pixel von
 John Watson/Jotson ersetzt Press Start 2P. Regular 5 wird für normale Texte
-verwendet, Bold 8 für die Hauptwerte und fett gesetzte Canvas-Hinweise. Beide
-Original-TTFs liegen lokal unter `public/fonts`, einschließlich der MIT-Lizenz
-des öffentlichen Ersteller-Repositories und einer Quellenangabe. Es ist kein
-externer Schriftabruf erforderlich.
+verwendet, Bold 8 für die Hauptwerte und fett gesetzte Canvas-Hinweise. Beide Original-TTFs bleiben unter `public/fonts` einschließlich MIT-Lizenz und
+Quellenangabe erhalten. Die verwendeten Font-Daten sind direkt in die beiden
+`@font-face`-Definitionen des Spiel-HTML eingebettet. Dadurch funktioniert die
+Schrift auch bei Veröffentlichung des unverarbeiteten Repository-Inhalts unter
+`/Dash-Racer/`; es wird kein `/fonts`-Ordner und kein separater Abruf benötigt.
+
+`scripts/assess-game.cjs fonts` prüft Quell-HTML und Production-Build unter
+`/Dash-Racer/`, während alle externen Ressourcen einschließlich Schriftdateien
+mit 404 antworten. Beide Gravity-Schriftgewichte müssen tatsächlich geladen
+sein, und es darf keine HTTP-Schriftanfrage erfolgen. Die Prüfung scheitert mit
+der früheren Einbindung über `/fonts/Gravity*.ttf` und besteht mit Einbettung.
 
 Die Browserprüfung kontrolliert zusätzlich Schriftladen, Textbreiten, den
 Abstand der oberen Zeilen, die neue Turbo-Position, aktuelle/beste Rundenzeit,
