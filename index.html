@@ -253,7 +253,7 @@ const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
 const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
-const OCEAN_DANCE_SPOTS = [235,345,845,1105];
+const OCEAN_ACTIVITY_SPOTS = new Map([[235,'frisbee'],[345,'dancers'],[845,'sandcastles'],[1130,'diving']]);
 const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'cabanas'],[390,'loungers'],
     [488,'lifeguard'],[558,'surfboards'],[795,'cabanas'],[875,'loungers'],[923,'lifeguard'],[950,'surfboards']]);
 // Uneven anchorages: lengths and offshore clearances are in metres, with a
@@ -711,8 +711,8 @@ function buildSegments() {
                 spriteX = 2.6;
             } else if (i===278 || i===814) {
                 sprite=i===278?'beach_jeep_red':'beach_jeep_yellow';spriteX=2.35;
-            } else if (OCEAN_DANCE_SPOTS.includes(i)) {
-                sprite='beach_dancers';spriteX=1.95;
+            } else if (OCEAN_ACTIVITY_SPOTS.has(i)) {
+                sprite='beach_'+OCEAN_ACTIVITY_SPOTS.get(i);spriteX=i===1130?3.5:1.95;
             } else if (OCEAN_BEACH_SPOTS.has(i)) {
                 sprite = 'beach_' + OCEAN_BEACH_SPOTS.get(i); spriteX = 1.9;
             } else if (!isTunnel && !isStartLine && i % 37 === 17) {
@@ -722,8 +722,8 @@ function buildSegments() {
                 const nearSpot2 = (i >= OCEAN_PARTY_INDEX - 75 && i <= OCEAN_PARTY_INDEX + 30);
                 const nearPier = (i >= OCEAN_PIER_INDEX - 65 && i <= OCEAN_PIER_INDEX + OCEAN_PIER_LENGTH);
                 const nearSpotWhale = (i >= 573 && i <= 581);
-                const nearDancers=OCEAN_DANCE_SPOTS.some(index=>i>=index-22&&i<=index+6);
-                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearDancers) {
+                const nearActivities=[...OCEAN_ACTIVITY_SPOTS.keys()].some(index=>i>=index-22&&i<=index+6);
+                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearActivities) {
                     sprite = 'tree';
                     // Level 2: palm trees ONLY on the right-side beach (1.45 to 2.55) to prevent wall clipping on the left
                     spriteX = 1.45 + Math.random() * 1.1;
@@ -6242,6 +6242,98 @@ function drawBeachDanceSprite(sx,sy,sc,ts,seed) {
   ctx.restore();
 }
 
+function drawBeachDiver(x,y,t,line) {
+      ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(t*Math.PI)*.55);
+      const tuck=Math.sin(t*Math.PI)*6;
+      line([[-5,-12],[-8-tuck,-7],[ -6-tuck,0]],'#e3ac84',5);
+      line([[5,-12],[9+tuck,-7],[7+tuck,0]],'#e3ac84',5);
+      ctx.fillStyle='#e3ac84';ctx.beginPath();ctx.ellipse(0,-28,12,17,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ec548e';ctx.fillRect(-11,-17,22,8);
+      ctx.fillStyle='#ffd785';ctx.fillRect(-11,-17,22,2);
+      line([[-8,-36],[-16,-25+tuck],[-7,-22]],'#e3ac84',5);
+      line([[8,-36],[16,-25+tuck],[7,-22]],'#e3ac84',5);
+      ctx.fillStyle='#edbc91';ctx.beginPath();ctx.arc(0,-49,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#794b38';ctx.fillRect(-5,-51,1.5,5);ctx.fillRect(3.5,-51,1.5,5);
+      ctx.restore();
+}
+
+function drawBeachActivitySprite(sx,sy,sc,ts,kind,shoreOffset=0,approach=0) {
+  if(sc<.035)return;
+  beginChapterSprite(sx,sy,sc);
+  const poly=(points,color)=>paintOceanPolygon(points.map(([x,y])=>({x,y})),color);
+  const line=(points,color,width=2)=>{
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    ctx.moveTo(...points[0]);for(let i=1;i<points.length;i++)ctx.lineTo(...points[i]);ctx.stroke();
+  };
+  if(kind==='frisbee'){
+    const flight=(ts*.0003)%1;
+    for(const [x,dir,skin,shirt]of[[-46,1,'#a46b50','#fa749b'],[46,-1,'#f2c49d','#4bd8ec']]){
+      ctx.fillStyle='rgba(50,25,46,.2)';ctx.beginPath();ctx.ellipse(x,2,10,2,0,0,Math.PI*2);ctx.fill();
+      line([[x-3,-15],[x-6,-8],[x-7,0]],skin,4);line([[x+3,-15],[x+5,-7],[x+7,0]],skin,4);
+      line([[x-9,0],[x-4,0]],'#ffe1a4',3);line([[x+5,0],[x+10,0]],'#ffe1a4',3);
+      ctx.fillStyle=shirt;ctx.fillRect(x-6,-36,12,22);
+      ctx.fillStyle='#4c3b72';ctx.fillRect(x-7,-19,14,7);
+      const reach=Math.sin(flight*Math.PI)*3;
+      line([[x+dir*5,-33],[x+dir*13,-28-reach],[x+dir*19,-32-reach]],skin,3.5);
+      line([[x-dir*5,-32],[x-dir*10,-23],[x-dir*7,-18]],skin,3.5);
+      ctx.fillStyle=skin;ctx.beginPath();ctx.arc(x,-43,5.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=dir>0?'#352239':'#e6b151';ctx.beginPath();ctx.arc(x,-45,5.7,Math.PI,0);ctx.fill();
+      ctx.fillStyle='#152a3b';ctx.fillRect(x-5,-43,10,2);
+    }
+    const x=-29+58*flight,y=-28-Math.sin(flight*Math.PI)*13;
+    ctx.fillStyle='#ffc44b';ctx.beginPath();ctx.ellipse(x,y,5,1.9,Math.sin(flight*6)*.12,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff0b2';ctx.lineWidth=.8;ctx.stroke();
+  }else if(kind==='sandcastles'){
+    drawBeachPerson(-37,0,1.08,'sitting',{skin:'#c38863',clothing:'#9779ee',hair:'#37202c'});
+    drawBeachPerson(49,1,.72,'standing',{skin:'#efc299',clothing:'#ffab48',hair:'#5c3540',wave:true});
+    poly([[-11,4],[37,4],[31,-9],[-6,-9]],'#c69457');
+    poly([[-7,-2],[29,-2],[26,-14],[-4,-14]],'#f0cf8c');
+    for(const x of[-5,11,27]){
+      ctx.fillStyle='#f3d79d';ctx.fillRect(x-5,-21,10,20);
+      for(let j=0;j<3;j++)ctx.fillRect(x-5+j*4,-24,2.5,5);
+      ctx.fillStyle='#b58a59';ctx.fillRect(x+2,-19,3,17);
+    }
+    ctx.fillStyle='#77503b';ctx.beginPath();ctx.arc(11,-4,3.8,Math.PI,0);ctx.lineTo(14.8,1);ctx.lineTo(7.2,1);ctx.fill();
+    line([[27,-24],[27,-36]],'#8e6150',1);
+    poly([[27,-36],[38,-33],[27,-29]],'#fb4b93');
+    poly([[-23,2],[-14,2],[-13,-8],[-25,-8]],'#20bbcf');
+    line([[-24,-8],[-25,-12],[-15,-12],[-14,-8]],'#b6eff1',1);
+    const dig=Math.sin(ts*.002)*2;
+    line([[-27,-14],[-15,-8+dig]],'#d49973',3);
+    line([[-16,-9+dig],[-8,1]],'#845c44',1.5);
+    poly([[-10,-2],[-5,-2],[-6,3],[-9,3]],'#f38fb0');
+  }else if(kind==='diving'){
+    // A three-metre platform on the shore; the board reaches beyond the waterline.
+    const height=92,edge=shoreOffset,tip=edge+10;
+    for(const x of[-13,edge-8]){
+      line([[x,2],[x,-height]],'#516f7b',4);
+      line([[x-1,1],[x-1,-height]],'#9ad9d1',1);
+    }
+    line([[-37,1],[-20,-height]],'#e3bd73',3);
+    line([[-28,1],[-11,-height]],'#e3bd73',3);
+    for(let j=1;j<9;j++){
+      const y=-height*j/9,x=-37+17*j/9;line([[x,y],[x+9,y]],'#f4d49a',2);
+    }
+    poly([[-24,-height],[tip,-height],[tip,-height+5],[-24,-height+5]],'#dce2bd');
+    poly([[-24,-height],[tip,-height],[tip-3,-height-3],[-23,-height-3]],'#57d2c9');
+    line([[-20,-height],[-20,-height-22],[edge-9,-height-22],[edge-9,-height]],'#adcbc4',2);
+    const t=clamp((42-approach)/20,0,1),landing=edge+35,waterY=-5;
+    if(t<1){
+      const x=tip-7+(landing-tip+7)*t,y=-height*(1-t)+waterY*t-Math.sin(t*Math.PI)*36;
+      drawBeachDiver(x,y,t,line);
+    }else{
+      const fade=clamp(approach/25,0,1),wave=Math.sin(ts*.003)*.5;
+      ctx.strokeStyle='rgba(169,236,244,.65)';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(landing,waterY+2,10+(1-fade)*14,2+(1-fade)*2,0,0,Math.PI*2);ctx.stroke();
+      for(let i=0;i<7;i++){
+        const dx=(i-3)*4;
+        line([[landing+dx*.5,waterY+1],[landing+dx,waterY-fade*(11+((i*7)%13))]],`rgba(189,244,247,${fade*.8})`,1.7);
+      }
+      ctx.fillStyle='#edbc91';ctx.beginPath();ctx.arc(landing,waterY-3+wave,4,Math.PI,Math.PI*2);ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function drawBeachPartySprite(sx, sy, sc, ts, nightParty = player.lap >= 3) {
   const h = ~~(sc * 120); if (h < 5) return;
   
@@ -8490,10 +8582,11 @@ function render(ts) {
         drawOceanBeachSpot(s.x,s.y,s.sc,s.type.slice(6),s.segIdx);
         ctx.restore();
     }
-    else if (s.type === 'beach_dancers') {
+    else if (['beach_dancers','beach_frisbee','beach_sandcastles','beach_diving'].includes(s.type)) {
         ctx.save();
         if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
-        drawBeachDanceSprite(s.x,s.y,s.sc,ts,s.segIdx);
+        if(s.type==='beach_dancers')drawBeachDanceSprite(s.x,s.y,s.sc,ts,s.segIdx);
+        else drawBeachActivitySprite(s.x,s.y,s.sc,ts,s.type.slice(6),(s.rx2+getOceanShoreLane(s.segIdx+1)*s.w-s.x)/s.sc,s.depth);
         ctx.restore();
     }
     else if (s.type === 'beach_party') {

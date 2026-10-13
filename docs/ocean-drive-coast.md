@@ -180,15 +180,17 @@ Sonnenschirm, farbige Surfbrettständer, Cabanas und offene Rettungssitze mit
 Leiter und Rettungsring. Die Füße der Einrichtungen stehen auf dem Sand.
 Strandbar, Eiswagen, Wal, Boote und Surfer bleiben erhalten.
 
-Vier kleine Tanzgruppen bei 235, 345, 845 und 1105 beleben zusätzliche freie
-Strandstellen. Drei bis vier Personen mit bunten 80er-Outfits tanzen neben
-einem silbernen Kassetten-Ghettoblaster. Füße bleiben auf dem Sand, während
-Hüfte, Knie und Arme rhythmisch schwingen. Zwei kleine Musiknoten und dezente
-Lautsprechermembranen ergänzen das Motiv. Einzelne Palmen unmittelbar vor
-den Gruppen werden freigehalten. Die Motive verwenden die bestehende
-Objektprojektion und das bestehende Clipping; Wasser, Gelände und Pier bleiben
-unverändert. Fahransichten bei 390 und 480 Pixeln wurden bei Tag und Nacht
-kontrolliert.
+Vier unterschiedliche Aktivitäten beleben zusätzliche Strandstellen, jeweils
+einmal: Frisbee bei 235, die einzige Ghettoblaster-Crew bei 345, Sandburgenbauen
+bei 845 und ein etwa drei Meter hoher Sprungturm bei 1130. Frisbeespieler
+tragen rosafarbene und türkise Shirts; violette und orangefarbene Kleidung,
+ein türkiser Eimer und ein pinkes Fähnchen begleiten die Sandburg. Der
+Sprungturm steht an der Wasserlinie mit Leiter, Geländer und einem Brett
+über dem Wasser. Ein kräftiger Mann in pinken Badehosen springt beim
+Anfahren ins Meer, gefolgt von einer örtlichen Wasserfontäne und Wellen.
+Sein Ablauf folgt der Annäherung, damit der Sprung während des Vorbeifahrens
+sichtbar bleibt. Die Aktivitäten verwenden die vorhandene Objektprojektion
+und das bestehende Clipping. Wasser, Gelände und Pier bleiben unverändert.
 
 ## Natürlicher Felsdurchbruch
 
