@@ -172,14 +172,42 @@ module.exports = async function runCoast(browser, baseUrl) {
         try{render(ts);}finally{drawBeachPerson=personDraw;drawBeachPartySprite=partyDraw;}
         const partySegment=segments[OCEAN_PARTY_INDEX],roadEdge=partySegment.proj_rx2+partySegment.proj_w2*1.18;
         record('party-people-are-completely-off-road',people.length===2&&people.every(p=>p.left>roadEdge),{roadEdge,people});
-        reset();player.z=270*SEGMENT_LENGTH;driveTo(308);
-        const sharkDraw=drawSharkAttackSprite;let attack;
+        // A real uphill approach must retain blue water beneath marine objects.
+        // At the turn the headland may hide the bay, but boats cannot sit on rock.
+        reset();player.z=580*SEGMENT_LENGTH;
+        const bayFrames=[],marine=drawOceanBoatSprite;let grounded=true,marineCount=0;
+        drawOceanBoatSprite=(x,y,...args)=>{
+          const px=Math.round(x),py=Math.round(y+1);
+          grounded=grounded&&px>=0&&px<W&&py>=0&&py<H&&isOceanWaterAt(px,py);
+          marineCount++;marine(x,y,...args);
+        };
         try{
-          Math.random=()=>.5;drawSharkAttackSprite=()=>{};render(ts);const before=ctx.getImageData(0,0,W,H).data;
-          drawSharkAttackSprite=(x,y,scale,time,cycle)=>{attack={x,y,cycle};sharkDraw(x,y,scale,time,cycle);};
-          render(ts);const pixels=pixelDifference(before,ctx.getImageData(0,0,W,H).data);
-          record('shark-bite-visible-on-normal-approach',attack?.cycle>4740&&attack?.cycle<5060&&pixels>200,{attack,pixels});
-        }finally{Math.random=random;drawSharkAttackSprite=sharkDraw;}
+          for(const target of[620,630,640,650]){
+            driveTo(target);render(ts);
+            const pixels=ctx.getImageData(0,0,W,H).data;
+            let blue=0;
+            for(let y=Math.floor(H*.4);y<H*.66;y++)for(let x=Math.floor(W*.5);x<W;x++){
+              const i=(y*W+x)*4;
+              if(pixels[i+2]>30&&pixels[i+2]>pixels[i]*1.8&&pixels[i+2]>pixels[i+1]*1.2&&isOceanWaterAt(x,y))blue++;
+            }
+            bayFrames.push({target,blue});
+          }
+        }finally{drawOceanBoatSprite=marine;}
+        record('crest-sea-remains-blue-and-boats-stay-on-water',bayFrames.slice(0,3).every(f=>f.blue>1000)&&grounded&&marineCount>0,{bayFrames,grounded,boats:marineCount});
+        // Moving across the screen must not change the surfer's wave phase.
+        const surferFrame=x=>{
+          ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);drawWindsurferSprite(x,300,1,10000,335);
+          return ctx.getImageData(x-45,245,90,75).data;
+        };
+        const left=surferFrame(100),right=surferFrame(200);
+        const translate=ctx.translate,heights=[];let first=true;
+        ctx.translate=function(x,y){if(first){heights.push(y);first=false;}return translate.call(this,x,y);};
+        try{for(let n=0;n<=360;n++){first=true;drawWindsurferSprite(100,300,1,n*1000/60,335);}}
+        finally{ctx.translate=translate;}
+        const step=Math.max(...heights.slice(1).map((y,i)=>Math.abs(y-heights[i]))),range=Math.max(...heights)-Math.min(...heights);
+        record('surfers-drift-gently-with-stable-wave-phase',left.every((v,i)=>v===right[i])&&range<=.51&&step<.005,{samePhase:left.every((v,i)=>v===right[i]),range,step});
+        reset();
+        record('ocean-shark-encounter-removed',segments[335].seaSprite==='windsurfer'&&!segments.some(s=>s.seaSprite==='windsurfer_victim')&&typeof drawSharkAttackSprite==='undefined'&&typeof getOceanSharkCycle==='undefined',{surfer:segments[335].seaSprite});
         reset();player.z=520*SEGMENT_LENGTH;player.x=1.25;applyRoadContact(1/60,0);
         record('car-cannot-drive-through-right-rock-wall',player.x<=1.05+1e-9,{x:player.x,side:player.wallContactSide});
         for(const level of[1,3,4,5,6]){

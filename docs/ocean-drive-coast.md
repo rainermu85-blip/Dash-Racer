@@ -1,6 +1,6 @@
 # Ocean Drive: tropische Felsküste und Strand
 
-12. Oktober 2026. Die Küste verbindet wechselnde Felsquerschnitte, warme
+13. Oktober 2026. Die Küste verbindet wechselnde Felsquerschnitte, warme
 Vulkanfarben, üppigen Bewuchs und zusätzliche Strandplätze. Streckenprofil,
 Kamera, Fahrphysik, Normaltempo, Turbo und der Übergang vom Sonnenuntergang
 zur Nacht über drei Runden bleiben erhalten.
@@ -41,8 +41,9 @@ oder gleichmäßig aufgereihten Blattpaare. Eine private, feste Zufallsfolge
 hält das Wachstum während der Fahrt und über die Runden stabil und beeinflusst
 die Verteilung anderer Spielobjekte nicht.
 
-Die Blattanker liegen weiterhin auf den tatsächlichen Felsflächen und
-werden mit ihrer kontinuierlichen Tiefe projiziert. Die bereits behobenen
+Zusätzliche unregelmäßige Kolonien wachsen auf höhere Felsflächen und über
+den oberen Rand auf das dahinterliegende Plateau. Ihre Anker liegen auf den
+tatsächlichen Flächen und werden mit kontinuierlicher Tiefe projiziert. Die bereits behobenen
 Lücken zwischen Felswand und Fahrbahn sowie die warme Vulkanpalette bleiben
 erhalten.
 
@@ -124,33 +125,31 @@ Motorboote. Sie ist seitlich und in der Tiefe versetzt. Ihre Darstellung wird
 bei Abschnitt 250 für jedes einzelne Boot auf tatsächliche sichtbare Bildfläche
 geprüft, einschließlich 390 und 480 Pixel Breite.
 
-Die Wasserfläche wird vor den Gelände- und Objektdurchgängen gezeichnet.
-Zuvor konnten spätere Wasserstreifen entfernte Boote übermalen. Außerdem
-verwenden Boote und Surfer die Kuppenbegrenzung der Straße nicht mehr; nähere
-Felsen, Strand und Straße verdecken sie weiterhin durch die Zeichnungsreihenfolge.
-Diese beiden Fehler machten die Bucht trotz vorhandener Boote leer.
-Die Füße bleiben an der projizierten Wasserfläche des zugehörigen Küstenabschnitts;
-eine Verschiebung zum Himmelshorizont würde sie an Kuppen auf die gegenüberliegenden
-Felsen heben. Die komplette Rumpfbreite wird
-bei der Platzierung hinter der tatsächlichen Wassergrenze berücksichtigt;
-größere Jachten reichen dadurch nicht auf den Strand. Kleine örtliche Wellen
-und gedimmte Rümpfe mit einzelnen warmen Fenstern ergänzen die Nachtansicht.
+Das Meer hat eine feste Welthöhe von −1450 statt mit der Straße bergauf zu
+steigen. Strandflächen verbinden Fahrbahn und Wasser; Bootsrümpfe, Surfbretter
+und der Pier verwenden dieselbe Wasserprojektion. Der Steg führt sanft vom
+höheren Strand auf seine wasserbezogene Plattform hinunter.
 
-Die Verteilung ist fest und bleibt über Runden und Neustarts stabil.
-Neun zusätzliche Windsurfer ergänzen die sieben normalen Surfer und den
-Surfer der Haibegegnung. Ihre Bretter liegen auf dem Wasser dicht hinter der
-Uferlinie; die beiden zuvor auf der Strandkante stehenden Surfer wurden
-ebenfalls ins Wasser gerückt. Der Maßstab orientiert sich nun an den Autos.
+An Kuppen werden die Geländeabschnitte hinter der verdeckten Straße vor dem
+vorderen Meer gezeichnet. Der obere Felsgrund ist endlich und wird korrekt
+am Bildrand abgeschnitten. So übermalen entfernte Felsen bei 620–650 nicht
+mehr die Wasserfläche mit einer braunen Platte. Sichtbares vorderes Gelände
+behält seine Tiefenreihenfolge.
 
-Die Haibegegnung bleibt bei Abschnitt 335. Der globale Achtsekunden-Timer
-wurde durch einen Annäherungsablauf ersetzt: zunächst der Surfer, dann die
-Flosse, der Biss mit „CHOMP!!“ und schließlich Wellen. Der Biss liegt im
-sichtbaren Annäherungsbereich um Abschnitt 305–312 und bleibt pro Runde
-an denselben Streckenabschnitt gekoppelt. Einzelne Palmen direkt davor
-werden freigehalten. Boote
-erscheinen ausschließlich in Ocean Drive. Normale Fahransichten bei 390 und
-480 Pixeln Breite sowie bei Tag und Nacht wurden geprüft; zusätzlich wurde
-die Sichtbarkeit der kleinen Gruppe hinter der Felsdurchfahrt gemessen.
+Die projizierten Geländeflächen werden mit ihrer Zeichenreihenfolge erfasst.
+Ein geometrischer Punkttest prüft, ob unter einem Boot oder Surfer zuletzt
+Wasser oder Land gezeichnet wurde. Die Objekte erscheinen anschließend nur
+auf Wasser. Dafür ist weder ein zweites Rastercanvas noch synchrones
+Auslesen von Bildpixeln erforderlich. Nähere Strandobjekte
+werden anschließend gezeichnet. Die komplette Rumpfbreite bleibt hinter der
+Uferlinie; kleine örtliche Wellen und warme Fenster ergänzen die Nachtansicht.
+
+Die Flotte und alle 17 Windsurfer bleiben über Runden und Neustarts stabil.
+Surfer schaukeln achtmal weniger hoch, mit einem rund sechs Sekunden langen
+Wellenzyklus und sanftem Neigen über rund neun Sekunden. Ihre Phase hängt
+von ihrem Streckenanker ab; seitliche Bildschirmbewegung löst kein Hüpfen aus.
+Die Ocean-Drive-Haibegegnung und „CHOMP!!“ entfallen. Bei Abschnitt 335 bleibt
+ein normaler Windsurfer. Haie im surrealen Unterwasser-Level bleiben erhalten.
 
 ## Party und weitere Strandplätze
 
@@ -192,9 +191,9 @@ zusätzlichen Tempoverlust.
 
 ## Validierung
 
-79 Browserprüfungen bei unverändertem Fahrmodell:
+83 Browserprüfungen bei unverändertem Fahrmodell:
 
-- `node scripts/assess-game.cjs coast`: 56 bei 390 × 844 und 480 × 800 Pixel.
+- `node scripts/assess-game.cjs coast`: 60 bei 390 × 844 und 480 × 800 Pixel.
 - `node scripts/assess-game.cjs mechanics`: 23.
 
 Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
@@ -213,7 +212,9 @@ komplette Pier muss auf geraden Streckensegmenten liegen.
 
 Drei weitere Prüfungen pro Bildschirmgröße kontrollieren die tatsächliche
 Sichtbarkeit aller elf Boote bei Abschnitt 250, den vollständigen Abstand
-der Personen zur Straße und den sichtbaren Haibiss bei normaler Annäherung.
+der Personen zur Straße und die entfernte Haibegegnung. Zwei weitere Prüfungen pro Bildschirmgröße
+kontrollieren das blaue Meer an der Kuppe, Wasser unter den Booten sowie
+den ruhigen, von der Bildschirmposition unabhängigen Surfer-Wellenzyklus.
 
 Zwei zusätzliche Prüfungen pro Bildschirmgröße beobachten die Nachtparty
 vor dem Wechsel in Runde drei und kontrollieren dieselbe Szene unmittelbar

@@ -143,6 +143,31 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 <script>
 const C = document.getElementById('c');
 const ctx = C.getContext('2d', { alpha: false });
+const oceanSurfaces=[];
+let oceanSurfaceMode=0;
+function traceOceanSurface(points) {
+    if(!oceanSurfaceMode)return;
+    let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
+    for(const p of points){left=Math.min(left,p.x);right=Math.max(right,p.x);top=Math.min(top,p.y);bottom=Math.max(bottom,p.y);}
+    if(right<0||left>W||bottom<0||top>H)return;
+    oceanSurfaces.push({points,left,right,top,bottom,water:oceanSurfaceMode===1});
+}
+function isOceanWaterAt(x,y) {
+    // The last painted polygon containing the foot determines its visible surface.
+    // Geometry queries avoid a second raster canvas and synchronous pixel reads.
+    for(let n=oceanSurfaces.length-1;n>=0;n--){
+        const s=oceanSurfaces[n];
+        if(x<s.left||x>s.right||y<s.top||y>s.bottom)continue;
+        let inside=false;
+        for(let i=0,j=s.points.length-1;i<s.points.length;j=i++){
+            const a=s.points[i],b=s.points[j];
+            if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)inside=!inside;
+        }
+        if(inside)return s.water;
+    }
+    return y>=oceanHorizonY;
+}
+
 const wrap = document.getElementById('wrap');
 let W, H;
 let lastW = 0, lastH = 0;
@@ -251,6 +276,9 @@ const HIGHWAY_CROSSINGS = [
 const HIGHWAY_TRAIN_DURATION = 1.6;
 const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
+const OCEAN_SEA_LEVEL=-1450;
+let oceanCameraY=0,oceanHorizonY=0;
+function getOceanSeaY(scale){return oceanHorizonY-scale*(OCEAN_SEA_LEVEL-oceanCameraY)*H*.5;}
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
 const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
 const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'cabanas'],[390,'loungers'],
@@ -667,7 +695,7 @@ function buildSegments() {
 
     oceanCliffProfiles = currentLevel === 2 ? Array.from({ length: SEGMENT_COUNT }, (_, i) => makeOceanCliffProfile(i)) : [];
     oceanCliffVegetation = currentLevel === 2 ? makeOceanCliffVegetation() : [];
-    oceanPierSlices = currentLevel === 2 ? makeOceanPierSlices() : [];
+    oceanPierSlices = [];
     segments = []; let worldY = 0;
     let underwaterPlantCount = 0;
     for (let i = 0; i < SEGMENT_COUNT; i++) {
@@ -719,8 +747,7 @@ function buildSegments() {
                 const nearSpot2 = (i >= OCEAN_PARTY_INDEX - 75 && i <= OCEAN_PARTY_INDEX + 30);
                 const nearPier = (i >= OCEAN_PIER_INDEX - 65 && i <= OCEAN_PIER_INDEX + OCEAN_PIER_LENGTH);
                 const nearSpotWhale = (i >= 573 && i <= 581);
-                const nearShark=(i>=308 && i<=342);
-                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearShark) {
+                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier) {
                     sprite = 'tree';
                     // Level 2: palm trees ONLY on the right-side beach (1.45 to 2.55) to prevent wall clipping on the left
                     spriteX = 1.45 + Math.random() * 1.1;
@@ -732,7 +759,7 @@ function buildSegments() {
             else if (i === SEGMENT_COUNT - 8) { seaSprite = 'windsurfer'; seaSpriteX = 4.1; }
             else if (i === 200) { seaSprite = 'windsurfer'; seaSpriteX = 4.1; }
             else if (i === 215) { seaSprite = 'windsurfer'; seaSpriteX = 4.6; }
-            else if (i === 335) { seaSprite = 'windsurfer_victim'; seaSpriteX = 4.3; }
+            else if (i === 335) { seaSprite = 'windsurfer'; seaSpriteX = 4.3; }
             else if (i === 650) { seaSprite = 'windsurfer'; seaSpriteX = 4.8; }
             else if (i === 670) { seaSprite = 'windsurfer'; seaSpriteX = 4.2; }
             else if (i === 740) { seaSprite = 'windsurfer'; seaSpriteX = 4.5; }
@@ -823,6 +850,7 @@ function buildSegments() {
         worldY += def.hill; 
     }
 
+    if(currentLevel===2)oceanPierSlices=makeOceanPierSlices();
     if (currentLevel === LEVEL_DREAM) {
         // Append 200 extra flat straight underwater segments beyond the finish line
         const lastWorldY = worldY;
@@ -1049,6 +1077,7 @@ function getProjAt(segIdx, t) {
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function shadeColor(hex, amt) { const num = parseInt(hex.replace('#',''), 16); return `rgb(${clamp((num>>16)+amt,0,255)},${clamp(((num>>8)&255)+amt,0,255)},${clamp((num&255)+amt,0,255)})`; }
 function trapezoid(x1l, y1, x1r, x2l, y2, x2r) {
+  if(oceanSurfaceMode)traceOceanSurface([{x:x1l,y:y1},{x:x1r,y:y1},{x:x2r,y:y2-1.2},{x:x2l,y:y2-1.2}]);
   const oy2 = y2 - 1.2;
   ctx.beginPath();
   ctx.moveTo(x1l, y1);
@@ -2228,10 +2257,27 @@ function makeOceanCliffProfile(index) {
 }
 
 function paintOceanPolygon(points, color, seal = false) {
+    traceOceanSurface(points);
     ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(points[0].x,points[0].y);
     for (let i=1;i<points.length;i++) ctx.lineTo(points[i].x,points[i].y);
     ctx.closePath(); ctx.fill();
     if (seal) { ctx.strokeStyle = color; ctx.lineWidth = 0.8; ctx.stroke(); }
+}
+
+// Clip the wide plateau against the viewport without changing its silhouette.
+function clipOceanPlateau(points) {
+    for(const [edge,keepRight] of [[-2,true],[W+2,false]]){
+        const result=[];
+        for(let i=0;i<points.length;i++){
+            const a=points[i],b=points[(i+1)%points.length];
+            const insideA=keepRight?a.x>=edge:a.x<=edge,insideB=keepRight?b.x>=edge:b.x<=edge;
+            if(insideA)result.push(a);
+            if(insideA!==insideB){const t=(edge-a.x)/(b.x-a.x);result.push({x:edge,y:a.y+(b.y-a.y)*t});}
+        }
+        points=result;
+        if(!points.length)break;
+    }
+    return points;
 }
 
 function clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale) {
@@ -2247,10 +2293,10 @@ function clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale) {
 
 function drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
     const clipped = clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale);
-    if (!clipped) return;
+    if(!clipped)return;
     [x1,y1,w1,x2,y2,w2,p1Scale,p2Scale] = clipped;
     const source = oceanCliffProfiles[index], b = oceanCliffProfiles[(index+1)%SEGMENT_COUNT];
-    if (!source || !b) return;
+    if(!source||!b)return;
     const cut=clamp((player.z+64-segments[index].worldZReal)/SEGMENT_LENGTH,0,1);
     const a=cut>0?source.map(([lane,height],j)=>[lane+(b[j][0]-lane)*cut,height+(b[j][1]-height)*cut]):source;
     const near = ([lane,height]) => ({x:x1+lane*w1,y:y1-height*p1Scale*H/2});
@@ -2262,10 +2308,14 @@ function drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
         return {x:pa.x+(pb.x-pa.x)*z,y:pa.y+(pb.y-pa.y)*z};
     };
     const topA=near(a[4]),topB=far(b[4]),footA=near(a[0]),footB=far(b[0]);
+    const backA=near([-16,a[4][1]]),backB=far([-16,b[4][1]]);
+    // Cull a headland before its leftward plateau fill. Offscreen branches of
+    // the road must not paint a brown sheet over the visible open sea.
+    if(Math.min(footA.x,footB.x,topA.x,topB.x,backA.x,backB.x)>W)return;
     // A grounded rock apron covers the gap behind recessed toes.
     paintOceanPolygon([{x:x1-w1*1.16,y:y1},footA,footB,{x:x2-w2*1.16,y:y2}],oceanRockPalette[0],true);
-    paintOceanPolygon([topA,{x:0,y:topA.y},{x:0,y:topB.y},topB],oceanRockPalette[4],true);
-    if (Math.min(footA.x,footB.x)>W && Math.min(topA.x,topB.x)>W) return;
+    const plateau=clipOceanPlateau([topA,backA,backB,topB]);
+    if(plateau.length>2)paintOceanPolygon(plateau,oceanRockPalette[4],true);
     for (let band=0;band<4;band++) {
         const color = oceanRockPalette[[0,2,1,3][band]];
         paintOceanPolygon([near(a[band]),near(a[band+1]),far(b[band+1]),far(b[band])],color,true);
@@ -2289,7 +2339,12 @@ function drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
     for(const leaf of oceanCliffVegetation[index]){
         if(leaf.z<cut)continue;
         const along=(leaf.z-cut)/(1-cut),scale=1/((1-along)/p1Scale+along/p2Scale);
-        const band=Math.min(3,Math.floor(leaf.u)),p=face(band,leaf.u-band,along*scale/p2Scale);
+        const band=Math.min(3,Math.floor(leaf.u)),depth=along*scale/p2Scale;
+        // The upper ground is the same plateau painted behind the last rock node.
+        // Its plants keep that height instead of floating above the cliff silhouette.
+        const spread=Math.max(0,leaf.u-4)*4;
+        const pa=near([a[4][0]-spread,a[4][1]]),pb=far([b[4][0]-spread,b[4][1]]);
+        const p=leaf.u<4?face(band,leaf.u-band,depth):{x:pa.x+(pb.x-pa.x)*depth,y:pa.y+(pb.y-pa.y)*depth};
         const r=Math.min(48,scale*H/2*leaf.radius);
         if(r<.6 || p.x < -r*2 || p.x>W+r*2 || p.y < -r*2 || p.y>H+r*2)continue;
         const leafShape=(size,color,dx=0,dy=0)=>{
@@ -2335,6 +2390,22 @@ function makeOceanCliffVegetation() {
                 angle:-1.2+random()*2.4,aspect:.65+random()*.55,dark,
                 flower:bloom&&random()<.36,bud:random()<.16};
             if(slope>=.06 && slope<=3.94)foliage[Math.floor(z)].push(leaf);
+        }
+    }
+    // New colonies climb higher faces and spill across the ground behind the rim.
+    // The original patches stay in place, with no shared row/height grid.
+    for(let center=-12;center<SEGMENT_COUNT;center+=10+random()*23){
+        const upper=random()<.7,u=upper?1.25+random()*4.8:.6+random()*2.7;
+        const width=.38+random()*.9,span=5+random()*12,phase=random()*Math.PI*2;
+        const bloom=random()<.24,dark=random()<.4,count=70+Math.floor(random()*65);
+        for(let j=0;j<count;j++){
+            const angle=random()*Math.PI*2,radius=Math.sqrt(random());
+            let z=center+Math.cos(angle)*radius*span;
+            const slope=u+Math.sin(angle)*radius*width+Math.sin((z-center)*.54+phase)*.22;
+            if(slope<.08||slope>6.8||random()<.2+Math.max(0,Math.sin(z*.77+slope*3+phase))*.13)continue;
+            z=(z%SEGMENT_COUNT+SEGMENT_COUNT)%SEGMENT_COUNT;
+            foliage[Math.floor(z)].push({z:z%1,u:slope,radius:48+random()*95,angle:-1.3+random()*2.6,
+                aspect:.65+random()*.6,dark,flower:bloom&&random()<.32,bud:random()<.12});
         }
     }
     for(const leaves of foliage)leaves.sort((a,b)=>b.z-a.z);
@@ -2429,9 +2500,11 @@ function makeOceanPierSlices() {
     };
     const center=OCEAN_PIER_CENTER-OCEAN_PIER_INDEX;
     const support=(lane,z)=>box(lane-.035,lane+.035,z-.18,z+.18,-60,240,'#533338','support');
-    // A straight walkway across the beach, exactly perpendicular to the road.
+    const landHeight=segments[OCEAN_PIER_CENTER].worldY-OCEAN_SEA_LEVEL;
+    const walkHeight=lane=>landHeight+(240-landHeight)*clamp((lane-2.05)/1.6,0,1);
+    // The walkway connects the elevated strand to the fixed-height water deck.
     for(let lane=2.05;lane<5.85;lane+=.15){
-        const next=Math.min(5.85,lane+.15),h=Math.min(240,(lane-2.05)*170),h2=Math.min(240,(next-2.05)*170);
+        const next=Math.min(5.85,lane+.15),h=walkHeight(lane),h2=walkHeight(next);
         add([[lane,h,center-2],[next,h2,center-2],[next,h2,center+2],[lane,h,center+2]],'#956342');
         add([[lane,h,center-2],[next,h2,center-2],[next,h2-70,center-2],[lane,h-70,center-2]],'#4d3037');
     }
@@ -2452,10 +2525,10 @@ function makeOceanPierSlices() {
     }
     const rail=(lane,z,h)=>box(lane-.015,lane+.015,z-.07,z+.07,h,h+325,'#dfb68f','rail');
     for(const z of[center-2,center+2]){
-        for(let lane=2.15;lane<4.15;lane+=.42)rail(lane,z,Math.min(240,(lane-2.05)*170));
+        for(let lane=2.15;lane<4.15;lane+=.42)rail(lane,z,walkHeight(lane));
         for(let lane=2.15;lane<4.15;lane+=.1){
-            const h=Math.min(240,(lane-2.05)*170)+285;
-            add([[lane,h,z-.04],[lane+.1,Math.min(240,(lane+.1-2.05)*170)+285,z-.04],[lane+.1,Math.min(240,(lane+.1-2.05)*170)+310,z-.04],[lane,h+25,z-.04]],'#e8c39c','rail');
+            const h=walkHeight(lane)+285;
+            add([[lane,h,z-.04],[lane+.1,walkHeight(lane+.1)+285,z-.04],[lane+.1,walkHeight(lane+.1)+310,z-.04],[lane,h+25,z-.04]],'#e8c39c','rail');
         }
     }
     for(const z of[center-5,center+5]){
@@ -2528,7 +2601,7 @@ function drawOceanPier(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index,anchor) {
         const points=visible.map(([lane,height,z])=>{
             const t=clamp((z-slice-cut)/(1-cut),0,1),scale=1/((1-t)/p1Scale+t/p2Scale),along=t*scale/p2Scale;
             return {x:W/2+(anchor.rx1+anchor.lookOffset-W/2)*scale/anchor.p1Scale-anchor.lookOffset+lane*scale*ROAD_WIDTH*W/2,
-                y:y1+(y2-y1)*along-height*scale*H/2};
+                y:getOceanSeaY(scale)-height*scale*H/2};
         });
         if(points.every(p=>p.x<-3)||points.every(p=>p.x>W+3)||points.every(p=>p.y<-3)||points.every(p=>p.y>H+3))continue;
         paintOceanPolygon(points,face.color,true);
@@ -2540,7 +2613,8 @@ function getOceanShoreLane(index) {
     return distance<55?3.8-1.1*(1+Math.cos(Math.PI*distance/55))*.5:3.8;
 }
 
-function drawOceanWaterSegment(x1,y1,w1,x2,y2,w2,isAlt,index) {
+function drawOceanWaterSegment(x1,y1,w1,x2,y2,w2,isAlt,index,p1Scale,p2Scale) {
+    y1=getOceanSeaY(p1Scale);y2=getOceanSeaY(p2Scale);
     const cut=clamp((player.z+64-segments[index].worldZReal)/SEGMENT_LENGTH,0,1);
     const shore1=x1+w1*getOceanShoreLane(index+cut),shore2=x2+w2*getOceanShoreLane(index+1);
     ctx.fillStyle=interpolateColor(isAlt?'#1a416b':'#122d4f',isAlt?'#060e18':'#040a12',currentProgressRatio);
@@ -2723,9 +2797,10 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
         const beachR1=x1+w1*getOceanShoreLane(segIdx+cut);
         const beachR2=x2+w2*getOceanShoreLane(segIdx+1);
         ctx.fillStyle=isAlt?'#eac68a':'#dfbe81';
-        trapezoid(beachL1,y1,beachR1,beachL2,y2,beachR2);
+        paintOceanPolygon([{x:beachL1,y:y1},{x:beachL2,y:y2},{x:beachR2,y:getOceanSeaY(p2Scale)},{x:beachR1,y:getOceanSeaY(p1Scale)}],isAlt?'#eac68a':'#dfbe81',true);
 
-        // Stratified headlands and attached vegetation share the road's depth.
+        // Hidden road sections were painted before the visible bay; foreground
+        // terrain now occludes them through the same back-to-front depth order.
         drawOceanCliffSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);
     } else {
         // --- LEVEL 1: STANDARD CITY/BRIDGE VOID SURROUNDINGS ---
@@ -5215,13 +5290,14 @@ function drawOceanBoatSprite(sx,sy,pixelsPerMetre,boat,night=0) {
     ctx.restore();
 }
 
-function drawWindsurferSprite(sx, sy, sc, ts) {
+function drawWindsurferSprite(sx, sy, sc, ts, seed = 0) {
   const wsc = sc * 0.45; // sleek and appropriately scaled relative to yacht/sailboat
   ctx.save();
   
   // Bobbing animation in waves
-  const bobY = sy + Math.sin(ts / 250 + sx) * sc * 2;
-  const tilt = Math.cos(ts / 500 + sx) * 0.05;
+  const phase=seed*.73;
+  const bobY=sy+Math.sin(ts*.001+phase)*sc*.25;
+  const tilt=Math.cos(ts*.0007+phase)*.012;
   ctx.translate(sx, bobY);
   ctx.rotate(tilt);
   
@@ -5322,224 +5398,6 @@ function drawWindsurferSprite(sx, sy, sc, ts) {
   ctx.stroke();
   
   ctx.restore();
-  
-  ctx.restore();
-}
-
-function getOceanSharkCycle(z) {
-    const index=z/SEGMENT_LENGTH;
-    const beats=[[270,0],[285,3000],[295,4500],[320,5300],[332,6500],[335,7999]];
-    for(let i=1;i<beats.length;i++){
-        const [start,a]=beats[i-1],[end,b]=beats[i];
-        if(index<=end)return a+(b-a)*clamp((index-start)/(end-start),0,1);
-    }
-    return 7999;
-}
-
-function drawSharkAttackSprite(sx, sy, sc, ts, encounterCycle = ts % 8000) {
-  const wsc = sc * 0.45; // same scale as windsurfer
-  const cycle = encounterCycle;
-  
-  ctx.save();
-  
-  if (cycle < 3000) {
-    // Phase 1: Sailing peacefully
-    drawWindsurferSprite(sx, sy, sc, ts);
-  }
-  else if (cycle >= 3000 && cycle < 4500) {
-    // Phase 2: Shark approaching / circling!
-    drawWindsurferSprite(sx, sy, sc, ts);
-    
-    // Now, draw the ominous fin circling
-    const progress = (cycle - 3000) / 1500; // 0 to 1
-    const radiusX = sc * 45 * (1.0 - progress * 0.7);
-    const radiusY = sc * 15 * (1.0 - progress * 0.7);
-    const angle = progress * Math.PI * 3;
-    
-    const finX = sx + Math.cos(angle) * radiusX;
-    const finY = sy + Math.sin(angle) * radiusY;
-    
-    // Shadow under fin
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(finX, finY + sc * 2, sc * 8, sc * 3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Shark fin (dark grey, triangular)
-    ctx.fillStyle = '#34495e';
-    ctx.strokeStyle = '#2c3e50';
-    ctx.lineWidth = Math.max(1, sc * 1.5);
-    ctx.beginPath();
-    ctx.moveTo(finX - sc * 8, finY + sc * 2);
-    ctx.quadraticCurveTo(finX - sc * 2, finY - sc * 10, finX + sc * 2, finY - sc * 12); // fin tip
-    ctx.quadraticCurveTo(finX + sc * 4, finY - sc * 5, finX + sc * 3, finY + sc * 2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    
-    // Foam trail behind fin
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.lineWidth = Math.max(1, sc * 1.5);
-    ctx.beginPath();
-    ctx.moveTo(finX - sc * 8, finY + sc * 2);
-    ctx.quadraticCurveTo(finX - sc * 16, finY + sc * 4, finX - sc * 24, finY + sc * 3);
-    ctx.stroke();
-  }
-  else if (cycle >= 4500 && cycle < 5300) {
-    // Phase 3: THE ATTACK! Giant shark leaps out and eats the surfer!
-    const progress = (cycle - 4500) / 800; // 0 to 1
-    
-    ctx.save();
-    ctx.translate(sx - sc * 10 * progress, sy);
-    ctx.rotate(progress * 0.7);
-    if (progress < 0.5) {
-      drawWindsurferSprite(0, 0, sc * (1.0 - progress), ts);
-    }
-    ctx.restore();
-    
-    // Giant white shark head breaching!
-    const breachH = Math.sin(progress * Math.PI) * sc * 45;
-    const sharkX = sx + sc * 5;
-    const sharkY = sy + sc * 5 - breachH;
-    
-    ctx.save();
-    ctx.translate(sharkX, sharkY);
-    ctx.rotate(-0.4 + progress * 0.8);
-    
-    // Shark body (Upper grey half)
-    ctx.fillStyle = '#4a5568';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, sc * 30, sc * 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Shark belly (White lower half)
-    ctx.fillStyle = '#f7fafc';
-    ctx.beginPath();
-    ctx.ellipse(0, sc * 6, sc * 26, sc * 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // MASSIVE Open Jaws (Red/pink interior)
-    ctx.fillStyle = '#ff4d6d';
-    ctx.beginPath();
-    ctx.ellipse(-sc * 18, sc * 2, sc * 10, sc * 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Sharp white teeth!
-    ctx.fillStyle = '#ffffff';
-    ctx.strokeStyle = '#d90429';
-    ctx.lineWidth = Math.max(1, sc * 0.6);
-    
-    // Top row teeth
-    ctx.beginPath();
-    for (let tx = -sc * 26; tx < -sc * 10; tx += sc * 3.5) {
-      ctx.moveTo(tx, sc * -2);
-      ctx.lineTo(tx + sc * 1.5, sc * 3);
-      ctx.lineTo(tx + sc * 3, sc * -2);
-    }
-    ctx.fill();
-    ctx.stroke();
-    
-    // Bottom row teeth
-    ctx.beginPath();
-    for (let tx = -sc * 24; tx < -sc * 11; tx += sc * 3.5) {
-      ctx.moveTo(tx, sc * 6);
-      ctx.lineTo(tx + sc * 1.5, sc * 1);
-      ctx.lineTo(tx + sc * 3, sc * 6);
-    }
-    ctx.fill();
-    ctx.stroke();
-    
-    // Lifeless black eye
-    ctx.fillStyle = '#1a202c';
-    ctx.beginPath();
-    ctx.arc(-sc * 12, sc * -7, sc * 2.2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Gills slits
-    ctx.strokeStyle = '#2d3748';
-    ctx.lineWidth = Math.max(1, sc * 1.2);
-    ctx.beginPath();
-    ctx.moveTo(sc * 10, sc * -2); ctx.lineTo(sc * 9, sc * 6);
-    ctx.moveTo(sc * 14, sc * -1); ctx.lineTo(sc * 13, sc * 7);
-    ctx.moveTo(sc * 18, sc * 0); ctx.lineTo(sc * 17, sc * 8);
-    ctx.stroke();
-    
-    ctx.restore();
-    
-    // GIANT White Water Splashes and Blood Droplets!
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    for (let i = 0; i < 8; i++) {
-      const spAngle = (i / 8) * Math.PI * 2;
-      const spDist = sc * (15 + Math.random() * 25) * progress;
-      const spX = sx + Math.cos(spAngle) * spDist;
-      const spY = sy + Math.sin(spAngle) * spDist * 0.4 - breachH * 0.3;
-      ctx.beginPath();
-      ctx.arc(spX, spY, sc * (5 + Math.random() * 5), 0, Math.PI * 2);
-      ctx.fill();
-    }
-    
-    if (progress > 0.3 && progress < 0.7) {
-      ctx.fillStyle = '#e63946';
-      for (let i = 0; i < 6; i++) {
-        const bAngle = -Math.PI * 0.2 - Math.random() * Math.PI * 0.6;
-        const bDist = sc * (10 + Math.random() * 25);
-        const bx = sx + Math.cos(bAngle) * bDist;
-        const by = sy + Math.sin(bAngle) * bDist * 0.6 - breachH * 0.5;
-        ctx.beginPath();
-        ctx.arc(bx, by, sc * (1.5 + Math.random() * 2.2), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      
-      ctx.save();
-      ctx.font = `bold ${Math.max(10, ~~(sc * 16))}px "Press Start 2P", monospace`;
-      ctx.fillStyle = '#ffe066';
-      ctx.strokeStyle = '#ff007f';
-      ctx.lineWidth = 4;
-      ctx.textAlign = 'center';
-      ctx.strokeText('CHOMP!!', sx, sy - breachH - sc * 15);
-      ctx.fillText('CHOMP!!', sx, sy - breachH - sc * 15);
-      ctx.restore();
-    }
-  }
-  else if (cycle >= 5300 && cycle < 6500) {
-    // Phase 4: Sinking & Ripples
-    const progress = (cycle - 5300) / 1200;
-    
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 * (1.0 - progress)})`;
-    ctx.lineWidth = Math.max(1, sc * 2);
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, sc * 35 * progress, sc * 12 * progress, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    const bloodAlpha = 0.45 * (1.0 - progress);
-    const bloodGrad = ctx.createRadialGradient(sx, sy, 2, sx, sy, sc * 25 * progress);
-    bloodGrad.addColorStop(0, `rgba(230, 57, 70, ${bloodAlpha})`);
-    bloodGrad.addColorStop(0.6, `rgba(230, 57, 70, ${bloodAlpha * 0.4})`);
-    bloodGrad.addColorStop(1, 'rgba(230, 57, 70, 0)');
-    ctx.fillStyle = bloodGrad;
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, sc * 25, sc * 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#ff00c1';
-    for (let i = 0; i < 4; i++) {
-      const dbX = sx + Math.cos(i * 1.5) * sc * 12 * progress;
-      const dbY = sy + Math.sin(i * 1.5) * sc * 5 * progress;
-      ctx.save();
-      ctx.translate(dbX, dbY);
-      ctx.rotate(i * 0.8 + progress);
-      ctx.fillRect(-sc * 2, -sc * 1, sc * 4, sc * 2);
-      ctx.restore();
-    }
-  }
-  else {
-    const progress = (cycle - 6500) / 1500;
-    ctx.strokeStyle = `rgba(0, 255, 210, ${0.12 * (1.0 - progress)})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.ellipse(sx, sy, sc * 15 * progress, sc * 5 * progress, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
   
   ctx.restore();
 }
@@ -7353,6 +7211,7 @@ function render(ts) {
   const baseSeg = segments[startSegIdx] || segments[segments.length - 1];
   const playerY = baseSeg.worldY + baseSeg.hillDelta * percent;
   const horizonY = ~~(H * 0.5) + player.pitch * 1.5;
+  if(currentLevel===2){oceanCameraY=CAMERA_HEIGHT+playerY;oceanHorizonY=horizonY;}
 
   const maxLaps = currentLevel === LEVEL_DREAM ? 1 : 3;
   const progressDist = (player.lap - 1) * TRACK_LENGTH + player.z;
@@ -8167,8 +8026,8 @@ function render(ts) {
   }
   
   if (currentLevel !== LEVEL_SPACE) {
-    ctx.fillStyle = '#06030f';
-    ctx.fillRect(0, 0, W, H - horizonY);
+    ctx.fillStyle=currentLevel===2?interpolateColor('#122d4f','#040a12',progressRatio):'#06030f';
+    ctx.fillRect(0,0,W,H-horizonY);
   }
   
   if (currentLevel === 2) {
@@ -8405,7 +8264,7 @@ function render(ts) {
         // Keep the foot on this slice of the bay's water plane. Receding
         // towards the sky horizon would lift boats onto opposite headlands.
         const x=rx2+getOceanShoreLane(segIdx+1)*p2.w+(boat.offshore+boat.length*.5+boat.spread)*metres;
-        const y=horizonY+(p2.y-horizonY)*shoreDepth/Math.max(64,boatDepth);
+        const y=horizonY+(getOceanSeaY(p2.scale)-horizonY)*shoreDepth/Math.max(64,boatDepth);
         if(boatDepth>=64 && x-boat.length*metres*.58<W+3 && x+boat.length*metres*.58>-3){
             const s=getCleanSpriteFromPool();s.type='ocean_boat';s.x=x;s.y=y;s.sc=metres;
             s.boat=boat;s.depth=n;s.segIdx=segIdx;
@@ -8416,7 +8275,7 @@ function render(ts) {
         const s = getCleanSpriteFromPool();
         s.type = seg.seaSprite; // 'sailboat' or 'yacht'
         s.x = rx2 + seg.seaSpriteX * p2.w;
-        s.y = p2.y;
+        s.y=getOceanSeaY(p2.scale);
         s.sc=Math.min(4.8,p2.scale*(692*H/Math.max(10,H*.5-76))*responsiveFactor*5.0);
         s.depth = n;
         s.segIdx = segIdx;
@@ -8655,15 +8514,7 @@ function render(ts) {
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawWindsurferSprite(s.x, s.y, s.sc, ts);
-        ctx.restore();
-    }
-    else if (s.type === 'windsurfer_victim') {
-        ctx.save();
-        if (s.clipY !== undefined) {
-            ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
-        }
-        drawSharkAttackSprite(s.x,s.y,s.sc,ts,getOceanSharkCycle(player.z));
+        drawWindsurferSprite(s.x,s.y,s.sc,ts,s.segIdx);
         ctx.restore();
     }
     else if (s.type === 'pylon') {
@@ -8747,10 +8598,19 @@ function render(ts) {
     }
   }
 
-  // Paint the complete water surface before any floating objects. A nearer
-  // water strip must not erase boats in a bay visible over a road crest.
-  if(currentLevel===2)for(let i=segmentsToDraw.length-1;i>=0;i--){
-    const r=segmentsToDraw[i];drawOceanWaterSegment(r.rx1,r.y1,r.w1,r.rx2,r.y2,r.w2,r.color,r.segIdx);
+  if(currentLevel===2){
+    oceanSurfaces.length=0;
+  }
+
+  if(currentLevel===2){
+    // A headland whose road base is hidden by a crest belongs behind the bay.
+    // Its upper silhouette remains visible, but later sea strips cover its feet.
+    oceanSurfaceMode=2;
+    for(let i=segmentsToDraw.length-1;i>=0;i--){
+      const r=segmentsToDraw[i];if(r.isVisible)continue;
+      drawRoadSegment(r.rx1,r.y1,r.w1,r.rx2,r.y2,r.w2,r.color,r.isStart,r.isBridge,r.p1Scale,r.p2Scale,r.isPillar,r.segIdx,false);
+    }
+    oceanSurfaceMode=0;
   }
 
   // Group sprites from spritePool into those on visible road segments vs background/offscreen
@@ -8772,9 +8632,7 @@ function render(ts) {
 
   // Draw background sprites (farthest first)
   backgroundSprites.sort((a, b) => b.depth - a.depth);
-  for (const s of backgroundSprites) {
-    drawSprite(s);
-  }
+  if(currentLevel!==2)for(const s of backgroundSprites)drawSprite(s);
 
   // Project the rigid jetty from its shore anchor instead of bending it with
   // the road at each water-depth slice. A passed entrance is already offscreen.
@@ -8784,25 +8642,48 @@ function render(ts) {
   for (let i = segmentsToDraw.length - 1; i >= 0; i--) {
     const roadSeg = segmentsToDraw[i];
     
-    // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
-    drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
-    
-    if(pierAnchor && roadSeg.segIdx>=OCEAN_PIER_INDEX && roadSeg.segIdx<OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH){
-      ctx.save();ctx.beginPath();ctx.rect(0,0,W,segments[roadSeg.segIdx].clipY);ctx.clip();
-      drawOceanPier(roadSeg.rx1,roadSeg.y1,roadSeg.w1,roadSeg.rx2,roadSeg.y2,roadSeg.w2,roadSeg.p1Scale,roadSeg.p2Scale,roadSeg.segIdx,pierAnchor);
-      ctx.restore();
+    if(currentLevel===2){
+      oceanSurfaceMode=1;
+      drawOceanWaterSegment(roadSeg.rx1,roadSeg.y1,roadSeg.w1,roadSeg.rx2,roadSeg.y2,roadSeg.w2,roadSeg.color,roadSeg.segIdx,roadSeg.p1Scale,roadSeg.p2Scale);
+      oceanSurfaceMode=2;
     }
+    // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
+    if(currentLevel!==2||roadSeg.isVisible)drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
+    
+    oceanSurfaceMode=0;
     // Cable slices share this segment's depth, including after a passed mast.
     if (roadSeg.isBridge) drawBridgeStays(roadSeg.segIdx);
 
     // 2. Draw any sprites positioned precisely on this segment index
     const segSprites = spritesBySegment.get(roadSeg.segIdx);
-    if (segSprites) {
+    if (segSprites && currentLevel!==2) {
       segSprites.sort((a, b) => b.depth - a.depth);
       for (const s of segSprites) {
         drawSprite(s);
       }
     }
+  }
+
+  if(currentLevel===2){
+    // Terrain keeps its depth order: nearer sea hides remote headlands on hills.
+    // Floating scenery is drawn afterwards only when its foot is on visible water.
+    const floating=[],land=[];
+    for(let i=0;i<spriteCount;i++){
+      const s=spritePool[i];(s.type==='ocean_boat'||s.type==='windsurfer'?floating:land).push(s);
+    }
+    floating.sort((a,b)=>b.depth-a.depth);
+    for(const s of floating){
+      const x=Math.round(s.x),y=Math.round(s.y+1);
+      if(x>=0&&x<W&&y>=0&&y<H&&isOceanWaterAt(x,y))drawSprite(s);
+    }
+    // The marina sits in front of offshore craft, then beach objects and cars
+    // retain their existing crest clips and normal back-to-front order.
+    if(pierAnchor)for(let i=segmentsToDraw.length-1;i>=0;i--){
+      const r=segmentsToDraw[i];if(r.segIdx<OCEAN_PIER_INDEX||r.segIdx>=OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH)continue;
+      ctx.save();
+      drawOceanPier(r.rx1,r.y1,r.w1,r.rx2,r.y2,r.w2,r.p1Scale,r.p2Scale,r.segIdx,pierAnchor);ctx.restore();
+    }
+    land.sort((a,b)=>b.depth-a.depth);for(const s of land)drawSprite(s);
   }
 
   const steerVis = keys.left ? -1 : keys.right ? 1 : 0;
