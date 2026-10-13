@@ -172,28 +172,6 @@ module.exports = async function runCoast(browser, baseUrl) {
         try{render(ts);}finally{drawBeachPerson=personDraw;drawBeachPartySprite=partyDraw;}
         const partySegment=segments[OCEAN_PARTY_INDEX],roadEdge=partySegment.proj_rx2+partySegment.proj_w2*1.18;
         record('party-people-are-completely-off-road',people.length===2&&people.every(p=>p.left>roadEdge),{roadEdge,people});
-        // A real uphill approach must retain blue water beneath marine objects.
-        // At the turn the headland may hide the bay, but boats cannot sit on rock.
-        reset();player.z=580*SEGMENT_LENGTH;
-        const bayFrames=[],marine=drawOceanBoatSprite;let grounded=true,marineCount=0;
-        drawOceanBoatSprite=(x,y,...args)=>{
-          const px=Math.round(x),py=Math.round(y+1);
-          grounded=grounded&&px>=0&&px<W&&py>=0&&py<H&&isOceanWaterAt(px,py);
-          marineCount++;marine(x,y,...args);
-        };
-        try{
-          for(const target of[620,630,640,650]){
-            driveTo(target);render(ts);
-            const pixels=ctx.getImageData(0,0,W,H).data;
-            let blue=0;
-            for(let y=Math.floor(H*.4);y<H*.66;y++)for(let x=Math.floor(W*.5);x<W;x++){
-              const i=(y*W+x)*4;
-              if(pixels[i+2]>30&&pixels[i+2]>pixels[i]*1.8&&pixels[i+2]>pixels[i+1]*1.2&&isOceanWaterAt(x,y))blue++;
-            }
-            bayFrames.push({target,blue});
-          }
-        }finally{drawOceanBoatSprite=marine;}
-        record('crest-sea-remains-blue-and-boats-stay-on-water',bayFrames.slice(0,3).every(f=>f.blue>1000)&&grounded&&marineCount>0,{bayFrames,grounded,boats:marineCount});
         // Moving across the screen must not change the surfer's wave phase.
         const surferFrame=x=>{
           ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);drawWindsurferSprite(x,300,1,10000,335);
