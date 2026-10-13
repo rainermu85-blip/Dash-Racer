@@ -34,11 +34,24 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .bSeg{width:100%;height:33.33%;border-bottom:2px solid #000;background:#2a0f62;transition:background 0.1s;}
 .bSeg.on{background:#ff6b35;box-shadow:0 0 8px #ff6b35;}
 
-#btns{position:absolute;bottom:0;left:0;right:0;height:150px;display:flex;z-index:5;background:linear-gradient(to top,rgba(0,0,0,.7),transparent)}
+#btns{position:absolute;bottom:0;left:0;right:0;height:150px;display:flex;z-index:5;background:linear-gradient(to top,rgba(0,0,0,.25),transparent)}
 .btn{flex:1;display:flex;align-items:center;justify-content:center;font-size:30px;user-select:none;cursor:pointer;color:rgba(255,255,255,.3)}
-#bL{border-right:1px solid rgba(255,255,255,.07)}
-#bL.on{background:rgba(126,203,255,.2);color:#7ecbff}
-#bR.on{background:rgba(255,107,53,.2);color:#ff6b35}
+.steerArrow{transition:color .08s,text-shadow .08s}
+#bL.on .steerArrow{color:#9bcee1;text-shadow:0 0 4px rgba(126,203,255,.35)}
+#bR.on .steerArrow{color:#e8a99c;text-shadow:0 0 4px rgba(255,107,53,.3)}
+.race-control{position:absolute;z-index:10;visibility:hidden;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#wrap.racing .race-control{visibility:visible}
+#turboButton{right:14px;bottom:max(250px,calc(env(safe-area-inset-bottom) + 236px));width:64px;height:64px;border:2px solid #fd765f;border-radius:50%;background:linear-gradient(#f34542,#b51328);box-shadow:0 4px 0 #620d23,0 0 9px rgba(238,45,68,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .08s,box-shadow .08s,filter .15s}
+#turboButton svg{width:27px;height:27px;fill:#ffdf47;filter:drop-shadow(0 0 3px rgba(255,210,52,.45))}
+#turboButton span{font:7px 'Press Start 2P',monospace;letter-spacing:.5px;color:#ffeaaa}
+#turboButton.empty{filter:saturate(.65);opacity:.72}
+#turboButton.held,#turboButton.boosting{transform:translateY(3px);background:linear-gradient(#c52331,#e34336);box-shadow:inset 0 2px 5px rgba(70,0,10,.6),0 1px 0 #620d23,0 0 11px rgba(255,112,48,.4);opacity:1;filter:none}
+#turboButton.boosting svg{filter:drop-shadow(0 0 5px #ffe454)}
+#pauseButton{left:calc(75% - 22px);top:6px;width:44px;height:44px;border:1px solid rgba(146,188,218,.45);border-radius:7px;background:rgba(12,8,29,.6);display:flex;align-items:center;justify-content:center;color:#bfdfeb}
+#pauseButton svg{width:17px;height:17px;fill:currentColor}
+#pauseButton:active{background:rgba(55,49,78,.8)}
+.race-control:focus-visible,#boostContainer:focus-visible{outline:2px solid #ffe066;outline-offset:3px}
+@media(max-height:720px){#boostContainer{top:28%;gap:6px;padding:6px}#boostBarWrap{height:78px}}
 #overlay{position:absolute;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.92)}
 #overlay.hide{display:none}
 .menu-panel{width:90%;max-width:430px;margin:auto;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:18px}
@@ -115,7 +128,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     </div>
   </div>
   
-  <div id="boostContainer">
+  <div id="boostContainer" role="button" tabindex="-1" aria-label="Turbo über die Anzeige aktivieren">
     <div id="boostIcon">⚡</div>
     <div id="boostBarWrap">
       <div class="bSeg" id="b1"></div>
@@ -124,9 +137,16 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     </div>
   </div>
 
+  <button id="pauseButton" class="race-control" type="button" aria-label="Rennen pausieren" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg>
+  </button>
+  <button id="turboButton" class="race-control empty" type="button" aria-label="Turbo aktivieren" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8L21 9h-8z"/></svg>
+    <span>TURBO</span>
+  </button>
   <div id="btns">
-    <div class="btn" id="bL">&#9664;</div>
-    <div class="btn" id="bR">&#9654;</div>
+    <div class="btn" id="bL"><span class="steerArrow" aria-hidden="true">&#9664;</span></div>
+    <div class="btn" id="bR"><span class="steerArrow" aria-hidden="true">&#9654;</span></div>
   </div>
   <div id="cntWrap"><div id="cntNum">3</div></div>
   <div id="pauseOverlay" class="hide">
@@ -1087,34 +1107,77 @@ function crossingTrainPhase(index) {
 }
 
 const keys = { left: false, right: false, boost: false };
-function setKey(k, val, el) { keys[k] = val; if (el && k !== 'boost') el.classList.toggle('on', val); }
-function addTouch(el, k) {
-  el.addEventListener('pointerdown', e => { e.preventDefault(); el.setPointerCapture?.(e.pointerId); setKey(k, true, el); }, {passive:false});
-  el.addEventListener('pointerup',   e => { e.preventDefault(); setKey(k, false, el); }, {passive:false});
-  el.addEventListener('pointercancel',() => setKey(k, false, el)); el.addEventListener('pointerleave', () => setKey(k, false, el));
+const inputSources=new Map();
+let boostRequested=false;
+const turboButton=document.getElementById('turboButton'),pauseButton=document.getElementById('pauseButton');
+const steerLeft=document.getElementById('bL'),steerRight=document.getElementById('bR');
+const canDriveInput=()=>!paused&&!player.finished&&(state==='playing'||state==='countdown');
+function syncInputs(){
+  const held=[...inputSources.values()];
+  for(const key of['left','right'])keys[key]=held.includes(key);
+  if(!held.includes('boost'))keys.boost=false;
+  steerLeft.classList.toggle('on',keys.left);steerRight.classList.toggle('on',keys.right);
+  turboButton.classList.toggle('held',held.includes('boost'));
 }
-addTouch(document.getElementById('bL'), 'left'); addTouch(document.getElementById('bR'), 'right');
-addTouch(document.getElementById('boostContainer'), 'boost');
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    e.preventDefault();
-    togglePause();
-    return;
-  }
-  if (paused) return;
-  const k = e.key.toLowerCase();
-  if(e.key==='ArrowLeft'||k==='a'){keys.left=true;e.preventDefault()}
-  if(e.key==='ArrowRight'||k==='d'){keys.right=true;e.preventDefault()}
-  if(e.key===' '||e.key==='ArrowUp'||k==='w'){keys.boost=true;e.preventDefault()}
+function setInput(source,key){
+  if(key==='boost'&&inputSources.get(source)!=='boost'){keys.boost=true;boostRequested=true;}
+  if(key)inputSources.set(source,key);else inputSources.delete(source);syncInputs();
+}
+function resetInputs(){inputSources.clear();boostRequested=false;syncInputs();}
+const pointerSource=e=>`pointer:${e.pointerId}`;
+const keyboardSource=e=>`keyboard:${e.code||e.key.toLowerCase()}`;
+const releasePointer=e=>setInput(pointerSource(e),null);
+const steeringSide=e=>e.clientX<wrap.getBoundingClientRect().left+wrap.clientWidth/2?'left':'right';
+const capturePointer=(element,e)=>{try{element.setPointerCapture(e.pointerId);}catch{}};
+wrap.addEventListener('pointerdown',e=>{
+  if(!canDriveInput()||(e.pointerType==='mouse'&&e.button!==0)||e.target.closest('#boostContainer,button,#overlay,#pauseOverlay,#introScreen'))return;
+  e.preventDefault();capturePointer(wrap,e);setInput(pointerSource(e),steeringSide(e));
+},{passive:false});
+wrap.addEventListener('pointermove',e=>{
+  const key=inputSources.get(pointerSource(e));
+  if(!canDriveInput()||(key!=='left'&&key!=='right'))return;
+  e.preventDefault();setInput(pointerSource(e),steeringSide(e));
+},{passive:false});
+for(const event of['pointerup','pointercancel','lostpointercapture'])wrap.addEventListener(event,releasePointer);
+function bindTurboControl(element){
+  element.addEventListener('click',e=>{if(e.detail===0&&canDriveInput())boostRequested=true;});
+  element.addEventListener('pointerdown',e=>{
+    if(!canDriveInput()||(e.pointerType==='mouse'&&e.button!==0))return;
+    e.preventDefault();capturePointer(element,e);setInput(pointerSource(e),'boost');
+  },{passive:false});
+  for(const event of['pointerup','pointercancel','lostpointercapture'])element.addEventListener(event,releasePointer);
+  element.addEventListener('keydown',e=>{
+    if((e.key==='Enter'||e.key===' ')&&canDriveInput()){e.preventDefault();e.stopPropagation();setInput(keyboardSource(e),'boost');}
+  });
+  element.addEventListener('keyup',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();setInput(keyboardSource(e),null);}
+  });
+}
+bindTurboControl(turboButton);bindTurboControl(document.getElementById('boostContainer'));
+pauseButton.addEventListener('click',togglePause);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();if(!e.repeat)togglePause();return;}
+  if(!canDriveInput())return;
+  if((e.key===' '||e.key==='Enter')&&e.target.closest('button'))return;
+  const k=e.key.toLowerCase();
+  const key=e.key==='ArrowLeft'||k==='a'?'left':e.key==='ArrowRight'||k==='d'?'right':e.key===' '||e.key==='ArrowUp'||k==='w'?'boost':null;
+  if(key){e.preventDefault();if(key==='boost'&&e.repeat){keys.boost=true;boostRequested=true;}setInput(keyboardSource(e),key);}
 });
-document.addEventListener('keyup', e => { 
-  const k = e.key.toLowerCase(); 
-  if(e.key==='ArrowLeft'||k==='a'){keys.left=false;e.preventDefault()} 
-  if(e.key==='ArrowRight'||k==='d'){keys.right=false;e.preventDefault()} 
-  if(e.key===' '||e.key==='ArrowUp'||k==='w'){keys.boost=false;e.preventDefault()}
+document.addEventListener('keyup',e=>{
+  if(inputSources.has(keyboardSource(e))){e.preventDefault();setInput(keyboardSource(e),null);}
 });
-window.addEventListener('blur', () => { keys.left = false; keys.right = false; keys.boost = false; });
+window.addEventListener('blur',resetInputs);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs();});
+function updateControlUI(){
+  const racing=(state==='countdown'||state==='playing')&&!player.finished;
+  wrap.classList.toggle('racing',racing);
+  turboButton.classList.toggle('boosting',player.isBoosting);
+  turboButton.classList.toggle('empty',player.boosts===0&&!player.isBoosting);
+  turboButton.setAttribute('aria-pressed',String(player.isBoosting||keys.boost));
+  turboButton.setAttribute('aria-disabled',String(!racing||paused||player.collisionCooldown>0||(player.boosts===0&&!player.isBoosting)));
+  document.getElementById('boostContainer').tabIndex=racing?0:-1;
+  pauseButton.setAttribute('aria-pressed',String(paused));
+}
 
 function project(worldZ, worldX, worldY, camZ, camX, camY, projY, rawY = false) {
   const tz = worldZ - camZ; if (tz <= 0) return null;
@@ -9174,6 +9237,7 @@ const dom = {
 let b1El, b2El, b3El, placeEl, lapEl, spdEl, segmentEl, timeLaps = [], mP, mO = [];
 
 function updateHUD(ts) {
+  updateControlUI();
   if (!placeEl) {
     placeEl = document.getElementById('placeVal'); lapEl = document.getElementById('lapVal'); spdEl = document.getElementById('spdVal');
     segmentEl = document.getElementById('segmentVal');
@@ -9371,23 +9435,27 @@ let lastLapElapsed=null;
 let paused = false; let smoothedDt = 0.0166;
 
 function togglePause() {
-  if (state === 'playing' && !paused) {
+  if ((state === 'playing' || state === 'countdown') && !paused) {
     paused = true;
-    keys.left = false; keys.right = false; keys.boost = false;
+    resetInputs();
     document.getElementById('pauseOverlay').classList.remove('hide');
   } else if (paused) {
     paused = false;
     document.getElementById('pauseOverlay').classList.add('hide');
+    document.activeElement?.blur();
   }
+  updateControlUI();
 }
 
 function exitRace() {
+  resetInputs();
   lastLapElapsed=null;
   clearTimeout(resultTimer); resultTimer = null;
   paused = false;
   document.getElementById('pauseOverlay').classList.add('hide');
   state = 'intro';
   showMainMenu();
+  updateControlUI();
 }
 
 function formatTime(t) {
@@ -9486,6 +9554,7 @@ function popNum(n) {
 }
 
 function startRace() {
+    resetInputs();
     lastLapElapsed=null;
     clearTimeout(resultTimer); resultTimer = null;
     initBackground(); buildSegments(); initOpponents();
@@ -9504,10 +9573,13 @@ function startRace() {
     ov.style.background = '';
     document.getElementById('introScreen').classList.add('hide');
     popNum(3);
+    updateControlUI();
 }
 
 function showResult(place) {
-  state = 'result'; const ov = document.getElementById('overlay');
+  resetInputs();
+  state = 'result';
+  updateControlUI(); const ov = document.getElementById('overlay');
   ov.style.background = 'rgba(0,0,0, 0.4)';
   let placeStr = PLACE_NAMES[Math.min(place-1,5)];
   
@@ -9759,13 +9831,14 @@ function loop(ts) {
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
     player.wallHitCooldown = Math.max(0, player.wallHitCooldown - dt);
 
-    if (keys.boost && player.boosts > 0 && !player.isBoosting && !player.isChevronBoosting && player.collisionCooldown <= 0 && !player.finished) {
+    if ((keys.boost || boostRequested) && player.boosts > 0 && !player.isBoosting && !player.isChevronBoosting && player.collisionCooldown <= 0 && !player.finished) {
         player.isBoosting = true;
         player.boostTimer = 1.2; 
         player.boosts--;
         keys.boost = false; 
     }
 
+    boostRequested=false;
     if (player.isBoosting) {
         player.boostTimer -= dt;
         if (player.boostTimer <= 0) player.isBoosting = false;
