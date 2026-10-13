@@ -253,6 +253,7 @@ const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
 const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
+const OCEAN_DANCE_SPOTS = [235,345,845,1105];
 const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'cabanas'],[390,'loungers'],
     [488,'lifeguard'],[558,'surfboards'],[795,'cabanas'],[875,'loungers'],[923,'lifeguard'],[950,'surfboards']]);
 // Uneven anchorages: lengths and offshore clearances are in metres, with a
@@ -710,6 +711,8 @@ function buildSegments() {
                 spriteX = 2.6;
             } else if (i===278 || i===814) {
                 sprite=i===278?'beach_jeep_red':'beach_jeep_yellow';spriteX=2.35;
+            } else if (OCEAN_DANCE_SPOTS.includes(i)) {
+                sprite='beach_dancers';spriteX=1.95;
             } else if (OCEAN_BEACH_SPOTS.has(i)) {
                 sprite = 'beach_' + OCEAN_BEACH_SPOTS.get(i); spriteX = 1.9;
             } else if (!isTunnel && !isStartLine && i % 37 === 17) {
@@ -719,7 +722,8 @@ function buildSegments() {
                 const nearSpot2 = (i >= OCEAN_PARTY_INDEX - 75 && i <= OCEAN_PARTY_INDEX + 30);
                 const nearPier = (i >= OCEAN_PIER_INDEX - 65 && i <= OCEAN_PIER_INDEX + OCEAN_PIER_LENGTH);
                 const nearSpotWhale = (i >= 573 && i <= 581);
-                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier) {
+                const nearDancers=OCEAN_DANCE_SPOTS.some(index=>i>=index-22&&i<=index+6);
+                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearDancers) {
                     sprite = 'tree';
                     // Level 2: palm trees ONLY on the right-side beach (1.45 to 2.55) to prevent wall clipping on the left
                     spriteX = 1.45 + Math.random() * 1.1;
@@ -6167,6 +6171,77 @@ function drawIllegalBeachParty(sx, sy, sc, ts) {
   ctx.restore();
 }
 
+function drawBeachDanceSprite(sx,sy,sc,ts,seed) {
+  if(sc<.035)return;
+  beginChapterSprite(sx,sy,sc);
+  const colors=['#fb3da0','#22dfcd','#ffd45d','#9676ec'];
+  const count=Math.floor(seed/10)%2?4:3,phase=seed*.43,beat=ts*.0048+phase;
+  // A small gathering on the sand: feet stay planted while hips and arms groove.
+  for(let i=0;i<count;i++){
+    const x=count===3?-39+i*39:-48+i*32,y=[-3,-9,-5,0][i];
+    const sway=Math.sin(beat+i*1.4)*2.1,bend=(1+Math.sin(beat+i*.8))*.75;
+    const hipX=x+sway*.55,hipY=y-17+bend,shoulderX=x+sway,shoulderY=y-37+bend;
+    const skin=['#e8b38c','#925b43','#f5c6a0','#ba7955'][(i+seed)%4];
+    const top=colors[(i+Math.floor(seed/5))%4];
+    ctx.fillStyle='rgba(50,25,46,.2)';ctx.beginPath();ctx.ellipse(x,y+2,10,2.3,0,0,Math.PI*2);ctx.fill();
+    const limb=(points,color,width)=>{
+      ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+      ctx.moveTo(...points[0]);for(let j=1;j<points.length;j++)ctx.lineTo(...points[j]);ctx.stroke();
+    };
+    for(const side of[-1,1]){
+      limb([[hipX+side*3,hipY],[x+side*(4+bend),y-8],[x+side*6,y]],i%2? '#392d57':skin,4);
+      limb([[x+side*6-2,y],[x+side*6+3,y]],'#ffe7c5',3);
+    }
+    ctx.fillStyle=top;ctx.beginPath();ctx.moveTo(shoulderX-7,shoulderY);
+    ctx.lineTo(shoulderX+7,shoulderY);ctx.lineTo(hipX+5,hipY+1);ctx.lineTo(hipX-5,hipY+1);ctx.closePath();ctx.fill();
+    ctx.fillStyle=i%2?'#6c5dd0':'#102f43';ctx.fillRect(hipX-6,hipY-2,12,6);
+    ctx.fillStyle='#ffde9b';ctx.fillRect(shoulderX-5,shoulderY+3,10,2);
+    const wave=Math.sin(beat+i*1.7)*3;
+    if(i%2===0){
+      limb([[shoulderX-6,shoulderY+3],[x-12,y-29],[x-17,y-34+wave]],skin,3.5);
+      limb([[shoulderX+6,shoulderY+3],[x+12,y-43],[x+9,y-52+wave]],skin,3.5);
+    }else{
+      limb([[shoulderX-6,shoulderY+3],[x-13,y-29-wave],[x-9,y-22]],skin,3.5);
+      limb([[shoulderX+6,shoulderY+3],[x+14,y-28+wave],[x+19,y-33]],skin,3.5);
+    }
+    const hx=shoulderX,hy=shoulderY-7;
+    ctx.fillStyle=skin;ctx.beginPath();ctx.arc(hx,hy,5.2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=i===1?'#2c1525':i===2?'#f4b85d':'#331a2e';ctx.beginPath();
+    if(i===1){ctx.arc(hx,hy-3,6,Math.PI,Math.PI*2);ctx.lineTo(hx+6,hy);}
+    else{ctx.arc(hx,hy-2,5.3,Math.PI,0);ctx.lineTo(hx+4,hy-3);}
+    ctx.fill();
+    if(i===0){ctx.fillStyle='#142033';ctx.fillRect(hx-5,hy-1,10,2.4);}
+    if(i===3){ctx.fillStyle='#fb3da0';ctx.fillRect(hx-5,hy-4,10,1.8);}
+  }
+  // Silver twin-speaker cassette radio, resting on sand in front of the group.
+  ctx.translate(0,8);
+  ctx.fillStyle='rgba(50,25,46,.25)';ctx.beginPath();ctx.ellipse(0,1,27,3,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#263043';ctx.lineWidth=2.4;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(-12,-22);ctx.lineTo(-12,-29);ctx.lineTo(12,-29);ctx.lineTo(12,-22);ctx.stroke();
+  ctx.fillStyle='#697589';ctx.fillRect(-25,-22,50,23);
+  ctx.fillStyle='#c7c9cf';ctx.fillRect(-25,-22,50,3);ctx.fillRect(-25,-19,2,19);
+  ctx.fillStyle='#182030';ctx.fillRect(-23,-18,46,16);
+  for(const x of[-16,16]){
+    ctx.fillStyle='#89909f';ctx.beginPath();ctx.arc(x,-10,7.6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#242c3e';ctx.beginPath();ctx.arc(x,-10,6.1+Math.sin(beat)*.2,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#454d62';ctx.lineWidth=1;ctx.beginPath();ctx.arc(x,-10,4,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#151b29';ctx.beginPath();ctx.arc(x,-10,2.2,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle='#85909d';ctx.fillRect(-7,-14,14,10);
+  ctx.fillStyle='#293247';ctx.fillRect(-5,-12,10,5);
+  ctx.fillStyle='#d4d5cc';for(const x of[-3,3]){ctx.beginPath();ctx.arc(x,-9.5,1.3,0,Math.PI*2);ctx.fill();}
+  for(let i=0;i<5;i++){ctx.fillStyle=i===0?'#f15b84':'#d8d7ca';ctx.fillRect(-6+i*3,-21,2,2);}
+  ctx.strokeStyle='#a7acbc';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(21,-23);ctx.lineTo(35,-43);ctx.stroke();
+  // Two small drifting notes stay close to the stereo, with no scene-wide glow.
+  for(let i=0;i<2;i++){
+    const t=(ts*.00035+i*.5+phase)%1,nx=29+i*10+Math.sin(t*4)*2,ny=-23-t*18;
+    ctx.globalAlpha=Math.sin(t*Math.PI)*.7;ctx.fillStyle=colors[(i+seed)%4];ctx.strokeStyle=ctx.fillStyle;ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.ellipse(nx,ny,2,1.4,-.3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(nx+1.5,ny);ctx.lineTo(nx+1.5,ny-7);ctx.lineTo(nx+5,ny-6);ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawBeachPartySprite(sx, sy, sc, ts, nightParty = player.lap >= 3) {
   const h = ~~(sc * 120); if (h < 5) return;
   
@@ -8413,6 +8488,12 @@ function render(ts) {
         ctx.save();
         if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
         drawOceanBeachSpot(s.x,s.y,s.sc,s.type.slice(6),s.segIdx);
+        ctx.restore();
+    }
+    else if (s.type === 'beach_dancers') {
+        ctx.save();
+        if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
+        drawBeachDanceSprite(s.x,s.y,s.sc,ts,s.segIdx);
         ctx.restore();
     }
     else if (s.type === 'beach_party') {

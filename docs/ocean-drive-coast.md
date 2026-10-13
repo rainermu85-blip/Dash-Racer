@@ -180,6 +180,16 @@ Sonnenschirm, farbige Surfbrettständer, Cabanas und offene Rettungssitze mit
 Leiter und Rettungsring. Die Füße der Einrichtungen stehen auf dem Sand.
 Strandbar, Eiswagen, Wal, Boote und Surfer bleiben erhalten.
 
+Vier kleine Tanzgruppen bei 235, 345, 845 und 1105 beleben zusätzliche freie
+Strandstellen. Drei bis vier Personen mit bunten 80er-Outfits tanzen neben
+einem silbernen Kassetten-Ghettoblaster. Füße bleiben auf dem Sand, während
+Hüfte, Knie und Arme rhythmisch schwingen. Zwei kleine Musiknoten und dezente
+Lautsprechermembranen ergänzen das Motiv. Einzelne Palmen unmittelbar vor
+den Gruppen werden freigehalten. Die Motive verwenden die bestehende
+Objektprojektion und das bestehende Clipping; Wasser, Gelände und Pier bleiben
+unverändert. Fahransichten bei 390 und 480 Pixeln wurden bei Tag und Nacht
+kontrolliert.
+
 ## Natürlicher Felsdurchbruch
 
 Die Straße führt in den Segmenten 506–541 durch einen kurzen Felsvorsprung
