@@ -6,7 +6,7 @@ wechseln. Pfeile unten bleiben als Orientierung und Trefferflächen erhalten;
 nur die Pfeilsymbole werden bei Eingabe dezent eingefärbt. Die großen farbigen
 Flächen hinter den Pfeilen und die Trennlinie entfallen.
 
-Der rote Knopf mit gelbem Blitz und der Beschriftung „TURBO“ ist ein weiterer
+Der rote Knopf mit gelbem Blitz ist ein weiterer
 Auslöser. Die bisherige Skala funktioniert ebenfalls. Beide speisen dieselbe
 Boost-Eingabe; Ladungen, Boost-Dauer und Geschwindigkeit werden nicht geändert.
 Ein kurzer Tap bleibt bis zum nächsten Simulationsschritt vorgemerkt, damit
@@ -26,8 +26,10 @@ Die 44 × 44 Pixel große Pausetaste liegt oben zwischen Runde und Tempo.
 Sie pausiert auch den Countdown. Beim Fortsetzen bleiben die alten Eingaben
 freigegeben. Turbo, Pause, Tastatur und die Skala sind per Beschriftung für
 Hilfstechniken zugänglich. In Menüs bleiben die zusätzlichen Rennbuttons
-verborgen. Der 64-Pixel-Turbo-Knopf steht oberhalb des Autos; bei kurzen
-Bildschirmen wird die Skala kompakter und etwas höher platziert.
+verborgen. Skala und Knopf stehen mittig auf einer gemeinsamen vertikalen Achse in einer
+halbtransparenten Thermometerform. Der Knopf ist 2,2-mal so breit wie die
+16-Pixel-Skala (35,2 Pixel). Er trägt nur einen Blitz, der frühere Blitz oberhalb
+der Skala entfällt. Bei kurzen Bildschirmen wird die Skala kompakter und höher.
 
 `scripts/assess-game.cjs controls` verwendet echte Chromium-Touchereignisse.
 Die Prüfung beobachtet Lenkung im oberen Bildschirmteil, Seitenwechsel,
@@ -35,6 +37,5 @@ unabhängige Finger und Tastatur, beide Turbo-Auslöser, Dauer des Knopffeedback
 leere Ladungen, Abbruch, Fokusverlust, Pause, Countdown und Menüs. Fahransichten
 und Abstände werden bei 320 × 640, 390 × 844 und 480 × 800 kontrolliert.
 
-Kameraprojektion, Blickvorschau, Fahrphysik und Countach-Grafiken wurden nicht
-geändert. Die Einschätzung dieser Gestaltung erfolgt getrennt von der
-Bedienungsänderung.
+Countach-Grafiken bleiben unverändert. Kameravorschau und Gegnerprofile sind in
+`camera-and-opponent-balance.md` beschrieben.

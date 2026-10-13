@@ -71,11 +71,11 @@ module.exports=async function runControls(browser,baseUrl){
       await page.waitForFunction(()=>W===wrap.clientWidth&&H===wrap.clientHeight,null,{polling:50});
       await page.evaluate(()=>{selectLevel(1);startRace();state='playing';player.speed=3600;player.boosts=2;opponents.length=0;document.getElementById('cntNum').classList.remove('pop');updateHUD(controlTime);render(controlTime);});
       const geometry=await page.evaluate(()=>{
-        const pause=pauseButton.getBoundingClientRect(),turbo=turboButton.getBoundingClientRect(),labels=[document.getElementById('lapVal'),document.getElementById('spdVal'),document.getElementById('progBar')].map(e=>e.getBoundingClientRect());
+        const pause=pauseButton.getBoundingClientRect(),turbo=turboButton.getBoundingClientRect(),bar=document.getElementById('boostBarWrap').getBoundingClientRect(),gauge=document.getElementById('turboGauge').getBoundingClientRect(),labels=[document.getElementById('lapVal'),document.getElementById('spdVal'),document.getElementById('progBar')].map(e=>e.getBoundingClientRect());
         const overlaps=r=>pause.left<r.right&&pause.right>r.left&&pause.top<r.bottom&&pause.bottom>r.top;
-        return{pause:{x:pause.x,y:pause.y,width:pause.width,height:pause.height},turbo:{x:turbo.x,y:turbo.y,width:turbo.width,height:turbo.height},clear:labels.every(r=>!overlaps(r)),fits:turbo.right<=innerWidth&&turbo.bottom<=innerHeight};
+        return{pause:{x:pause.x,y:pause.y,width:pause.width,height:pause.height},turbo:{x:turbo.x,y:turbo.y,width:turbo.width,height:turbo.height},clear:labels.every(r=>!overlaps(r)),fits:turbo.right<=innerWidth&&turbo.bottom<=innerHeight,thermometer:Math.abs(turbo.width/bar.width-2.2)<.01&&Math.abs(turbo.x+turbo.width/2-bar.x-bar.width/2)<.1&&turbo.top>=bar.bottom-2&&gauge.bottom>=turbo.bottom&&!document.getElementById('boostIcon')&&!turboButton.textContent.trim()};
       });
-      record(`controls-fit-without-covering-top-values-${width}`,geometry.clear&&geometry.fits&&geometry.pause.width>=44&&geometry.turbo.width>=44,geometry);
+      record(`controls-fit-without-covering-top-values-${width}`,geometry.clear&&geometry.fits&&geometry.pause.width>=44&&geometry.thermometer,geometry);
       await page.screenshot({path:`/tmp/controls-layout-${width}.png`});
     }
     return checks.map(c=>({...c,errors,pass:c.pass&&errors.length===0}));
