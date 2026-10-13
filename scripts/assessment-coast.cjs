@@ -25,6 +25,20 @@ module.exports = async function runCoast(browser, baseUrl) {
         };
         const driveTo=index=>{for(let n=0;player.z<index*SEGMENT_LENGTH&&n<1000;n++)tick();};
         reset();
+        const runIn=segments.slice(OCEAN_FINISH_STRAIGHT_START,SEGMENT_COUNT);
+        const straightSeconds=runIn.length*SEGMENT_LENGTH/4320,normalSeconds=runIn.length*SEGMENT_LENGTH/3600;
+        const endHeight=segments.at(-1).worldY+segments.at(-1).hillDelta;
+        record('finish-has-two-to-three-seconds-straight-run-in',runIn.length===70&&runIn.every(s=>s.curve===0)&&straightSeconds>=2&&normalSeconds<=3&&Math.abs(endHeight-segments[0].worldY)<.001,{straightSeconds,normalSeconds,endHeight});
+        player.z=1149.9*SEGMENT_LENGTH;tick();
+        record('old-curved-finish-no-longer-awards-lap',player.lap===1&&!player.finished,{lap:player.lap,z:player.z/SEGMENT_LENGTH});
+        driveTo(OCEAN_FINISH_STRAIGHT_START);const entered=ts;
+        for(let n=0;player.lap===1&&n<240;n++)tick();
+        record('new-line-records-lap-after-straight',player.lap===2&&!player.finished&&lapTimes[0]>0&&ts-entered>=2300&&ts-entered<=3000,{lap:player.lap,seconds:(ts-entered)/1000,time:lapTimes[0]});
+        reset(2,3);player.z=(SEGMENT_COUNT-2)*SEGMENT_LENGTH;
+        for(let n=0;!player.finished&&n<20;n++)tick();
+        record('third-lap-finishes-at-new-line',player.finished&&player.lap===4&&lapTimes[2]>0&&player.z<SEGMENT_LENGTH,{lap:player.lap,finished:player.finished,time:lapTimes[2],z:player.z});
+        reset();
+        record('old-start-tree-removed-and-one-tree-after-tunnel',!segments.some(s=>s.sprite==='gnarled_tree')&&segments.filter(s=>s.sprite==='coastal_old_tree').length===1&&segments[OCEAN_OLD_TREE_INDEX].sprite==='coastal_old_tree'&&OCEAN_OLD_TREE_INDEX>OCEAN_ROCK_TUNNEL.end,{index:OCEAN_OLD_TREE_INDEX});
         const tunnel=segments.filter(s=>s.isTunnel);
         record('short-rock-opening',tunnel.length===36&&tunnel[0].index===506&&tunnel.at(-1).index===541&&tunnel.every(s=>!s.sprite),{start:tunnel[0]?.index,end:tunnel.at(-1)?.index,count:tunnel.length,seconds:tunnel.length*SEGMENT_LENGTH/4320});
         const limits=[505,506,541,542].map(i=>getRoadLimits(i*SEGMENT_LENGTH));
@@ -37,7 +51,7 @@ module.exports = async function runCoast(browser, baseUrl) {
         const paint=paintOceanPolygon;let points=[];const frames=[];
         paintOceanPolygon=(p,c,s)=>{points.push(...p);paint(p,c,s);};
         try {
-          for(const index of[.00001,37.99999,290,505.99999,506,506.00001,524,541.99999,542,542.00001,780,OCEAN_PIER_INDEX-.00001,OCEAN_PIER_INDEX+.99999,OCEAN_PIER_CENTER-.00001,OCEAN_PIER_CENTER+.99999,OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH-.00001,1149.99999]){
+          for(const index of[.00001,37.99999,290,505.99999,506,506.00001,524,541.99999,542,542.00001,780,OCEAN_PIER_INDEX-.00001,OCEAN_PIER_INDEX+.99999,OCEAN_PIER_CENTER-.00001,OCEAN_PIER_CENTER+.99999,OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH-.00001,SEGMENT_COUNT-.00001]){
             player.z=index*SEGMENT_LENGTH;points=[];render(ts);
             const values=points.flatMap(p=>[p.x,p.y]);frames.push({index,finite:values.every(Number.isFinite),peak:values.reduce((max,n)=>Math.max(max,Math.abs(n)),0)});
           }
@@ -47,6 +61,18 @@ module.exports = async function runCoast(browser, baseUrl) {
         drawOceanRockTunnelSegment=(...args)=>{shells++;shell(...args);};
         try{player.z=495*SEGMENT_LENGTH;render(ts);}finally{drawOceanRockTunnelSegment=shell;}
         record('rock-tunnel-visible-on-approach',shells>0,{shells});
+        const star=drawOceanShootingStar,starFrames=[];
+        for(const [lap,index]of[[2,1210],[3,1175],[3,1195],[3,1210],[3,1230]]){
+          reset(2,lap);player.z=(index-15)*SEGMENT_LENGTH;driveTo(index);
+          const random=Math.random;
+          try{
+            Math.random=()=>.5;drawOceanShootingStar=()=>{};render(ts);const before=ctx.getImageData(0,0,W,Math.floor(H*.35)).data;
+            drawOceanShootingStar=star;render(ts);const after=ctx.getImageData(0,0,W,Math.floor(H*.35)).data;
+            let visible=0;for(let i=0;i<after.length;i+=4)if(before[i]!==after[i]||before[i+1]!==after[i+1]||before[i+2]!==after[i+2])visible++;
+            starFrames.push({lap,index,visible});
+          }finally{Math.random=random;drawOceanShootingStar=star;}
+        }
+        record('shooting-star-visible-only-on-final-straight',starFrames.slice(0,2).every(f=>f.visible===0)&&starFrames.slice(2).every(f=>f.visible>20),starFrames);
         reset();player.z=495*SEGMENT_LENGTH;const start=player.z;
         for(let n=0;n<140;n++)tick();
         record('normal-driving-through-opening-keeps-speed',player.z>542*SEGMENT_LENGTH&&player.speed>4319&&Math.abs(player.x)<.1,{distance:player.z-start,speed:player.speed,x:player.x});
@@ -86,7 +112,7 @@ module.exports = async function runCoast(browser, baseUrl) {
         }
         // The next occurrence of the beach is already in view before the line.
         // The old lap===3 switch replaced the daytime gathering only after crossing.
-        reset(2,2);player.z=1080*SEGMENT_LENGTH;driveTo(1148);
+        reset(2,2);player.z=(SEGMENT_COUNT-70)*SEGMENT_LENGTH;driveTo(SEGMENT_COUNT-2);
         const illegal=drawIllegalBeachParty;let stages=0;
         drawIllegalBeachParty=(...args)=>{stages++;illegal(...args);};
         try{

@@ -238,7 +238,7 @@ const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMER
 const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150 },
-  { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1150 },
+  { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1250 },
   { id: LEVEL_HILLS, name: 'SUNSET HILLS', tag: 'BEVERLY / GOLDEN HOUR', color: '#ffb17e', segments: 1200 },
   { id: LEVEL_HIGHWAY, name: 'MIDNIGHT HIGHWAY', tag: 'VIOLET / AFTER HOURS', color: '#b88cff', segments: 1200 },
   { id: LEVEL_DREAM, name: 'DREAM ODYSSEY', tag: 'SURREAL WORLDS', color: '#00ffd2', segments: 2875 },
@@ -251,6 +251,9 @@ const HIGHWAY_CROSSINGS = [
 const HIGHWAY_TRAIN_DURATION = 1.6;
 const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
+const OCEAN_OLD_TREE_INDEX=580;
+const OCEAN_FINISH_STRAIGHT_START=1180;
+const OCEAN_SHOOTING_STAR_LEAD=60;
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
 const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
 const OCEAN_ACTIVITY_SPOTS = new Map([[235,'frisbee'],[345,'dancers'],[845,'sandcastles'],[1130,'diving']]);
@@ -540,6 +543,52 @@ function backdropX(base, offset, padding) {
   return ((base - offset + padding) % span + span) % span - padding;
 }
 
+function drawOceanShootingStar(progressDist) {
+  // The shooting star accompanies the final straight, before the finish line.
+  const starZStart = 3 * TRACK_LENGTH - OCEAN_SHOOTING_STAR_LEAD * SEGMENT_LENGTH;
+  const starZEnd = 3 * TRACK_LENGTH - 6 * SEGMENT_LENGTH;
+  if (progressDist >= starZStart && progressDist <= starZEnd) {
+    const starRatio = (progressDist - starZStart) / (starZEnd - starZStart); // 0.0 to 1.0
+
+    // Start top-left and streak down-right in the upper sky
+    const startX = W * 0.22;
+    const startY = H * 0.04;
+    const endX = W * 0.48;
+    const endY = H * 0.20;
+
+    const headX = startX + (endX - startX) * starRatio;
+    const headY = startY + (endY - startY) * starRatio;
+
+    // Smooth trail that grows then shrinks at the end
+    const trailOffset = Math.min(starRatio, 0.18, 1.0 - starRatio);
+    const tailX = startX + (endX - startX) * (starRatio - trailOffset);
+    const tailY = startY + (endY - startY) * (starRatio - trailOffset);
+
+    ctx.save();
+    const starGrad = ctx.createLinearGradient(tailX, tailY, headX, headY);
+    starGrad.addColorStop(0, 'rgba(34, 212, 253, 0.0)');
+    starGrad.addColorStop(0.4, 'rgba(34, 212, 253, 0.4)');
+    starGrad.addColorStop(1, 'rgba(255, 255, 255, 1.0)');
+
+    ctx.strokeStyle = starGrad;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(headX, headY);
+    ctx.stroke();
+
+    // Intense core bright spark with soft cyber glow
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#22d4fd';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(headX, headY, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 function makeSection(len, curve, hill) { const arr = []; for (let i = 0; i < len; i++) arr.push({ curve, hill }); return arr; }
 
 let segments = [];
@@ -665,6 +714,13 @@ function buildSegments() {
     }
     while (trackDef.length < SEGMENT_COUNT) trackDef = [...trackDef, ...trackDef];
     trackDef = trackDef.slice(0, SEGMENT_COUNT);
+    if(currentLevel===2){
+        // Recover the small remaining elevation smoothly on the new straight,
+        // meeting the start road without a height step at the lap boundary.
+        const height=trackDef.reduce((sum,s)=>sum+s.hill,0),length=SEGMENT_COUNT-OCEAN_FINISH_STRAIGHT_START;
+        const ease=t=>t*t*(3-2*t);
+        for(let j=0;j<length;j++)trackDef[OCEAN_FINISH_STRAIGHT_START+j].hill-=height*(ease((j+1)/length)-ease(j/length));
+    }
 
     oceanCliffProfiles = currentLevel === 2 ? Array.from({ length: SEGMENT_COUNT }, (_, i) => makeOceanCliffProfile(i)) : [];
     oceanCliffVegetation = currentLevel === 2 ? makeOceanCliffVegetation() : [];
@@ -684,10 +740,12 @@ function buildSegments() {
         let seaSpriteX = 0;
 
         if (currentLevel === 2) {
-            // Place the majestic old gnarled tree at the end of the long starting straight leading into a right-hand curve
-            if (i === 115) {
-                sprite = 'gnarled_tree';
-                spriteX = 1.9; // Visibly placed on the right-side beach, framing the upcoming right curve beautifully
+            // One broad old coastal tree greets the player beyond the rock opening.
+            if(i===SEGMENT_COUNT-1){
+                sprite='ocean_finish_gate';spriteX=0;
+            } else if (i === OCEAN_OLD_TREE_INDEX) {
+                sprite = 'coastal_old_tree';
+                spriteX = 1.95;
             } else if (i === 290) {
                 sprite = 'beach_bar';
                 spriteX = 2.1;
@@ -723,7 +781,8 @@ function buildSegments() {
                 const nearPier = (i >= OCEAN_PIER_INDEX - 65 && i <= OCEAN_PIER_INDEX + OCEAN_PIER_LENGTH);
                 const nearSpotWhale = (i >= 573 && i <= 581);
                 const nearActivities=[...OCEAN_ACTIVITY_SPOTS.keys()].some(index=>i>=index-22&&i<=index+6);
-                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearActivities) {
+                const nearOldTree=i>=OCEAN_ROCK_TUNNEL.end&&i<=OCEAN_OLD_TREE_INDEX+6;
+                if (!nearSpot1 && !nearSpot2 && !nearSpotWhale && !nearPier && !nearActivities && !nearOldTree) {
                     sprite = 'tree';
                     // Level 2: palm trees ONLY on the right-side beach (1.45 to 2.55) to prevent wall clipping on the left
                     spriteX = 1.45 + Math.random() * 1.1;
@@ -5019,126 +5078,97 @@ function drawPalmTreeSprite(sx,sy,sc,seed=0,ts=0,night=0) {
     drawMiamiPalm(sx,sy,sc,seed,ts,night,true);
 }
 
-function drawGnarledTreeSprite(sx, sy, sc) {
-  const h = ~~(sc * 360); if (h < 12) return;
-  const baseW = Math.max(8, ~~(sc * 42));
-
+function drawOceanFinishGate(x,y,w) {
+  if(w<3)return;
+  const h=w*H/W*.65,left=x-w*1.19,right=x+w*1.19,top=y-h;
   ctx.save();
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.45)';
-  ctx.beginPath();
-  ctx.ellipse(sx, sy, baseW * 2.2, baseW * 0.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Draw majestic gnarled trunk and branches
-  ctx.fillStyle = '#0f0417'; // very dark purple-black
-  ctx.strokeStyle = '#2d143f'; // branch highlights
-  ctx.lineWidth = Math.max(2, sc * 5);
-
-  // Thick gnarled trunk base that tapers and splits
-  ctx.beginPath();
-  ctx.moveTo(sx - baseW * 0.7, sy);
-  // curves representing the rugged trunk flare
-  ctx.quadraticCurveTo(sx - baseW * 0.8, sy - h * 0.1, sx - baseW * 0.5, sy - h * 0.2);
-  // branch splits
-  ctx.bezierCurveTo(sx - baseW * 0.9, sy - h * 0.35, sx - baseW * 1.5, sy - h * 0.45, sx - baseW * 1.8, sy - h * 0.5); // far left branch
-  ctx.lineTo(sx - baseW * 1.6, sy - h * 0.52);
-  ctx.bezierCurveTo(sx - baseW * 1.3, sy - h * 0.47, sx - baseW * 0.8, sy - h * 0.4, sx - baseW * 0.4, sy - h * 0.3); // back to main
-  
-  // middle branch splits
-  ctx.bezierCurveTo(sx - baseW * 0.6, sy - h * 0.5, sx - baseW * 0.8, sy - h * 0.65, sx - baseW * 0.5, sy - h * 0.75); // high left
-  ctx.lineTo(sx - baseW * 0.3, sy - h * 0.77);
-  ctx.bezierCurveTo(sx - baseW * 0.4, sy - h * 0.63, sx - baseW * 0.2, sy - h * 0.5, sx, sy - h * 0.4);
-
-  // high right branch
-  ctx.bezierCurveTo(sx + baseW * 0.2, sy - h * 0.55, sx + baseW * 0.4, sy - h * 0.7, sx + baseW * 0.7, sy - h * 0.72);
-  ctx.lineTo(sx + baseW * 0.8, sy - h * 0.68);
-  ctx.bezierCurveTo(sx + baseW * 0.5, sy - h * 0.6, sx + baseW * 0.3, sy - h * 0.45, sx + baseW * 0.4, sy - h * 0.35);
-
-  // far right branch
-  ctx.bezierCurveTo(sx + baseW * 0.9, sy - h * 0.4, sx + baseW * 1.6, sy - h * 0.43, sx + baseW * 1.9, sy - h * 0.45);
-  ctx.lineTo(sx + baseW * 1.8, sy - h * 0.5);
-  ctx.bezierCurveTo(sx + baseW * 1.3, sy - h * 0.46, sx + baseW * 0.8, sy - h * 0.35, sx + baseW * 0.6, sy - h * 0.22);
-  ctx.quadraticCurveTo(sx + baseW * 0.8, sy - h * 0.1, sx + baseW * 0.7, sy);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // Draw wood grain lines for bark texture
-  ctx.strokeStyle = '#230b35';
-  ctx.lineWidth = Math.max(1, sc * 2.5);
-  ctx.beginPath();
-  ctx.moveTo(sx - baseW * 0.1, sy);
-  ctx.quadraticCurveTo(sx - baseW * 0.2, sy - h * 0.15, sx - baseW * 0.3, sy - h * 0.25);
-  ctx.moveTo(sx + baseW * 0.1, sy);
-  ctx.quadraticCurveTo(sx + baseW * 0.3, sy - h * 0.1, sx + baseW * 0.2, sy - h * 0.22);
-  ctx.stroke();
-
-  // Smaller branchlets
-  ctx.strokeStyle = '#0f0417';
-  ctx.lineWidth = Math.max(1.5, sc * 3.5);
-  ctx.beginPath();
-  ctx.moveTo(sx - baseW * 1.7, sy - h * 0.51);
-  ctx.quadraticCurveTo(sx - baseW * 2.1, sy - h * 0.55, sx - baseW * 2.3, sy - h * 0.53);
-  ctx.moveTo(sx - baseW * 0.4, sy - h * 0.76);
-  ctx.quadraticCurveTo(sx - baseW * 0.6, sy - h * 0.82, sx - baseW * 0.5, sy - h * 0.86);
-  ctx.moveTo(sx + baseW * 0.75, sy - h * 0.70);
-  ctx.quadraticCurveTo(sx + baseW * 1.0, sy - h * 0.75, sx + baseW * 0.9, sy - h * 0.80);
-  ctx.moveTo(sx + baseW * 1.85, sy - h * 0.475);
-  ctx.quadraticCurveTo(sx + baseW * 2.2, sy - h * 0.51, sx + baseW * 2.4, sy - h * 0.49);
-  ctx.stroke();
-
-  // Custom organic layered pine needle/foliage clusters
-  const clusters = [
-    { x: sx - baseW * 2.1, y: sy - h * 0.52, rx: h * 0.15, ry: h * 0.08, angle: -0.2 },
-    { x: sx - baseW * 1.5, y: sy - h * 0.48, rx: h * 0.13, ry: h * 0.07, angle: -0.1 },
-    { x: sx - baseW * 0.5, y: sy - h * 0.83, rx: h * 0.16, ry: h * 0.09, angle: 0.1 },
-    { x: sx - baseW * 0.1, y: sy - h * 0.70, rx: h * 0.14, ry: h * 0.08, angle: 0 },
-    { x: sx + baseW * 0.85, y: sy - h * 0.76, rx: h * 0.15, ry: h * 0.09, angle: -0.15 },
-    { x: sx + baseW * 1.5, y: sy - h * 0.46, rx: h * 0.13, ry: h * 0.07, angle: 0.1 },
-    { x: sx + baseW * 2.1, y: sy - h * 0.48, rx: h * 0.15, ry: h * 0.08, angle: 0.25 }
-  ];
-
-  for (const c of clusters) {
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.angle);
-    
-    // Layer 1: Dark pine shadow
-    ctx.fillStyle = '#06171a';
-    ctx.beginPath();
-    ctx.ellipse(0, 0, c.rx, c.ry, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Layer 2: Medium cyber pine green
-    ctx.fillStyle = '#0f4035';
-    ctx.beginPath();
-    ctx.ellipse(-c.rx * 0.1, -c.ry * 0.15, c.rx * 0.85, c.ry * 0.85, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Layer 3: Vibrant cyber green highlight
-    ctx.fillStyle = '#107c57';
-    ctx.beginPath();
-    ctx.ellipse(c.rx * 0.1, -c.ry * 0.1, c.rx * 0.6, c.ry * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Layer 4: Neon pine needle endpoints sticking out organic
-    ctx.strokeStyle = '#00fca8';
-    ctx.lineWidth = Math.max(1.2, sc * 1.8);
-    ctx.beginPath();
-    const numNeedles = 14;
-    for (let i = 0; i < numNeedles; i++) {
-      const theta = (i / numNeedles) * Math.PI * 2;
-      const r_edge_x = Math.cos(theta) * c.rx;
-      const r_edge_y = Math.sin(theta) * c.ry;
-      ctx.moveTo(r_edge_x * 0.8, r_edge_y * 0.8);
-      ctx.lineTo(r_edge_x * 1.15, r_edge_y * 1.15);
-    }
-    ctx.stroke();
-
-    ctx.restore();
+  ctx.fillStyle='#291730';ctx.fillRect(left-w*.045,top,w*.09,h);ctx.fillRect(right-w*.045,top,w*.09,h);
+  ctx.fillStyle='#51c8c6';ctx.fillRect(left-w*.012,top,w*.024,h);ctx.fillRect(right-w*.012,top,w*.024,h);
+  ctx.fillStyle='#38213f';ctx.fillRect(left,top,right-left,h*.27);
+  for(let i=0;i<16;i++){
+    ctx.fillStyle=i%2?'#422a44':'#f4ddc5';
+    ctx.fillRect(left+i*(right-left)/16,top,(right-left)/16+.3,h*.08);
   }
+  ctx.fillStyle='#ffe6c4';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=`bold ${Math.max(3,h*.16)}px "Press Start 2P",monospace`;
+  ctx.fillText('FINISH',x,top+h*.19);
+  ctx.restore();
+}
 
+let coastalOldTreeModel=null;
+function makeCoastalOldTreeModel() {
+  let seed=0x4f414b;
+  const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  const crown=new Path2D(),leaves=Array.from({length:4},()=>new Path2D());
+  const clusters=[[-191,-161,37,22],[-188,-200,44,26],[-134,-229,52,27],[-147,-267,37,24],
+    [-74,-289,57,32],[-24,-312,48,29],[38,-285,55,34],[96,-320,38,25],
+    [147,-289,47,31],[177,-252,46,27],[108,-225,57,29],[26,-241,66,30],
+    [-77,-188,40,21],[195,-208,41,27],[163,-163,47,24]];
+  for(const [cx,cy,rx,ry]of clusters){
+    for(let i=0;i<24;i++){
+      const a=i/24*Math.PI*2,r=.78+random()*.29,x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;
+      if(i===0)crown.moveTo(x,y);else crown.lineTo(x,y);
+    }
+    crown.closePath();
+    // Small asymmetric leaf sprays break the edge of each overlapping canopy.
+    for(let i=0;i<90;i++){
+      const a=random()*Math.PI*2,r=Math.sqrt(random()),x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;
+      const size=2+random()*5,angle=random()*Math.PI,dx=Math.cos(angle)*size,dy=Math.sin(angle)*size*.65;
+      const path=leaves[Math.floor(random()*4)];
+      path.moveTo(x-dx,y-dy);path.quadraticCurveTo(x-dy*.9,y+dx*.55,x+dx,y+dy);
+      path.quadraticCurveTo(x+dy,y-dx*.7,x-dx,y-dy);path.closePath();
+    }
+  }
+  const trunk=new Path2D('M -68 3 C -42 -4 -29 -17 -24 -47 C -20 -73 -28 -94 -34 -117 L -14 -139 C -7 -111 2 -88 12 -111 L 29 -137 L 37 -118 C 23 -84 19 -57 30 -28 C 38 -13 50 -5 72 4 L 38 1 C 20 -3 18 -9 10 -18 L 7 5 L -13 3 L -18 -19 C -29 -5 -44 0 -68 3 Z');
+  const branches=[
+    ['M -12 -66 C -25 -110 -39 -144 -80 -160 C -120 -178 -158 -151 -198 -165',27],
+    ['M -27 -119 C -54 -157 -100 -179 -148 -203 C -161 -211 -176 -210 -198 -207',18],
+    ['M -56 -157 C -67 -192 -63 -225 -89 -270',15],
+    ['M -78 -160 C -108 -171 -136 -187 -156 -232',10],
+    ['M -9 -89 C 6 -139 29 -161 74 -165 C 111 -170 142 -151 181 -166',25],
+    ['M 23 -128 C 40 -175 70 -199 115 -205 C 156 -213 175 -237 189 -252',18],
+    ['M 62 -187 C 64 -223 93 -240 129 -280',12],
+    ['M 111 -205 C 139 -201 167 -210 204 -211',10],
+    ['M -19 -114 C -24 -158 -10 -192 -26 -226 C -40 -253 -49 -281 -35 -311',22],
+    ['M -20 -193 C -45 -217 -78 -213 -116 -238',12],
+    ['M -10 -174 C 14 -208 32 -218 53 -259',17],
+    ['M 33 -227 C 59 -254 72 -290 94 -320',9]
+  ].map(([d,width])=>({path:new Path2D(d),width}));
+  const twigs=new Path2D();
+  for(const [cx,cy,rx,ry]of clusters)for(let i=0;i<5;i++){
+    const x=cx+(random()-.5)*rx,y=cy+ry*.8;
+    twigs.moveTo(x,y);twigs.quadraticCurveTo(x-7+random()*14,y-ry*.6,x+(random()-.5)*rx*.8,y-ry*1.4);
+  }
+  const bark=new Path2D('M -9 -5 C -1 -48 -17 -68 -9 -103 M 10 -6 C 20 -33 1 -59 13 -87 M -36 -4 Q -18 -13 -15 -29 M 36 -4 Q 15 -20 17 -35 M -20 -78 Q -27 -118 -56 -146 M 13 -91 Q 32 -133 60 -148');
+  return {crown,leaves,trunk,branches,twigs,bark};
+}
+
+function drawCoastalOldTreeSprite(sx,sy,sc,ts,approach,night=0) {
+  if(sc<.03)return;
+  if(!coastalOldTreeModel)coastalOldTreeModel=makeCoastalOldTreeModel();
+  const m=coastalOldTreeModel;
+  beginChapterSprite(sx,sy,sc);
+  const wood=interpolateColor('#382c30','#1d1728',night);
+  const foliage=['#213b32','#2d5143','#3c6955','#5b8770'].map((c,i)=>interpolateColor(c,['#102021','#192f30','#254340','#426359'][i],night));
+  ctx.fillStyle='rgba(32,17,35,.24)';ctx.beginPath();ctx.ellipse(0,3,75,8,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=foliage[0];ctx.fill(m.crown);
+  ctx.lineCap='round';ctx.lineJoin='round';
+  for(const branch of m.branches){ctx.strokeStyle=wood;ctx.lineWidth=branch.width;ctx.stroke(branch.path);}
+  ctx.fillStyle=wood;ctx.fill(m.trunk);
+  ctx.strokeStyle=wood;ctx.lineWidth=1.5;ctx.stroke(m.twigs);
+  for(let i=0;i<m.leaves.length;i++){ctx.fillStyle=foliage[i];ctx.fill(m.leaves[i]);}
+  ctx.strokeStyle=interpolateColor('#8d6058','#614952',night);ctx.lineWidth=1.8;ctx.stroke(m.bark);
+  // A small flock lifts out of the canopy as the car approaches the tunnel exit.
+  for(let i=0;i<5;i++){
+    const flight=clamp((38-approach-i*2)/28,0,1);
+    if(flight<=0||flight>=1)continue;
+    const x=-110+i*27-flight*(160+i*20),y=-248-(i%3)*24-flight*(48+i*16);
+    const flap=Math.sin(ts*.009+i*.8)*4;
+    ctx.strokeStyle=interpolateColor('#e5ead7','#adcbc7',night);ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(x-10,y+flap);ctx.quadraticCurveTo(x-5,y-4,x,y);
+    ctx.quadraticCurveTo(x+5,y-4,x+10,y+flap);ctx.stroke();
+    ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.ellipse(x,y,2.8,1.2,0,0,Math.PI*2);ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -7879,49 +7909,7 @@ function render(ts) {
     ctx.restore();
   }
 
-  // Shooting star (Sternschnuppe) during the last 200m (last ~4500 units) of Level 2
-  const starZStart = 3 * TRACK_LENGTH - 4500;
-  const starZEnd = 3 * TRACK_LENGTH - 500;
-  if (currentLevel === 2 && progressDist >= starZStart && progressDist <= starZEnd) {
-    const starRatio = (progressDist - starZStart) / (starZEnd - starZStart); // 0.0 to 1.0
-    
-    // Start top-left and streak down-right in the upper sky
-    const startX = W * 0.22;
-    const startY = H * 0.04;
-    const endX = W * 0.48;
-    const endY = H * 0.20;
-    
-    const headX = startX + (endX - startX) * starRatio;
-    const headY = startY + (endY - startY) * starRatio;
-    
-    // Smooth trail that grows then shrinks at the end
-    const trailOffset = Math.min(starRatio, 0.18, 1.0 - starRatio);
-    const tailX = startX + (endX - startX) * (starRatio - trailOffset);
-    const tailY = startY + (endY - startY) * (starRatio - trailOffset);
-    
-    ctx.save();
-    const starGrad = ctx.createLinearGradient(tailX, tailY, headX, headY);
-    starGrad.addColorStop(0, 'rgba(34, 212, 253, 0.0)');
-    starGrad.addColorStop(0.4, 'rgba(34, 212, 253, 0.4)');
-    starGrad.addColorStop(1, 'rgba(255, 255, 255, 1.0)');
-    
-    ctx.strokeStyle = starGrad;
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(tailX, tailY);
-    ctx.lineTo(headX, headY);
-    ctx.stroke();
-    
-    // Intense core bright spark with soft cyber glow
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = '#22d4fd';
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(headX, headY, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
+  if(currentLevel===2)drawOceanShootingStar(progressDist);
 
   // Distant Mountains & Landscapes
   const mStroke = currentLevel === 2 ? interpolateColor('#2a0f62', '#120428', progressRatio) : (currentLevel === LEVEL_DREAM ? '#0c1a30' : '#2a0f62');
@@ -8348,10 +8336,10 @@ function render(ts) {
 
     if (seg.sprite) {
         const s = getCleanSpriteFromPool();
-        s.type = seg.sprite; // Set type to 'tree' or 'gnarled_tree'
+        s.type = seg.sprite; // Roadside scenery shares the road projection and crest clipping.
         s.x = rx2 + seg.spriteX * p2.w;
         s.y = p2.y;
-        s.sc = Math.min(1.25, p2.scale * (seg.sprite === 'gnarled_tree' ? 3800 : 2800)) * responsiveFactor;
+        s.sc = Math.min(1.25, p2.scale * (seg.sprite === 'coastal_old_tree' ? 3800 : 2800)) * responsiveFactor;
         if(seg.sprite==='beach_party')s.partyLap=player.lap+lapOffset/TRACK_LENGTH;
         if (UNDERWATER_FLORA.includes(seg.sprite)) s.sc *= 0.86 + (seg.index % 5) * 0.055;
         s.depth = n;
@@ -8542,12 +8530,18 @@ function render(ts) {
         else drawTubeSpongeSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
-    else if (s.type === 'gnarled_tree') {
+    else if (s.type === 'ocean_finish_gate') {
+        ctx.save();
+        if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
+        drawOceanFinishGate(s.x,s.y,s.w);
+        ctx.restore();
+    }
+    else if (s.type === 'coastal_old_tree') {
         ctx.save();
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawGnarledTreeSprite(s.x, s.y, s.sc);
+        drawCoastalOldTreeSprite(s.x,s.y,s.sc,ts,s.depth,currentProgressRatio);
         ctx.restore();
     }
     else if (s.type === 'beach_volleyball') {

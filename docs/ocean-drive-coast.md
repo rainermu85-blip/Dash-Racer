@@ -1,9 +1,11 @@
 # Ocean Drive: tropische Felsküste und Strand
 
 13. Oktober 2026. Die Küste verbindet wechselnde Felsquerschnitte, warme
-Vulkanfarben, üppigen Bewuchs und zusätzliche Strandplätze. Streckenprofil,
-Kamera, Fahrphysik, Normaltempo, Turbo und der Übergang vom Sonnenuntergang
-zur Nacht über drei Runden bleiben erhalten.
+Vulkanfarben, üppigen Bewuchs und zusätzliche Strandplätze. Die bisherigen
+Straßenkurven und Höhen bleiben bis Segment 1150 erhalten. Kamera, Fahrphysik,
+Normaltempo, Turbo und der Übergang vom Sonnenuntergang zur Nacht über drei
+Runden bleiben erhalten. Die neue Zielgerade verlängert die Runde von 1150
+auf 1250 Segmente.
 
 ## Geschlossene Fahrbahn und Felsfüße
 
@@ -76,6 +78,34 @@ räumliches Modell. Seine Flächen werden beim Aufbau in Tiefenabschnitte
 geteilt und zusammen mit Strand, Wasser und davorliegendem Gelände
 gezeichnet. Eine gemeinsame seitliche Projektion hält den Steg gerade.
 Die Nahgrenze schneidet auch die Modellflächen in Weltkoordinaten ab.
+
+## Zielgerade und Sternschnuppe
+
+Der bisherige Streckenaufbau wurde bei Segment 1150 mitten in der letzten
+Linkskurve abgeschnitten. Jetzt läuft diese Kurve bis 1180 aus. Es folgen
+70 gerade Segmente vor der Start-/Ziellinie bei 1250 mit einem schmalen,
+beschrifteten Zielbogen: etwa 2,43 Sekunden bei
+402 km/h und 2,92 Sekunden bei 335 km/h. Die ersten 1150 Straßenabschnitte
+behalten ihre Kurven und Höhen. Die neue Gerade gleicht den kleinen restlichen
+Höhenunterschied sanft aus und trifft die Startstraße ohne Höhensprung.
+
+Die Sternschnuppe begleitet in Runde drei die letzten 60 bis sechs Segmente
+vor der Linie, vollständig innerhalb dieser Geraden. Die Spielregeln für
+Runden, Platzierung und Zieleinlauf verwenden die reguläre Streckenlänge;
+der bisherige Kurvenpunkt zählt keine Runde mehr. Die übrigen Level behalten
+ihre Streckenlängen und ihre Ziele.
+
+## Alter Küstenbaum nach dem Felsdurchbruch
+
+Der ehemalige Kugelbaum bei 115 und seine Grafik entfallen. Bei Segment 580
+steht ein einmaliger alter Küstenbaum, beim Herausfahren aus dem Tunnel in
+Sichtweite. Ein breiter Wurzelfuß, ein knorriger Stamm, kräftige verzweigte
+Äste und eine breite, unregelmäßige Krone greifen die Fotovorlage auf.
+Dunkles Olivgrün, gedecktes Küstengrün und warme braune Rinde unterscheiden
+ihn leicht von den türkisfarbenen Palmen. Fünf Möwen heben bei Annäherung aus
+der Krone ab. Die Geometrie wird einmal mit einer privaten Zufallsfolge in
+Canvaspfade gebaut und wiederverwendet. Der Baum verwendet die bestehende
+Objektprojektion und das vorhandene Clipping.
 
 ## Miami-Palmen
 
@@ -207,9 +237,9 @@ zusätzlichen Tempoverlust.
 
 ## Validierung
 
-81 Browserprüfungen bei unverändertem Fahrmodell:
+93 Browserprüfungen bei unverändertem Fahrmodell:
 
-- `node scripts/assess-game.cjs coast`: 58 bei 390 × 844 und 480 × 800 Pixel.
+- `node scripts/assess-game.cjs coast`: 70 bei 390 × 844 und 480 × 800 Pixel.
 - `node scripts/assess-game.cjs mechanics`: 23.
 
 Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
@@ -241,3 +271,10 @@ von den anderen Leveln. Es traten keine JavaScript-Fehler auf. Produktionsbuild
 und Leerzeichenprüfung bestanden. Ein Vergleich mit dem vorherigen Commit
 bestätigt identische Streckenhöhen und Kurven, Kamerakonstanten,
 Geschwindigkeitseinstellungen und Sonnenuntergangsphasen.
+
+Die zusätzlichen Küstenprüfungen kontrollieren die gerade Zieleinfahrt,
+die Zeit bis zur Linie, den geschlossenen Höhenverlauf, den vollständigen
+Rundenwechsel und den Zieleinlauf in Runde drei. Die Sternschnuppe wird im
+fertigen Bild vor der Kurve, in Runde zwei und an drei Punkten auf der letzten
+Geraden verglichen. Weitere Fahransichten zeigen den Baum an der Tunnelausfahrt
+und die Zielgerade einschließlich Sternschnuppe bei 390 und 480 Pixeln Breite.
