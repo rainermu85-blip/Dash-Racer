@@ -75,11 +75,11 @@ module.exports=async function runControls(browser,baseUrl){
         const pause=pauseButton.getBoundingClientRect(),turbo=turboButton.getBoundingClientRect(),bar=document.getElementById('boostBarWrap').getBoundingClientRect(),gauge=document.getElementById('turboGauge').getBoundingClientRect(),labels=[document.getElementById('lapVal'),document.getElementById('spdVal'),document.getElementById('progBar')].map(e=>e.getBoundingClientRect());
         const overlaps=r=>pause.left<r.right&&pause.right>r.left&&pause.top<r.bottom&&pause.bottom>r.top;
         const readable=[...document.querySelectorAll('.hb')].every(e=>e.scrollWidth<=e.clientWidth+1);
-        const fontLoaded=document.fonts.check("20px 'Press Start 2P'");
+        const fontLoaded=document.fonts.check("20px 'Gravity Pixel'")&&document.fonts.check("700 20px 'Gravity Pixel'");
         const rowsSeparate=document.getElementById('hud').getBoundingClientRect().bottom<document.getElementById('progBar').getBoundingClientRect().top;
-        return{pause:{x:pause.x,y:pause.y,width:pause.width,height:pause.height},turbo:{x:turbo.x,y:turbo.y,width:turbo.width,height:turbo.height},readable,fontLoaded,rowsSeparate,lowered:Math.abs(gauge.top/innerHeight-(innerHeight<=720?.38:.48))<.001,clear:labels.every(r=>!overlaps(r)),fits:turbo.right<=innerWidth&&turbo.bottom<=innerHeight,thermometer:Math.abs(turbo.width/bar.width-2.2)<.01&&Math.abs(turbo.x+turbo.width/2-bar.x-bar.width/2)<.1&&turbo.top>=bar.bottom-2&&gauge.bottom>=turbo.bottom&&!document.getElementById('boostIcon')&&!turboButton.textContent.trim()};
+        return{pause:{x:pause.x,y:pause.y,width:pause.width,height:pause.height},turbo:{x:turbo.x,y:turbo.y,width:turbo.width,height:turbo.height},readable,fontLoaded,rowsSeparate,timesEnlarged:getComputedStyle(document.getElementById('timeLap1')).fontSize==='12px',lowered:Math.abs(gauge.top/innerHeight-(innerHeight<=720?.38:.48))<.001,clear:labels.every(r=>!overlaps(r)),fits:turbo.right<=innerWidth&&turbo.bottom<=innerHeight,thermometer:Math.abs(turbo.width/bar.width-2.2)<.01&&Math.abs(turbo.x+turbo.width/2-bar.x-bar.width/2)<.1&&turbo.top>=bar.bottom-2&&gauge.bottom>=turbo.bottom&&!document.getElementById('boostIcon')&&!turboButton.textContent.trim()};
       });
-      record(`controls-fit-without-covering-top-values-${width}`,geometry.clear&&geometry.fits&&geometry.pause.width>=44&&geometry.thermometer&&geometry.lowered&&geometry.readable&&geometry.fontLoaded&&geometry.rowsSeparate,geometry);
+      record(`controls-fit-without-covering-top-values-${width}`,geometry.clear&&geometry.fits&&geometry.pause.width>=44&&geometry.thermometer&&geometry.lowered&&geometry.readable&&geometry.fontLoaded&&geometry.rowsSeparate&&geometry.timesEnlarged,geometry);
       await page.screenshot({path:`/tmp/controls-layout-${width}.png`});
     }
     const times=await page.evaluate(()=>{

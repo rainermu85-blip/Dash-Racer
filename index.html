@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Dash Racer</title>
 <style>
-@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/press-start-2p-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Gravity Pixel';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/GravityRegular5.ttf') format('truetype')}
+@font-face{font-family:'Gravity Pixel';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/GravityBold8.ttf') format('truetype')}
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none}
-body{background:#000;display:flex;align-items:center;justify-content:center;height:100dvh;overflow:hidden;font-family:'Press Start 2P',monospace}
+body{background:#000;display:flex;align-items:center;justify-content:center;height:100dvh;overflow:hidden;font-family:'Gravity Pixel',monospace}
 #wrap{position:relative;width:100%;max-width:480px;height:100dvh}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 #hud{position:absolute;top:0;left:0;right:0;display:grid;grid-template-columns:1fr .85fr 1fr 44px;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 14px;background:linear-gradient(to bottom,rgba(8,3,18,.85),rgba(8,3,18,.38) 70%,transparent);pointer-events:none;z-index:5}
 .hb{display:flex;flex-direction:column;gap:6px;min-width:0}
 .hl{font-size:7px;color:#a6c9e4;letter-spacing:1px;text-shadow:1px 1px 0 #000}
-.hv{font-size:20px;line-height:1.15;color:#f7edff;text-shadow:2px 2px 0 #10091b;font-variant-numeric:tabular-nums}
+.hv{font-size:20px;font-weight:700;line-height:1.15;color:#f7edff;text-shadow:2px 2px 0 #10091b;font-variant-numeric:tabular-nums}
 #spdVal{font-size:22px}
 #placeVal{color:#ffe066;text-shadow:2px 2px 0 #10091b,0 0 6px rgba(255,224,102,.3)}
 #lapVal{color:#e3bdf0;font-size:18px}
@@ -24,7 +25,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .progMarker{position:absolute;top:-1px;width:6px;height:6px;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 3px currentColor;transition:left .1s linear}
 #markerPlayer{width:9px;height:9px;top:-2.5px;border:1px solid #fff3b8}
 #timeBoard{position:absolute;top:111px;right:14px;text-align:right;pointer-events:none;z-index:5;display:flex;flex-direction:column;gap:7px}
-.lapTime{font-size:8px;line-height:1.35;color:rgba(232,216,239,.46);text-shadow:1px 1px 0 #000;letter-spacing:0;font-variant-numeric:tabular-nums}
+.lapTime{font-size:12px;line-height:1.35;color:rgba(232,216,239,.46);text-shadow:1px 1px 0 #000;letter-spacing:0;font-variant-numeric:tabular-nums}
 .lapTime.current{color:#f5eafa}
 .lapTime.best{color:#84dbe8}
 #segmentBoard{position:absolute;bottom:14px;left:14px;pointer-events:none;z-index:5;display:flex;align-items:baseline;gap:6px;opacity:.65}
@@ -82,7 +83,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 #pauseOverlay.hide{display:none}
 .otitle{font-size:22px;color:#ffe066;text-align:center;line-height:1.7;text-shadow:0 0 20px #ffe066,4px 4px 0 #ff6b35}
 .osub{font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;text-align:center;line-height:2}
-.obtn{font-family:'Press Start 2P',monospace;font-size:11px;padding:13px 26px;background:transparent;border:2px solid #ff6b35;color:#ff6b35;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(255,107,53,.3)}
+.obtn{font-family:'Gravity Pixel',monospace;font-size:11px;padding:13px 26px;background:transparent;border:2px solid #ff6b35;color:#ff6b35;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px rgba(255,107,53,.3)}
 .obtn:active{background:rgba(255,107,53,.2)}
 #cntWrap{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;pointer-events:none}
 #cntNum{font-size:90px;color:#ffe066;opacity:0;text-shadow:0 0 40px #ffe066,4px 4px 0 #ff6b35;transition:opacity .15s,transform .25s;transform:scale(2)}
@@ -93,7 +94,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 #introArt {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
 #introBox {position:absolute;bottom:max(28px,env(safe-area-inset-bottom));z-index:1;background:rgba(10,5,20,0.75);border:2px solid #ff4fd8;box-shadow:0 0 20px rgba(255,79,216,0.5);padding:24px 32px;border-radius:8px;opacity:0;transition:opacity 1s;cursor:pointer}
 #introBox.show {opacity:1}
-#introText {font-family:'Press Start 2P',monospace;font-size:14px;animation:neonPulse 4s infinite alternate;text-align:center;user-select:none;letter-spacing:1px;line-height:1.5}
+#introText {font-family:'Gravity Pixel',monospace;font-size:14px;animation:neonPulse 4s infinite alternate;text-align:center;user-select:none;letter-spacing:1px;line-height:1.5}
 @keyframes neonPulse {
   0% {color:#ff4fd8;text-shadow:0 0 12px #ff4fd8}
   33% {color:#21d4fd;text-shadow:0 0 12px #21d4fd}
@@ -134,7 +135,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     <div id="segmentVal">0</div>
     <div id="energyBoard" style="margin-top: 10px; display: none;">
       <div class="segmentTitle" style="color: #00f0ff; text-shadow: 0 0 6px #00f0ff;">ENERGY</div>
-      <div id="energyVal" style="font-size: 12px; color: #fff; text-shadow: 2px 2px 0 #000; font-family:'Press Start 2P',monospace">0/5</div>
+      <div id="energyVal" style="font-size: 12px; color: #fff; text-shadow: 2px 2px 0 #000; font-family:'Gravity Pixel',monospace">0/5</div>
     </div>
   </div>
   
@@ -578,11 +579,11 @@ function drawLastLapBanner() {
   if(lastLapElapsed>=1.5)return;
   ctx.save();ctx.translate(W*.5,H*.5);ctx.globalAlpha=1;
   const maxWidth=Math.min(W*.86,500)*.88;
-  let size=Math.min(38,W*.068);ctx.font=`italic bold ${size}px "Press Start 2P",monospace`;
+  let size=Math.min(38,W*.068);ctx.font=`italic bold ${size}px "Gravity Pixel",monospace`;
   const measured=ctx.measureText('LAST LAP').width;
   if(measured>maxWidth)size*=maxWidth/measured;
   // Half the previous letter size, with the road visible through the filling.
-  size*=.5;ctx.font=`italic bold ${size}px "Press Start 2P",monospace`;
+  size*=.5;ctx.font=`italic bold ${size}px "Gravity Pixel",monospace`;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
   ctx.fillStyle='rgba(82,196,255,.28)';ctx.fillText('LAST LAP',0,1);
   ctx.strokeStyle='#79efff';ctx.lineWidth=Math.max(.8,size*.055);
@@ -9291,7 +9292,7 @@ function render(ts) {
           
           // Setup font size with scaling factor
           const fontSize = Math.round(13 * p.scale);
-          ctx.font = `bold ${fontSize}px 'Press Start 2P', monospace, sans-serif`;
+          ctx.font = `bold ${fontSize}px 'Gravity Pixel', monospace, sans-serif`;
           
           // Draw text shadow using filled black text underneath
           ctx.fillStyle = '#000000';
@@ -9679,10 +9680,10 @@ function showResult(place) {
   let resultHTML = `
   <div style="background: rgba(10, 5, 20, 0.85); border: 2px solid #ff5ba5; box-shadow: 0 0 20px #ff5ba5, inset 0 0 20px #ff5ba5; border-radius: 8px; padding: 25px 35px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; position: relative; width: 90%; max-width: 440px;">
       <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px); pointer-events: none; border-radius: 8px;"></div>
-      <div style="font-family: 'Press Start 2P', monospace; font-size: 16px; color: #21d4fd; text-shadow: 0 0 10px #21d4fd; letter-spacing: 1px;">RACE COMPLETED</div>
-      <div style="font-family: 'Press Start 2P', monospace; font-size: 10px; color: #ffffff;">YOU PLACED</div>
-      <div style="font-family: 'Press Start 2P', monospace; font-size: 34px; color: ${color}; text-shadow: 0 0 24px ${color}, 4px 4px 0 ${shadow};">${placeStr}</div>
-      <div style="display: flex; flex-direction: column; gap: 6px; margin: 5px 0; font-family: 'Press Start 2P', monospace; font-size: 9px; color: rgba(255,255,255,0.8); text-align: left; width: 100%;">
+      <div style="font-family: 'Gravity Pixel', monospace; font-size: 16px; color: #21d4fd; text-shadow: 0 0 10px #21d4fd; letter-spacing: 1px;">RACE COMPLETED</div>
+      <div style="font-family: 'Gravity Pixel', monospace; font-size: 10px; color: #ffffff;">YOU PLACED</div>
+      <div style="font-family: 'Gravity Pixel', monospace; font-size: 34px; color: ${color}; text-shadow: 0 0 24px ${color}, 4px 4px 0 ${shadow};">${placeStr}</div>
+      <div style="display: flex; flex-direction: column; gap: 6px; margin: 5px 0; font-family: 'Gravity Pixel', monospace; font-size: 9px; color: rgba(255,255,255,0.8); text-align: left; width: 100%;">
           <div>LAP 1: ${formatTime(lapTimes[0])}</div>
           ${currentLevel !== LEVEL_DREAM ? `
           <div>LAP 2: ${formatTime(lapTimes[1])}</div>
@@ -9693,7 +9694,7 @@ function showResult(place) {
       
       ${renderLevelSelection()}
       
-      <button class="obtn" id="rb" style="background: rgba(255,91,165,0.2); border: 2px solid #ff5ba5; box-shadow: 0 0 15px #ff5ba5; font-family: 'Press Start 2P', monospace; padding: 12px 24px; color: #ffffff; cursor: pointer; text-shadow: 1px 1px 0 #000; transition: all 0.2s; z-index: 2; font-size: 11px; width: 100%; margin-top: 5px;">RACE AGAIN</button>
+      <button class="obtn" id="rb" style="background: rgba(255,91,165,0.2); border: 2px solid #ff5ba5; box-shadow: 0 0 15px #ff5ba5; font-family: 'Gravity Pixel', monospace; padding: 12px 24px; color: #ffffff; cursor: pointer; text-shadow: 1px 1px 0 #000; transition: all 0.2s; z-index: 2; font-size: 11px; width: 100%; margin-top: 5px;">RACE AGAIN</button>
   </div>`;
   
   ov.innerHTML = resultHTML;

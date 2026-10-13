@@ -43,9 +43,12 @@ Der HUD zeigt Platzierung, Runde und Tempo in einer klaren oberen Zeile mit
 vergrößerten Werten. Darunter liegen die schlanke Rennfortschrittsanzeige mit
 Prozentwert und die Rundenzeiten im Format `mm:ss.cc`. Die laufende Runde wird
 hell hervorgehoben, die beste abgeschlossene Zeit cyan. Die Segmentangabe steht
-klein unten links, im Space-Level darüber die Energieanzeige. Die bereits
-verwendete Schrift Press Start 2P liegt jetzt lokal einschließlich OFL-Lizenz
-unter `public/fonts`, damit kein externer Schriftabruf erforderlich ist.
+klein unten links, im Space-Level darüber die Energieanzeige. Die Rundenzeiten sind 12 statt 8 Pixel groß (+50 Prozent). Gravity Pixel von
+John Watson/Jotson ersetzt Press Start 2P. Regular 5 wird für normale Texte
+verwendet, Bold 8 für die Hauptwerte und fett gesetzte Canvas-Hinweise. Beide
+Original-TTFs liegen lokal unter `public/fonts`, einschließlich der MIT-Lizenz
+des öffentlichen Ersteller-Repositories und einer Quellenangabe. Es ist kein
+externer Schriftabruf erforderlich.
 
 Die Browserprüfung kontrolliert zusätzlich Schriftladen, Textbreiten, den
 Abstand der oberen Zeilen, die neue Turbo-Position, aktuelle/beste Rundenzeit,
