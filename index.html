@@ -252,6 +252,8 @@ const HIGHWAY_TRAIN_DURATION = 1.6;
 const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
 const OCEAN_OLD_TREE_INDEX=580;
+let oceanOldTreeIndex=null;
+const OCEAN_SCREEN_FACES=[595,623],OCEAN_SCREEN_HUNT=642;
 const OCEAN_SCREEN_SPOTS=[595,598,602,605,609,612,616,620,623,627,631,634,638,642,646,649,653,657,660,664,668,672,676,681,686];
 const OCEAN_FINISH_STRAIGHT_START=1180;
 const OCEAN_SHOOTING_STAR_LEAD=60;
@@ -544,6 +546,24 @@ function backdropX(base, offset, padding) {
   return ((base - offset + padding) % span + span) % span - padding;
 }
 
+function drawLastRoundBanner() {
+  if(lastRoundElapsed===null||player.finished)return;
+  const phase=lastRoundElapsed%1.05;
+  if(phase>=.7)return;
+  const width=Math.min(W*.86,500),height=Math.min(88,W*.22),x=W*.5,y=H*.5;
+  ctx.save();ctx.translate(x,y);ctx.globalAlpha=Math.min(1,phase/.08,(.7-phase)/.08);
+  ctx.fillStyle='rgba(23,7,44,.9)';ctx.beginPath();ctx.moveTo(-width*.5+12,-height*.5);
+  ctx.lineTo(width*.5,-height*.5);ctx.lineTo(width*.5-12,height*.5);ctx.lineTo(-width*.5,height*.5);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#ff40b7';ctx.lineWidth=2;ctx.stroke();
+  ctx.strokeStyle='#30e5ee';ctx.beginPath();ctx.moveTo(-width*.5+6,height*.5+4);ctx.lineTo(width*.5-16,height*.5+4);ctx.stroke();
+  for(let i=0;i<3;i++){ctx.fillStyle=i%2?'#ff40b7':'#30e5ee';ctx.fillRect(-width*.45+i*9,-height*.37,5,4);ctx.fillRect(width*.36+i*9,height*.28,5,4);}
+  let size=Math.min(38,W*.068);ctx.font=`italic bold ${size}px "Press Start 2P",monospace`;
+  if(ctx.measureText('LAST ROUND').width>width*.88){size*=width*.88/ctx.measureText('LAST ROUND').width;ctx.font=`italic bold ${size}px "Press Start 2P",monospace`;}
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const color=ctx.createLinearGradient(0,-height*.25,0,height*.25);color.addColorStop(0,'#fff2ca');color.addColorStop(.5,'#fff7ff');color.addColorStop(1,'#fb55c7');
+  ctx.shadowColor='#ff35b6';ctx.shadowBlur=9;ctx.fillStyle=color;ctx.fillText('LAST ROUND',0,1);ctx.restore();
+}
+
 function drawOceanShootingStar(progressDist) {
   // The shooting star accompanies the final straight, before the finish line.
   const starZStart = 3 * TRACK_LENGTH - OCEAN_SHOOTING_STAR_LEAD * SEGMENT_LENGTH;
@@ -743,7 +763,7 @@ function buildSegments() {
         if (currentLevel === 2) {
             // One broad old coastal tree greets the player beyond the rock opening.
             if(i===SEGMENT_COUNT-1){
-                sprite='ocean_finish_gate';spriteX=0;
+                // Keep the painted finish line clear of decorative structures.
             } else if (i === OCEAN_OLD_TREE_INDEX) {
                 sprite = 'coastal_old_tree';
                 spriteX = 1.95;
@@ -886,7 +906,19 @@ function buildSegments() {
         worldY += def.hill; 
     }
 
-    if(currentLevel===2)for(const index of OCEAN_SCREEN_SPOTS)segments[index].coastalScreen=true;
+    oceanOldTreeIndex=null;
+    if(currentLevel===2){
+        const nextPalm=segments.find(s=>s.index>OCEAN_OLD_TREE_INDEX&&s.sprite==='tree')
+            ||segments.find(s=>s.index>OCEAN_OLD_TREE_INDEX+6&&!s.sprite);
+        segments[OCEAN_OLD_TREE_INDEX].sprite=null;
+        if(nextPalm){
+            oceanOldTreeIndex=nextPalm.index;
+            nextPalm.sprite='coastal_old_tree';
+            // Broad roots need slightly more shoulder clearance than a palm trunk.
+            nextPalm.spriteX=Math.max(1.95,nextPalm.spriteX);
+        }
+        for(const index of OCEAN_SCREEN_SPOTS)segments[index].coastalScreen=true;
+    }
 
     if (currentLevel === LEVEL_DREAM) {
         // Append 200 extra flat straight underwater segments beyond the finish line
@@ -2431,6 +2463,50 @@ function oceanRockArchProfile() {
     return [[-1.22,0],[-1.28,0.32],[-1.25,0.62],[-1.05,0.86],[-0.65,1.06],[-0.14,1.11],[0.36,1.09],[0.84,0.95],[1.16,0.73],[1.27,0.38],[1.22,0]];
 }
 
+let oceanTunnelGraffitiCanvas=null;
+function getOceanTunnelGraffiti() {
+    if(oceanTunnelGraffitiCanvas)return oceanTunnelGraffitiCanvas;
+    const canvas=document.createElement('canvas');canvas.width=320;canvas.height=160;
+    const paint=canvas.getContext('2d');
+    paint.textAlign='center';paint.textBaseline='middle';paint.lineJoin='round';
+    paint.font='italic 900 65px "JetBrains Mono", monospace';
+    paint.lineWidth=3;paint.strokeStyle='#30252e';paint.fillStyle='#fff0dc';
+    paint.strokeText('I',113,40);paint.fillText('I',113,40);
+    paint.beginPath();paint.moveTo(199,65);
+    paint.bezierCurveTo(180,52,159,33,170,19);paint.bezierCurveTo(180,7,195,14,199,23);
+    paint.bezierCurveTo(207,8,224,11,228,23);paint.bezierCurveTo(237,40,217,55,199,65);
+    paint.closePath();paint.stroke();paint.fillStyle='#ff367f';paint.fill();
+    paint.fillStyle='#fff0dc';paint.strokeText('BIBI',160,119);paint.fillText('BIBI',160,119);
+    oceanTunnelGraffitiCanvas=canvas;return canvas;
+}
+function drawOceanTunnelGraffiti(index,near,far) {
+    const start=514,end=538;
+    if(index<start||index>=end)return;
+    const cut=clamp((player.z+64-segments[index].worldZReal)/SEGMENT_LENGTH,0,1);
+    const u0=(end-index-cut)/(end-start)*320,u1=(end-index-1)/(end-start)*320;
+    if(Math.abs(u1-u0)<.001)return;
+    const lane=h=>h>.38?1.27-.11*(h-.38)/.35:1.22+.05*h/.38;
+    const top=.69,bottom=.26;
+    const points=[near(lane(top),top),near(lane(bottom),bottom),far(lane(top),top),far(lane(bottom),bottom)];
+    const texture=getOceanTunnelGraffiti();
+    // Two clipped triangles conform the paint to each existing wall slice.
+    const triangle=(source,target)=>{
+        const [p,q,r]=source,[a,b,c]=target;
+        const sx=q.x-p.x,sy=q.y-p.y,tx=r.x-p.x,ty=r.y-p.y,det=sx*ty-sy*tx;
+        if(Math.abs(det)<.001)return;
+        const dx=b.x-a.x,dy=b.y-a.y,ex=c.x-a.x,ey=c.y-a.y;
+        const ma=(dx*ty-ex*sy)/det,mb=(dy*ty-ey*sy)/det;
+        const mc=(ex*sx-dx*tx)/det,md=(ey*sx-dy*tx)/det;
+        const me=a.x-ma*p.x-mc*p.y,mf=a.y-mb*p.x-md*p.y;
+        if(![ma,mb,mc,md,me,mf].every(Number.isFinite))return;
+        ctx.save();ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.closePath();ctx.clip();
+        ctx.transform(ma,mb,mc,md,me,mf);ctx.drawImage(texture,0,0);ctx.restore();
+    };
+    const uv=[{x:u0,y:0},{x:u0,y:160},{x:u1,y:0},{x:u1,y:160}];
+    triangle([uv[0],uv[1],uv[2]],[points[0],points[1],points[2]]);
+    triangle([uv[2],uv[1],uv[3]],[points[2],points[1],points[3]]);
+}
+
 function drawOceanRockTunnelSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
     const clipped = clipOceanSlice(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale);
     if (!clipped) return;
@@ -2451,6 +2527,7 @@ function drawOceanRockTunnelSegment(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,index) {
     for(const side of[-1,1]){
         paintOceanPolygon([near(side*1.22,0),near(side*1.24,.065),far(side*1.24,.065),far(side*1.22,0)],oceanRockPalette[5],true);
     }
+    drawOceanTunnelGraffiti(index,near,far);
 }
 
 function drawOceanRockPortal(x,y,w,h) {
@@ -2537,12 +2614,17 @@ function makeCoastalScreenModel(seed) {
       const a=hedgePoints[j],b=hedgePoints[j+1];top=a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]);break;
     }
     const y=upper?top+9+random()*24:-6-random()*height*.86;
+    if((OCEAN_SCREEN_FACES.includes(seed)||seed===OCEAN_SCREEN_HUNT)&&!upper&&Math.abs(x)<65&&y>-height*.85&&y<-height*.12)continue;
     const r=4+random()*9,leaf=shrubs[Math.floor(random()*3)];
     leaf.moveTo(x-r,y);
     leaf.quadraticCurveTo(x-r*.1,y-r*.8,x+r,y-r*.28);
     leaf.quadraticCurveTo(x+r*.1,y+r*.6,x-r,y);leaf.closePath();
   }
-  return {rock,facets,cracks,hedge,shrubs};
+  const variants=[[1.11,.88,-5],[.87,1.06,-12],[1.13,.8,10],[.94,1.04,11],[1.04,.94,-8]];
+  const [wide,tall,lean]=variants[seed%variants.length];
+  const transform=new DOMMatrix([wide,0,-lean/height,tall,0,0]);
+  const transformed=p=>{const result=new Path2D();result.addPath(p,transform);return result;};
+  return {rock:transformed(rock),facets:facets.map(transformed),cracks:transformed(cracks),hedge,shrubs,height,transform};
 }
 
 function drawCoastalSightScreen(x,y,scale,seed,night=0) {
@@ -2561,7 +2643,61 @@ function drawCoastalSightScreen(x,y,scale,seed,night=0) {
   ctx.strokeStyle=interpolateColor('#424e55','#1a2632',night);ctx.lineWidth=1.6;ctx.stroke(m.cracks);
   const greens=['#173c32','#285746','#3b7254'].map((c,i)=>interpolateColor(c,['#102629','#193d36','#2c5347'][i],night));
   for(let i=0;i<m.shrubs.length;i++){ctx.fillStyle=greens[i];ctx.fill(m.shrubs[i]);}
+  if(OCEAN_SCREEN_FACES.includes(seed)||seed===OCEAN_SCREEN_HUNT){
+    ctx.save();ctx.clip(m.rock);ctx.transform(m.transform.a,m.transform.b,m.transform.c,m.transform.d,0,0);
+    drawCoastalStoneArt(seed,m.height,night);ctx.restore();
+  }
   ctx.restore();
+}
+
+function drawCoastalStoneArt(seed,height,night) {
+  const ink=interpolateColor('#263f47','#111f2e',night),chalk=interpolateColor('#dbcfac','#91b5ba',night);
+  const line=(points,color,width=3)=>{
+    ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+    ctx.moveTo(...points[0]);for(let i=1;i<points.length;i++)ctx.lineTo(...points[i]);ctx.stroke();
+  };
+  if(OCEAN_SCREEN_FACES.includes(seed)){
+    // Original geometric faces inspired by Pacific carving; the whole rock is the head.
+    const open=seed===OCEAN_SCREEN_FACES[0],brow=-height*.72,eyes=-height*.6,mouth=-height*.32;
+    for(const side of[-1,1]){
+      line([[side*10,brow+5],[side*32,brow-8],[side*57,brow+5]],ink,8);
+      line([[side*12,brow+2],[side*32,brow-9],[side*55,brow+2]],chalk,2);
+      if(open){
+        ctx.fillStyle=ink;ctx.beginPath();ctx.moveTo(side*12,eyes);
+        ctx.quadraticCurveTo(side*33,eyes-12,side*52,eyes);ctx.quadraticCurveTo(side*34,eyes+10,side*12,eyes);ctx.fill();
+        line([[side*33,eyes-5],[side*33,eyes+5]],chalk,4);
+      }else{
+        line([[side*12,eyes-3],[side*31,eyes+5],[side*51,eyes-4]],ink,7);
+        line([[side*15,eyes-5],[side*32,eyes+1],[side*49,eyes-6]],chalk,2);
+      }
+    }
+    line([[-9,eyes+8],[-12,mouth-19],[0,mouth-12],[12,mouth-19],[9,eyes+8]],ink,7);
+    line([[0,eyes+4],[0,mouth-24]],chalk,2);
+    if(open){
+      ctx.fillStyle=ink;ctx.beginPath();ctx.moveTo(-43,mouth-10);ctx.quadraticCurveTo(0,mouth-21,43,mouth-10);
+      ctx.lineTo(36,mouth+17);ctx.quadraticCurveTo(0,mouth+27,-36,mouth+17);ctx.closePath();ctx.fill();
+      line([[-39,mouth-12],[0,mouth-17],[39,mouth-12]],chalk,3);
+      for(const x of[-27,-9,9,27]){ctx.fillStyle=chalk;ctx.fillRect(x-5,mouth-9,10,9);}
+    }else{
+      line([[-40,mouth-1],[-19,mouth+5],[0,mouth],[19,mouth+5],[40,mouth-1]],ink,8);
+      line([[-34,mouth+10],[0,mouth+17],[34,mouth+10]],chalk,2.5);
+    }
+    line([[-25,-height*.86],[0,-height*.91],[25,-height*.86]],chalk,3);
+    for(const side of[-1,1])line([[side*49,mouth-16],[side*57,mouth],[side*47,mouth+10]],chalk,2);
+  }else{
+    const ochre=interpolateColor('#e2a36f','#aabcab',night),y=-height*.28;
+    // One small hunting vignette, with a bow and branching deer antlers.
+    ctx.strokeStyle=ochre;ctx.lineWidth=3;ctx.beginPath();ctx.arc(-38,y-35,4,0,Math.PI*2);ctx.stroke();
+    line([[-38,y-30],[-37,y-10],[-48,y+10]],ochre);
+    line([[-37,y-10],[-27,y+9]],ochre);line([[-38,y-25],[-17,y-24]],ochre);
+    ctx.beginPath();ctx.moveTo(-17,y-42);ctx.quadraticCurveTo(-4,y-24,-17,y-8);ctx.stroke();
+    line([[-17,y-42],[-17,y-8]],ochre,1.5);line([[-24,y-24],[8,y-24],[3,y-29]],ochre,2);
+    line([[17,y-13],[42,y-13],[54,y-27],[61,y-25]],ochre);
+    line([[20,y-13],[16,y+9]],ochre);line([[25,y-13],[29,y+10]],ochre);line([[42,y-13],[48,y+8]],ochre);
+    line([[17,y-13],[10,y-20]],ochre,2);line([[54,y-28],[51,y-46],[44,y-53]],ochre,2);
+    line([[51,y-40],[43,y-42],[40,y-49]],ochre,2);line([[55,y-29],[62,y-44],[69,y-49]],ochre,2);
+    line([[62,y-40],[68,y-39],[72,y-46]],ochre,2);
+  }
 }
 
 // Clip the complete marina mesh into depth slices once. Every component uses
@@ -5144,23 +5280,6 @@ function drawPalmTreeSprite(sx,sy,sc,seed=0,ts=0,night=0) {
     drawMiamiPalm(sx,sy,sc,seed,ts,night,true);
 }
 
-function drawOceanFinishGate(x,y,w) {
-  if(w<3)return;
-  const h=w*H/W*.65,left=x-w*1.19,right=x+w*1.19,top=y-h;
-  ctx.save();
-  ctx.fillStyle='#291730';ctx.fillRect(left-w*.045,top,w*.09,h);ctx.fillRect(right-w*.045,top,w*.09,h);
-  ctx.fillStyle='#51c8c6';ctx.fillRect(left-w*.012,top,w*.024,h);ctx.fillRect(right-w*.012,top,w*.024,h);
-  ctx.fillStyle='#38213f';ctx.fillRect(left,top,right-left,h*.27);
-  for(let i=0;i<16;i++){
-    ctx.fillStyle=i%2?'#422a44':'#f4ddc5';
-    ctx.fillRect(left+i*(right-left)/16,top,(right-left)/16+.3,h*.08);
-  }
-  ctx.fillStyle='#ffe6c4';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font=`bold ${Math.max(3,h*.16)}px "Press Start 2P",monospace`;
-  ctx.fillText('FINISH',x,top+h*.19);
-  ctx.restore();
-}
-
 let coastalOldTreeModel=null;
 function makeCoastalOldTreeModel() {
   let seed=0x4f414b;
@@ -5226,8 +5345,9 @@ function drawCoastalOldTreeSprite(sx,sy,sc,ts,approach,night=0) {
   ctx.strokeStyle=interpolateColor('#8d6058','#614952',night);ctx.lineWidth=1.8;ctx.stroke(m.bark);
   // A small flock lifts out of the canopy as the car approaches the tunnel exit.
   for(let i=0;i<5;i++){
-    const flight=clamp((38-approach-i*2)/28,0,1);
+    const flight=clamp((58-approach-i*2)/42,0,1);
     if(flight<=0||flight>=1)continue;
+    ctx.globalAlpha=Math.min(1,(1-flight)*4);
     const x=-110+i*27-flight*(160+i*20),y=-248-(i%3)*24-flight*(48+i*16);
     const flap=Math.sin(ts*.009+i*.8)*4;
     ctx.strokeStyle=interpolateColor('#e5ead7','#adcbc7',night);ctx.lineWidth=1.8;
@@ -8603,12 +8723,6 @@ function render(ts) {
         else drawTubeSpongeSprite(s.x, s.y, s.sc);
         ctx.restore();
     }
-    else if (s.type === 'ocean_finish_gate') {
-        ctx.save();
-        if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
-        drawOceanFinishGate(s.x,s.y,s.w);
-        ctx.restore();
-    }
     else if (s.type === 'coastal_old_tree') {
         ctx.save();
         if (s.clipY !== undefined) {
@@ -9069,6 +9183,7 @@ function render(ts) {
       }
       ctx.restore();
   }
+  drawLastRoundBanner();
 }
 
 const PLACE_NAMES = ['1ST','2ND','3RD','4TH','5TH','6TH'];
@@ -9275,6 +9390,7 @@ function withAlpha(color, alpha) {
 
 let state = 'intro'; let lastTime = 0, cntTimer = 0, cntVal = 3, resultTimer = null;
 let lapTimes = [0, 0, 0]; let currentLapTime = 0; let bestLapTime = Infinity;
+let lastRoundElapsed=null;
 let paused = false; let smoothedDt = 0.0166;
 
 function togglePause() {
@@ -9289,6 +9405,7 @@ function togglePause() {
 }
 
 function exitRace() {
+  lastRoundElapsed=null;
   clearTimeout(resultTimer); resultTimer = null;
   paused = false;
   document.getElementById('pauseOverlay').classList.add('hide');
@@ -9392,6 +9509,7 @@ function popNum(n) {
 }
 
 function startRace() {
+    lastRoundElapsed=null;
     clearTimeout(resultTimer); resultTimer = null;
     initBackground(); buildSegments(); initOpponents();
     initChapterTraffic();
@@ -9659,6 +9777,7 @@ function loop(ts) {
     const previousOpponents = opponents.map(opp => ({ x: opp.x, z: getRaceDistance(opp) }));
     updateChapterTraffic(dt);
     if (!player.finished) currentLapTime += dt * 1000;
+    if(lastRoundElapsed!==null){lastRoundElapsed+=dt;if(lastRoundElapsed>=3.15)lastRoundElapsed=null;}
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
     player.wallHitCooldown = Math.max(0, player.wallHitCooldown - dt);
 
@@ -10027,6 +10146,7 @@ function loop(ts) {
       lapTimes[player.lap - 1] = currentLapTime;
       if (currentLapTime < bestLapTime) bestLapTime = currentLapTime;
       currentLapTime = 0; player.lap++;
+      if(player.lap===3&&currentLevel!==LEVEL_DREAM)lastRoundElapsed=0;
       segments.forEach(s => {
         if (s.pylon) s.pylon.active = true;
         if (s.barrier) { s.barrier.active = true; s.barrier.state = 'idle'; s.barrier.blinkCount = 0; }

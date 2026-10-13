@@ -38,7 +38,7 @@ module.exports = async function runCoast(browser, baseUrl) {
         for(let n=0;!player.finished&&n<20;n++)tick();
         record('third-lap-finishes-at-new-line',player.finished&&player.lap===4&&lapTimes[2]>0&&player.z<SEGMENT_LENGTH,{lap:player.lap,finished:player.finished,time:lapTimes[2],z:player.z});
         reset();
-        record('old-start-tree-removed-and-one-tree-after-tunnel',!segments.some(s=>s.sprite==='gnarled_tree')&&segments.filter(s=>s.sprite==='coastal_old_tree').length===1&&segments[OCEAN_OLD_TREE_INDEX].sprite==='coastal_old_tree'&&OCEAN_OLD_TREE_INDEX>OCEAN_ROCK_TUNNEL.end,{index:OCEAN_OLD_TREE_INDEX});
+        record('old-start-tree-removed-and-one-tree-after-tunnel',!segments.some(s=>s.sprite==='gnarled_tree')&&segments.filter(s=>s.sprite==='coastal_old_tree').length===1&&segments[OCEAN_OLD_TREE_INDEX].sprite===null&&segments[oceanOldTreeIndex].sprite==='coastal_old_tree'&&oceanOldTreeIndex>OCEAN_OLD_TREE_INDEX&&!segments.slice(OCEAN_OLD_TREE_INDEX+1,oceanOldTreeIndex).some(s=>s.sprite==='tree'),{index:oceanOldTreeIndex,shoulder:segments[oceanOldTreeIndex].spriteX});
         const tunnel=segments.filter(s=>s.isTunnel);
         record('short-rock-opening',tunnel.length===36&&tunnel[0].index===506&&tunnel.at(-1).index===541&&tunnel.every(s=>!s.sprite),{start:tunnel[0]?.index,end:tunnel.at(-1)?.index,count:tunnel.length,seconds:tunnel.length*SEGMENT_LENGTH/4320});
         const limits=[505,506,541,542].map(i=>getRoadLimits(i*SEGMENT_LENGTH));

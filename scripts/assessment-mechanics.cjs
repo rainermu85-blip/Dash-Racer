@@ -55,6 +55,28 @@ module.exports = async function runMechanics(browser, baseUrl) {
       record('chevron-turbo', player.isChevronBoosting && player.boosts === 0, { turbo: player.isChevronBoosting, charges: player.boosts });
       reset(); player.z = TRACK_LENGTH - 1; player.speed = 3600; tick();
       record('lap-wrap', player.lap === 2 && player.z < TRACK_LENGTH && lapTimes[0] > 0, { lap: player.lap, z: player.z, times: [...lapTimes] });
+      record('first-lap-does-not-show-last-round', lastRoundElapsed === null, { elapsed:lastRoundElapsed });
+      reset(2); opponents.length=0;
+      for(const segment of segments)segment.barrier=segment.pylon=segment.lightning=null;
+      player.lap=2;player.z=TRACK_LENGTH-1;player.speed=3600;tick();
+      record('second-lap-crossing-announces-last-round', player.lap===3&&lastRoundElapsed!==null&&lastRoundElapsed<.1,{lap:player.lap,elapsed:lastRoundElapsed});
+      // Observe the text actually painted on successive frames, including gaps.
+      const writeText=ctx.fillText, bannerFrames=[];
+      let bannerPainted=false;
+      ctx.fillText=function(text,...args){if(text==='LAST ROUND')bannerPainted=true;return writeText.call(this,text,...args);};
+      try{
+        for(let frame=0;frame<200;frame++){
+          bannerPainted=false;tick();bannerFrames.push(bannerPainted);
+        }
+      }finally{ctx.fillText=writeText;}
+      const pulses=bannerFrames.filter((painted,i)=>painted&&!bannerFrames[i-1]).length;
+      record('last-round-paints-three-separated-pulses-and-clears',pulses===3&&lastRoundElapsed===null&&!bannerFrames.at(-1),{pulses,elapsed:lastRoundElapsed});
+      player.lap=2;player.z=TRACK_LENGTH-1;tick();
+      const pausedAt=lastRoundElapsed;paused=true;tick(30);paused=false;
+      record('last-round-pauses-with-race',pausedAt!==null&&lastRoundElapsed===pausedAt,{pausedAt,elapsed:lastRoundElapsed});
+      startRace();record('last-round-clears-on-restart',lastRoundElapsed===null,{elapsed:lastRoundElapsed});
+      player.lap=2;state='playing';player.z=TRACK_LENGTH-1;player.speed=3600;tick();exitRace();
+      record('last-round-clears-on-exit',lastRoundElapsed===null,{elapsed:lastRoundElapsed});
       reset(5);
       const zones = [0, 450, 750, 1250, 1550, 2050, 2350].map(i => getDreamZone(i));
       record('dream-odyssey-zones', JSON.stringify(zones) === JSON.stringify(['steppe', 'tunnel', 'arctic', 'tunnel', 'dali', 'tunnel', 'underwater']), { zones, segments: segments.length });

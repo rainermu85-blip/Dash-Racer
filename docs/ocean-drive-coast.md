@@ -86,15 +86,23 @@ Eine örtliche Barriere auf der Strandseite verdeckt ihn: 25 unregelmäßig
 verteilte, graue Findlingsgruppen mit dichtem Grün zwischen 595 und 686.
 Die letzten Gruppen werden niedriger, sodass der Blick wieder aufgeht.
 Die Pflanzen sitzen auf der Hecke und wachsen über die Felsen.
+Fünf unterschiedliche Grundproportionen verändern Breite, Höhe und Neigung
+der einzelnen Steine. Zwei Findlinge bei 595 und 623 tragen große, einfache
+geometrische Gesichter, frei inspiriert von pazifischer Holzschnitzkunst;
+der Stein selbst bildet jeweils den Kopf. Ein weiterer bei 642 trägt eine
+kleine ockerfarbene Jagdszene mit Bogen und Hirsch. Die Malereien bleiben auf
+diese drei Steine beschränkt und werden an ihre Oberflächen angepasst.
 
 Die Gruppen werden als zusätzliche Landschaftsobjekte angelegt. Bestehende
-Palmen, Strandobjekte, Boote, Fahrbahn und Fahrphysik bleiben erhalten;
+Strandobjekte, Boote, Fahrbahn und Fahrphysik bleiben erhalten; nur die nächste
+Palme hinter dem alten Baumplatz wird jetzt durch den Baum ersetzt.
 Wasserprojektion und Zeichenreihenfolge wurden nicht geändert. Ein privater
 Zufallsgenerator erzeugt die Formen einmal als wiederverwendete Canvaspfade;
 Gruppen außerhalb des Bildes werden vor dem Zeichnen verworfen.
 
 Tag- und Nachtansichten wurden bei 390 und 480 Pixeln Breite betrachtet.
-Ein Vergleich mit identischer Simulation zum vorherigen Commit prüft an
+Beim ursprünglichen Aufbau der Barriere prüfte ein Vergleich mit identischer
+Simulation zum damaligen Ausgangsstand an
 acht Positionen von 580 bis 650 die bestehenden Objektplatzierungen und
 sichtbare Punkte der nahen Fahrbahn einschließlich Auto. Dort gab es keine
 Abweichungen. Der Wasserfehler selbst bleibt hinter der Barriere bestehen.
@@ -103,8 +111,7 @@ Abweichungen. Der Wasserfehler selbst bleibt hinter der Barriere bestehen.
 
 Der bisherige Streckenaufbau wurde bei Segment 1150 mitten in der letzten
 Linkskurve abgeschnitten. Jetzt läuft diese Kurve bis 1180 aus. Es folgen
-70 gerade Segmente vor der Start-/Ziellinie bei 1250 mit einem schmalen,
-beschrifteten Zielbogen: etwa 2,43 Sekunden bei
+70 gerade Segmente vor der Start-/Ziellinie bei 1250: etwa 2,43 Sekunden bei
 402 km/h und 2,92 Sekunden bei 335 km/h. Die ersten 1150 Straßenabschnitte
 behalten ihre Kurven und Höhen. Die neue Gerade gleicht den kleinen restlichen
 Höhenunterschied sanft aus und trifft die Startstraße ohne Höhensprung.
@@ -113,17 +120,29 @@ Die Sternschnuppe begleitet in Runde drei die letzten 60 bis sechs Segmente
 vor der Linie, vollständig innerhalb dieser Geraden. Die Spielregeln für
 Runden, Platzierung und Zieleinlauf verwenden die reguläre Streckenlänge;
 der bisherige Kurvenpunkt zählt keine Runde mehr. Die übrigen Level behalten
-ihre Streckenlängen und ihre Ziele.
+ihre Streckenlängen und ihre Ziele. Der dekorative Ocean-Drive-Zielbogen
+entfällt; die aufgemalte Ziellinie bleibt.
+
+Beim Wechsel von Runde zwei in Runde drei erscheint „LAST ROUND“ dreimal
+mittig auf einer pink-türkisen Synthwave-Flagge: je 0,7 Sekunden mit kurzen
+Pausen dazwischen und sanften Ein- und Ausblendungen. Die Anzeige folgt der
+Spielzeit und pausiert mit dem Rennen. Neustart und Verlassen löschen sie.
+Sie gilt auch für die anderen Drei-Runden-Strecken; Dream Odyssey behält
+sein Ein-Runden-Rennen.
 
 ## Alter Küstenbaum nach dem Felsdurchbruch
 
-Der ehemalige Kugelbaum bei 115 und seine Grafik entfallen. Bei Segment 580
-steht ein einmaliger alter Küstenbaum, beim Herausfahren aus dem Tunnel in
-Sichtweite. Ein breiter Wurzelfuß, ein knorriger Stamm, kräftige verzweigte
+Der ehemalige Kugelbaum bei 115 und seine Grafik entfallen. Der einmalige
+alte Küstenbaum ersetzt die tatsächlich nächste Palme hinter dem bisherigen
+Baumplatz bei 580. Weil Palmen zufällig verteilt werden, wird dieser Platz
+beim Aufbau ermittelt. Der alte Platz bleibt frei, der Baum rückt vom Wal
+weg und bleibt nach dem Tunnel in Sichtweite. Ein breiter Wurzelfuß, ein
+knorriger Stamm, kräftige verzweigte
 Äste und eine breite, unregelmäßige Krone greifen die Fotovorlage auf.
 Dunkles Olivgrün, gedecktes Küstengrün und warme braune Rinde unterscheiden
 ihn leicht von den türkisfarbenen Palmen. Fünf Möwen heben bei Annäherung aus
-der Krone ab. Die Geometrie wird einmal mit einer privaten Zufallsfolge in
+der Krone ab, jetzt bereits 58 statt 38 Segmente vor dem Baum. Die Geometrie
+wird einmal mit einer privaten Zufallsfolge in
 Canvaspfade gebaut und wiederverwendet. Der Baum verwendet die bestehende
 Objektprojektion und das vorhandene Clipping.
 
@@ -249,6 +268,9 @@ auf der mittleren Geraden. Die 36 Segmente entsprechen 1,25 Sekunden bei
 402 km/h. Eine unregelmäßige Öffnung in einem größeren Felskörper, ein grob
 behauenes Gewölbe, Steinrisse und Pflanzen greifen die Fotoreferenz auf.
 Die vollständige Geometrie ist vor der Einfahrt sichtbar.
+„I ❤️ BIBI“ steht als helle, zweizeilige Graffitischrift mit pinkem Herz auf
+der rechten inneren Felswand. Die transparente Schriftfläche wird abschnittsweise
+auf die vorhandene Wand projiziert, ohne Schild oder zusätzliche Tunnelgeometrie.
 
 Im Durchbruch liegt die Fahrbahnbegrenzung auf beiden Seiten bei 1,05.
 Außerhalb bleibt die rechte Seite bis 1,45 offen. Links gilt die bestehende
@@ -257,10 +279,11 @@ zusätzlichen Tempoverlust.
 
 ## Validierung
 
-93 Browserprüfungen bei unverändertem Fahrmodell:
+Browserprüfungen bei unverändertem Fahrmodell:
 
 - `node scripts/assess-game.cjs coast`: 70 bei 390 × 844 und 480 × 800 Pixel.
-- `node scripts/assess-game.cjs mechanics`: 23.
+- `node scripts/assess-game.cjs mechanics`: bestehende Fahrprüfungen sowie
+  die drei tatsächlich gezeichneten Rundeneinblendungen, Pause und Zurücksetzen.
 
 Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
 Begrenzung, sichere Projektion einschließlich Pier und Haus an der Nahgrenze,
@@ -298,3 +321,6 @@ Rundenwechsel und den Zieleinlauf in Runde drei. Die Sternschnuppe wird im
 fertigen Bild vor der Kurve, in Runde zwei und an drei Punkten auf der letzten
 Geraden verglichen. Weitere Fahransichten zeigen den Baum an der Tunnelausfahrt
 und die Zielgerade einschließlich Sternschnuppe bei 390 und 480 Pixeln Breite.
+Die aktuellen Fahransichten zeigen außerdem den versetzten Baum mit früh
+startenden Möwen, die unterschiedlichen Steine und Malereien bei Tag und
+Nacht, das Tunnelgraffiti und die mittige Rundeneinblendung.
