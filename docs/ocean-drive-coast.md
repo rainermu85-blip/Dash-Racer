@@ -126,15 +126,13 @@ der bisherige Kurvenpunkt zählt keine Runde mehr. Die übrigen Level behalten
 ihre Streckenlängen und ihre Ziele. Der dekorative Ocean-Drive-Zielbogen
 entfällt; die aufgemalte Ziellinie bleibt.
 
-Beim Wechsel von Runde zwei in Runde drei erscheint „LAST ROUND“ dreimal
-mittig als reine Neon-Schrift: je 0,7 Sekunden mit kurzen Pausen dazwischen
-und sanften Ein- und Ausblendungen. Die Buchstaben sind halb so groß wie
-zuvor, mit einer cyanfarbenen Kontur und einer durchscheinenden blauen Füllung.
-Die dunkle Fläche, der Rahmen und die Eckverzierungen entfallen. Die Anzeige
-folgt der
-Spielzeit und pausiert mit dem Rennen. Neustart und Verlassen löschen sie.
-Sie gilt auch für die anderen Drei-Runden-Strecken; Dream Odyssey behält
-sein Ein-Runden-Rennen.
+Beim Wechsel von Runde zwei in Runde drei erscheint „LAST LAP“ einmal für
+1,5 Sekunden in der Mitte. Die Neon-Schrift hat eine cyanfarbene Kontur und
+eine durchscheinende blaue Füllung. Sie besitzt keine Hintergrundfläche und
+blinkt nicht. Die Anzeige folgt der Spielzeit und pausiert mit dem Rennen.
+Neustart und Verlassen löschen sie. Alle sechs Maps verwenden die Anzeige;
+in Dream Odyssey kündigt sie die einzige Runde beim Rennstart an. Finishtore
+entfallen in sämtlichen Maps; die aufgemalten Ziellinien bleiben erhalten.
 
 ## Alter Küstenbaum nach dem Felsdurchbruch
 
@@ -231,7 +229,9 @@ erhalten. Der Rückbau wurde direkt mit dem vorherigen Quellstand verglichen.
 
 ## Party und weitere Strandplätze
 
-Die Party steht bei Segment 75 auf der langen Startgeraden. Die gesamte
+Die Tagesparty steht bei Segment 75 auf der langen Startgeraden. Die Nachtparty
+aus Runde drei steht bei 55, genau 20 Segmente näher an der Ziellinie. Es wird
+pro Strandvorkommen jeweils eine der beiden Szenen gezeichnet. Die gesamte
 Gruppe ist weiter auf den Sand gerückt, und die liegende Person liegt auf
 einem breiteren Handtuch näher am Schirm. Beide Personen bleiben vollständig
 außerhalb der Fahrbahn. Der alte gestreifte Halbkreis-Schirm wurde durch eine
@@ -243,7 +243,7 @@ Zwei weitere, kantige offene 80er-Jeeps mit Überrollbügel, runden Scheinwerfer
 Frontgrill, Ersatzrad und kräftigen Reifen stehen bei 278 in Rot und 814 in Gelb.
 Die Räder berühren den Sand; beide Fahrzeuge bleiben neben der Fahrbahn. Die Party behält ihre
 Darstellung mit Sonnenschirm tagsüber und DJ, Tänzern und lokalen Lichteffekten
-in Runde drei. Die Nachtparty wird anhand der Runde des sichtbaren Strandabschnitts
+in Runde drei. Die Nachtparty am neuen Platz wird anhand der Runde des sichtbaren Strandabschnitts
 gewählt: Beim Ende von Runde zwei ist bereits die Party aus der folgenden
 Runde sichtbar. Sie erscheint deshalb vor der Ziellinie als DJ-Szene und
 wechselt beim Überfahren nicht plötzlich von der Tagesdarstellung zur Bühne.
@@ -296,7 +296,7 @@ Browserprüfungen bei unverändertem Fahrmodell:
 
 - `node scripts/assess-game.cjs coast`: 70 bei 390 × 844 und 480 × 800 Pixel.
 - `node scripts/assess-game.cjs mechanics`: bestehende Fahrprüfungen sowie
-  die drei tatsächlich gezeichneten Rundeneinblendungen, Pause und Zurücksetzen.
+  die einmalige Rundenanzeige mit ihrer Dauer, alle sechs Maps, Pause und Zurücksetzen.
 
 Die Küstenprüfung kontrolliert Tunnelöffnung, freie Spuren, örtliche
 Begrenzung, sichere Projektion einschließlich Pier und Haus an der Nahgrenze,

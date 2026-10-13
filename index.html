@@ -70,7 +70,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 
 #introScreen {position:absolute;inset:0;z-index:20;background-color:#0a0410;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s}
 #introScreen.hide {opacity:0;pointer-events:none}
-#introBox {background:rgba(10,5,20,0.75);border:2px solid #ff4fd8;box-shadow:0 0 20px rgba(255,79,216,0.5);padding:24px 32px;border-radius:8px;opacity:0;transition:opacity 1s;cursor:pointer}
+#introArt {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+#introBox {position:absolute;bottom:max(28px,env(safe-area-inset-bottom));z-index:1;background:rgba(10,5,20,0.75);border:2px solid #ff4fd8;box-shadow:0 0 20px rgba(255,79,216,0.5);padding:24px 32px;border-radius:8px;opacity:0;transition:opacity 1s;cursor:pointer}
 #introBox.show {opacity:1}
 #introText {font-family:'Press Start 2P',monospace;font-size:14px;animation:neonPulse 4s infinite alternate;text-align:center;user-select:none;letter-spacing:1px;line-height:1.5}
 @keyframes neonPulse {
@@ -135,6 +136,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   </div>
   <div id="overlay" class="hide"></div>
   <div id="introScreen">
+    <img id="introArt" src="./assets/welcome.webp" alt="Turbo Dash – Neon Sunset" decoding="async" fetchpriority="high">
     <div id="introBox">
       <div id="introText">CLICK TO START</div>
     </div>
@@ -257,7 +259,7 @@ const OCEAN_SCREEN_SPOTS=[595,598,602,605,609,612,616,620,623,627,631,634,638,64
 const OCEAN_FINISH_STRAIGHT_START=1180;
 const OCEAN_SHOOTING_STAR_LEAD=60;
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
-const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75;
+const OCEAN_PIER_INDEX = 943, OCEAN_PIER_LENGTH = 28, OCEAN_PIER_CENTER = 957, OCEAN_PARTY_INDEX = 75, OCEAN_NIGHT_PARTY_INDEX = OCEAN_PARTY_INDEX - 20;
 const OCEAN_ACTIVITY_SPOTS = new Map([[235,'frisbee'],[345,'dancers'],[845,'sandcastles'],[OCEAN_DIVING_INDEX,'diving']]);
 const OCEAN_BEACH_SPOTS = new Map([[38,'loungers'],[98,'surfboards'],[355,'cabanas'],[390,'loungers'],
     [488,'lifeguard'],[558,'surfboards'],[795,'cabanas'],[875,'loungers'],[923,'lifeguard'],[950,'surfboards']]);
@@ -545,21 +547,20 @@ function backdropX(base, offset, padding) {
   return ((base - offset + padding) % span + span) % span - padding;
 }
 
-function drawLastRoundBanner() {
-  if(lastRoundElapsed===null||player.finished)return;
-  const phase=lastRoundElapsed%1.05;
-  if(phase>=.7)return;
-  ctx.save();ctx.translate(W*.5,H*.5);ctx.globalAlpha=Math.min(1,phase/.08,(.7-phase)/.08);
+function drawLastLapBanner() {
+  if(lastLapElapsed===null||player.finished)return;
+  if(lastLapElapsed>=1.5)return;
+  ctx.save();ctx.translate(W*.5,H*.5);ctx.globalAlpha=1;
   const maxWidth=Math.min(W*.86,500)*.88;
   let size=Math.min(38,W*.068);ctx.font=`italic bold ${size}px "Press Start 2P",monospace`;
-  const measured=ctx.measureText('LAST ROUND').width;
+  const measured=ctx.measureText('LAST LAP').width;
   if(measured>maxWidth)size*=maxWidth/measured;
   // Half the previous letter size, with the road visible through the filling.
   size*=.5;ctx.font=`italic bold ${size}px "Press Start 2P",monospace`;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
-  ctx.fillStyle='rgba(82,196,255,.28)';ctx.fillText('LAST ROUND',0,1);
+  ctx.fillStyle='rgba(82,196,255,.28)';ctx.fillText('LAST LAP',0,1);
   ctx.strokeStyle='#79efff';ctx.lineWidth=Math.max(.8,size*.055);
-  ctx.shadowColor='#26bfff';ctx.shadowBlur=3;ctx.strokeText('LAST ROUND',0,1);ctx.restore();
+  ctx.shadowColor='#26bfff';ctx.shadowBlur=3;ctx.strokeText('LAST LAP',0,1);ctx.restore();
 }
 
 function drawOceanShootingStar(progressDist) {
@@ -777,6 +778,8 @@ function buildSegments() {
             } else if (i === OCEAN_WHALE_INDEX) {
                 sprite = 'stranded_whale';
                 spriteX = 2.3; // Shared beach anchor for Timi and the helpers.
+            } else if (i === OCEAN_NIGHT_PARTY_INDEX) {
+                sprite = 'beach_party_night';spriteX = 2.2;
             } else if (i === OCEAN_PARTY_INDEX) {
                 sprite = 'beach_party';
                 spriteX = 2.2;
@@ -1010,7 +1013,7 @@ function initOpponents() {
     return {
       oppIdx: i,
       color, x: startX, baseX: startX, targetX: startX, z: SEGMENT_LENGTH * (4 + i * 5),
-      speed: 1700 + i * 130, maxSpeed: 2600 + i * 150 + Math.random() * 250, lap: 1,
+      speed: 1700 + i * 130, maxSpeed: player.maxSpeed, cleanSpeedBonus: 0, lap: 1,
       isBoosting: false, boostTimer: 0, timeInLane: Math.random() * 5.0,
       chevronDecisions: {}, energyBallsCollected: 0, isChevronBoosting: false, chevronBoostTimer: 0, lastChevronPanelIdx: -1,
       collisionCooldown: 0, contactSide: 0, contactAxis: null
@@ -1163,23 +1166,6 @@ function drawUnderwaterArch(x, y, w) {
     ctx.moveTo(x - w * 1.15, y);
     ctx.bezierCurveTo(x - w * 1.15, y - w * 1.8, x + w * 1.15, y - w * 1.8, x + w * 1.15, y);
     ctx.stroke();
-    ctx.restore();
-}
-
-function drawUnderwaterFinish(x, y, w) {
-    ctx.save();
-    const top = y - w * 1.05;
-    ctx.strokeStyle = '#99fff0'; ctx.lineWidth = Math.max(2, w * 0.018);
-    ctx.beginPath();
-    ctx.moveTo(x - w * 1.04, y); ctx.lineTo(x - w * 1.04, top);
-    ctx.lineTo(x + w * 1.04, top); ctx.lineTo(x + w * 1.04, y);
-    ctx.stroke();
-    ctx.fillStyle = '#061c28';
-    ctx.fillRect(x - w * 0.62, top - w * 0.10, w * 1.24, w * 0.22);
-    ctx.strokeRect(x - w * 0.62, top - w * 0.10, w * 1.24, w * 0.22);
-    ctx.fillStyle = '#fff8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `bold ${Math.max(1, w * 0.17)}px monospace`;
-    ctx.fillText('FINISH', x, top + w * 0.01);
     ctx.restore();
 }
 
@@ -2977,7 +2963,6 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
             // occlude their bases through the normal back-to-front drawing.
             if (zone === 'underwater') {
                 if (segIdx % 8 === 0 || segIdx === DREAM_TUNNELS[DREAM_TUNNELS.length - 1].end) drawUnderwaterArch(x1, y1, w1);
-                if (segIdx === SEGMENT_COUNT - 1) drawUnderwaterFinish(x2, y2, w2);
             }
         }
         const mouth = DREAM_TUNNELS.find(t => segIdx === t.start || segIdx === t.end);
@@ -8510,13 +8495,15 @@ function render(ts) {
         }
     }
 
-    if (seg.sprite) {
+    const sceneLap=player.lap+lapOffset/TRACK_LENGTH;
+    const partyVisible=seg.sprite==='beach_party_night'?sceneLap>=3:seg.sprite==='beach_party'?sceneLap<3:true;
+    if (seg.sprite && partyVisible) {
         const s = getCleanSpriteFromPool();
-        s.type = seg.sprite; // Roadside scenery shares the road projection and crest clipping.
+        s.type = seg.sprite==='beach_party_night'?'beach_party':seg.sprite; // Roadside scenery shares the road projection and crest clipping.
         s.x = rx2 + seg.spriteX * p2.w;
         s.y = p2.y;
         s.sc = Math.min(1.25, p2.scale * (seg.sprite === 'coastal_old_tree' ? 3800 : 2800)) * responsiveFactor;
-        if(seg.sprite==='beach_party')s.partyLap=player.lap+lapOffset/TRACK_LENGTH;
+        if(s.type==='beach_party')s.partyLap=sceneLap;
         if (UNDERWATER_FLORA.includes(seg.sprite)) s.sc *= 0.86 + (seg.index % 5) * 0.055;
         s.depth = n;
         s.clipY = segmentClipY;
@@ -9173,7 +9160,7 @@ function render(ts) {
       }
       ctx.restore();
   }
-  drawLastRoundBanner();
+  drawLastLapBanner();
 }
 
 const PLACE_NAMES = ['1ST','2ND','3RD','4TH','5TH','6TH'];
@@ -9380,7 +9367,7 @@ function withAlpha(color, alpha) {
 
 let state = 'intro'; let lastTime = 0, cntTimer = 0, cntVal = 3, resultTimer = null;
 let lapTimes = [0, 0, 0]; let currentLapTime = 0; let bestLapTime = Infinity;
-let lastRoundElapsed=null;
+let lastLapElapsed=null;
 let paused = false; let smoothedDt = 0.0166;
 
 function togglePause() {
@@ -9395,7 +9382,7 @@ function togglePause() {
 }
 
 function exitRace() {
-  lastRoundElapsed=null;
+  lastLapElapsed=null;
   clearTimeout(resultTimer); resultTimer = null;
   paused = false;
   document.getElementById('pauseOverlay').classList.add('hide');
@@ -9499,7 +9486,7 @@ function popNum(n) {
 }
 
 function startRace() {
-    lastRoundElapsed=null;
+    lastLapElapsed=null;
     clearTimeout(resultTimer); resultTimer = null;
     initBackground(); buildSegments(); initOpponents();
     initChapterTraffic();
@@ -9608,12 +9595,12 @@ function getRoadLimits(z) {
   return { left, right };
 }
 
-function loseCleanSpeed(severity) {
+function loseCleanSpeed(severity, car=player) {
   // A graze loses part of the earned headroom; a substantial hit loses it all.
   // Boosts keep their existing collision response and absolute speed targets.
-  player.cleanSpeedBonus = severity < 0.18 ? player.cleanSpeedBonus * 0.65 : 0;
-  if (!player.isBoosting && !player.isChevronBoosting) {
-    player.speed = Math.min(player.speed, player.maxSpeed * (1 + player.cleanSpeedBonus));
+  car.cleanSpeedBonus = severity < 0.18 ? (car.cleanSpeedBonus||0) * 0.65 : 0;
+  if (!car.isBoosting && !car.isChevronBoosting) {
+    car.speed = Math.min(car.speed, (car.maxSpeed||player.maxSpeed) * (1 + car.cleanSpeedBonus));
   }
 }
 
@@ -9663,8 +9650,8 @@ function hitBarrier(car, barrier) {
     car.speed *= 1 - (0.35 + severity * 0.35);
     car.collisionCooldown = 0.35 + severity * 0.15;
     car.isBoosting = car.isChevronBoosting = false;
+    loseCleanSpeed(1,car);
     if (car === player) {
-      loseCleanSpeed(1);
       player.hitFlash = Math.max(player.hitFlash, 0.45 + severity * 0.55);
     }
   }
@@ -9705,6 +9692,7 @@ function checkOpponentCollision(previousPlayer, previousOpponents, dt) {
         if (severity > 0.55) player.isBoosting = player.isChevronBoosting = false;
       }
       loseCleanSpeed(severity);
+      loseCleanSpeed(severity,opp);
       player.hitFlash = Math.max(player.hitFlash, 0.15 + severity * 0.65);
       player.collisionCooldown = opp.collisionCooldown = 0.18 + severity * 0.22;
       opp.contactAxis = hit.axis; opp.contactSide = hit.side;
@@ -9753,7 +9741,7 @@ function loop(ts) {
 
   if (state === 'countdown') {
     cntTimer += dt;
-    if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
+    if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; if(currentLevel===LEVEL_DREAM)lastLapElapsed=0; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
     if (state === 'countdown') updateHighwayTrains(dt, true);
   }
 
@@ -9767,7 +9755,7 @@ function loop(ts) {
     const previousOpponents = opponents.map(opp => ({ x: opp.x, z: getRaceDistance(opp) }));
     updateChapterTraffic(dt);
     if (!player.finished) currentLapTime += dt * 1000;
-    if(lastRoundElapsed!==null){lastRoundElapsed+=dt;if(lastRoundElapsed>=3.15)lastRoundElapsed=null;}
+    if(lastLapElapsed!==null){lastLapElapsed+=dt;if(lastLapElapsed>=1.5)lastLapElapsed=null;}
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
     player.wallHitCooldown = Math.max(0, player.wallHitCooldown - dt);
 
@@ -9951,32 +9939,37 @@ function loop(ts) {
     const pTotal = getRaceDistance(player);
     for (let oppIndex = 0; oppIndex < opponents.length; oppIndex++) {
       const opp = opponents[oppIndex];
+      opp.cleanSpeedBonus??=0;
       opp.collisionCooldown = Math.max(0, opp.collisionCooldown - dt);
       const oTotal = getRaceDistance(opp);
       const dist = oTotal - pTotal;
       
-      let rubberBandTarget = opp.maxSpeed;
-      if (dist < -3500) rubberBandTarget *= 1.04; 
-      if (dist > 4500) rubberBandTarget *= 0.96;  
-
       if (Math.abs(dist) < 4000 && Math.random() < 1 - Math.exp(-0.18 * dt) && opp.boostTimer <= 0 && !opp.isChevronBoosting) {
           opp.isBoosting = true;
           opp.boostTimer = 1.5;
       }
-
-      if (opp.isChevronBoosting) {
-          opp.chevronBoostTimer -= dt;
-          if (opp.chevronBoostTimer <= 0) opp.isChevronBoosting = false;
-          rubberBandTarget *= 2.31; 
-      } else if (opp.isBoosting) {
-          opp.boostTimer -= dt;
-          if (opp.boostTimer <= 0) opp.isBoosting = false;
-          rubberBandTarget *= 1.65; 
+      if(opp.isChevronBoosting){opp.chevronBoostTimer-=dt;if(opp.chevronBoostTimer<=0)opp.isChevronBoosting=false;}
+      else if(opp.isBoosting){opp.boostTimer-=dt;if(opp.boostTimer<=0)opp.isBoosting=false;}
+      const oppBoosted=opp.isBoosting||opp.isChevronBoosting,oppOffroad=Math.abs(opp.x)>=.94;
+      if(!oppBoosted){
+        if(oppOffroad)opp.cleanSpeedBonus=Math.max(0,opp.cleanSpeedBonus-CLEAN_SPEED_LIMIT/3*dt);
+        else if(opp.collisionCooldown<=0&&opp.speed>=opp.maxSpeed-.01&&opp.speed<=opp.maxSpeed*(1+opp.cleanSpeedBonus)+.01){
+          opp.cleanSpeedBonus=Math.min(CLEAN_SPEED_LIMIT,opp.cleanSpeedBonus+CLEAN_SPEED_LIMIT/CLEAN_SPEED_BUILD_TIME*dt);
+        }
       }
-      
-      const oppAccelMod = opp.isChevronBoosting ? 2.1 : (opp.isBoosting ? 1.5 : 1.0);
-      opp.speed += (rubberBandTarget - opp.speed) * dt * 1.5 * oppAccelMod;
-      
+      const oppMax=opp.maxSpeed*(opp.isChevronBoosting?2.31:opp.isBoosting?1.65:1+opp.cleanSpeedBonus);
+      // Catch-up changes acceleration, never the shared maximum speed.
+      const catchup=dist<-3500?1.04:1,cruise=dist>4500?.96:1;
+      const oppTarget=oppMax*cruise*(oppOffroad?.36:1);
+      const oppAccelMod=opp.isChevronBoosting?2.1:opp.isBoosting?1.5:1;
+      if(opp.speed<oppTarget){
+        const acceleration=!oppBoosted&&opp.speed>=opp.maxSpeed-.01
+          ?opp.maxSpeed*CLEAN_SPEED_LIMIT/CLEAN_SPEED_BUILD_TIME:player.accel*oppAccelMod*catchup;
+        opp.speed=Math.min(oppTarget,opp.speed+acceleration*dt);
+      }else{
+        opp.speed=Math.max(oppTarget,opp.speed-(opp.speed-oppTarget)*dt*1.5*oppAccelMod);
+      }
+
       // Fahrspurwechsel-Logik:
       opp.timeInLane = (opp.timeInLane || 0) + dt;
       let switchChance = 0.005; // unwahrscheinlich in kurzen Abständen
@@ -10136,7 +10129,7 @@ function loop(ts) {
       lapTimes[player.lap - 1] = currentLapTime;
       if (currentLapTime < bestLapTime) bestLapTime = currentLapTime;
       currentLapTime = 0; player.lap++;
-      if(player.lap===3&&currentLevel!==LEVEL_DREAM)lastRoundElapsed=0;
+      if(player.lap===3&&currentLevel!==LEVEL_DREAM)lastLapElapsed=0;
       segments.forEach(s => {
         if (s.pylon) s.pylon.active = true;
         if (s.barrier) { s.barrier.active = true; s.barrier.state = 'idle'; s.barrier.blinkCount = 0; }
@@ -10216,20 +10209,25 @@ function showMainMenu() {
 
 initBackground(); buildSegments(); initOpponents();
 
-// Fix for displaying background image locally without web server
-let introBg = './Welcome.png';
-if (window.location.protocol === 'file:' && !window.location.pathname.includes('/dist/')) {
-    introBg = './public/Welcome.png';
-}
-document.getElementById('introScreen').style.background = `#0a0410 url('${introBg}') center/contain no-repeat`;
+// Vite fingerprints the artwork and applies the configured deployment base.
+const introArt=document.getElementById('introArt');
+let introArtFallback=false;
+const showIntroPrompt=()=>document.getElementById('introBox').classList.add('show');
+const introArtLoaded=()=>introArt.decode().catch(()=>{}).then(showIntroPrompt);
+introArt.addEventListener('load',introArtLoaded);
+introArt.addEventListener('error',()=>{
+  if(introArtFallback){showIntroPrompt();return;}
+  introArtFallback=true;
+  introArt.src=window.location.protocol==='file:'
+    ?(window.location.pathname.includes('/dist/')?'./Welcome.png':'./public/Welcome.png')
+    :new URL('../Welcome.png',introArt.src).href;
+});
+if(introArt.complete&&introArt.naturalWidth>0)introArtLoaded();
+else if(introArt.complete)introArt.dispatchEvent(new Event('error'));
 
 buildMainMenu();
 document.getElementById('resumeBtn').onclick = togglePause;
 document.getElementById('exitRaceBtn').onclick = exitRace;
-
-setTimeout(() => {
-  document.getElementById('introBox').classList.add('show');
-}, 1500);
 
 document.getElementById('introBox').onclick = showMainMenu;
 document.getElementById('introScreen').onclick = (e) => {

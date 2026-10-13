@@ -46,6 +46,21 @@ module.exports = async function runPace(browser, baseUrl) {
           record(`ten-seconds-to-402-kmh-${rate}fps`, Math.abs(halfway - 3960) < 1 && Math.abs(full - 4320) < 1 && Math.abs(player.speed - 4320) < 1,
             { halfway, full, held: player.speed });
         }
+        // Every real opponent earns the same cap, with no random turbo/lane switches.
+        const random=Math.random;
+        try{
+          Math.random=()=>.99;
+          for(const [level,rate]of[[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
+            reset(level,rate);initOpponents();panelStarts=[];
+            player.speed=3600;player.x=-.55;
+            opponents.forEach(o=>{o.speed=3600;o.z=player.z+2500;o.x=o.baseX=o.targetX=.55;});
+            tick(5);const halfway=opponents.map(o=>o.speed);tick(5);const full=opponents.map(o=>o.speed);tick(1);
+            record(`all-opponents-earn-player-top-speed-level-${level}-${rate}fps`,halfway.every(v=>Math.abs(v-3960)<1)&&full.every(v=>Math.abs(v-4320)<1)&&opponents.every(o=>Math.abs(o.speed-player.speed)<1&&o.cleanSpeedBonus===CLEAN_SPEED_LIMIT),{halfway,full,held:opponents.map(o=>o.speed),player:player.speed});
+          }
+          const opponent=opponents[0];opponent.collisionCooldown=0;
+          hitBarrier(opponent,{state:'idle',timer:0});
+          record('opponent-barrier-removes-earned-speed',opponent.cleanSpeedBonus===0&&opponent.speed<1800,{speed:opponent.speed,bonus:opponent.cleanSpeedBonus});
+        }finally{Math.random=random;}
         reset(); earn();
         const full = player.cleanSpeedBonus;
         opponentContact(0.12, player.speed);

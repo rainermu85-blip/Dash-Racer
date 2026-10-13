@@ -3,8 +3,16 @@
 10. Oktober 2026. Die anfängliche Beschleunigung auf 335 km/h bleibt bestehen.
 Danach steigt das normale Tempo über zehn Sekunden sauberer Fahrt gleichmäßig
 auf 402 km/h (120 Prozent). Bei fünf Sekunden liegt es bei 368,5 km/h.
-Der Aufbau funktioniert in allen sechs Welten; die KI behält ihre bisherigen
-Geschwindigkeiten. Rennzeiten und Schwierigkeit sollten mit Testern abgestimmt werden.
+Der Aufbau funktioniert in allen sechs Welten. Auch alle fünf Gegner haben
+jetzt dieselbe Basis von 335 km/h und können über zehn Sekunden sauberer
+Normalfahrt den Zusatz bis 402 km/h verdienen. Harte Hindernisse entfernen
+auch bei ihnen den Zusatz, Gegnerkontakte reduzieren ihn nach ihrer Stärke;
+Offroad baut ihn wieder ab. Aufholhilfe kann ihre anfängliche Beschleunigung
+leicht erhöhen, aber nicht das gemeinsame Tempolimit. Eine weit vorausfahrende
+KI nimmt weiterhin etwas Tempo zurück. Fahrspurentscheidungen und automatische
+Turboentscheidungen bleiben erhalten. Die unveränderten Faktoren 1,65 und
+2,31 beziehen sich nun auch bei der KI auf dieselbe Basis wie beim Spieler.
+Rennzeiten und Schwierigkeit sollten mit Testern abgestimmt werden.
 
 `player.maxSpeed` bleibt die alte Basis von 3600 internen Einheiten.
 `cleanSpeedBonus` speichert den verdienten Zusatz von null bis 0,2.
@@ -66,3 +74,8 @@ verglichen. Bei gleicher Simulationszeit bleibt das Strömungsmuster identisch;
 die Linien sind 0,8 Pixel dünn. Eine achtsekündige reguläre Durchfahrt durch
 die korrigierte Brücke erreichte auf der Cloud-Prüfumgebung rund 60 FPS ohne
 JavaScript-Fehler, mit 2,2 ms medianer Renderzeit und 4 ms beim 95. Perzentil.
+
+Die aktuelle Tempoprüfung beobachtet außerdem alle fünf Gegner bei 30, 60 und
+120 FPS und auf allen sechs Maps: 368,5 km/h nach fünf Sekunden ab der Basis,
+402 km/h nach zehn Sekunden und derselbe maximale Normalwert wie beim Spieler.
+Eine weitere Prüfung beobachtet den Verlust bei einer harten Baustellenbarriere.

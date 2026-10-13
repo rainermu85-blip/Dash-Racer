@@ -100,7 +100,7 @@ module.exports = async function runCoast(browser, baseUrl) {
         };
         for(const [name,pier,lap,start,index] of [
           ['pier-day',true,1,OCEAN_PIER_INDEX-110,OCEAN_PIER_CENTER],['pier-night',true,3,OCEAN_PIER_INDEX-110,OCEAN_PIER_CENTER],
-          ['party-day',false,1,0,OCEAN_PARTY_INDEX],['party-night',false,3,0,OCEAN_PARTY_INDEX]
+          ['party-day',false,1,0,OCEAN_PARTY_INDEX],['party-night',false,3,0,OCEAN_NIGHT_PARTY_INDEX]
         ]){
           reset(2,lap);player.z=start*SEGMENT_LENGTH;const samples=[];
           for(let target=Math.max(start,index-80);target<=index-5;target+=7){
