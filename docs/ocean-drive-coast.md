@@ -88,14 +88,17 @@ Die letzten Gruppen werden niedriger, sodass der Blick wieder aufgeht.
 Die Pflanzen sitzen auf der Hecke und wachsen über die Felsen.
 Fünf unterschiedliche Grundproportionen verändern Breite, Höhe und Neigung
 der einzelnen Steine. Zwei Findlinge bei 595 und 623 tragen große, einfache
-geometrische Gesichter, frei inspiriert von pazifischer Holzschnitzkunst;
-der Stein selbst bildet jeweils den Kopf. Ein weiterer bei 642 trägt eine
+Moai-inspirierte Steinreliefs mit schwerem Brauenwulst, langen Nasen,
+geschlossenen Lippen und breitem Kinn. Die beiden Kopfsteine sind schmaler
+und höher. Steinfarbene Lichtflächen und dunkle Vertiefungen ersetzen die
+aufgemalten Zähne und Ornamente; der Findling selbst bildet den Kopf.
+Ein weiterer bei 642 trägt eine
 kleine ockerfarbene Jagdszene mit Bogen und Hirsch. Die Malereien bleiben auf
 diese drei Steine beschränkt und werden an ihre Oberflächen angepasst.
 
 Die Gruppen werden als zusätzliche Landschaftsobjekte angelegt. Bestehende
-Strandobjekte, Boote, Fahrbahn und Fahrphysik bleiben erhalten; nur die nächste
-Palme hinter dem alten Baumplatz wird jetzt durch den Baum ersetzt.
+Strandobjekte, Boote, Fahrbahn und Fahrphysik bleiben erhalten. Der alte Baum
+steht vor der Barriere in der Lücke zum früheren Walplatz.
 Wasserprojektion und Zeichenreihenfolge wurden nicht geändert. Ein privater
 Zufallsgenerator erzeugt die Formen einmal als wiederverwendete Canvaspfade;
 Gruppen außerhalb des Bildes werden vor dem Zeichnen verworfen.
@@ -124,8 +127,11 @@ ihre Streckenlängen und ihre Ziele. Der dekorative Ocean-Drive-Zielbogen
 entfällt; die aufgemalte Ziellinie bleibt.
 
 Beim Wechsel von Runde zwei in Runde drei erscheint „LAST ROUND“ dreimal
-mittig auf einer pink-türkisen Synthwave-Flagge: je 0,7 Sekunden mit kurzen
-Pausen dazwischen und sanften Ein- und Ausblendungen. Die Anzeige folgt der
+mittig als reine Neon-Schrift: je 0,7 Sekunden mit kurzen Pausen dazwischen
+und sanften Ein- und Ausblendungen. Die Buchstaben sind halb so groß wie
+zuvor, mit einer cyanfarbenen Kontur und einer durchscheinenden blauen Füllung.
+Die dunkle Fläche, der Rahmen und die Eckverzierungen entfallen. Die Anzeige
+folgt der
 Spielzeit und pausiert mit dem Rennen. Neustart und Verlassen löschen sie.
 Sie gilt auch für die anderen Drei-Runden-Strecken; Dream Odyssey behält
 sein Ein-Runden-Rennen.
@@ -133,12 +139,11 @@ sein Ein-Runden-Rennen.
 ## Alter Küstenbaum nach dem Felsdurchbruch
 
 Der ehemalige Kugelbaum bei 115 und seine Grafik entfallen. Der einmalige
-alte Küstenbaum ersetzt die tatsächlich nächste Palme hinter dem bisherigen
-Baumplatz bei 580. Weil Palmen zufällig verteilt werden, wird dieser Platz
-beim Aufbau ermittelt. Der alte Platz bleibt frei, der Baum rückt vom Wal
-weg und bleibt nach dem Tunnel in Sichtweite. Ein breiter Wurzelfuß, ein
-knorriger Stamm, kräftige verzweigte
-Äste und eine breite, unregelmäßige Krone greifen die Fotovorlage auf.
+alte Küstenbaum steht fest bei 586, zwischen dem früheren Walplatz bei 577
+und den ersten Findlingen bei 595. Die Auswahl einer zufälligen nächsten
+Palme entfällt: Sie konnte den Baum hinter die Barriere setzen. Der Blick
+aus dem Tunnel bleibt von Palmen frei. Ein breiter Wurzelfuß, ein knorriger
+Stamm, kräftige verzweigte Äste und eine breite, unregelmäßige Krone greifen die Fotovorlage auf.
 Dunkles Olivgrün, gedecktes Küstengrün und warme braune Rinde unterscheiden
 ihn leicht von den türkisfarbenen Palmen. Fünf Möwen heben bei Annäherung aus
 der Krone ab, jetzt bereits 58 statt 38 Segmente vor dem Baum. Die Geometrie
@@ -247,11 +252,17 @@ Nach dem Zieleinlauf bleibt sie ebenfalls eine Nachtparty.
 Zehn zusätzliche Strandplätze verteilen sich auf vier Motive: Liegen mit
 Sonnenschirm, farbige Surfbrettständer, Cabanas und offene Rettungssitze mit
 Leiter und Rettungsring. Die Füße der Einrichtungen stehen auf dem Sand.
-Strandbar, Eiswagen, Wal, Boote und Surfer bleiben erhalten.
+Strandbar, Eiswagen, Boote und Surfer bleiben erhalten. Timi, der Wal,
+und seine Helfergruppe ziehen in den zuvor leeren Bereich um 1100, mit dem
+Anker bei 1120 für einen sichtbaren Blick während der Linkskurve. Die
+Strandungs- und Rettungsszene in den ersten beiden Runden und der glückliche
+Wal in Runde drei bleiben erhalten. Palmen werden am neuen Platz freigehalten.
 
 Vier unterschiedliche Aktivitäten beleben zusätzliche Strandstellen, jeweils
 einmal: Frisbee bei 235, die einzige Ghettoblaster-Crew bei 345, Sandburgenbauen
-bei 845 und ein etwa drei Meter hoher Sprungturm bei 1130. Frisbeespieler
+bei 845 und ein etwa drei Meter hoher Sprungturm neben der Ghettoblaster-Gruppe
+bei 345 und den Cabanas bei 355. Sein Anker liegt bei 350, etwas weiter
+auf dem Strand; das Brett reicht weiterhin über die Wasserlinie. Frisbeespieler
 tragen rosafarbene und türkise Shirts; violette und orangefarbene Kleidung,
 ein türkiser Eimer und ein pinkes Fähnchen begleiten die Sandburg. Der
 Sprungturm steht an der Wasserlinie mit Leiter, Geländer und einem Brett
@@ -268,8 +279,10 @@ auf der mittleren Geraden. Die 36 Segmente entsprechen 1,25 Sekunden bei
 402 km/h. Eine unregelmäßige Öffnung in einem größeren Felskörper, ein grob
 behauenes Gewölbe, Steinrisse und Pflanzen greifen die Fotoreferenz auf.
 Die vollständige Geometrie ist vor der Einfahrt sichtbar.
-„I ❤️ BIBI“ steht als helle, zweizeilige Graffitischrift mit pinkem Herz auf
-der rechten inneren Felswand. Die transparente Schriftfläche wird abschnittsweise
+„I ❤️ BIBI“ steht als kleine, leicht schräg gemalte, zweizeilige Graffitischrift
+mit pinkem Herz auf der rechten inneren Felswand. Breite und Höhe sind jeweils
+um 75 Prozent reduziert: ein verstecktes Detail im mittleren Tunnelbereich.
+Die transparente Schriftfläche wird abschnittsweise
 auf die vorhandene Wand projiziert, ohne Schild oder zusätzliche Tunnelgeometrie.
 
 Im Durchbruch liegt die Fahrbahnbegrenzung auf beiden Seiten bei 1,05.
