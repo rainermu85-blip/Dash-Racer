@@ -79,6 +79,26 @@ geteilt und zusammen mit Strand, Wasser und davorliegendem Gelände
 gezeichnet. Eine gemeinsame seitliche Projektion hält den Steg gerade.
 Die Nahgrenze schneidet auch die Modellflächen in Weltkoordinaten ab.
 
+## Sichtbarriere an der Küstenkuppe
+
+Der fehlende Wasserblick ist in Fahransichten besonders um 600–650 sichtbar.
+Eine örtliche Barriere auf der Strandseite verdeckt ihn: 25 unregelmäßig
+verteilte, graue Findlingsgruppen mit dichtem Grün zwischen 595 und 686.
+Die letzten Gruppen werden niedriger, sodass der Blick wieder aufgeht.
+Die Pflanzen sitzen auf der Hecke und wachsen über die Felsen.
+
+Die Gruppen werden als zusätzliche Landschaftsobjekte angelegt. Bestehende
+Palmen, Strandobjekte, Boote, Fahrbahn und Fahrphysik bleiben erhalten;
+Wasserprojektion und Zeichenreihenfolge wurden nicht geändert. Ein privater
+Zufallsgenerator erzeugt die Formen einmal als wiederverwendete Canvaspfade;
+Gruppen außerhalb des Bildes werden vor dem Zeichnen verworfen.
+
+Tag- und Nachtansichten wurden bei 390 und 480 Pixeln Breite betrachtet.
+Ein Vergleich mit identischer Simulation zum vorherigen Commit prüft an
+acht Positionen von 580 bis 650 die bestehenden Objektplatzierungen und
+sichtbare Punkte der nahen Fahrbahn einschließlich Auto. Dort gab es keine
+Abweichungen. Der Wasserfehler selbst bleibt hinter der Barriere bestehen.
+
 ## Zielgerade und Sternschnuppe
 
 Der bisherige Streckenaufbau wurde bei Segment 1150 mitten in der letzten

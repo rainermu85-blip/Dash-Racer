@@ -252,6 +252,7 @@ const HIGHWAY_TRAIN_DURATION = 1.6;
 const HIGHWAY_TRAIN_APPROACH_TIME = 1.7;
 const HIGHWAY_TUNNEL = { start: 490, end: 720, height: 1750 };
 const OCEAN_OLD_TREE_INDEX=580;
+const OCEAN_SCREEN_SPOTS=[595,598,602,605,609,612,616,620,623,627,631,634,638,642,646,649,653,657,660,664,668,672,676,681,686];
 const OCEAN_FINISH_STRAIGHT_START=1180;
 const OCEAN_SHOOTING_STAR_LEAD=60;
 const OCEAN_ROCK_TUNNEL = { start: 506, end: 542, height: 2100 };
@@ -884,6 +885,8 @@ function buildSegments() {
         });
         worldY += def.hill; 
     }
+
+    if(currentLevel===2)for(const index of OCEAN_SCREEN_SPOTS)segments[index].coastalScreen=true;
 
     if (currentLevel === LEVEL_DREAM) {
         // Append 200 extra flat straight underwater segments beyond the finish line
@@ -2496,6 +2499,69 @@ function drawCoastalBoulder(x,y,scale,seed) {
         if(seed%3===1 && j%2===0){ctx.fillStyle='#ff239d';ctx.beginPath();ctx.arc(px+5,py-5,2.5,0,Math.PI*2);ctx.fill();}
     }
     ctx.restore();
+}
+
+const coastalScreenModels=new Map();
+function makeCoastalScreenModel(seed) {
+  let value=(Math.imul(seed,2654435761)^0x7363726e)>>>0;
+  const random=()=>{value=(Math.imul(value,1664525)+1013904223)>>>0;return value/4294967296;};
+  const height=214+random()*88,shoulder=-20+random()*25;
+  const outline=[[-69,3],[-86,-height*.18],[-92,-height*.44],[-73,-height*.71],
+    [-47,-height*.93],[shoulder,-height],[40,-height*.93],[72,-height*.73],
+    [92,-height*.4],[100,-height*.13],[74,4]];
+  const path=points=>{
+    const p=new Path2D();p.moveTo(...points[0]);for(let j=1;j<points.length;j++)p.lineTo(...points[j]);p.closePath();return p;
+  };
+  const rock=new Path2D();
+  rock.moveTo((outline[0][0]+outline.at(-1)[0])/2,(outline[0][1]+outline.at(-1)[1])/2);
+  for(let i=0;i<outline.length;i++){
+    const a=outline[i],b=outline[(i+1)%outline.length];rock.quadraticCurveTo(a[0],a[1],(a[0]+b[0])/2,(a[1]+b[1])/2);
+  }
+  rock.closePath();
+  const facets=[
+    path([outline[1],outline[3],outline[4],outline[5],[12,-height*.51],[-32,-height*.22]]),
+    path([outline[5],outline[6],outline[7],[29,-height*.39],[12,-height*.51]]),
+    path([[12,-height*.51],[29,-height*.39],outline[7],outline[8],outline[9],outline[10],[4,-height*.16]])
+  ];
+  const cracks=new Path2D();cracks.moveTo(shoulder,-height*.89);cracks.lineTo(shoulder-13,-height*.65);cracks.lineTo(4,-height*.47);cracks.lineTo(-15,-height*.28);
+  const hedgePoints=[[-143,4],[-151,-height*.3],[-140,-height*.73],[-119,-height*.8],
+    [-97,-height*.94],[-65,-height*.91],[-41,-height*1.03],[-13,-height*.97],
+    [21,-height*1.05],[48,-height*.96],[78,-height*1.01],[111,-height*.89],[140,-height*.82],[151,-height*.43],[143,4]];
+  const hedge=path(hedgePoints);
+  const shrubs=Array.from({length:3},()=>new Path2D());
+  // A dense, jagged canopy hides the view behind the boulders; lower vines root it.
+  for(let i=0;i<160;i++){
+    const upper=i<95,x=-132+random()*264;
+    let top=-height;
+    for(let j=2;j<12;j++)if(x>=hedgePoints[j][0]&&x<=hedgePoints[j+1][0]){
+      const a=hedgePoints[j],b=hedgePoints[j+1];top=a[1]+(b[1]-a[1])*(x-a[0])/(b[0]-a[0]);break;
+    }
+    const y=upper?top+9+random()*24:-6-random()*height*.86;
+    const r=4+random()*9,leaf=shrubs[Math.floor(random()*3)];
+    leaf.moveTo(x-r,y);
+    leaf.quadraticCurveTo(x-r*.1,y-r*.8,x+r,y-r*.28);
+    leaf.quadraticCurveTo(x+r*.1,y+r*.6,x-r,y);leaf.closePath();
+  }
+  return {rock,facets,cracks,hedge,shrubs};
+}
+
+function drawCoastalSightScreen(x,y,scale,seed,night=0) {
+  if(scale<.025||x-155*scale>W||x+155*scale<0||y+8*scale<0||y-350*scale>H)return;
+  if(!coastalScreenModels.has(seed))coastalScreenModels.set(seed,makeCoastalScreenModel(seed));
+  const m=coastalScreenModels.get(seed);
+  // Low, staggered outcrops ease the exit back into the open coastline.
+  const taper=seed>668?1-(seed-668)/30:1;
+  beginChapterSprite(x,y,scale);
+  ctx.scale(1,taper);
+  const stone=['#61686e','#8b9092','#747d83','#424e59'].map((c,i)=>interpolateColor(c,['#2b3040','#474e61','#384454','#202a38'][i],night));
+  ctx.fillStyle='rgba(26,34,34,.22)';ctx.beginPath();ctx.ellipse(4,3,79,7,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=interpolateColor('#143d31','#10262b',night);ctx.fill(m.hedge);
+  ctx.fillStyle=stone[0];ctx.fill(m.rock);
+  for(let i=0;i<m.facets.length;i++){ctx.fillStyle=stone[i+1];ctx.fill(m.facets[i]);}
+  ctx.strokeStyle=interpolateColor('#424e55','#1a2632',night);ctx.lineWidth=1.6;ctx.stroke(m.cracks);
+  const greens=['#173c32','#285746','#3b7254'].map((c,i)=>interpolateColor(c,['#102629','#193d36','#2c5347'][i],night));
+  for(let i=0;i<m.shrubs.length;i++){ctx.fillStyle=greens[i];ctx.fill(m.shrubs[i]);}
+  ctx.restore();
 }
 
 // Clip the complete marina mesh into depth slices once. Every component uses
@@ -8350,6 +8416,13 @@ function render(ts) {
         s.spriteX = seg.spriteX;
     }
 
+    if(seg.coastalScreen){
+        const s=getCleanSpriteFromPool();s.type='coastal_sight_screen';
+        s.x=rx2+(2.22+(segIdx%4)*.035)*p2.w;s.y=p2.y;
+        s.sc=Math.min(1.25,p2.scale*2800)*responsiveFactor;
+        s.depth=n;s.clipY=segmentClipY;s.segIdx=segIdx;
+    }
+
     if (seg.oceanBoat) {
         const boat=seg.oceanBoat;
         // Open-bay billboards use their distance from the camera, including
@@ -8562,6 +8635,12 @@ function render(ts) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
         drawBeachJeepSprite(s.x, s.y, s.sc);
+        ctx.restore();
+    }
+    else if (s.type === 'coastal_sight_screen') {
+        ctx.save();
+        if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
+        drawCoastalSightScreen(s.x,s.y,s.sc,s.segIdx,currentProgressRatio);
         ctx.restore();
     }
     else if (s.type === 'coastal_boulder') {
