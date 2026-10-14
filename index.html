@@ -92,8 +92,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 #introScreen {position:absolute;inset:0;z-index:20;background-color:#0a0410;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s}
 #introScreen.hide {opacity:0;pointer-events:none}
 #introArt {position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
-#introBox {position:absolute;bottom:max(28px,env(safe-area-inset-bottom));z-index:1;background:rgba(10,5,20,0.75);border:2px solid #ff4fd8;box-shadow:0 0 20px rgba(255,79,216,0.5);padding:24px 32px;border-radius:8px;opacity:0;transition:opacity 1s;cursor:pointer}
-#introBox.show {opacity:1}
+#introBox {position:absolute;top:66%;transform:translateY(-50%);z-index:1;background:rgba(10,5,20,0.75);border:2px solid #ff4fd8;box-shadow:0 0 20px rgba(255,79,216,0.5);padding:24px 32px;border-radius:8px;opacity:0;transition:opacity .25s ease-out;pointer-events:none;cursor:pointer}
+#introBox.show {opacity:1;pointer-events:auto}
 #introText {font-family:'Gravity Pixel',monospace;font-size:14px;animation:neonPulse 4s infinite alternate;text-align:center;user-select:none;letter-spacing:1px;line-height:1.5}
 @keyframes neonPulse {
   0% {color:#ff4fd8;text-shadow:0 0 12px #ff4fd8}
@@ -10355,7 +10355,19 @@ initBackground(); buildSegments(); initOpponents();
 // Vite fingerprints the artwork and applies the configured deployment base.
 const introArt=document.getElementById('introArt');
 let introArtFallback=false;
-const showIntroPrompt=()=>document.getElementById('introBox').classList.add('show');
+let introPromptTimer=null;
+function positionIntroPrompt(){
+  // Anchor to the contained artwork, including the letterboxing on tall phones.
+  const aspect=introArt.naturalWidth>0?introArt.naturalHeight/introArt.naturalWidth:1535/1024;
+  const artHeight=Math.min(introArt.clientHeight,introArt.clientWidth*aspect);
+  document.getElementById('introBox').style.top=((introArt.clientHeight-artHeight)/2+artHeight*.66)+'px';
+}
+window.addEventListener('resize',positionIntroPrompt);
+const showIntroPrompt=()=>{
+  if(introPromptTimer!==null)return;
+  positionIntroPrompt();
+  introPromptTimer=setTimeout(()=>document.getElementById('introBox').classList.add('show'),1500);
+};
 const introArtLoaded=()=>introArt.decode().catch(()=>{}).then(showIntroPrompt);
 introArt.addEventListener('load',introArtLoaded);
 introArt.addEventListener('error',()=>{
