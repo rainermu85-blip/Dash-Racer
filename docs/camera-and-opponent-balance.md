@@ -22,7 +22,7 @@ Die Tempoangaben gelten ohne zusätzliche Aufholhilfe und Überholangriffe:
 | --- | ---: | ---: | ---: | ---: |
 | Pink | 90 % | ca. 362 km/h | 10 s | 7,5 % |
 | Cyan | 87 % | ca. 350 km/h | 11 s | 6,0 % |
-| Gelb | 84 % | ca. 338 km/h | 12 s | 5,0 % |
+| Orange | 84 % | ca. 338 km/h | 12 s | 5,0 % |
 | Grün | 81 % | ca. 326 km/h | 13 s | 4,0 % |
 | Lila | 78 % | ca. 314 km/h | 14 s | 3,0 % |
 
