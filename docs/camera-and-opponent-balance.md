@@ -84,5 +84,6 @@ es Fahransichten vor und nach der Änderung an identischen Kurvenpositionen in
 allen sechs Leveln. `controls` prüft zusätzlich die Thermometer-Proportionen
 und beide Turbo-Auslöser.
 
-Die Countach-Vergleichsbögen sind Grafikvorschläge. Im Spiel werden die
-bisherigen Wagen weiterhin gezeichnet.
+Der zuletzt freigegebene einfache Countach wird inzwischen für Spieler und
+Gegner gezeichnet; siehe `countach-rendering.md`. Diese Grafikänderung lässt
+die hier beschriebenen Kamera- und Gegnerregeln unverändert.

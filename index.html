@@ -3345,138 +3345,104 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
     }
 }
 
-function drawCarSprite(cx, cy, sc, color, isPlayer, lean = 0, thrust = 0, hit = 0, isBoosting = false, isBraking = false, isChevronBoosting = false) {
-  const bw = ~~(sc * (isPlayer ? 164 : 136)), bh = ~~(sc * (isPlayer ? 100 : 84)); if (bw < 8) return;
-  const px = ~~(cx - bw / 2), py = ~~(cy - bh);
-  const bodyDark = isPlayer ? '#d16f0b' : shadeColor(color, -55), bodyMid = isPlayer ? '#ff9f1c' : color, bodyLight = isPlayer ? '#ffd34d' : shadeColor(color, 55);
-  const glow = isPlayer ? '#ff4fd8' : shadeColor(color, 30), hitMix = Math.min(1, hit);
+function getCarGeometry(cx,cy,sc,isPlayer){
+  // Preserve projected width and ground anchor; the new Countach is slightly flatter.
+  const bw=sc*(isPlayer?164:136),bh=sc*(isPlayer?92:76);
+  return{bw,bh,px:cx-bw/2,py:cy-bh,pivotY:cy-bh*.45};
+}
+const CAR_EXHAUST_X=[.28,.35,.65,.72];
+function getCarExhausts(cx,cy,sc,isPlayer,lean=0){
+  const g=getCarGeometry(cx,cy,sc,isPlayer),cos=Math.cos(lean),sin=Math.sin(lean);
+  return CAR_EXHAUST_X.map(fraction=>{
+    const x=g.px+g.bw*fraction,y=g.py+g.bh*.84;
+    const dx=x-cx,dy=y-g.pivotY;
+    return{x:cx+dx*cos-dy*sin,y:g.pivotY+dx*sin+dy*cos,radius:g.bw*.031};
+  });
+}
+function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=false,isBraking=false,isChevronBoosting=false){
+  const {bw,bh,px,py,pivotY}=getCarGeometry(cx,cy,sc,isPlayer);if(bw<8)return;
+  const body=hit>0?'#ffd7d7':isPlayer?'#ffc521':color;
+  const bumper=hit>0?'#ffffff':isPlayer?'#efa619':shadeColor(color,-18);
+  const ports=getCarExhausts(cx,cy,sc,isPlayer);
+  const screenPorts=getCarExhausts(cx,cy,sc,isPlayer,lean);
+  const rect=(x,y,w,h)=>ctx.fillRect(px+bw*x,py+bh*y,bw*w,bh*h);
+  const polygon=points=>{
+    ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(px+bw*x,py+bh*y):ctx.moveTo(px+bw*x,py+bh*y));
+    ctx.closePath();ctx.fill();
+  };
+  ctx.save();ctx.translate(cx,pivotY);ctx.rotate(lean);ctx.translate(-cx,-pivotY);
+  ctx.fillStyle='rgba(0,0,0,.4)';rect(.045,.935,.91,.035);
+  if(isPlayer)drawGlowRect(px+bw*.18,py+bh*.93,bw*.64,bh*.018,'#ff4fd8',4+thrust*4,.12);
 
-  ctx.save(); ctx.translate(cx, cy - bh * 0.45); ctx.rotate(lean); ctx.translate(-cx, -(cy - bh * 0.45));
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(px + ~~(bw * 0.08) - lean * 80, py + bh - 4, ~~(bw * 0.84), 7);
-  drawGlowRect(px + ~~(bw * 0.15), py + bh - 6, ~~(bw * 0.7), 4, glow, 10 + thrust * 10, 0.23 + thrust * 0.12);
-  
-  if (isChevronBoosting) {
-      // Twin Neon Pink/Magenta Hyper Flame Tails for Chevron Turbo
-      const fh = bh * (1.6 + Math.random() * 0.85); // Longer tail than normal
-      const fw = bw * 0.08;
-      
-      // Left exhaust tail
-      ctx.fillStyle = '#ff00ff';
-      ctx.beginPath();
-      ctx.moveTo(px + bw * 0.42, py + bh);
-      ctx.lineTo(px + bw * 0.45, py + bh + fh);
-      ctx.lineTo(px + bw * 0.48, py + bh);
-      ctx.fill();
-      drawGlowRect(px + bw * 0.41, py + bh, bw * 0.08, fh * 0.8, '#ff00ff', 24, 0.7);
-
-      // Right exhaust tail
-      ctx.beginPath();
-      ctx.moveTo(px + bw * 0.49, py + bh);
-      ctx.lineTo(px + bw * 0.52, py + bh + fh);
-      ctx.lineTo(px + bw * 0.55, py + bh);
-      ctx.fill();
-      drawGlowRect(px + bw * 0.48, py + bh, bw * 0.08, fh * 0.8, '#ff00ff', 24, 0.7);
-
-      // Hot white inner plasma cores
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(px + bw * 0.435, py + bh);
-      ctx.lineTo(px + bw * 0.45, py + bh + fh * 0.42);
-      ctx.lineTo(px + bw * 0.465, py + bh);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(px + bw * 0.505, py + bh);
-      ctx.lineTo(px + bw * 0.52, py + bh + fh * 0.42);
-      ctx.lineTo(px + bw * 0.535, py + bh);
-      ctx.fill();
-
-      // Continuous high-intensity neon pink plasma bubbles
-      const plasmaCount = Math.random() < 0.45 ? 2 : 1;
-      for (let k = 0; k < plasmaCount; k++) {
-          smokeParticles.push({
-              isChevronPlasma: true,
-              x: cx + (Math.random() - 0.5) * bw * 0.22,
-              y: cy,
-              vx: (Math.random() - 0.5) * 28 * sc,
-              vy: (60 + Math.random() * 70) * sc,
-              size: 3.2 * sc + Math.random() * 4.5 * sc,
-              alpha: 0.9 + Math.random() * 0.1,
-              maxLife: 0.55 + Math.random() * 0.45,
-              life: 0,
-              color: 'rgba(255, 0, 180, 0.95)',
-              glowColor: 'rgba(255, 0, 180, 0.33)'
-          });
+  // Four jets follow the four mouths. Turbo colors and duration stay as before.
+  if(isBoosting||isChevronBoosting){
+    const flameColor=isChevronBoosting?'#ff00ff':'#21d4fd';
+    const height=bh*(isChevronBoosting?1.6+Math.random()*.85:.6+Math.random()*.5);
+    for(const port of ports){
+      const halfWidth=port.radius*.95;
+      ctx.fillStyle=flameColor;ctx.beginPath();ctx.moveTo(port.x-halfWidth,port.y);
+      ctx.lineTo(port.x,port.y+height);ctx.lineTo(port.x+halfWidth,port.y);ctx.closePath();ctx.fill();
+      if(isChevronBoosting){
+        ctx.fillStyle='#ffffff';ctx.beginPath();ctx.moveTo(port.x-halfWidth*.45,port.y);
+        ctx.lineTo(port.x,port.y+height*.42);ctx.lineTo(port.x+halfWidth*.45,port.y);ctx.closePath();ctx.fill();
       }
-
-      // Add 1-2 shiny star sparkles shooting out!
-      const sparkleCount = Math.random() < 0.7 ? 2 : 1;
-      for (let k = 0; k < sparkleCount; k++) {
-          smokeParticles.push({
-              isSparkle: true,
-              x: cx + (Math.random() - 0.5) * bw * 0.15,
-              y: cy,
-              vx: (Math.random() - 0.5) * 90 * sc, // shoots wider
-              vy: (90 + Math.random() * 110) * sc, // shoots faster down
-              size: 4.5 * sc + Math.random() * 5.0 * sc,
-              alpha: 1.0,
-              maxLife: 0.35 + Math.random() * 0.25,
-              life: 0,
-              color: Math.random() > 0.45 ? '#ffffff' : '#ff00ff'
-          });
-      }
-  } else if (isBoosting) {
-      ctx.fillStyle = '#21d4fd';
-      ctx.beginPath();
-      let fw = bw * 0.2, fh = bh * (0.6 + Math.random()*0.5);
-      ctx.moveTo(px + bw*0.4, py + bh);
-      ctx.lineTo(px + bw*0.5, py + bh + fh);
-      ctx.lineTo(px + bw*0.6, py + bh);
-      ctx.fill();
-      drawGlowRect(px + bw*0.4, py + bh, bw*0.2, fh*0.8, '#21d4fd', 20, 0.6);
+    }
+    // Two local halos cover the two pairs without creating a phantom centre exhaust.
+    for(const pair of[[ports[0],ports[1]],[ports[2],ports[3]]]){
+      const x=(pair[0].x+pair[1].x)/2;
+      drawGlowRect(x-bw*.06,pair[0].y,bw*.12,height*.8,flameColor,isChevronBoosting?24:20,isChevronBoosting?.7:.6);
+    }
   }
 
-  ctx.fillStyle = '#0a0720'; ctx.fillRect(px + ~~(bw * 0.06), py + ~~(bh * 0.1), ~~(bw * 0.88), Math.max(3, ~~(bh * 0.08))); ctx.fillRect(px + ~~(bw * 0.18), py + ~~(bh * 0.16), Math.max(2, ~~(bw * 0.04)), ~~(bh * 0.12)); ctx.fillRect(px + ~~(bw * 0.78), py + ~~(bh * 0.16), Math.max(2, ~~(bw * 0.04)), ~~(bh * 0.12));
-  ctx.fillStyle = hitMix > 0 ? '#ffd7d7' : bodyMid; ctx.beginPath(); ctx.moveTo(px+bw*0.18, py+bh*0.28); ctx.lineTo(px+bw*0.82, py+bh*0.28); ctx.lineTo(px+bw*0.94, py+bh*0.56); ctx.lineTo(px+bw*0.88, py+bh*0.93); ctx.lineTo(px+bw*0.12, py+bh*0.93); ctx.lineTo(px+bw*0.06, py+bh*0.56); ctx.fill();
-  ctx.fillStyle = bodyDark; ctx.beginPath(); ctx.moveTo(px+bw*0.06, py+bh*0.56); ctx.lineTo(px+bw*0.18, py+bh*0.28); ctx.lineTo(px+bw*0.33, py+bh*0.38); ctx.lineTo(px+bw*0.28, py+bh*0.9); ctx.lineTo(px+bw*0.12, py+bh*0.93); ctx.fill(); ctx.beginPath(); ctx.moveTo(px+bw*0.94, py+bh*0.56); ctx.lineTo(px+bw*0.82, py+bh*0.28); ctx.lineTo(px+bw*0.67, py+bh*0.38); ctx.lineTo(px+bw*0.72, py+bh*0.9); ctx.lineTo(px+bw*0.88, py+bh*0.93); ctx.fill();
-  ctx.fillStyle = '#0a0720'; ctx.fillRect(px + ~~(bw * 0.28), py + ~~(bh * 0.3), ~~(bw * 0.44), ~~(bh * 0.14)); ctx.fillStyle = '#1b1438'; for (let i = 0; i < 6; i++) ctx.fillRect(px + ~~(bw * (0.31 + i * 0.065)), py + ~~(bh * 0.32), Math.max(1, ~~(bw * 0.03)), ~~(bh * 0.1));
-  ctx.fillStyle = hitMix > 0 ? '#ffffff' : bodyLight; ctx.fillRect(px + ~~(bw * 0.19), py + ~~(bh * 0.31), ~~(bw * 0.62), Math.max(2, ~~(bh * 0.04))); ctx.fillRect(px + ~~(bw * 0.19), py + ~~(bh * 0.51), ~~(bw * 0.62), Math.max(2, ~~(bh * 0.03)));
-  ctx.fillStyle = '#05030d'; ctx.fillRect(px + ~~(bw * 0.17), py + ~~(bh * 0.5), ~~(bw * 0.66), ~~(bh * 0.18));
-  
-  const tlY = py + ~~(bh * 0.54), tlW = Math.max(5, ~~(bw * 0.09)), tlH = Math.max(5, ~~(bh * 0.08));
-  if (isBraking) {
-      drawGlowRect(px+~~(bw*0.2), tlY, tlW, tlH, '#ff003c', 22, 0.8);
-      drawGlowRect(px+~~(bw*0.31), tlY, tlW, tlH, '#ff003c', 22, 0.8);
-      drawGlowRect(px+~~(bw*0.61), tlY, tlW, tlH, '#ff003c', 22, 0.8);
-      drawGlowRect(px+~~(bw*0.72), tlY, tlW, tlH, '#ff003c', 22, 0.8);
-      ctx.fillStyle = '#ff003c';
-      ctx.fillRect(px+~~(bw*0.2), tlY, tlW, tlH);
-      ctx.fillRect(px+~~(bw*0.72), tlY, tlW, tlH);
-      ctx.fillRect(px+~~(bw*0.31), tlY, tlW, tlH);
-      ctx.fillRect(px+~~(bw*0.61), tlY, tlW, tlH);
-      
-      // Cyberpunk glowing center light bar
-      const centerW = Math.max(12, ~~(bw * 0.22)), centerH = Math.max(3, ~~(bh * 0.04));
-      drawGlowRect(px+~~(bw*0.39), py+~~(bh*0.44), centerW, centerH, '#ff003c', 25, 0.95);
-      ctx.fillStyle = '#ff1a40';
-      ctx.fillRect(px+~~(bw*0.39), py+~~(bh*0.44), centerW, centerH);
-  } else {
-      drawGlowRect(px+~~(bw*0.2), tlY, tlW, tlH, '#ff5ba5', 12, 0.28);
-      drawGlowRect(px+~~(bw*0.31), tlY, tlW, tlH, '#ff9248', 10, 0.2);
-      drawGlowRect(px+~~(bw*0.61), tlY, tlW, tlH, '#ff9248', 10, 0.2);
-      drawGlowRect(px+~~(bw*0.72), tlY, tlW, tlH, '#ff5ba5', 12, 0.28);
-      ctx.fillStyle = '#ff66aa';
-      ctx.fillRect(px+~~(bw*0.2), tlY, tlW, tlH);
-      ctx.fillRect(px+~~(bw*0.72), tlY, tlW, tlH);
-      ctx.fillStyle = '#ffb24a';
-      ctx.fillRect(px+~~(bw*0.31), tlY, tlW, tlH);
-      ctx.fillRect(px+~~(bw*0.61), tlY, tlW, tlH);
-  }
+  // Wide, plain rear tires remain exposed beneath the bumper.
+  ctx.fillStyle='#07060c';rect(.055,.64,.17,.30);rect(.775,.64,.17,.30);
+  ctx.fillStyle='#34333e';rect(.055,.64,.024,.30);rect(.201,.64,.024,.30);
+  rect(.775,.64,.024,.30);rect(.921,.64,.024,.30);
 
-  ctx.fillStyle = '#090612'; ctx.fillRect(px+~~(bw*0.12), py+~~(bh*0.7), ~~(bw*0.18), ~~(bh*0.16)); ctx.fillRect(px+~~(bw*0.7), py+~~(bh*0.7), ~~(bw*0.18), ~~(bh*0.16)); ctx.fillStyle = '#201336'; ctx.fillRect(px+~~(bw*0.39), py+~~(bh*0.72), ~~(bw*0.22), ~~(bh*0.08));
-  ctx.fillStyle = '#d5d9ff'; const exW = Math.max(4, ~~(bw * 0.05)), exH = Math.max(6, ~~(bh * 0.1)); ctx.fillRect(px+~~(bw*0.45), py+~~(bh*0.83), exW, exH); ctx.fillRect(px+~~(bw*0.52), py+~~(bh*0.83), exW, exH); ctx.fillStyle = '#111'; ctx.fillRect(px+~~(bw*0.46), py+~~(bh*0.85), Math.max(2, exW-2), Math.max(3, exH-3)); ctx.fillRect(px+~~(bw*0.53), py+~~(bh*0.85), Math.max(2, exW-2), Math.max(3, exH-3));
-  ctx.fillStyle = '#050505'; const ww = Math.max(4, ~~(bw * 0.12)), wh = Math.max(7, ~~(bh * 0.16)); ctx.fillRect(px+~~(bw*0.05), py+~~(bh*0.76), ww, wh); ctx.fillRect(px+~~(bw*0.83), py+~~(bh*0.76), ww, wh);
+  // The approved naive silhouette: one body polygon and one lower color strip.
+  ctx.fillStyle=body;polygon([[.18,.165],[.82,.165],[.96,.50],[.94,.66],[.06,.66],[.04,.50]]);
+  ctx.fillStyle='#191826';polygon([[.33,.225],[.67,.225],[.71,.405],[.29,.405]]);
+  ctx.fillStyle='#07060d';rect(.375,.265,.25,.041);rect(.365,.333,.27,.041);
+  ctx.fillStyle='#080611';rect(.09,.48,.24,.14);rect(.34,.48,.32,.14);rect(.67,.48,.24,.14);
+  for(const start of[.108,.688]){
+    for(let i=0;i<3;i++){
+      const x=start+i*.073,lampColor=isBraking?'#ff003c':i===1?'#ffb24a':'#ff66aa';
+      if(isBraking&&bw>24)drawGlowRect(px+bw*x,py+bh*.51,bw*.058,bh*.078,lampColor,12,.55);
+      ctx.fillStyle=lampColor;rect(x,.51,.058,.078);
+    }
+  }
+  ctx.fillStyle=bumper;rect(.235,.66,.53,.098);
+  ctx.fillStyle='#06050b';rect(.025,.645,.21,.118);rect(.765,.645,.21,.118);
+  ctx.fillStyle='#f20a29';rect(.125,.68,.078,.043);rect(.797,.68,.078,.043);
+  ctx.fillStyle='#292935';rect(.415,.80,.17,.087);
+
+  // Four round outlets, grouped 2 + 2 inside the tires.
+  for(const port of ports){
+    ctx.fillStyle='#c4c2d4';ctx.beginPath();ctx.arc(port.x,port.y,port.radius,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#06050b';ctx.beginPath();ctx.arc(port.x,port.y,port.radius*.76,0,Math.PI*2);ctx.fill();
+  }
+  // Wing is drawn last so the supports visibly meet the upper body.
+  ctx.fillStyle='#080713';rect(.20,.075,.045,.18);rect(.755,.075,.045,.18);rect(.065,.015,.87,.085);
+  ctx.fillStyle='#302c43';rect(.065,.015,.87,.009);
   ctx.restore();
+
+  if(isChevronBoosting){
+    const plasmaCount=Math.random()<.45?2:1;
+    for(let k=0;k<plasmaCount;k++){
+      const port=screenPorts[Math.floor(Math.random()*screenPorts.length)];
+      smokeParticles.push({isChevronPlasma:true,x:port.x+(Math.random()-.5)*bw*.025,y:port.y+port.radius,
+        vx:(Math.random()-.5)*28*sc,vy:(60+Math.random()*70)*sc,size:3.2*sc+Math.random()*4.5*sc,
+        alpha:.9+Math.random()*.1,maxLife:.55+Math.random()*.45,life:0,
+        color:'rgba(255, 0, 180, 0.95)',glowColor:'rgba(255, 0, 180, 0.33)'});
+    }
+    const sparkleCount=Math.random()<.7?2:1;
+    for(let k=0;k<sparkleCount;k++){
+      const port=screenPorts[Math.floor(Math.random()*screenPorts.length)];
+      smokeParticles.push({isSparkle:true,x:port.x,y:port.y+port.radius,
+        vx:(Math.random()-.5)*90*sc,vy:(90+Math.random()*110)*sc,size:4.5*sc+Math.random()*5*sc,
+        alpha:1,maxLife:.35+Math.random()*.25,life:0,color:Math.random()>.45?'#ffffff':'#ff00ff'});
+    }
+  }
 }
 
 function drawRockSprite(sx, sy, sc) {
@@ -9097,7 +9063,7 @@ function render(ts) {
 
   const isPlayerStanding = (state === 'countdown' || state === 'intro' || (player.finished && player.speed < 50));
   if (isPlayerStanding && Math.random() < 0.12) {
-      spawnExhaustSmoke(playerScreenX + shakeX, H - 76 + bounceY + shakeY, playerScale, true);
+      spawnExhaustSmoke(playerScreenX + shakeX, H - 76 + bounceY + shakeY, playerScale, true, lean);
   }
 
   if (player.isSparking && player.speed > 0) {
@@ -9611,29 +9577,16 @@ function spawnPopupText(text, color) {
     life: 0
   });
 }
-function spawnExhaustSmoke(cx, cy, sc, isPlayer) {
-    const bw = ~~(sc * (isPlayer ? 164 : 136)), bh = ~~(sc * (isPlayer ? 100 : 84));
-    const px = ~~(cx - bw / 2), py = ~~(cy - bh);
-    
-    // Linkes und rechtes Auspuffrohr
-    const exhausts = [
-        { x: px + ~~(bw * 0.45), y: py + ~~(bh * 0.83) },
-        { x: px + ~~(bw * 0.52), y: py + ~~(bh * 0.83) }
-    ];
-    
-    for (let i = 0; i < exhausts.length; i++) {
-        const ex = exhausts[i];
-        smokeParticles.push({
-            x: ex.x,
-            y: ex.y,
-            vx: (Math.random() - 0.5) * 15 * sc,
-            vy: -45 * sc - Math.random() * 35 * sc,
-            size: 1.5 * sc + Math.random() * 3 * sc,
-            alpha: 0.35 + Math.random() * 0.25,
-            maxLife: 0.5 + Math.random() * 0.5,
-            life: 0,
-            color: i % 2 === 0 ? 'rgba(194, 185, 219, 0.4)' : 'rgba(230, 220, 255, 0.3)'
-        });
+function spawnExhaustSmoke(cx,cy,sc,isPlayer,lean=0){
+    if(getCarGeometry(cx,cy,sc,isPlayer).bw<8)return;
+    const exhausts=getCarExhausts(cx,cy,sc,isPlayer,lean);
+    for(let i=0;i<exhausts.length;i++){
+        const ex=exhausts[i];
+        // Four lighter puffs retain the previous overall smoke density.
+        smokeParticles.push({x:ex.x,y:ex.y,vx:(Math.random()-.5)*15*sc,
+            vy:-45*sc-Math.random()*35*sc,size:1.5*sc+Math.random()*3*sc,
+            alpha:.175+Math.random()*.125,maxLife:.5+Math.random()*.5,life:0,
+            color:i%2===0?'rgba(194, 185, 219, 0.4)':'rgba(230, 220, 255, 0.3)'});
     }
 }
 function popNum(n) {

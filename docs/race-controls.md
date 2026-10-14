@@ -61,5 +61,5 @@ Die Browserprüfung kontrolliert zusätzlich Schriftladen, Textbreiten, den
 Abstand der oberen Zeilen, die neue Turbo-Position, aktuelle/beste Rundenzeit,
 Fortschritt und die Anpassung an Dream Odyssey und Space.
 
-Countach-Grafiken bleiben unverändert. Kameravorschau und Gegnerprofile sind in
-`camera-and-opponent-balance.md` beschrieben.
+Der freigegebene einfache Countach ist in `countach-rendering.md` beschrieben.
+Kameravorschau und Gegnerprofile stehen in `camera-and-opponent-balance.md`.
