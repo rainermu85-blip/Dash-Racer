@@ -13,7 +13,10 @@ Ein kurzer Tap bleibt bis zum nächsten Simulationsschritt vorgemerkt, damit
 auch schnelle Betätigungen funktionieren. Bei vorhandenem, verfügbarem Turbo
 verbraucht er einmalig eine Ladung.
 Der rote Knopf bleibt für die tatsächliche Turbo-Dauer eingedrückt und zeigt
-einen örtlichen Lichtschein, auch nach dem Loslassen. Ohne Ladung bleibt er
+einen örtlichen Lichtschein, auch nach dem Loslassen. Während des aktiven Turbos
+blinkt nur der Knopf alle 0,24 Sekunden zwischen dunklerem Rot und hellem
+Rot mit gelbem Rand. Pause hält die Animation an; am Turboende endet sie.
+Bei reduzierter Bewegung bleibt der Knopf statisch hervorgehoben. Ohne Ladung bleibt er
 sichtbar, wird zurückgenommen dargestellt und gibt keinen freien Turbo.
 
 Ein eigener Eingabeschlüssel pro Finger und Tastaturtaste verhindert, dass
