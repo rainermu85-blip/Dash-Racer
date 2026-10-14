@@ -130,8 +130,8 @@ Beim Wechsel von Runde zwei in Runde drei erscheint „LAST LAP“ einmal für
 1,5 Sekunden in der Mitte. Die Neon-Schrift hat eine cyanfarbene Kontur und
 eine durchscheinende blaue Füllung. Sie besitzt keine Hintergrundfläche und
 blinkt nicht. Die Anzeige folgt der Spielzeit und pausiert mit dem Rennen.
-Neustart und Verlassen löschen sie. Alle sechs Maps verwenden die Anzeige;
-in Dream Odyssey kündigt sie die einzige Runde beim Rennstart an. Finishtore
+Neustart und Verlassen löschen sie. Die Rundkurse verwenden die Anzeige;
+auf der linearen Strecke Dream Odyssey entfällt sie vollständig. Finishtore
 entfallen in sämtlichen Maps; die aufgemalten Ziellinien bleiben erhalten.
 
 ## Alter Küstenbaum nach dem Felsdurchbruch

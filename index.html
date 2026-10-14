@@ -57,8 +57,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 #turboButton.boosting{animation:turboButtonBlink .24s steps(1,end) infinite}
 #turboButton.boosting svg{filter:drop-shadow(0 0 5px #ffe454)}
 @keyframes turboButtonBlink{
-  0%,100%{filter:brightness(.8);border-color:#fd765f;box-shadow:inset 0 2px 5px rgba(70,0,10,.6),0 1px 0 #620d23,0 0 4px rgba(255,112,48,.3)}
-  50%{filter:brightness(1.4);border-color:#ffe454;box-shadow:inset 0 2px 5px rgba(70,0,10,.6),0 1px 0 #620d23,0 0 12px rgba(255,183,48,.8)}
+  0%,100%{filter:brightness(.95);border-color:#fd765f;box-shadow:inset 0 2px 5px rgba(70,0,10,.6),0 1px 0 #620d23,0 0 4px rgba(255,112,48,.3)}
+  50%{filter:brightness(1.18);border-color:#ffd36b;box-shadow:inset 0 2px 5px rgba(70,0,10,.6),0 1px 0 #620d23,0 0 8px rgba(255,183,48,.5)}
 }
 @media(prefers-reduced-motion:reduce){#turboButton.boosting{animation:none}}
 #pauseButton{position:relative;pointer-events:auto;width:44px;height:44px;border:1px solid rgba(146,188,218,.45);border-radius:7px;background:rgba(12,8,29,.6);display:flex;align-items:center;justify-content:center;color:#bfdfeb}
@@ -583,7 +583,7 @@ function backdropX(base, offset, padding) {
 }
 
 function drawLastLapBanner() {
-  if(lastLapElapsed===null||player.finished)return;
+  if(currentLevel===LEVEL_DREAM||lastLapElapsed===null||player.finished)return;
   if(lastLapElapsed>=1.5)return;
   ctx.save();ctx.translate(W*.5,H*.5);ctx.globalAlpha=1;
   const maxWidth=Math.min(W*.86,500)*.88;
@@ -9864,7 +9864,7 @@ function loop(ts) {
 
   if (state === 'countdown') {
     cntTimer += dt;
-    if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; if(currentLevel===LEVEL_DREAM)lastLapElapsed=0; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
+    if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
     if (state === 'countdown') updateHighwayTrains(dt, true);
   }
 

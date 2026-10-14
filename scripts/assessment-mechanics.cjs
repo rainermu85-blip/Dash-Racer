@@ -191,7 +191,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
         try{tick();}finally{ctx.fillText=text;}
         lastLapMaps.push({level,lap:player.lap,elapsed:lastLapElapsed,painted});
       }
-      record('last-lap-announcement-on-all-six-maps',lastLapMaps.every(sample=>sample.elapsed!==null&&sample.painted===1&&sample.lap===(sample.level===5?1:3)),lastLapMaps);
+      record('last-lap-only-on-circuit-maps',lastLapMaps.every(sample=>sample.level===5?sample.elapsed===null&&sample.painted===0&&sample.lap===1:sample.elapsed!==null&&sample.painted===1&&sample.lap===3),lastLapMaps);
 
       const glassWall = 0.8;
       const wallContacts = [];
