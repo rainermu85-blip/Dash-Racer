@@ -79,7 +79,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
       player.lap=2;state='playing';player.z=TRACK_LENGTH-1;player.speed=3600;tick();exitRace();
       record('last-lap-clears-on-exit',lastLapElapsed===null,{elapsed:lastLapElapsed});
       reset(5);
-      const zones = [0, 450, 750, 1250, 1550, 2050, 2350].map(i => getDreamZone(i));
+      const zones = [0, 450, 660, 1320, 1490, 2140, 2310].map(i => getDreamZone(i));
       record('dream-odyssey-zones', JSON.stringify(zones) === JSON.stringify(['steppe', 'tunnel', 'arctic', 'tunnel', 'dali', 'tunnel', 'underwater']), { zones, segments: segments.length });
       const finishIndices = [SEGMENT_COUNT - 1, SEGMENT_COUNT, segments.length - 1, SEGMENT_COUNT + 600];
       const finishWorlds = finishIndices.map(index => ({
@@ -125,7 +125,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
       // The exit climbs over a crest. Glass ribs above the hidden road must
       // already be painted while the camera is still inside the opaque tunnel.
       reset(5); opponents.length = 0;
-      player.z = 2330 * SEGMENT_LENGTH; player.pitch = 32;
+      player.z = 2290 * SEGMENT_LENGTH; player.pitch = 32;
       const drawRoad = drawRoadSegment;
       const curve = ctx.bezierCurveTo;
       const hiddenRoadArches = [];
@@ -136,14 +136,14 @@ module.exports = async function runMechanics(browser, baseUrl) {
         finally { drawingSegment = null; }
       };
       ctx.bezierCurveTo = function (...args) {
-        if (drawingSegment && drawingSegment.index >= 2350 && drawingSegment.index < 2400 && !drawingSegment.roadVisible) {
+        if (drawingSegment && drawingSegment.index >= 2310 && drawingSegment.index < 2360 && !drawingSegment.roadVisible) {
           hiddenRoadArches.push(drawingSegment.index);
         }
         return curve.apply(this, args);
       };
       try {
         render(ts);
-        record('underwater-glass-visible-over-exit-crest', hiddenRoadArches.length > 0 && player.z < 2350 * SEGMENT_LENGTH, { cameraSegment: player.z / SEGMENT_LENGTH, hiddenRoadArches });
+        record('underwater-glass-visible-over-exit-crest', hiddenRoadArches.length > 0 && player.z < 2310 * SEGMENT_LENGTH, { cameraSegment: player.z / SEGMENT_LENGTH, hiddenRoadArches });
       } finally {
         window.drawRoadSegment = drawRoad;
         ctx.bezierCurveTo = curve;
@@ -215,7 +215,7 @@ module.exports = async function runMechanics(browser, baseUrl) {
       const entries = [];
       for (const side of [-1, 1]) {
         reset(5); opponents.length = 0;
-        player.z = 2350 * SEGMENT_LENGTH - 1; player.x = side * 1.02;
+        player.z = 2310 * SEGMENT_LENGTH - 1; player.x = side * 1.02;
         player.speed = player.maxSpeed; tick();
         entries.push({ side, zone: getDreamZone(Math.floor(player.z / SEGMENT_LENGTH)), x: player.x });
       }

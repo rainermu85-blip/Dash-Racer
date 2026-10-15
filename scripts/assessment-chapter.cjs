@@ -155,7 +155,7 @@ module.exports = async function runChapter(browser, baseUrl) {
       startRace();
       record('highway-restart-clears-police-laps', highwayPolice === null && highwayPoliceLaps.size === 0, { active: highwayPolice !== null, laps: highwayPoliceLaps.size });
       reset(3);
-      record('hills-traffic-reset', highwayTraffic.length === 0 && crossingEvents.size === 0 && highwayPolice === null && highwayPoliceLaps.size === 0 && chapterTime === 0 && getRoadLimits(0).left === 1.45, { traffic: highwayTraffic.length, events: crossingEvents.size, limits: getRoadLimits(0) });
+      record('hills-traffic-reset', highwayTraffic.length === 0 && crossingEvents.size === 0 && highwayPolice === null && highwayPoliceLaps.size === 0 && chapterTime === 0 && getRoadLimits(0).left === 1.27, { traffic: highwayTraffic.length, events: crossingEvents.size, limits: getRoadLimits(0) });
       for (const level of [5, 6]) {
         reset(level);
         record(`preserved-world-${level}`, level === 5 ? segments.length === 3075 && getDreamZone(1750) === 'dali' && getDreamWorld(SEGMENT_COUNT + 40) === 'underwater' : segments.length === 1350 && segments.some(s => s.pylon?.active) && getComputedStyle(document.getElementById('energyBoard')).display !== 'none', { count: segments.length, energy: getComputedStyle(document.getElementById('energyBoard')).display });

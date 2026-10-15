@@ -16,7 +16,7 @@ module.exports = async function runPortals(browser, baseUrl) {
         player.hitFlash = 0; chapterTime = 4000;
         for (const s of segments) s.lightning = s.pylon = s.barrier = null;
         const results = [], record = (name, pass, actual) => results.push({ name: `${name}-${W}x${H}`, pass, actual });
-        record('tundra-granite-pass-snowy-pines-sequence', getDreamWorld(0) === 'steppe' && !segments[449].isTunnel && segments[450].isTunnel && segments[749].isTunnel && !segments[750].isTunnel && getDreamZone(750) === 'arctic' && segments.slice(0,450).every(s => !s.sprite || ['rock','tundra_shrub'].includes(s.sprite)) && segments.slice(750,1250).some(s => s.sprite === 'tree'), { start: getDreamWorld(0), tunnelSegments: segments.filter(s => s.isTunnel).length, firstTunnel: DREAM_TUNNELS[0] });
+        record('tundra-granite-pass-snowy-pines-sequence', getDreamWorld(0) === 'steppe' && !segments[449].isTunnel && segments[450].isTunnel && segments[659].isTunnel && !segments[660].isTunnel && getDreamZone(660) === 'arctic' && segments.slice(0,450).every(s => !s.sprite || ['rock','tundra_shrub'].includes(s.sprite)) && segments.slice(660,1320).some(s => s.sprite === 'tree'), { start: getDreamWorld(0), tunnelSegments: segments.filter(s => s.isTunnel).length, firstTunnel: DREAM_TUNNELS[0] });
 
         for (const kind of ['alpine','dali','sea']) {
           const marine = kind === 'sea', alpine = kind === 'alpine';
@@ -54,7 +54,7 @@ module.exports = async function runPortals(browser, baseUrl) {
         const fingerprint = () => JSON.stringify({ x:player.x,z:player.z,speed:player.speed,bonus:player.cleanSpeedBonus,fov:player.fovOffset,boosts:player.boosts,limits:getRoadLimits(player.z),items:segments.filter(s => s.pylon || s.barrier || s.lightning).length });
         const snapshot = () => ctx.getImageData(0,0,W,H).data;
         const changed = (a,b) => { let n=0; for (let i=0;i<a.length;i+=4) if (a[i]!==b[i] || a[i+1]!==b[i+1] || a[i+2]!==b[i+2]) n++; return n; };
-        for (const segment of [1322,2122]) {
+        for (const segment of [1392,2212]) {
           player.z=segment*SEGMENT_LENGTH; player.speed=4320; player.cleanSpeedBonus=0.2;
           const before=fingerprint(); chapterTime=1000; render(1000); const a=snapshot();
           render(1000); const b=snapshot(); chapterTime=9000; render(1000); const c=snapshot();

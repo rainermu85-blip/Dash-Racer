@@ -1,9 +1,9 @@
 # Dream Odyssey: Weltenportale
 
 Das Level beginnt wieder in der kargen Tundra (0–449), mit wenigen Büschen
-und Felsen. Ein Granittunnel (450–749) führt in die verschneite Landschaft
-mit Tannen (750–1249). Danach folgen das Dalí-Portal (1250–1549), die
-Dalí-Landschaft (1550–2049), die Meeresschleuse (2050–2349) und die
+und Felsen. Ein Granittunnel (450–659) führt in die verschneite Landschaft
+mit Tannen (660–1319). Danach folgen das Dalí-Portal (1320–1489), die
+Dalí-Landschaft (1490–2139), die Meeresschleuse (2140–2309) und die
 Unterwasserwelt bis zum Ziel. Kurven, Höhenprofil, Streckenlänge,
 Itempositionen und Zielposition bleiben erhalten.
 
@@ -39,6 +39,10 @@ durch feine Rasterspalten sichtbar werden. Portalöffnungen bleiben frei;
 das Unterwasserglas ist weiterhin schon vor dem Verlassen der Schleuse
 über der Ausfahrtskuppe sichtbar. Kamera, Turbo und Kollisionsmodell bleiben
 erhalten, einschließlich der Glasbegrenzung in der Unterwasserwelt.
+
+Die Überarbeitung vom 15. Oktober verkürzt die Tunnel bei unveränderter
+Gesamtstrecke, vergrößert Kronleuchter und Nischen und ergänzt Landschaften,
+Tiere und Fahrereignisse; siehe [Streckenüberarbeitung](course-polish.md).
 
 ## Prüfung
 
