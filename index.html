@@ -904,15 +904,6 @@ function buildSegments() {
         worldY += def.hill; 
     }
 
-    if(currentLevel===LEVEL_SPACE){
-      const totalTurn=segments.reduce((sum,seg)=>sum+seg.curve*SEGMENT_LENGTH,0);let turn=0;
-      for(const seg of segments){
-        const progress=seg.index/SEGMENT_COUNT;
-        seg.skyHeading=progress+(turn-progress*totalTurn)*.000045/(Math.PI*2);
-        turn+=seg.curve*SEGMENT_LENGTH;
-      }
-    }
-
     if(currentLevel===2)for(const index of OCEAN_SCREEN_SPOTS)segments[index].coastalScreen=true;
 
     if (currentLevel === LEVEL_DREAM) {
@@ -3929,15 +3920,12 @@ function drawSpaceSaturn(satX,satY,satR){
   ctx.restore();
 }
 
-// Eight screen widths cover one revolution. All landmarks use one heading
-// and fixed azimuths, so turning cannot slide planets through each other.
+// One shared panorama keeps celestial objects apart. Its motion comes only
+// from the signed road curvature integrated by the driving simulation.
 const SPACE_SKY_SPAN=8;
-const SPACE_SKY_OBJECTS={saturn:.06,rocket:.16,galaxy:.285,enterprise:.37,earth:.47,sputnik:.57,giant:.73,astronaut:.72,dogfight:.93};
-function getSpaceSkyTurn(z=player.z){
-  const laps=Math.floor(z/TRACK_LENGTH),position=((z%TRACK_LENGTH)+TRACK_LENGTH)%TRACK_LENGTH;
-  const index=Math.floor(position/SEGMENT_LENGTH),fraction=position/SEGMENT_LENGTH-index;
-  const heading=segments[index]?.skyHeading??0,next=segments[index+1]?.skyHeading??1;
-  return laps+heading+(next-heading)*fraction+curveCamera.look*.025;
+const SPACE_SKY_OBJECTS={saturn:.10,rocket:.93,galaxy:.15,enterprise:.955,earth:.02,sputnik:.055,giant:.85,astronaut:.84,dogfight:.12};
+function getSpaceSkyTurn(){
+  return bgOffset*.00010;
 }
 function spaceSkyX(azimuth,turn=getSpaceSkyTurn()){
   const delta=azimuth-turn;
@@ -3964,15 +3952,15 @@ function drawSpaceSky(horizonY,index,time){
   nebula.addColorStop(0,'rgba(255,0,128,.22)');nebula.addColorStop(.4,'rgba(128,0,255,.11)');nebula.addColorStop(1,'rgba(0,0,0,0)');
   sceneEllipse(nebX,nebY,nebR,nebR,nebula);
   drawSpacePolishBackdrop(horizonY,index);
-  if(positions.saturn>-W*.5&&positions.saturn<W*1.5)drawSpaceSaturn(positions.saturn,H*.23,Math.min(W,H)*.125);
-  if(positions.galaxy>-W*.2&&positions.galaxy<W*1.2)drawSpiralGalaxy(positions.galaxy,H*.25,Math.min(W,H)*.125,time);
+  if(positions.saturn>-W*.5&&positions.saturn<W*1.5)drawSpaceSaturn(positions.saturn,H*.18,Math.min(W,H)*.125);
+  if(positions.galaxy>-W*.2&&positions.galaxy<W*1.2)drawSpiralGalaxy(positions.galaxy,H*.36,Math.min(W,H)*.125,time);
   // Earth has its own clear sector, beyond the giant's full ring silhouette.
   if(positions.earth>-W*.12&&positions.earth<W*1.12)drawEarth(positions.earth,H*.23,Math.min(W,H)*.065,time);
-  if(positions.rocket>-60&&positions.rocket<W+60)drawRocket(positions.rocket,H*.25,time,-.16);
+  if(positions.rocket>-60&&positions.rocket<W+60)drawRocket(positions.rocket,H*.17,time,-.16);
   if(positions.enterprise>-70&&positions.enterprise<W+70)drawEnterprise(positions.enterprise,H*.29,time);
-  if(positions.sputnik>-90&&positions.sputnik<W+90)drawSputnik(positions.sputnik,H*.24,time);
+  if(positions.sputnik>-90&&positions.sputnik<W+90)drawSputnik(positions.sputnik,H*.32,time);
   if(positions.dogfight>-W*.65&&positions.dogfight<W*1.65){
-    ctx.save();ctx.translate(positions.dogfight,H*.29);ctx.scale(W/600,W/600);drawSpaceDogfight(time,0,0);ctx.restore();
+    ctx.save();ctx.translate(positions.dogfight,H*.40);ctx.scale(W/600,W/600);drawSpaceDogfight(time,0,0);ctx.restore();
   }
   const belt=clamp(Math.min((index-160)/140,(610-index)/140),0,1);
   if(belt>0){
