@@ -67,14 +67,31 @@ module.exports=async function runPolish(browser,baseUrl){
    }
    selectLevel(6);startRace();state='playing';opponents.length=0;player.speed=4320;chapterTime=6000;weatherParticles=[];
    record('space-has-no-track-arches',!segments.some(s=>s.polishScenes?.some(p=>p.kind==='orbital_ring')));
-   for(const [index,name]of[[300,'cruiser'],[1000,'giant']]){
+   for(const [index,name]of[[750,'earth'],[1000,'giant']]){
     player.z=index*SEGMENT_LENGTH;curveCamera.look=0;for(let j=0;j<90;j++)updateCurveCamera(1/60);
-    const draw=name==='cruiser'?drawSpaceBattlecruiser:drawSpaceGasGiant;
+    const draw=name==='earth'?drawEarth:drawSpaceGasGiant;
     render(6000);const before=pixels();
-    try{if(name==='cruiser')drawSpaceBattlecruiser=()=>{};else drawSpaceGasGiant=()=>{};render(6000);}
-    finally{if(name==='cruiser')drawSpaceBattlecruiser=draw;else drawSpaceGasGiant=draw;}
-    const changed=difference(before,pixels());record(`space-${name}-visible-in-road-view`,changed>5000,{pixels:changed});
+    try{if(name==='earth')drawEarth=()=>{};else drawSpaceGasGiant=()=>{};render(6000);}
+    finally{if(name==='earth')drawEarth=draw;else drawSpaceGasGiant=draw;}
+    const changed=difference(before,pixels());record(`space-${name}-visible-in-road-view`,changed>(name==='earth'?500:5000),{pixels:changed});
    }
+   curveCamera.look=0;
+   const skyTurns=Array.from({length:136},(_,i)=>getSpaceSkyTurn(i*TRACK_LENGTH/135));
+   record('space-sky-completes-a-full-round-view',Math.abs(skyTurns.at(-1)-skyTurns[0]-1)<1e-9&&new Set(skyTurns.slice(0,-1).map(t=>Math.floor(((t%1)+1)%1*4))).size===4,{start:skyTurns[0],end:skyTurns.at(-1)});
+   const seam=Object.entries(SPACE_SKY_OBJECTS).map(([name,angle])=>({name,before:spaceSkyX(angle,getSpaceSkyTurn(TRACK_LENGTH-.1)),after:spaceSkyX(angle,getSpaceSkyTurn(.1))}));
+   record('space-sky-closes-without-a-lap-jump',seam.every(s=>Math.abs(s.after-s.before)<.01),seam);
+   const astro=drawAstronaut,giant=drawSpaceGasGiant,foreground=[];
+   const mask=(a,b)=>{const m=new Uint8Array(a.length/4);for(let i=0;i<a.length;i+=4)m[i/4]=a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2];return m;};
+   try{for(const index of[930,950,975]){
+    player.z=index*SEGMENT_LENGTH;curveCamera.look=0;for(let j=0;j<90;j++)updateCurveCamera(1/60);
+    const masks=[];
+    for(const planet of[giant,()=>{}]){
+     drawSpaceGasGiant=planet;drawAstronaut=astro;render(6000);const on=pixels();drawAstronaut=()=>{};render(6000);masks.push(mask(on,pixels()));
+    }
+    const expected=masks[1].reduce((a,b)=>a+b,0),shown=masks[0].reduce((n,v,i)=>n+(v&&masks[1][i]?1:0),0);
+    foreground.push({index,expected,visible:shown/expected});
+   }}finally{drawAstronaut=astro;drawSpaceGasGiant=giant;}
+   record('space-astronaut-remains-in-front-of-planet',foreground.every(s=>s.expected>150&&s.visible>.95),foreground);
    const hullDraw=drawNautilus,headings=[];
    try{drawNautilus=()=>{const m=ctx.getTransform();headings.push({center:m.e,bow:m.a*143+m.e,stern:m.a*-180+m.e});};drawNautilusPassage(2710,6000);drawNautilusPassage(2730,6000);}
    finally{drawNautilus=hullDraw;}

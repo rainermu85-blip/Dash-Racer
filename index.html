@@ -688,7 +688,7 @@ function buildSegments() {
     } else if (currentLevel === LEVEL_SPACE) {
         // Space Wave: undulating sci-fi track with deep dips and long S-curves.
         // Built with continuous, infinitely differentiable sine waves multiplied by a smooth envelope.
-        // This guarantees a perfectly closed, continuous loop with extremely smooth curves and slope transitions!
+        // The repeating pseudo-3D profile joins smoothly in height, curvature and slope.
         trackDef = [];
         const N = SEGMENT_COUNT;
         for (let i = 0; i < N; i++) {
@@ -902,6 +902,15 @@ function buildSegments() {
             isTunnel: isTunnel
         });
         worldY += def.hill; 
+    }
+
+    if(currentLevel===LEVEL_SPACE){
+      const totalTurn=segments.reduce((sum,seg)=>sum+seg.curve*SEGMENT_LENGTH,0);let turn=0;
+      for(const seg of segments){
+        const progress=seg.index/SEGMENT_COUNT;
+        seg.skyHeading=progress+(turn-progress*totalTurn)*.000045/(Math.PI*2);
+        turn+=seg.curve*SEGMENT_LENGTH;
+      }
     }
 
     if(currentLevel===2)for(const index of OCEAN_SCREEN_SPOTS)segments[index].coastalScreen=true;
@@ -3800,25 +3809,12 @@ function getSpaceGiantCanvas(){
     for(let n=70;n>=0;n--){const x=-1.15+n*2.3/70;g.lineTo(x,boundary(x,width));}g.closePath();g.fill();
     if(j%2===0){g.strokeStyle='rgba(236,216,243,.24)';g.lineWidth=.004;g.beginPath();for(let n=0;n<=45;n++){const x=-1.1+n*2.2/45;g.lineTo(x,boundary(x,width*.25));}g.stroke();}
   }
-  // Long cloud filaments curl into three storms instead of forming a flat stripe texture.
+  // Fine cloud filaments break up the broad atmospheric bands.
   for(let j=0;j<96;j++){
     const y=-.86+polishHash(j+66)*1.72,x=-.90+polishHash(j+108)*1.8,len=.08+polishHash(j+201)*.25;
     g.strokeStyle=j%3?'rgba(227,216,240,.20)':'rgba(59,44,98,.23)';g.lineWidth=.003+polishHash(j+115)*.006;
     g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+len*.25,y-.015,x+len*.55,y+.022,x+len,y-.005);g.stroke();
   }
-  const storm=(x,y,rx,ry)=>{
-    g.save();g.translate(x,y);g.rotate(-.08);g.scale(rx,ry);
-    ellipse(0,0,1,1,'#a085b4');ellipse(-.06,-.04,.82,.77,'#b59ac2');
-    for(let j=0;j<9;j++){
-      g.strokeStyle=j%3?'rgba(233,205,231,.58)':'rgba(79,65,119,.65)';g.lineWidth=j%3?.035:.07;
-      g.beginPath();for(let n=0;n<=70;n++){
-        const f=.08+n/70*.88,a=f*7.3+j*.70,r=f*(1+Math.sin(a*3+j)*.035);
-        g.lineTo(Math.cos(a)*r-.06*(1-f),Math.sin(a)*r*.90);
-      }g.stroke();
-    }
-    g.restore();
-  };
-  storm(-.24,.28,.25,.105);storm(.38,-.31,.10,.040);storm(-.57,-.12,.065,.029);
   g.restore();
   const shade=g.createRadialGradient(-.38,-.38,.10,.12,.06,1.11);shade.addColorStop(0,'rgba(245,220,250,.18)');shade.addColorStop(.46,'rgba(31,24,65,0)');shade.addColorStop(.75,'rgba(13,15,40,.28)');shade.addColorStop(1,'rgba(3,7,23,.93)');ellipse(0,0,1,1,shade);
   g.save();g.rotate(-.28);g.strokeStyle='rgba(13,14,37,.32)';g.lineWidth=.085;g.beginPath();g.ellipse(0,-.04,1.75,.50,0,.24,Math.PI-.18);g.stroke();g.restore();
@@ -3831,64 +3827,174 @@ function drawSpaceGasGiant(x,y,r){
   const image=getSpaceGiantCanvas(),scale=r/218;
   ctx.drawImage(image,x-615*scale,y-430*scale,image.width*scale,image.height*scale);
 }
-function drawSpaceBattlecruiser(x,y,scale){
-  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.lineJoin='round';ctx.lineCap='round';
-  // Three engine chambers and their short, quiet ion plumes stay local to the stern.
-  for(const [ey,size]of[[-43,10],[0,14],[42,10]]){
-    const plume=ctx.createLinearGradient(-320,ey,-206,ey);plume.addColorStop(0,'rgba(80,130,255,0)');plume.addColorStop(.7,'rgba(93,162,242,.2)');plume.addColorStop(1,'rgba(177,230,255,.8)');
-    scenePoly([[-213,ey-size],[-335,ey],[-213,ey+size]],plume);sceneEllipse(-213,ey,11,size+3,'#374b70');sceneEllipse(-218,ey,5,size,'#b0e7ff');
+function drawSpaceSaturn(satX,satY,satR){
+  ctx.save();
+  // Giant neon glowing bloom behind Saturn
+  ctx.save();
+  const satGlow = ctx.createRadialGradient(satX, satY, satR * 0.2, satX, satY, satR * 3.8);
+  satGlow.addColorStop(0, 'rgba(255, 0, 127, 0.22)');
+  satGlow.addColorStop(0.4, 'rgba(189, 0, 255, 0.11)');
+  satGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = satGlow;
+  ctx.beginPath();
+  ctx.arc(satX, satY, satR * 3.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 2a. Draw the back part of the rings (behind the planet, top half from Math.PI to 2*Math.PI)
+  ctx.save();
+  ctx.translate(satX, satY);
+  ctx.rotate(-Math.PI * 0.15);
+
+  // Ring Layer 2 (Main glowing magenta/purple ring)
+  ctx.strokeStyle = '#bd00ff';
+  ctx.lineWidth = satR * 0.32;
+  ctx.shadowColor = '#bd00ff'; ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, satR * 2.2, satR * 0.40, 0, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+
+  // Ring Layer 3 (Neon cyan inner ring)
+  ctx.strokeStyle = '#00f0ff';
+  ctx.lineWidth = satR * 0.12;
+  ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, satR * 1.65, satR * 0.30, 0, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+
+  // Ring Layer 4 (Inner gold dusty ring)
+  ctx.strokeStyle = '#ffe066';
+  ctx.lineWidth = satR * 0.05;
+  ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, satR * 1.38, satR * 0.25, 0, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // 2b. Draw Saturn sphere itself (glowing radial gradient)
+  const satGrad = ctx.createRadialGradient(satX - satR * 0.2, satY - satR * 0.2, satR * 0.1, satX, satY, satR);
+  satGrad.addColorStop(0, '#ffe066'); // yellow-orange highlight
+  satGrad.addColorStop(0.4, '#ff4fd8'); // blending into pink
+  satGrad.addColorStop(1, '#330044'); // dark purple shadow
+  ctx.fillStyle = satGrad;
+  ctx.beginPath();
+  ctx.arc(satX, satY, satR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw horizontal shadow lines for classic synthwave styling
+  ctx.save();
+  ctx.strokeStyle = 'rgba(10, 4, 16, 0.45)';
+  ctx.lineWidth = Math.max(1.5, satR * 0.09);
+  for (let offset = -satR * 0.6; offset <= satR * 0.6; offset += satR * 0.25) {
+      ctx.beginPath();
+      const halfWidth = Math.sqrt(satR * satR - offset * offset);
+      ctx.moveTo(satX - halfWidth, satY + offset);
+      ctx.lineTo(satX + halfWidth, satY + offset);
+      ctx.stroke();
   }
-  scenePoly([[-211,-62],[-165,-78],[286,10],[231,35],[-184,83],[-219,53]],'#28283d','#7e7a98');
-  scenePoly([[-211,-62],[-165,-78],[286,10],[-141,8]],'#565069');
-  scenePoly([[-141,8],[286,10],[231,35],[-184,83]],'#32364c');
-  scenePoly([[-184,83],[231,35],[253,32],[-178,96]],'#161e32','#667c96');
-  scenePoly([[-203,-58],[-176,-66],[-146,-53],[-153,44],[-191,60]],'#6b627b');
-  scenePoly([[-131,-43],[-87,-52],[116,-5],[-113,-10]],'#767089');
-  scenePoly([[-96,-45],[-66,-72],[-18,-75],[39,-49],[71,-14],[-96,-14]],'#3f3d56','#a49bb2');
-  scenePoly([[-66,-72],[-18,-75],[39,-49],[-38,-51]],'#82758c');
-  scenePoly([[-38,-51],[39,-49],[71,-14],[-38,-18]],'#252c44');
-  // Armored command bridge, sensor masts and a narrow illuminated flight deck.
-  scenePoly([[-61,-71],[-57,-94],[-20,-98],[4,-83],[0,-72]],'#716a82','#b8abc4');
-  scenePoly([[-57,-94],[-20,-98],[4,-83],[-35,-81]],'#9890a8');
-  sceneLine([[-43,-98],[-43,-121]],'#9c9bb5',3);sceneLine([[-22,-97],[-22,-112]],'#9c9bb5',2);sceneLine([[-50,-114],[-36,-114]],'#9c9bb5',2);
-  sceneLine([[-50,-83],[-9,-83]],'#8ddbe5',2);
-  for(let j=0;j<8;j++){
-    const a=j/8;
-    sceneLine([[-128+a*335,-30+a*40],[-151+a*351,58-a*26]],'#777186',.8);
-    sceneLine([[-144+a*350,19+a*2],[-150+a*340,24+a*2]],j%3?'#7fb3cd':'#edb9cf',1.2);
-  }
-  scenePoly([[-126,47],[-63,35],[-61,52],[-127,66]],'#111a2c','#81839e');
-  sceneLine([[-120,52],[-68,42]],'#97d5dc',2);sceneLine([[-120,58],[-69,49]],'#d6a2bf',1);
-  for(const [tx,ty]of[[-133,-47],[-71,23],[41,6],[148,16]]){
-    scenePoly([[tx-10,ty+3],[tx-7,ty-6],[tx+8,ty-5],[tx+12,ty+3]],'#8d8497');
-    sceneLine([[tx+4,ty-4],[tx+23,ty-8]],'#c2b9c9',2);
-  }
-  sceneLine([[-168,78],[230,31]],'#728ba4',1.3);
-  sceneEllipse(-172,-65,2,2,'#f29bbc');sceneEllipse(240,15,2,2,'#b7f1ec');
+  ctx.restore();
+
+  // 2c. Draw the front part of the rings (in front of the planet, bottom half from 0 to Math.PI)
+  ctx.save();
+  ctx.translate(satX, satY);
+  ctx.rotate(-Math.PI * 0.15);
+
+  // Main glowing magenta/purple ring
+  ctx.strokeStyle = '#bd00ff';
+  ctx.lineWidth = satR * 0.32;
+  ctx.shadowColor = '#bd00ff'; ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, satR * 2.2, satR * 0.40, 0, 0, Math.PI);
+  ctx.stroke();
+
+  // Neon cyan inner ring
+  ctx.strokeStyle = '#00f0ff';
+  ctx.lineWidth = satR * 0.12;
+  ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, satR * 1.65, satR * 0.30, 0, 0, Math.PI);
+  ctx.stroke();
+
+  // Inner gold dusty ring
+  ctx.strokeStyle = '#ffe066';
+  ctx.lineWidth = satR * 0.05;
+  ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, satR * 1.38, satR * 0.25, 0, 0, Math.PI);
+  ctx.stroke();
+
+  ctx.restore();
+
   ctx.restore();
 }
 
+// Eight screen widths cover one revolution. All landmarks use one heading
+// and fixed azimuths, so turning cannot slide planets through each other.
+const SPACE_SKY_SPAN=8;
+const SPACE_SKY_OBJECTS={saturn:.06,rocket:.16,galaxy:.285,enterprise:.37,earth:.47,sputnik:.57,giant:.73,astronaut:.72,dogfight:.93};
+function getSpaceSkyTurn(z=player.z){
+  const laps=Math.floor(z/TRACK_LENGTH),position=((z%TRACK_LENGTH)+TRACK_LENGTH)%TRACK_LENGTH;
+  const index=Math.floor(position/SEGMENT_LENGTH),fraction=position/SEGMENT_LENGTH-index;
+  const heading=segments[index]?.skyHeading??0,next=segments[index+1]?.skyHeading??1;
+  return laps+heading+(next-heading)*fraction+curveCamera.look*.025;
+}
+function spaceSkyX(azimuth,turn=getSpaceSkyTurn()){
+  const delta=azimuth-turn;
+  return W*.5+(delta-Math.floor(delta+.5))*W*SPACE_SKY_SPAN;
+}
+function drawSpaceStars(time){
+  const turn=getSpaceSkyTurn();
+  for(let i=0;i<680;i++){
+    const x=spaceSkyX(polishHash(i+907),turn);if(x<-4||x>W+4)continue;
+    const y=polishHash(i+2445)*H,size=i%10===0?3:i%3===0?2:1;
+    const alpha=.12+(.5+.5*Math.sin(time*.004+i*1.5))*.78;
+    ctx.fillStyle=`rgba(255,255,255,${alpha})`;ctx.fillRect(x,y,size,size);
+  }
+}
 function drawSpacePolishBackdrop(horizonY,index){
+  const r=W*.42,x=spaceSkyX(SPACE_SKY_OBJECTS.giant);
+  if(x>-r*2.9&&x<W+r*2.9)drawSpaceGasGiant(x,H*.31+(horizonY-H*.5)*.15,r);
+}
+function drawSpaceSky(horizonY,index,time){
+  ctx.save();
+  const positions=Object.fromEntries(Object.entries(SPACE_SKY_OBJECTS).map(([name,angle])=>[name,spaceSkyX(angle)]));
+  const nebX=spaceSkyX(.93),nebY=H*.22,nebR=Math.min(W,H)*.48;
+  const nebula=ctx.createRadialGradient(nebX,nebY,nebR*.1,nebX,nebY,nebR);
+  nebula.addColorStop(0,'rgba(255,0,128,.22)');nebula.addColorStop(.4,'rgba(128,0,255,.11)');nebula.addColorStop(1,'rgba(0,0,0,0)');
+  sceneEllipse(nebX,nebY,nebR,nebR,nebula);
+  drawSpacePolishBackdrop(horizonY,index);
+  if(positions.saturn>-W*.5&&positions.saturn<W*1.5)drawSpaceSaturn(positions.saturn,H*.23,Math.min(W,H)*.125);
+  if(positions.galaxy>-W*.2&&positions.galaxy<W*1.2)drawSpiralGalaxy(positions.galaxy,H*.25,Math.min(W,H)*.125,time);
+  // Earth has its own clear sector, beyond the giant's full ring silhouette.
+  if(positions.earth>-W*.12&&positions.earth<W*1.12)drawEarth(positions.earth,H*.23,Math.min(W,H)*.065,time);
+  if(positions.rocket>-60&&positions.rocket<W+60)drawRocket(positions.rocket,H*.25,time,-.16);
+  if(positions.enterprise>-70&&positions.enterprise<W+70)drawEnterprise(positions.enterprise,H*.29,time);
+  if(positions.sputnik>-90&&positions.sputnik<W+90)drawSputnik(positions.sputnik,H*.24,time);
+  if(positions.dogfight>-W*.65&&positions.dogfight<W*1.65){
+    ctx.save();ctx.translate(positions.dogfight,H*.29);ctx.scale(W/600,W/600);drawSpaceDogfight(time,0,0);ctx.restore();
+  }
   const belt=clamp(Math.min((index-160)/140,(610-index)/140),0,1);
   if(belt>0){
     ctx.save();ctx.globalAlpha=belt*.50;
-    for(let j=0;j<32;j++){
-      const x=backdropX(j*W*.071,bgOffset*.17,35),y=H*.17+j/32*H*.29+Math.sin(j*2.7)*H*.025,r=2+polishHash(j+71)*5;
+    for(let j=0;j<64;j++){
+      const x=spaceSkyX(j/64),y=H*.17+j/64*H*.29+Math.sin(j*2.7)*H*.025,r=2+polishHash(j+71)*5;
+      if(x<-r||x>W+r)continue;
       scenePoly([[x-r,y],[x-r*.4,y-r],[x+r*.7,y-r*.5],[x+r,y+r*.6],[x-r*.5,y+r]],j%2?'#796b8c':'#615775');
     }
     ctx.restore();
   }
-  const eclipse=clamp(Math.min((index-570)/130,(1190-index)/150),0,1);
-  if(eclipse>0){
-    const x=backdropX(W*.83,bgOffset*.055,W*1.1),y=horizonY-H*.12,r=W*.42;
-    ctx.save();ctx.globalAlpha=eclipse;drawSpaceGasGiant(x,y,r);ctx.restore();
+  const meteorIndex=Math.floor(time*.0004)%3,meteorTime=(time*.0012)%3;
+  if(meteorTime<1){
+    const startX=spaceSkyX(.97+meteorIndex*.027),startY=H*.06,dx=-W*.2,dy=H*.18;
+    const x=startX+dx*meteorTime,y=startY+dy*meteorTime;
+    const trail=ctx.createLinearGradient(x,y,x-dx*.25,y-dy*.25);
+    trail.addColorStop(0,'#ffffff');trail.addColorStop(.2,'rgba(0,255,255,.8)');trail.addColorStop(.6,'rgba(255,0,255,.4)');trail.addColorStop(1,'rgba(255,0,255,0)');
+    sceneLine([[x,y],[x-dx*.35,y-dy*.35]],trail,2.5);
   }
-  const passage=(index-80)/450;
-  if(passage>0&&passage<1){
-    const fade=clamp(Math.min(passage/.10,(1-passage)/.10),0,1);
-    ctx.save();ctx.globalAlpha=fade;
-    drawSpaceBattlecruiser(W*(-.50+passage*2.0),H*.27,Math.min(W/580,H/620)*1.1);ctx.restore();
-  }
+  // Foreground among ALL sky objects, including the giant, rings and satellites.
+  if(positions.astronaut>-45&&positions.astronaut<W+45)drawAstronaut(positions.astronaut,H*.32+Math.cos(time*.0008)*H*.015,time);
+  ctx.restore();
 }
 
 function getCarGeometry(cx,cy,sc,isPlayer){
@@ -8246,200 +8352,6 @@ function render(ts) {
   }
   ctx.fillRect(0, 0, W, H);
 
-  // Synthwave Space Wave (Space Wave) Cosmic background rendering
-  if (currentLevel === LEVEL_SPACE) {
-      ctx.save();
-      
-      // Virtual width of the sky wrap span
-      const VW = W * 3.5;
-
-      // 1. Nebula / Galaxy (Background element, very slow scroll, far left)
-      let nebX = ((W * 0.2 - bgOffset * 0.12) % VW + VW) % VW - W * 1.2;
-      const nebY = H * 0.22;
-      const nebR = Math.min(W, H) * 0.35;
-      
-      const nebGrad = ctx.createRadialGradient(nebX, nebY, nebR * 0.1, nebX, nebY, nebR);
-      nebGrad.addColorStop(0, 'rgba(255, 0, 128, 0.22)'); // Glowing magenta center
-      nebGrad.addColorStop(0.4, 'rgba(128, 0, 255, 0.11)'); // Deep indigo
-      nebGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = nebGrad;
-      ctx.beginPath();
-      ctx.arc(nebX, nebY, nebR, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 2. The Great Gas Giant with rings (Synthwave Saturn - epic neon design!)
-      let satX = ((W * 1.1 - bgOffset * 0.18) % VW + VW) % VW - W * 1.2;
-      const satY = H * 0.16;
-      const satR = Math.min(W, H) * 0.125; // Majestic planet radius
-      
-      // Giant neon glowing bloom behind Saturn
-      ctx.save();
-      const satGlow = ctx.createRadialGradient(satX, satY, satR * 0.2, satX, satY, satR * 3.8);
-      satGlow.addColorStop(0, 'rgba(255, 0, 127, 0.22)');
-      satGlow.addColorStop(0.4, 'rgba(189, 0, 255, 0.11)');
-      satGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = satGlow;
-      ctx.beginPath();
-      ctx.arc(satX, satY, satR * 3.8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-      
-      // 2a. Draw the back part of the rings (behind the planet, top half from Math.PI to 2*Math.PI)
-      ctx.save();
-      ctx.translate(satX, satY);
-      ctx.rotate(-Math.PI * 0.15);
-      
-      // Ring Layer 2 (Main glowing magenta/purple ring)
-      ctx.strokeStyle = '#bd00ff';
-      ctx.lineWidth = satR * 0.32;
-      ctx.shadowColor = '#bd00ff'; ctx.shadowBlur = 18;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, satR * 2.2, satR * 0.40, 0, Math.PI, 2 * Math.PI);
-      ctx.stroke();
- 
-      // Ring Layer 3 (Neon cyan inner ring)
-      ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = satR * 0.12;
-      ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, satR * 1.65, satR * 0.30, 0, Math.PI, 2 * Math.PI);
-      ctx.stroke();
- 
-      // Ring Layer 4 (Inner gold dusty ring)
-      ctx.strokeStyle = '#ffe066';
-      ctx.lineWidth = satR * 0.05;
-      ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, satR * 1.38, satR * 0.25, 0, Math.PI, 2 * Math.PI);
-      ctx.stroke();
-      
-      ctx.restore();
-      
-      // 2b. Draw Saturn sphere itself (glowing radial gradient)
-      const satGrad = ctx.createRadialGradient(satX - satR * 0.2, satY - satR * 0.2, satR * 0.1, satX, satY, satR);
-      satGrad.addColorStop(0, '#ffe066'); // yellow-orange highlight
-      satGrad.addColorStop(0.4, '#ff4fd8'); // blending into pink
-      satGrad.addColorStop(1, '#330044'); // dark purple shadow
-      ctx.fillStyle = satGrad;
-      ctx.beginPath();
-      ctx.arc(satX, satY, satR, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Draw horizontal shadow lines for classic synthwave styling
-      ctx.save();
-      ctx.strokeStyle = 'rgba(10, 4, 16, 0.45)';
-      ctx.lineWidth = Math.max(1.5, satR * 0.09);
-      for (let offset = -satR * 0.6; offset <= satR * 0.6; offset += satR * 0.25) {
-          ctx.beginPath();
-          const halfWidth = Math.sqrt(satR * satR - offset * offset);
-          ctx.moveTo(satX - halfWidth, satY + offset);
-          ctx.lineTo(satX + halfWidth, satY + offset);
-          ctx.stroke();
-      }
-      ctx.restore();
- 
-      // 2c. Draw the front part of the rings (in front of the planet, bottom half from 0 to Math.PI)
-      ctx.save();
-      ctx.translate(satX, satY);
-      ctx.rotate(-Math.PI * 0.15);
-      
-      // Main glowing magenta/purple ring
-      ctx.strokeStyle = '#bd00ff';
-      ctx.lineWidth = satR * 0.32;
-      ctx.shadowColor = '#bd00ff'; ctx.shadowBlur = 18;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, satR * 2.2, satR * 0.40, 0, 0, Math.PI);
-      ctx.stroke();
- 
-      // Neon cyan inner ring
-      ctx.strokeStyle = '#00f0ff';
-      ctx.lineWidth = satR * 0.12;
-      ctx.shadowColor = '#00f0ff'; ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, satR * 1.65, satR * 0.30, 0, 0, Math.PI);
-      ctx.stroke();
- 
-      // Inner gold dusty ring
-      ctx.strokeStyle = '#ffe066';
-      ctx.lineWidth = satR * 0.05;
-      ctx.shadowColor = '#ffe066'; ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, satR * 1.38, satR * 0.25, 0, 0, Math.PI);
-      ctx.stroke();
-      
-      ctx.restore();
-      
-      // 3. Planet Earth (replaces boring icy planet with detailed, rotating Earth)
-      let earthX = ((W * 1.9 - bgOffset * 0.22) % VW + VW) % VW - W * 1.2;
-      const earthY = H * 0.32;
-      const earthR = Math.min(W, H) * 0.055; // slightly larger for gorgeous details
-      drawEarth(earthX, earthY, earthR, ts);
-
-      // 3.1. Majestic Spiral Galaxy (as big as Saturn, positioned to the right of Earth)
-      let galX = ((W * 2.42 - bgOffset * 0.22) % VW + VW) % VW - W * 1.2;
-      const galY = H * 0.24;
-      const galR = Math.min(W, H) * 0.125; // as big as Saturn
-      drawSpiralGalaxy(galX, galY, galR, ts);
- 
-      // --- 3.5. DRAW POP CULTURE ICONS IN THE SKY (DISTRIBUTED BEAUTIFULLY) ---
-      // Retro Rocket (Flies straight in the direction of its orientation at medium speed)
-      const rocketAngle = -0.16; // tilted upwards-right
-      const rSpeed = 0.09; // medium speed
-      let rx = ((W * 2.7 + ts * rSpeed - bgOffset * 0.25) % VW + VW) % VW - W * 1.2;
-      let ry = H * 0.24 + (rx / W) * (Math.sin(rocketAngle) * W);
-      drawRocket(rx, ry, ts, rocketAngle);
- 
-      // USS Enterprise (Upper mid sky)
-      let entX = ((W * 3.1 - bgOffset * 0.26) % VW + VW) % VW - W * 1.2;
-      let entY = H * 0.20 + Math.sin(ts * 0.0006) * 15;
-      drawEnterprise(entX, entY, ts);
- 
-      // Space Laser Battle (Mid sky dogfight! Positioned on the left virtual segment)
-      let dogfightX = ((W * 0.6 - bgOffset * 0.28) % VW + VW) % VW - W * 1.2;
-      let dogfightY = H * 0.38;
-      drawSpaceDogfight(ts, dogfightX, dogfightY);
- 
-      // Sputnik (Lower mid sky - drifting slowly from left to right with no floating)
-      let sputX = ((W * 1.5 + ts * 0.035 - bgOffset * 0.25) % VW + VW) % VW - W * 1.2;
-      let sputY = H * 0.44;
-      drawSputnik(sputX, sputY, ts);
- 
-      // Astronaut with Jetpack (Lowest sky object, floats just above the horizon so
-      // the floating track drawn later does not cover him)
-      let astX = ((W * 2.3 - bgOffset * 0.20) % VW + VW) % VW - W * 1.2;
-      let astY = H * 0.49 + Math.cos(ts * 0.0008) * 18;
-      drawAstronaut(astX, astY, ts);
-      
-      // 4. Occasional Meteorites/Shooting Stars!
-      const meteorIndex = Math.floor(ts * 0.0004) % 3;
-      const meteorTime = (ts * 0.0012) % 3.0;
-      if (meteorTime < 1.0) {
-          ctx.save();
-          const startX = W * 0.4 + meteorIndex * W * 0.2;
-          const startY = H * 0.05;
-          const deltaX = -W * 0.2;
-          const deltaY = H * 0.18;
-          const currentX = startX + deltaX * meteorTime;
-          const currentY = startY + deltaY * meteorTime;
-          
-          const mGrad = ctx.createLinearGradient(currentX, currentY, currentX - deltaX * 0.25, currentY - deltaY * 0.25);
-          mGrad.addColorStop(0, '#ffffff');
-          mGrad.addColorStop(0.2, 'rgba(0, 255, 255, 0.8)');
-          mGrad.addColorStop(0.6, 'rgba(255, 0, 255, 0.4)');
-          mGrad.addColorStop(1, 'rgba(255, 0, 255, 0)');
-          
-          ctx.strokeStyle = mGrad;
-          ctx.lineWidth = 2.5;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(currentX, currentY);
-          ctx.lineTo(currentX - deltaX * 0.35, currentY - deltaY * 0.35);
-          ctx.stroke();
-          ctx.restore();
-      }
-      ctx.restore();
-  }
-
   // Stars fade in as night progresses (only after sunset)
   let nightFactor = 0;
   if (currentLevel === 2) {
@@ -8458,21 +8370,13 @@ function render(ts) {
     nightFactor = 1.0;
   }
 
-  for (const s of bgStars) {
-    const starParallax = currentLevel === LEVEL_DREAM ? DREAM_PARALLAX.stars : (currentLevel === LEVEL_SPACE ? 0.05 : 0.01);
-    let finalX = (s.x - bgOffset * starParallax) % W; if (finalX < 0) finalX += W;
-    const twinkle = Math.sin(ts * 0.004 + s.t) * 0.5 + 0.5;
-    const starAlpha = nightFactor * (0.05 + twinkle * 0.95);
-    ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha})`;
-    
-    let drawY;
-    if (currentLevel === LEVEL_SPACE) {
-      // Evenly distribute stars from top to bottom of the screen
-      drawY = (s.y / (H * 0.45)) * H;
-    } else {
-      drawY = s.y + (horizonY - ~~(H * 0.5)) * 0.2;
-    }
-    ctx.fillRect(finalX, drawY, s.s, s.s);
+  if(currentLevel===LEVEL_SPACE)drawSpaceStars(chapterTime);
+  else for(const s of bgStars){
+    const parallax=currentLevel===LEVEL_DREAM?DREAM_PARALLAX.stars:.01;
+    let x=(s.x-bgOffset*parallax)%W;if(x<0)x+=W;
+    const twinkle=Math.sin(ts*.004+s.t)*.5+.5;
+    ctx.fillStyle=`rgba(255,255,255,${nightFactor*(.05+twinkle*.95)})`;
+    ctx.fillRect(x,s.y+(horizonY-Math.trunc(H*.5))*.2,s.s,s.s);
   }
 
   // Celestial and atmospheric backdrops for Dream Odyssey zones
@@ -8732,7 +8636,7 @@ function render(ts) {
 
   if(currentLevel===2)drawOceanShootingStar(progressDist);
 
-  if(currentLevel===LEVEL_SPACE)drawSpacePolishBackdrop(horizonY,startSegIdx);
+  if(currentLevel===LEVEL_SPACE)drawSpaceSky(horizonY,startSegIdx,chapterTime);
 
   // Distant Mountains & Landscapes
   const mStroke = currentLevel === 2 ? interpolateColor('#2a0f62', '#120428', progressRatio) : (currentLevel === LEVEL_DREAM ? '#0c1a30' : '#2a0f62');
