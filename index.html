@@ -3931,6 +3931,19 @@ function spaceSkyX(azimuth,turn=getSpaceSkyTurn()){
   const delta=azimuth-turn;
   return W*.5+(delta-Math.floor(delta+.5))*W*SPACE_SKY_SPAN;
 }
+// Own motion is added to sky parallax; the horizontal speed is in screen widths/second.
+const SPACE_SKY_FLIGHTS={
+  sputnik:{speed:.018,angle:0,height:.32,padding:90},
+  rocket:{speed:.050,angle:-.16,height:.17,padding:60},
+  enterprise:{speed:.028,angle:-Math.PI*.04,height:.29,padding:70}
+};
+function getSpaceFlightPose(name,time){
+  const flight=SPACE_SKY_FLIGHTS[name],distance=time*.001*W*flight.speed;
+  const rawY=H*flight.height+Math.tan(flight.angle)*distance,span=H+flight.padding*2;
+  // Re-enter only beyond the vertical canvas edge; the whole silhouette stays offscreen at the wrap.
+  const y=((rawY+flight.padding)%span+span)%span-flight.padding;
+  return{x:spaceSkyX(SPACE_SKY_OBJECTS[name]+distance/(W*SPACE_SKY_SPAN)),y,angle:flight.angle};
+}
 function drawSpaceStars(time){
   const turn=getSpaceSkyTurn();
   for(let i=0;i<680;i++){
@@ -3947,6 +3960,7 @@ function drawSpacePolishBackdrop(horizonY,index){
 function drawSpaceSky(horizonY,index,time){
   ctx.save();
   const positions=Object.fromEntries(Object.entries(SPACE_SKY_OBJECTS).map(([name,angle])=>[name,spaceSkyX(angle)]));
+  const flights=Object.fromEntries(Object.keys(SPACE_SKY_FLIGHTS).map(name=>[name,getSpaceFlightPose(name,time)]));
   const nebX=spaceSkyX(.93),nebY=H*.22,nebR=Math.min(W,H)*.48;
   const nebula=ctx.createRadialGradient(nebX,nebY,nebR*.1,nebX,nebY,nebR);
   nebula.addColorStop(0,'rgba(255,0,128,.22)');nebula.addColorStop(.4,'rgba(128,0,255,.11)');nebula.addColorStop(1,'rgba(0,0,0,0)');
@@ -3956,9 +3970,9 @@ function drawSpaceSky(horizonY,index,time){
   if(positions.galaxy>-W*.2&&positions.galaxy<W*1.2)drawSpiralGalaxy(positions.galaxy,H*.36,Math.min(W,H)*.125,time);
   // Earth has its own clear sector, beyond the giant's full ring silhouette.
   if(positions.earth>-W*.12&&positions.earth<W*1.12)drawEarth(positions.earth,H*.23,Math.min(W,H)*.065,time);
-  if(positions.rocket>-60&&positions.rocket<W+60)drawRocket(positions.rocket,H*.17,time,-.16);
-  if(positions.enterprise>-70&&positions.enterprise<W+70)drawEnterprise(positions.enterprise,H*.29,time);
-  if(positions.sputnik>-90&&positions.sputnik<W+90)drawSputnik(positions.sputnik,H*.32,time);
+  if(flights.rocket.x>-60&&flights.rocket.x<W+60)drawRocket(flights.rocket.x,flights.rocket.y,time,flights.rocket.angle);
+  if(flights.enterprise.x>-70&&flights.enterprise.x<W+70)drawEnterprise(flights.enterprise.x,flights.enterprise.y,time,flights.enterprise.angle);
+  if(flights.sputnik.x>-90&&flights.sputnik.x<W+90)drawSputnik(flights.sputnik.x,flights.sputnik.y,time);
   if(positions.dogfight>-W*.65&&positions.dogfight<W*1.65){
     ctx.save();ctx.translate(positions.dogfight,H*.40);ctx.scale(W/600,W/600);drawSpaceDogfight(time,0,0);ctx.restore();
   }
@@ -5257,10 +5271,10 @@ function drawRocket(x, y, ts, angle) {
   ctx.restore();
 }
 
-function drawEnterprise(x, y, ts) {
+function drawEnterprise(x, y, ts, angle = -Math.PI * 0.04) {
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(-Math.PI * 0.04); // subtle angle
+  ctx.rotate(angle); // The flight path and bow share this heading.
   
   // Warp nacelles pylons
   ctx.strokeStyle = '#8ca3bc';

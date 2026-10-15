@@ -68,6 +68,26 @@ module.exports=async function runPolish(browser,baseUrl){
     record('space-straight-driving-does-not-force-sky-rotation',spaceSkyX(SPACE_SKY_OBJECTS.earth)===straightX&&player.z>80*SEGMENT_LENGTH);
     for(const seg of segments)seg.curve=.9;paused=true;const pausedX=spaceSkyX(SPACE_SKY_OBJECTS.earth);tick(.2);paused=false;
     record('space-sky-freezes-while-paused',spaceSkyX(SPACE_SKY_OBJECTS.earth)===pausedX);
+    reset(6);player.z=80*SEGMENT_LENGTH;player.speed=4320;player.cleanSpeedBonus=.2;
+    const sampleCraft=()=>{
+      const calls={},rocket=drawRocket,enterprise=drawEnterprise,sputnik=drawSputnik;
+      drawRocket=(x,y,t,angle)=>{calls.rocket={x,y,angle};rocket(x,y,t,angle);};
+      drawEnterprise=(x,y,t,angle)=>{calls.enterprise={x,y,angle};enterprise(x,y,t,angle);};
+      drawSputnik=(x,y,t)=>{calls.sputnik={x,y};sputnik(x,y,t);};
+      try{drawSpaceSky(H*.5,80,chapterTime);}finally{drawRocket=rocket;drawEnterprise=enterprise;drawSputnik=sputnik;}
+      return calls;
+    };
+    const flightStart=sampleCraft(),skyBefore=getSpaceSkyTurn();tick(2);const flightEnd=sampleCraft();
+    const flights=Object.keys(flightStart).map(name=>({name,dx:flightEnd[name].x-flightStart[name].x,dy:flightEnd[name].y-flightStart[name].y,angle:flightEnd[name].angle}));
+    record('space-craft-fly-independently-on-straights',flights.length===3&&flights.every(f=>f.dx>5)&&getSpaceSkyTurn()===skyBefore,flights);
+    record('space-ships-fly-bow-first',flights.filter(f=>f.name!=='sputnik').every(f=>f.dy<0&&Math.abs(f.dy/f.dx-Math.tan(f.angle))<1e-8),flights);
+    record('space-sputnik-crosses-slowly-and-horizontally',Math.abs(flights.find(f=>f.name==='sputnik').dy)<1e-8&&flights.find(f=>f.name==='sputnik').dx<flights.find(f=>f.name==='enterprise').dx,flights);
+    paused=true;tick(.5);const frozenCraft=sampleCraft();paused=false;
+    record('space-craft-flight-pauses-with-race',JSON.stringify(frozenCraft)===JSON.stringify(flightEnd),frozenCraft);
+    bgOffset=100;const turningCraft=sampleCraft();
+    record('space-craft-retain-signed-sky-parallax',Object.keys(flightEnd).every(name=>Math.abs(turningCraft[name].x-flightEnd[name].x+W*SPACE_SKY_SPAN*.01)<1e-8),turningCraft);
+    startRace();record('space-craft-flight-restarts-with-race',JSON.stringify(sampleCraft())===JSON.stringify(flightStart));
+
    }finally{Math.random=random;}
    return checks;
   });
