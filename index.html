@@ -1304,7 +1304,7 @@ function hillsNarrowness(index){
   return fade*fade*(3-2*fade);
 }
 function addPolishScenery(){
-  const add=(index,kind,x=1.9,size=1)=>{if(segments[index]){segments[index].polishScenes??=[];segments[index].polishScenes.push({kind,x,size});}};
+  const add=(index,kind,x=1.9,size=1,extra={})=>{if(segments[index]){segments[index].polishScenes??=[];segments[index].polishScenes.push({kind,x,size,...extra});}};
   if(currentLevel===LEVEL_HIGHWAY){add(918,'substation',2.3,1.0);}
   if(currentLevel===LEVEL_HILLS){
     for(const [i,kind,x,size] of [[135,'hotel',2.55,1.05],[325,'tennis',-2.1,.95],[490,'hill_mansion',2.45,1.05],[540,'detour_sign',1.06,.8],[865,'overlook',-2.35,1],[1060,'hill_mansion',-2.4,.9]])add(i,kind,x,size);
@@ -1327,7 +1327,8 @@ function addPolishScenery(){
     for(let i=965;i<1010;i++)if(segments[i].sprite==='tree'&&segments[i].spriteX>0)segments[i].sprite=null;
     add(1005,'forest_deer',1.65,.65);add(1215,'reindeer_crossing',0,1.05);
     for(const [i,x,kind]of[[1535,-2.2,'dali_arch'],[1590,2.0,'dali_stage'],[1760,-2.2,'dali_arch'],[1875,2.0,'dali_stage'],[2080,-2.2,'dali_arch']])add(i,kind,x,1.0);
-    for(const puddle of DREAM_PUDDLES)add(puddle.start-3,'dripping_clock',puddle.x<0?-1.38:1.38,1.0);
+    // Sprites stand at the segment's far edge: put the drip at the puddle's world-space center.
+    for(const puddle of DREAM_PUDDLES)add((puddle.start+puddle.end-1)/2,'dripping_clock',puddle.x<0?-1.38:1.38,1,{dropX:puddle.x});
     add(2450,'deep_diver',2.1,.82);// Nautilus crosses the open water in the final passage.
   }
   if(currentLevel===1){
@@ -1335,7 +1336,6 @@ function addPolishScenery(){
   }
   if(currentLevel===LEVEL_SPACE){
     for(const [i,x,size]of[[265,-2.7,1.3],[430,3.2,1.1],[745,-3.1,1.6],[1030,2.7,1.25]])add(i,'asteroid_cluster',x,size);
-    for(const i of[345,815,1165])add(i,'orbital_ring',0,1.25);
   }
   if(currentLevel===2){
     // Clear only randomly placed palms in the view corridors of authored scenes.
@@ -1435,17 +1435,18 @@ function drawDaliArch(seed){
   sceneEllipse(0,-78,11,21,'#31576a');sceneEllipse(2,-80,4,12,'#141b31');
   drawDaliEggSprite(115,-1,.38,chapterTime,seed);drawDaliDrawerSprite(-118,0,.38);
 }
-function drawDrippingClock(side,time){
+function drawDrippingClock(side,time,reach=169){
   ctx.save();ctx.scale(side,1);
   sceneLine([[-8,0],[-12,-80],[-33,-140],[-24,-185]],'#654544',15);
-  sceneLine([[-31,-140],[65,-155],[155,-145],[211,-154]],'#654544',10);
+  sceneLine([[-31,-140],[reach*.38,-155],[reach-14,-145],[reach+42,-154]],'#654544',10);
+  ctx.translate(reach-169,0);
   ctx.fillStyle='#e5cba0';ctx.strokeStyle='#a16e61';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(136,-153);
   ctx.bezierCurveTo(149,-161,183,-153,189,-145);ctx.lineTo(187,-94);ctx.bezierCurveTo(187,-72,171,-53,163,-74);ctx.bezierCurveTo(154,-80,155,-98,148,-113);ctx.closePath();ctx.fill();ctx.stroke();
   sceneEllipse(169,-117,17,31,'#c7d5d0',-.1);
   for(let j=0;j<12;j++){const a=j*Math.PI/6;sceneLine([[169+Math.cos(a)*13,-117+Math.sin(a)*25],[169+Math.cos(a)*15,-117+Math.sin(a)*28]],'#6e5a62',.8);}
   ctx.fillStyle='#5b4b62';ctx.font='bold 7px "Gravity Pixel"';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('12',169,-138);ctx.fillText('6',169,-95);
   sceneLine([[169,-132],[168,-117],[179,-108]],'#4a4c67',2);sceneEllipse(168,-117,2,2,'#8c685a');
-  for(let j=0;j<3;j++){const drop=((time*.055+j*33)%90);sceneEllipse(168+j*6,-70+drop,2.5,5,'#d6b9a4');}
+  for(let j=0;j<3;j++){const drop=((time*.055+j*22)%65);sceneEllipse(169,-70+drop,2.5,5,'#d6b9a4');}
   ctx.restore();
 }
 
@@ -1492,18 +1493,11 @@ function drawPolishScene(s){
     scenePoly([[-155,0],[155,0],[116,-16],[-132,-16]],'#c79577');
     drawDaliElephantSprite(-42,0,.75,t,idx);drawDaliEggSprite(112,-4,.62,t,idx);drawDaliEyeSprite(-140,-6,.6);
     sceneLine([[-170,-3],[-230,-1],[-270,-12]],'#865259',3);
-  }else if(k==='dripping_clock')drawDrippingClock(s.side||1,t);
+  }else if(k==='dripping_clock')drawDrippingClock(s.side||1,t,s.dripReach);
   else if(k==='asteroid_cluster')drawAsteroidCluster(idx,t);
   else if(k==='neon_pyramid')drawNeonPyramid();
   else if(k==='chrome_orbit')drawChromeOrbit(t);
-  else if(k==='orbital_ring'){
-    const road=s.roadHalf/s.sc;
-    ctx.save();ctx.beginPath();ctx.rect(-1400,-1600,2800,1600);ctx.rect(-1400,0,1400-road,1200);ctx.rect(road,0,1400-road,1200);ctx.clip();
-    ctx.strokeStyle='#6e629c';ctx.lineWidth=15;ctx.beginPath();ctx.ellipse(0,-180,270,260,.05,0,Math.PI*2);ctx.stroke();
-    ctx.strokeStyle='#9c6dff';ctx.lineWidth=3;ctx.stroke();
-    for(let j=0;j<24;j++){const a=j/24*Math.PI*2;sceneEllipse(Math.cos(a)*270,-180+Math.sin(a)*260,4,4,j%2?'#ffd0f7':'#68e2ee');}
-    ctx.restore();
-  }else drawSunsetScene(k,idx,t);
+  else drawSunsetScene(k,idx,t);
   ctx.restore();
 }
 function drawSunsetHouse(seed,variant=null){
@@ -2141,7 +2135,8 @@ function drawHighwayDistrictSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, in
         const offset = index + (side < 0 ? 13 : 0), period = city ? 28 : 42;
         const phase = offset % period, block = Math.floor(offset / period);
         if (phase >= period - (city ? 4 : 12)) continue; // Alleys and loading yards.
-        const lane = side < 0 ? -4.05 : 1.75;
+        // Keep the entire roadside billboard in front of the facade, including its wide panel.
+        const lane = side < 0 ? -4.55 : 2.35;
         const variant=block%5;
         const height = city ? 3400 + (block * 7 % 5) * 720 : 1450 + block % 3 * 300;
         const near = (l, h) => ({ x: x1 + l * w1, y: y1 - h * p1Scale * H / 2 });
@@ -3691,9 +3686,12 @@ function drawDreamSurfaces(x1,y1,w1,x2,y2,w2,index){
     if(index%4===1)sceneLine([[x1+(l+.22)*w1,y1],[x2+(l+.34)*w2,y2]],'#638da9',Math.max(.6,w2*.004));
   }
   for(const patch of DREAM_PUDDLES)if(index>=patch.start&&index<=patch.end){
-    const p=(index-patch.start)/(patch.end-patch.start),radius=Math.sin(Math.PI*(p*.86+.07))*.32;
-    scenePoly([[x1+(patch.x-radius)*w1,y1],[x1+(patch.x+radius)*w1,y1],[x2+(patch.x+radius)*w2,y2],[x2+(patch.x-radius)*w2,y2]],'#dbbca2');
-    if(index%3===0)sceneLine([[x1+(patch.x-radius*.7)*w1,y1],[x2+(patch.x+radius*.7)*w2,y2]],'#f4e4c9',Math.max(1,w2*.01));
+    const center=(patch.start+patch.end+1)/2,half=(patch.end-patch.start+1)/2;
+    const radius=z=>.32*Math.sqrt(Math.max(0,1-((z-center)/half)**2));
+    // Cover the pavement's 1.2px overlap plus its antialiased edge.
+    const r1=radius(index),r2=radius(index+1),farY=y2-1.8;
+    scenePoly([[x1+(patch.x-r1)*w1,y1],[x1+(patch.x+r1)*w1,y1],[x2+(patch.x+r2)*w2,farY],[x2+(patch.x-r2)*w2,farY]],'#dbbca2');
+    for(const side of[-1,1])sceneLine([[x1+(patch.x+side*r1)*w1,y1],[x2+(patch.x+side*r2)*w2,farY]],'#f4e4c9',Math.max(.6,w2*.006));
   }
 }
 let dreamFilterCanvas=null,dreamFilterCtx=null,dreamSampleCanvas=null,dreamSampleCtx=null;
@@ -3759,11 +3757,115 @@ function drawNautilusPassage(index,time){
   drawNautilusInWater(W*(1.6-2.2*phase),H*.28+Math.sin(phase*Math.PI)*H*.025,Math.min(W,H)/460,time);
   ctx.restore();
 }
-function drawNautilusInWater(x,y,scale,time){ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);drawNautilus(time);ctx.restore();}
+function drawNautilusInWater(x,y,scale,time){ctx.save();ctx.translate(x,y);ctx.scale(-scale,scale);drawNautilus(time);ctx.restore();}
 function drawManta(x,y,scale,time){
   ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);const flap=Math.sin(time*.0011)*8;
   scenePoly([[-14,-5],[-61,-25+flap],[-81,-19+flap],[-43,15],[0,22],[43,15],[81,-19+flap],[61,-25+flap],[14,-5]],'#426f82');
   sceneEllipse(0,0,18,25,'#7694a1');sceneLine([[0,19],[5,43],[2,78]],'#58798c',3);sceneEllipse(-8,-12,2,2,'#142d42');sceneEllipse(8,-12,2,2,'#142d42');ctx.restore();
+}
+
+// Cache the detailed gas giant once; the live backdrop only scales one image.
+let spaceGiantCanvas=null;
+function getSpaceGiantCanvas(){
+  if(spaceGiantCanvas)return spaceGiantCanvas;
+  const canvas=document.createElement('canvas');canvas.width=1230;canvas.height=860;
+  const g=canvas.getContext('2d');g.translate(615,430);g.scale(218,218);
+  const ellipse=(x,y,rx,ry,color,angle=0)=>{g.fillStyle=color;g.beginPath();g.ellipse(x,y,rx,ry,angle,0,Math.PI*2);g.fill();};
+  const glow=g.createRadialGradient(0,0,.94,0,0,1.17);glow.addColorStop(0,'rgba(131,117,226,.20)');glow.addColorStop(.5,'rgba(114,168,234,.08)');glow.addColorStop(1,'rgba(104,157,236,0)');ellipse(0,0,1.17,1.17,glow);
+  const rings=front=>{
+    g.save();g.rotate(-.28);
+    const palette=['#8c80b0','#c3b3d3','#66678f','#beb3d1','#817baf','#d3c7d9','#9999c0','#82a8bc'];
+    for(let j=0;j<66;j++){
+      const inner=1.28+j*.0173,outer=inner+.015;
+      if((inner>1.82&&inner<1.93)||(inner>1.43&&inner<1.47))continue;
+      const start=front?0:Math.PI,end=start+Math.PI;
+      g.globalAlpha=(front?.92:.64)*(.73+polishHash(j+450)*.27);
+      g.fillStyle=palette[(j*5+Math.floor(j/9))%palette.length];
+      g.beginPath();g.ellipse(0,0,outer,outer*.29,0,start,end);g.ellipse(0,0,inner,inner*.29,0,end,start,true);g.closePath();g.fill();
+    }
+    g.globalAlpha=front?.68:.35;g.strokeStyle='#c9d6ee';g.lineWidth=.006;
+    g.beginPath();g.ellipse(0,0,2.423,2.423*.29,0,front?0:Math.PI,front?Math.PI:Math.PI*2);g.stroke();
+    g.restore();
+  };
+  rings(false);
+  g.save();g.beginPath();g.arc(0,0,1,0,Math.PI*2);g.clip();
+  ellipse(0,0,1,1,'#9878ac');
+  g.save();g.rotate(.10);
+  const bands=['#c9b4d1','#a587bb','#625783','#8175b0','#b599c7','#d5bfd9','#77729f','#7898ae','#494e7c','#b592b5','#79517c'];
+  for(let j=0;j<37;j++){
+    const lat=-1.12+j*.061,width=.025+polishHash(j+21)*.045;
+    const boundary=(x,offset)=>lat+offset+Math.sin(x*5.5+j*.73)*.018+Math.sin(x*13-j*1.1)*.008+x*x*lat*.10;
+    g.fillStyle=bands[(j*3+Math.floor(j/4))%bands.length];g.beginPath();
+    for(let n=0;n<=70;n++){const x=-1.15+n*2.3/70;g.lineTo(x,boundary(x,0));}
+    for(let n=70;n>=0;n--){const x=-1.15+n*2.3/70;g.lineTo(x,boundary(x,width));}g.closePath();g.fill();
+    if(j%2===0){g.strokeStyle='rgba(236,216,243,.24)';g.lineWidth=.004;g.beginPath();for(let n=0;n<=45;n++){const x=-1.1+n*2.2/45;g.lineTo(x,boundary(x,width*.25));}g.stroke();}
+  }
+  // Long cloud filaments curl into three storms instead of forming a flat stripe texture.
+  for(let j=0;j<96;j++){
+    const y=-.86+polishHash(j+66)*1.72,x=-.90+polishHash(j+108)*1.8,len=.08+polishHash(j+201)*.25;
+    g.strokeStyle=j%3?'rgba(227,216,240,.20)':'rgba(59,44,98,.23)';g.lineWidth=.003+polishHash(j+115)*.006;
+    g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+len*.25,y-.015,x+len*.55,y+.022,x+len,y-.005);g.stroke();
+  }
+  const storm=(x,y,rx,ry)=>{
+    g.save();g.translate(x,y);g.rotate(-.08);g.scale(rx,ry);
+    ellipse(0,0,1,1,'#a085b4');ellipse(-.06,-.04,.82,.77,'#b59ac2');
+    for(let j=0;j<9;j++){
+      g.strokeStyle=j%3?'rgba(233,205,231,.58)':'rgba(79,65,119,.65)';g.lineWidth=j%3?.035:.07;
+      g.beginPath();for(let n=0;n<=70;n++){
+        const f=.08+n/70*.88,a=f*7.3+j*.70,r=f*(1+Math.sin(a*3+j)*.035);
+        g.lineTo(Math.cos(a)*r-.06*(1-f),Math.sin(a)*r*.90);
+      }g.stroke();
+    }
+    g.restore();
+  };
+  storm(-.24,.28,.25,.105);storm(.38,-.31,.10,.040);storm(-.57,-.12,.065,.029);
+  g.restore();
+  const shade=g.createRadialGradient(-.38,-.38,.10,.12,.06,1.11);shade.addColorStop(0,'rgba(245,220,250,.18)');shade.addColorStop(.46,'rgba(31,24,65,0)');shade.addColorStop(.75,'rgba(13,15,40,.28)');shade.addColorStop(1,'rgba(3,7,23,.93)');ellipse(0,0,1,1,shade);
+  g.save();g.rotate(-.28);g.strokeStyle='rgba(13,14,37,.32)';g.lineWidth=.085;g.beginPath();g.ellipse(0,-.04,1.75,.50,0,.24,Math.PI-.18);g.stroke();g.restore();
+  g.restore();
+  g.strokeStyle='rgba(179,207,241,.65)';g.lineWidth=.009;g.beginPath();g.arc(0,0,1,Math.PI*.8,Math.PI*1.78);g.stroke();
+  rings(true);
+  spaceGiantCanvas=canvas;return canvas;
+}
+function drawSpaceGasGiant(x,y,r){
+  const image=getSpaceGiantCanvas(),scale=r/218;
+  ctx.drawImage(image,x-615*scale,y-430*scale,image.width*scale,image.height*scale);
+}
+function drawSpaceBattlecruiser(x,y,scale){
+  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.lineJoin='round';ctx.lineCap='round';
+  // Three engine chambers and their short, quiet ion plumes stay local to the stern.
+  for(const [ey,size]of[[-43,10],[0,14],[42,10]]){
+    const plume=ctx.createLinearGradient(-320,ey,-206,ey);plume.addColorStop(0,'rgba(80,130,255,0)');plume.addColorStop(.7,'rgba(93,162,242,.2)');plume.addColorStop(1,'rgba(177,230,255,.8)');
+    scenePoly([[-213,ey-size],[-335,ey],[-213,ey+size]],plume);sceneEllipse(-213,ey,11,size+3,'#374b70');sceneEllipse(-218,ey,5,size,'#b0e7ff');
+  }
+  scenePoly([[-211,-62],[-165,-78],[286,10],[231,35],[-184,83],[-219,53]],'#28283d','#7e7a98');
+  scenePoly([[-211,-62],[-165,-78],[286,10],[-141,8]],'#565069');
+  scenePoly([[-141,8],[286,10],[231,35],[-184,83]],'#32364c');
+  scenePoly([[-184,83],[231,35],[253,32],[-178,96]],'#161e32','#667c96');
+  scenePoly([[-203,-58],[-176,-66],[-146,-53],[-153,44],[-191,60]],'#6b627b');
+  scenePoly([[-131,-43],[-87,-52],[116,-5],[-113,-10]],'#767089');
+  scenePoly([[-96,-45],[-66,-72],[-18,-75],[39,-49],[71,-14],[-96,-14]],'#3f3d56','#a49bb2');
+  scenePoly([[-66,-72],[-18,-75],[39,-49],[-38,-51]],'#82758c');
+  scenePoly([[-38,-51],[39,-49],[71,-14],[-38,-18]],'#252c44');
+  // Armored command bridge, sensor masts and a narrow illuminated flight deck.
+  scenePoly([[-61,-71],[-57,-94],[-20,-98],[4,-83],[0,-72]],'#716a82','#b8abc4');
+  scenePoly([[-57,-94],[-20,-98],[4,-83],[-35,-81]],'#9890a8');
+  sceneLine([[-43,-98],[-43,-121]],'#9c9bb5',3);sceneLine([[-22,-97],[-22,-112]],'#9c9bb5',2);sceneLine([[-50,-114],[-36,-114]],'#9c9bb5',2);
+  sceneLine([[-50,-83],[-9,-83]],'#8ddbe5',2);
+  for(let j=0;j<8;j++){
+    const a=j/8;
+    sceneLine([[-128+a*335,-30+a*40],[-151+a*351,58-a*26]],'#777186',.8);
+    sceneLine([[-144+a*350,19+a*2],[-150+a*340,24+a*2]],j%3?'#7fb3cd':'#edb9cf',1.2);
+  }
+  scenePoly([[-126,47],[-63,35],[-61,52],[-127,66]],'#111a2c','#81839e');
+  sceneLine([[-120,52],[-68,42]],'#97d5dc',2);sceneLine([[-120,58],[-69,49]],'#d6a2bf',1);
+  for(const [tx,ty]of[[-133,-47],[-71,23],[41,6],[148,16]]){
+    scenePoly([[tx-10,ty+3],[tx-7,ty-6],[tx+8,ty-5],[tx+12,ty+3]],'#8d8497');
+    sceneLine([[tx+4,ty-4],[tx+23,ty-8]],'#c2b9c9',2);
+  }
+  sceneLine([[-168,78],[230,31]],'#728ba4',1.3);
+  sceneEllipse(-172,-65,2,2,'#f29bbc');sceneEllipse(240,15,2,2,'#b7f1ec');
+  ctx.restore();
 }
 
 function drawSpacePolishBackdrop(horizonY,index){
@@ -3778,15 +3880,14 @@ function drawSpacePolishBackdrop(horizonY,index){
   }
   const eclipse=clamp(Math.min((index-570)/130,(1190-index)/150),0,1);
   if(eclipse>0){
-    const x=backdropX(W*.83,bgOffset*.055,W*.7),y=horizonY-H*.12,r=W*.42;
-    ctx.save();ctx.globalAlpha=eclipse;
-    const halo=ctx.createRadialGradient(x,y,r*.92,x,y,r*1.2);halo.addColorStop(0,'rgba(148,66,217,0)');halo.addColorStop(.45,'rgba(163,69,236,.18)');halo.addColorStop(1,'rgba(58,183,240,0)');
-    sceneEllipse(x,y,r*1.2,r*1.2,halo);
-    const body=ctx.createLinearGradient(x-r,y-r,x+r,y+r);body.addColorStop(0,'#4b3868');body.addColorStop(.25,'#20182f');body.addColorStop(1,'#070a17');
-    sceneEllipse(x,y,r,r,body);ctx.strokeStyle='#a46be0';ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(x,y,r,Math.PI*.8,Math.PI*1.8);ctx.stroke();
-    ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();
-    for(let j=0;j<9;j++)sceneLine([[x-r,y-r+j*r*.25],[x+r,y-r*.6+j*r*.25]],j%2?'rgba(120,83,155,.11)':'rgba(68,104,145,.09)',r*.045);
-    ctx.restore();ctx.restore();
+    const x=backdropX(W*.83,bgOffset*.055,W*1.1),y=horizonY-H*.12,r=W*.42;
+    ctx.save();ctx.globalAlpha=eclipse;drawSpaceGasGiant(x,y,r);ctx.restore();
+  }
+  const passage=(index-80)/450;
+  if(passage>0&&passage<1){
+    const fade=clamp(Math.min(passage/.10,(1-passage)/.10),0,1);
+    ctx.save();ctx.globalAlpha=fade;
+    drawSpaceBattlecruiser(W*(-.50+passage*2.0),H*.27,Math.min(W/580,H/620)*1.1);ctx.restore();
   }
 }
 
@@ -9101,6 +9202,7 @@ function render(ts) {
         s.x=rx2+scene.x*p2.w;s.y=p2.y;
         s.sc=Math.min(1.25,p2.scale*2800)*responsiveFactor*scene.size;
         s.side=scene.x<0?1:-1;s.roadHalf=p2.w;s.segIdx=segIdx;s.depth=n;s.clipY=segmentClipY;
+        if(scene.dropX!==undefined)s.dripReach=Math.abs(scene.dropX-scene.x)*p2.w/s.sc;
     }
     if(seg.coastalScreen){
         const s=getCleanSpriteFromPool();s.type='coastal_sight_screen';

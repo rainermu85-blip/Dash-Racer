@@ -55,7 +55,7 @@ module.exports=async function runPolish(browser,baseUrl){
    const checks=[],record=(name,pass,actual)=>checks.push({name,pass,actual});
    const difference=(a,b)=>{let count=0;for(let i=0;i<a.length;i+=4)if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2])count++;return count;};
    const pixels=()=>ctx.getImageData(0,0,W,H).data;
-   for(const [level,kind,index]of[[4,'substation',918],[5,'observatory',802],[5,'forest_deer',1005],[5,'reindeer_crossing',1215],[5,'deep_diver',2450],[3,'hotel',135],[3,'tennis',325],[3,'hill_mansion',490],[1,'neon_pyramid',140],[6,'orbital_ring',345]]){
+   for(const [level,kind,index]of[[4,'substation',918],[5,'observatory',802],[5,'forest_deer',1005],[5,'reindeer_crossing',1215],[5,'deep_diver',2450],[3,'hotel',135],[3,'tennis',325],[3,'hill_mansion',490],[1,'neon_pyramid',140],[6,'asteroid_cluster',745]]){
     selectLevel(level);startRace();state='playing';opponents.length=0;player.speed=4320;player.pitch=0;chapterTime=5000;weatherParticles=[];
     const draw=drawPolishScene,random=Math.random;Math.random=()=>.5;const samples=[];
     try{for(const distance of[85,65,45,30,20,12]){
@@ -65,6 +65,20 @@ module.exports=async function runPolish(browser,baseUrl){
     }}finally{drawPolishScene=draw;Math.random=random;}
     record(`scene-readable-in-road-view-${kind}`,samples.some(s=>s.pixels>200),samples);
    }
+   selectLevel(6);startRace();state='playing';opponents.length=0;player.speed=4320;chapterTime=6000;weatherParticles=[];
+   record('space-has-no-track-arches',!segments.some(s=>s.polishScenes?.some(p=>p.kind==='orbital_ring')));
+   for(const [index,name]of[[300,'cruiser'],[1000,'giant']]){
+    player.z=index*SEGMENT_LENGTH;curveCamera.look=0;for(let j=0;j<90;j++)updateCurveCamera(1/60);
+    const draw=name==='cruiser'?drawSpaceBattlecruiser:drawSpaceGasGiant;
+    render(6000);const before=pixels();
+    try{if(name==='cruiser')drawSpaceBattlecruiser=()=>{};else drawSpaceGasGiant=()=>{};render(6000);}
+    finally{if(name==='cruiser')drawSpaceBattlecruiser=draw;else drawSpaceGasGiant=draw;}
+    const changed=difference(before,pixels());record(`space-${name}-visible-in-road-view`,changed>5000,{pixels:changed});
+   }
+   const hullDraw=drawNautilus,headings=[];
+   try{drawNautilus=()=>{const m=ctx.getTransform();headings.push({center:m.e,bow:m.a*143+m.e,stern:m.a*-180+m.e});};drawNautilusPassage(2710,6000);drawNautilusPassage(2730,6000);}
+   finally{drawNautilus=hullDraw;}
+   record('nautilus-travels-bow-first',headings.length===2&&headings[1].center<headings[0].center&&headings.every(h=>h.bow<h.stern),headings);
    selectLevel(5);startRace();state='playing';opponents.length=0;player.speed=4320;player.z=2720*SEGMENT_LENGTH;chapterTime=6000;
    render(6000);const submarine=pixels(),submarineDraw=drawNautilusPassage;drawNautilusPassage=()=>{};render(6000);const withoutSubmarine=pixels();drawNautilusPassage=submarineDraw;
    record('nautilus-readable-during-crossing',difference(submarine,withoutSubmarine)>3000,{pixels:difference(submarine,withoutSubmarine)});
@@ -78,10 +92,48 @@ module.exports=async function runPolish(browser,baseUrl){
    }finally{Math.random=random;}
    return checks;
   });
+  const placement=[];
+  for(const width of[320,390,480]){
+   await page.setViewportSize({width,height:844});
+   placement.push(...await page.evaluate(()=>{
+    Math.random=()=>.5;selectLevel(5);startRace();state='playing';opponents.length=0;player.speed=4320;weatherParticles=[];
+    const checks=[],draw=drawPolishScene,surface=drawDreamSurfaces;
+    try{for(const patch of DREAM_PUDDLES)for(const distance of[35,15]){
+     const index=(patch.start+patch.end-1)/2;player.z=(index-distance)*SEGMENT_LENGTH;
+     curveCamera.look=0;for(let j=0;j<90;j++)updateCurveCamera(1/60);
+     let drip,center;const seams=[];
+     drawPolishScene=s=>{if(s.kind==='dripping_clock'&&s.segIdx===index)drip={x:s.x+s.side*s.dripReach*s.sc,y:s.y};draw(s);};
+     drawDreamSurfaces=(x1,y1,w1,x2,y2,w2,i)=>{if(i===index)center={x:x2+patch.x*w2,y:y2};if(i>patch.start+2&&i<patch.end-2)seams.push({x:x2+patch.x*w2,y:y2-.6});surface(x1,y1,w1,x2,y2,w2,i);};
+     render(6000);
+     const seamColors=seams.filter(p=>p.x>=1&&p.x<W-1&&p.y>=1&&p.y<H-1).map(p=>Array.from(ctx.getImageData(Math.round(p.x),Math.round(p.y),1,1).data).slice(0,3));
+     checks.push({name:`clock-drips-into-puddle-center-${W}-${patch.start}-${distance}`,pass:!!drip&&!!center&&Math.hypot(drip.x-center.x,drip.y-center.y)<.01&&seamColors.every(c=>c[0]>150&&c[1]>125&&c[2]>110),actual:{drip,center,seamColors}});
+    }}finally{drawPolishScene=draw;drawDreamSurfaces=surface;}
+    // Compare each isolated sign with the same road view with its facade removed.
+    // A facade must not paint over the billboard it stands behind.
+    selectLevel(4);startRace();state='playing';opponents.length=0;weatherParticles=[];chapterTime=6000;
+    const advert=drawFantasySign,facade=drawHighwayDistrictSegment,visibility=[];
+    let target,enabled=true;
+    drawFantasySign=(...a)=>{if(enabled&&a[3]===target)advert(...a);};
+    const image=()=>ctx.getImageData(0,0,W,H).data;
+    const changed=(a,b)=>{const mask=new Uint8Array(a.length/4);for(let i=0;i<a.length;i+=4)mask[i/4]=a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2];return mask;};
+    try{for(const index of[46,142,270,974,1038,1102]){
+      target=index;player.z=(index-35)*SEGMENT_LENGTH;curveCamera.look=0;for(let j=0;j<90;j++)updateCurveCamera(1/60);
+      const masks=[];
+      for(const walls of[()=>{},facade]){
+        drawHighwayDistrictSegment=walls;enabled=true;render(6000);const on=image();enabled=false;render(6000);masks.push(changed(on,image()));
+      }
+      const expected=masks[0].reduce((a,b)=>a+b,0),visible=masks[1].reduce((n,p,i)=>n+(p&&masks[0][i]?1:0),0);
+      visibility.push({index,expected,ratio:visible/expected});
+    }}finally{drawFantasySign=advert;drawHighwayDistrictSegment=facade;}
+    checks.push({name:`highway-facades-leave-signs-whole-${W}`,pass:visibility.every(s=>s.expected>100&&s.ratio>.97),actual:visibility});
+    return checks;
+   }));
+  }
+  await page.setViewportSize({width:390,height:844});
   for(const type of[0,1,2]){
    await page.evaluate(type=>{selectLevel(5);startRace();state='playing';player.z=1830*SEGMENT_LENGTH;player.speed=4320;chapterTime=6000;player.dreamEffectTimer=4;player.dreamEffectType=type;document.getElementById('cntNum').classList.remove('pop');updateHUD(6000);render(6000);},type);
    await page.screenshot({path:'/tmp/odyssey-filter-'+type+'.png'});
   }
-  return [...checks,...visuals].map(c=>({...c,errors,pass:c.pass&&errors.length===0}));
+  return [...checks,...visuals,...placement].map(c=>({...c,errors,pass:c.pass&&errors.length===0}));
  }finally{await page.close();}
 };
