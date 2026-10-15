@@ -246,6 +246,7 @@ NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chrom
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs tunnel
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs portals
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs collisions
+NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs chevrons
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs chapter
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs edges
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs races
@@ -257,3 +258,9 @@ Berichte und Ergebnisbilder liegen damit standardmäßig außerhalb des Checkout
 Exitcode 1 bedeutet mindestens eine fehlgeschlagene Prüfung. Im Ausgangsstand
 hat `edges` zwei bestätigte Fehler und zwei nicht erfüllte vorgeschlagene
 UX-Anforderungen; dieser rote Lauf ist zu erwarten und wird nicht übersprungen.
+
+`chevrons` prüft die Space-Wave-Turbos bei 320, 390 und 480 Pixel Breite.
+Der Lauf vergleicht die gezeichnete Pfeilfarbe an allen sieben Feldern mit
+der Überlappung der Wagenbreite, jeweils unter und über einem Drittel.
+Zusätzlich prüft er schnelle Überfahrten bei 30/60/120 FPS, die Gegenseite,
+das erneute Auslösen in der nächsten Runde und den Reset beim Neustart.

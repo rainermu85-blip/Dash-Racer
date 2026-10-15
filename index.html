@@ -992,7 +992,7 @@ function getSeg(z) {
     return segments[(idx % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
 }
 
-const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, cleanSpeedBonus:0, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, wallContactSide:0, wallHitCooldown:0 };
+const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, cleanSpeedBonus:0, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, lastChevronPanelLap:0, wallContactSide:0, wallHitCooldown:0 };
 
 // --- EINSTELLUNGEN FÜR DICH ZUM SPIELEN ---
 const STEER_SENSITIVITY = 2.0; // steering speed multiplier
@@ -1247,6 +1247,82 @@ function getProjAt(segIdx, t) {
     y: s.proj_y1 + (s.proj_y2 - s.proj_y1) * t,
     w: s.proj_w1 + (s.proj_w2 - s.proj_w1) * t
   };
+}
+
+const CHEVRON_PANEL_LENGTH=6,CHEVRON_HALF_WIDTH=.37;
+function getChevronShape(index,side,projection=getProjAt){
+  const wings=projection(index,.1),peak=projection(index+1,.7);
+  if(!wings||!peak)return null;
+  const center=wings.x+side*.5*wings.w;
+  return{left:{x:center-CHEVRON_HALF_WIDTH*wings.w,y:wings.y},right:{x:center+CHEVRON_HALF_WIDTH*wings.w,y:wings.y},tip:{x:peak.x+side*.5*peak.w,y:peak.y},roadHalf:wings.w,stroke:Math.max(5,wings.w*.07)};
+}
+function getPlayerRenderPose(){
+  const steer=keys.left?-1:keys.right?1:0,look=curveCamera.look*W;
+  return{x:clamp(W/2-look*.37+player.x*W*.18+steer*5,W*.1,W*.9),y:H-76+Math.max(0,-player.pitch*.5),scale:1.64*clamp(W/1000,.85,1),lean:clamp(player.steerLean*.12-player.x*.018,-.16,.16)};
+}
+function getPlayerChevronFootprint(){
+  const pose=getPlayerRenderPose(),car=getCarGeometry(pose.x,pose.y,pose.scale,true),sin=Math.sin(pose.lean),cos=Math.cos(pose.lean);
+  // Ground footprint spans the visible rear tires and bumper, excluding exhaust and glow.
+  const corners=[[-.475,-.36],[.475,-.36],[.475,-.06],[-.475,-.06]].map(([x,y])=>{
+    const dx=x*car.bw,dy=pose.y+y*car.bh-car.pivotY;
+    return{x:pose.x+dx*cos-dy*sin,y:car.pivotY+dx*sin+dy*cos};
+  });
+  const left=Math.min(...corners.map(p=>p.x)),right=Math.max(...corners.map(p=>p.x));
+  return{left,right,top:Math.min(...corners.map(p=>p.y)),bottom:Math.max(...corners.map(p=>p.y)),width:right-left};
+}
+function chevronStrokeSpan(a,b,r,top,bottom){
+  // Project the actual round-ended paint stroke intersecting the car's ground footprint onto x.
+  const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1,nx=-dy/length*r,ny=dx/length*r;
+  let points=[{x:a.x+nx,y:a.y+ny},{x:b.x+nx,y:b.y+ny},{x:b.x-nx,y:b.y-ny},{x:a.x-nx,y:a.y-ny}];
+  for(const [edge,greater]of[[top,true],[bottom,false]]){
+    const clipped=[];
+    for(let i=0;i<points.length;i++){
+      const p=points[i],q=points[(i+1)%points.length],inside=greater?p.y>=edge:p.y<=edge,next=greater?q.y>=edge:q.y<=edge;
+      if(inside)clipped.push(p);
+      if(inside!==next){const t=(edge-p.y)/(q.y-p.y);clipped.push({x:p.x+(q.x-p.x)*t,y:edge});}
+    }
+    points=clipped;
+  }
+  const xs=points.map(p=>p.x);
+  for(const p of[a,b]){const distance=Math.max(top-p.y,p.y-bottom,0);if(distance<=r){const half=Math.sqrt(Math.max(0,r*r-distance*distance));xs.push(p.x-half,p.x+half);}}
+  return xs.length?[Math.min(...xs),Math.max(...xs)]:null;
+}
+function getChevronOverlap(shape,footprint,clipY=H){
+  const bottom=Math.min(footprint.bottom,clipY);
+  if(bottom<footprint.top)return 0;
+  const spans=[shape.left,shape.right].map(p=>chevronStrokeSpan(p,shape.tip,shape.stroke/2,footprint.top,bottom)).filter(Boolean)
+    .map(([l,r])=>[Math.max(l,footprint.left),Math.min(r,footprint.right)]).filter(([l,r])=>r>l).sort((a,b)=>a[0]-b[0]);
+  let width=0,end=-Infinity;
+  for(const [left,right]of spans){width+=Math.max(0,right-Math.max(left,end));end=Math.max(end,right);}
+  return width;
+}
+function getPlayerChevronContact(){
+  if(currentLevel!==LEVEL_SPACE||player.finished)return null;
+  const footprint=getPlayerChevronFootprint(),start=Math.floor(player.z/SEGMENT_LENGTH),base=segments[start%SEGMENT_COUNT];
+  const fraction=player.z/SEGMENT_LENGTH-start,camY=CAMERA_HEIGHT+base.worldY+base.hillDelta*fraction,horizon=Math.trunc(H*.5)+player.pitch*1.5;
+  const projected=new Map();let offset=0,delta=0,maxY=H,stop=Infinity;
+  for(let n=0;n<450;n++){
+    if(n>stop+2)break;
+    const index=start+n,seg=segments[index%SEGMENT_COUNT],z=index*SEGMENT_LENGTH;
+    let p1=project(z,0,seg.worldY,player.z,player.x*ROAD_WIDTH*.82,camY,horizon);
+    const p2=project(z+SEGMENT_LENGTH,0,seg.worldY+seg.hillDelta,player.z,player.x*ROAD_WIDTH*.82,camY,horizon);
+    if(!p1&&p2)p1=project(player.z+1,0,seg.worldY,player.z,player.x*ROAD_WIDTH*.82,camY,horizon);
+    if(!p1||!p2)continue;
+    const x1=p1.x+offset-curveCamera.look*W;delta+=seg.curve*5;offset+=delta;delta*=.85;
+    const x2=p2.x+offset-curveCamera.look*W,clipY=maxY,visible=p1.y>=0&&p2.y<maxY;
+    projected.set(index,{p1,p2,x1,x2,clipY,visible});
+    if(visible)maxY=p2.y;
+    if(maxY<footprint.top&&stop===Infinity)stop=n;
+  }
+  const at=(index,t)=>{const p=projected.get(index);return p?{x:p.x1+(p.x2-p.x1)*t,y:p.p1.y+(p.p2.y-p.p1.y)*t,w:p.p1.w+(p.p2.w-p.p1.w)*t}:null;};
+  for(const lapOffset of[0,SEGMENT_COUNT])for(let panel=0;panel<panelStarts.length;panel++)for(const arrow of[0,2,4]){
+    const index=lapOffset+panelStarts[panel]+arrow,slice=projected.get(index);
+    if(!slice?.visible)continue;
+    const shape=getChevronShape(index,panel%2?1:-1,at);if(!shape)continue;
+    const overlap=getChevronOverlap(shape,footprint,slice.clipY);
+    if(overlap>footprint.width/3+1e-6)return{index:panel,lap:player.lap+lapOffset/SEGMENT_COUNT,overlap,width:footprint.width};
+  }
+  return null;
 }
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -3511,7 +3587,7 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
                 trapezoid(x1 + w1 - tw1, y1 - h1, x1 + w1 + tw1, x2 + w2 - tw2, y2 - h2, x2 + w2 + tw2);
 
                 // --- GLOWING FLOOR PANELS (Sleek broad lane chevrons, alternating track sides, 6 segments long each) ---
-                const panelLength = 6;
+                const panelLength = CHEVRON_PANEL_LENGTH;
                 let panelSide = null;
                 let panelOffset = -1;
                 for (let pIdx = 0; pIdx < panelStarts.length; pIdx++) {
@@ -3526,33 +3602,11 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
                 if (panelSide && (panelOffset === 0 || panelOffset === 2 || panelOffset === 4)) {
                     // Draw a single stable chevron spanning from t=0.1 on the current segment (wings)
                     // to t=0.7 on the next segment (peak), making it 150% as long as it is wide (steep & sleek)
-                    const proj_wings = getProjAt(segIdx, 0.1);
-                    const proj_peak = getProjAt(segIdx + 1, 0.7);
-
-                    if (proj_wings && proj_peak) {
-                        ctx.save();
-                        ctx.lineCap = 'round';
-                        ctx.lineJoin = 'round';
-
-                        const y_wings = proj_wings.y;
-                        const y_peak = proj_peak.y;
-
-                        const w_wings = proj_wings.w;
-                        const w_peak = proj_peak.w;
-
-                        const x_wings = proj_wings.x;
-                        const x_peak = proj_peak.x;
-
-                        // Center of the lane at wings and peak
-                        const laneCenter_wings = (panelSide === 'left') ? (x_wings - w_wings * 0.5) : (x_wings + w_wings * 0.5);
-                        const laneCenter_peak = (panelSide === 'left') ? (x_peak - w_peak * 0.5) : (x_peak + w_peak * 0.5);
-
-                        // Width of the chevron is 15% narrower than before (half-width ~ 0.37 * w_wings)
-                        const halfW_wings = w_wings * 0.37;
-
-                        const xl1 = laneCenter_wings - halfW_wings;
-                        const xr1 = laneCenter_wings + halfW_wings;
-                        const xc2 = laneCenter_peak;
+                    const shape=getChevronShape(segIdx,panelSide==='left'?-1:1);
+                    if(shape){
+                        ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+                        const y_wings=shape.left.y,y_peak=shape.tip.y,w_wings=shape.roadHalf;
+                        const xl1=shape.left.x,xr1=shape.right.x,xc2=shape.tip.x;
 
                         // A1. Extra Wide Neon Pink ambient glow / halo
                         ctx.strokeStyle = 'rgba(255, 0, 127, 0.25)';
@@ -3565,7 +3619,7 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
 
                         // A2. Thick Neon Pink outline
                         ctx.strokeStyle = '#ff007f';
-                        ctx.lineWidth = Math.max(5.0, w_wings * 0.07);
+                        ctx.lineWidth = shape.stroke;
                         ctx.beginPath();
                         ctx.moveTo(xl1, y_wings);
                         ctx.lineTo(xc2, y_peak);
@@ -9537,16 +9591,14 @@ function render(ts) {
     }
   }
 
-  const steerVis = keys.left ? -1 : keys.right ? 1 : 0;
-  const playerScreenX = clamp(W / 2 - lookOffset * .37 + player.x * W * 0.18 + steerVis * 5, W * 0.1, W * 0.9);
-  playerLastScreenX = playerScreenX;
-  const lean = clamp(player.steerLean * 0.12 - player.x * 0.018, -0.16, 0.16); const thrust = clamp(player.speed / player.maxSpeed, 0, 1);
-  const bounceY = Math.max(0, -player.pitch * 0.5); 
-  
+  const playerPose=getPlayerRenderPose(),playerScreenX=playerPose.x;
+  playerLastScreenX=playerScreenX;
+  const lean=playerPose.lean,thrust=clamp(player.speed/player.maxSpeed,0,1),bounceY=playerPose.y-(H-76);
+
   const shakeX = ((player.isBoosting || player.isChevronBoosting) ? (Math.random() - 0.5) * 6 : 0) + (player.isSparking ? (Math.random() - 0.5) * 8 : 0);
   const shakeY = ((player.isBoosting || player.isChevronBoosting) ? (Math.random() - 0.5) * 6 : 0) + (player.isSparking ? (Math.random() - 0.5) * 8 : 0);
   
-  const playerScale = 1.64 * responsiveFactor;
+  const playerScale = playerPose.scale;
   drawCarSprite(playerScreenX + shakeX, H - 76 + bounceY + shakeY, playerScale, '#ffe066', true, lean, thrust, player.hitFlash, player.isBoosting, player.finished || state === 'countdown' || state === 'intro', player.isChevronBoosting);
 
   const isPlayerStanding = (state === 'countdown' || state === 'intro' || (player.finished && player.speed < 50));
@@ -10094,7 +10146,7 @@ function startRace() {
     lapTimes = [0, 0, 0]; currentLapTime = 0; bestLapTime = Infinity;
     player.x = 0; player.z = 0; player.speed = 0; player.lap = 1; player.finished = false; player.collisionCooldown = 0; player.hitFlash = 0; player.steerLean = 0; player.pitch = 0; player.curveAheadSmooth = 0; player.fovOffset = 0;
     player.boosts = 0; player.isBoosting = false; player.boostTimer = 0; player.isSparking = false;
-    player.energyBallsCollected = 0; player.isChevronBoosting = false; player.chevronBoostTimer = 0; player.lastChevronPanelIdx = -1;
+    player.energyBallsCollected = 0; player.isChevronBoosting = false; player.chevronBoostTimer = 0; player.lastChevronPanelIdx = -1;player.lastChevronPanelLap=0;
     player.wallContactSide = 0; player.wallHitCooldown = 0;
     player.cleanSpeedBonus = 0;
     resetPolishCar(player);opponents.forEach(resetPolishCar);
@@ -10453,46 +10505,12 @@ function loop(ts) {
 
     checkPolishContacts(player,previousPlayer,nextContact);
 
-    // Chevron boost checking
-    if (currentLevel === LEVEL_SPACE) {
-        const playerSegIdx = (~~(player.z / SEGMENT_LENGTH) % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT;
-        let crossedChevronPanelIdx = -1;
-        for (let pIdx = 0; pIdx < panelStarts.length; pIdx++) {
-            const start = panelStarts[pIdx];
-            if (playerSegIdx >= start && playerSegIdx < start + 6) {
-                const side = (pIdx % 2 === 0) ? 'left' : 'right';
-                const targetX = (side === 'left') ? -0.5 : 0.5;
-                if (Math.abs(player.x - targetX) < 0.35) {
-                    crossedChevronPanelIdx = pIdx;
-                }
-                break;
-            }
-        }
-        
-        if (crossedChevronPanelIdx !== -1) {
-            if (player.lastChevronPanelIdx !== crossedChevronPanelIdx) {
-                if (player.isChevronBoosting && player.chevronBoostTimer > 0) {
-                    spawnPopupText("CHAINED!", "#ff00ff");
-                } else {
-                    spawnPopupText("CHEVRON TURBO!", "#ff00ff");
-                }
-                player.isChevronBoosting = true;
-                player.chevronBoostTimer = 2.0; // Boost resets back to 2 seconds for chaining
-                player.lastChevronPanelIdx = crossedChevronPanelIdx;
-            }
-        } else {
-            let onAnyPanelRange = false;
-            for (let pIdx = 0; pIdx < panelStarts.length; pIdx++) {
-                const start = panelStarts[pIdx];
-                if (playerSegIdx >= start && playerSegIdx < start + 6) {
-                    onAnyPanelRange = true;
-                    break;
-                }
-            }
-            if (!onAnyPanelRange) {
-                player.lastChevronPanelIdx = -1;
-            }
-        }
+    // Use the same projected paint as rendering, against the visible car footprint.
+    const chevronContact=getPlayerChevronContact();
+    if(chevronContact&&(player.lastChevronPanelIdx!==chevronContact.index||player.lastChevronPanelLap!==chevronContact.lap)){
+      spawnPopupText(player.isChevronBoosting&&player.chevronBoostTimer>0?'CHAINED!':'CHEVRON TURBO!','#ff00ff');
+      player.isChevronBoosting=true;player.chevronBoostTimer=2;
+      player.lastChevronPanelIdx=chevronContact.index;player.lastChevronPanelLap=chevronContact.lap;
     }
 
     let playerTravel = player.speed * dt;
