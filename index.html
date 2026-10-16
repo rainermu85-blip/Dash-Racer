@@ -1031,7 +1031,7 @@ function initOpponents() {
 }
 
 // Shared slipstream rules, measured in road space for every racing car.
-const DRAFT={chargeTime:2.5,duration:2,speedBonus:.10,minGap:.5,maxGap:2,alignment:.20};
+const DRAFT={chargeTime:2.5,duration:2,speedBonus:.10,minGap:.5,maxGap:2,alignment:.40};
 function resetDraftCar(car){car.draftCharge=0;car.draftTimer=0;car.draftTarget=null;car.draftBlocked=false;}
 function cancelDraft(car){
   const active=(car.draftTimer||0)>0;

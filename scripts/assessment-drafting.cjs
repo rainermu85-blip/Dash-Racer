@@ -31,15 +31,21 @@ module.exports=async function runDrafting(browser,baseUrl){
      }
      for(const axis of['left','right','near','far']){
       reset();const lead=leader();prime();qualify(2.4);const before=player.draftCharge,size=getDraftDimensions(),valid={x:lead.x,z:lead.z};
-      if(axis==='left'||axis==='right')lead.x=(axis==='left'?-1:1)*(size.width*.2+.00001);
+      if(axis==='left'||axis==='right')lead.x=(axis==='left'?-1:1)*(size.width*.4+.00001);
       else lead.z=getDraftPosition(player).z+size.length*(axis==='near'?1.49999:3.00001);
       qualify(1/120);const cleared=player.draftCharge===0&&player.draftTimer===0;
       Object.assign(lead,valid);prime();qualify(.2);
       record(`one-physics-step-${axis}-resets-counter`,before>2.3&&cleared&&player.draftTimer===0&&player.draftCharge<.21,{before,cleared,charge:player.draftCharge});
      }
      for(const gap of[.5,2])for(const side of[-1,1]){
-      reset();leader(gap,side*getDraftDimensions().width*.199);prime();qualify(2.5);
-      record(`boundary-gap-${gap}-side-${side}`,player.draftTimer===2,{timer:player.draftTimer});
+      reset();leader(gap,side*getDraftDimensions().width*.4);prime();qualify(2.5);
+      record(`exact-sixty-percent-gap-${gap}-side-${side}`,player.draftTimer===2,{timer:player.draftTimer});
+     }
+     for(const side of[-1,1]){
+      reset();leader(1.25,side*getDraftDimensions().width*.3);prime();qualify(2.5);
+      record(`seventy-percent-overlap-now-qualifies-${side}`,player.draftTimer===2);
+      reset();leader(1.25,side*getDraftDimensions().width*.4001);prime();qualify(3);
+      record(`below-sixty-percent-never-charges-${side}`,player.draftTimer===0&&player.draftCharge===0);
      }
      reset();const close=leader(.25),far=leader(1.5);prime();qualify(2.6);
      record('nearer-car-blocks-wake-of-farther-car',player.draftTimer===0&&player.draftCharge===0&&player.draftTarget===null);

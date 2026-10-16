@@ -61,7 +61,7 @@ Im Space-Level geben fünf Energiekugeln eine Ladung; Pfeilfelder auf der Streck
 lösen einen zusätzlichen Turbo aus.
 
 Windschatten gibt allen Fahrern einen Miniturbo: 2,5 Sekunden hinter demselben
-Wagen bleiben, mit mindestens 80 Prozent seitlicher Überdeckung und einer freien
+Wagen bleiben, mit mindestens 60 Prozent seitlicher Überdeckung und einer freien
 Lücke von einer halben bis zwei Wagenlängen. Danach gibt es zwei Sekunden lang
 10 Prozent zusätzliches Tempo und eine dünne blaue Corona. Jede Berührung
 beendet den Bonus. [Regeln und Prüfungen](docs/slipstream.md).

@@ -8,7 +8,7 @@ Der Bonus verbraucht keine Turbo-Ladung.
 2,5 Sekunden ununterbrochen hinter demselben vorausfahrenden Wagen bleiben:
 
 - Freie Lücke zwischen den Wagen: mindestens eine halbe, höchstens zwei Wagenlängen.
-- Seitlicher Versatz: höchstens 20 Prozent der Wagenbreite, also mindestens 80 Prozent Überdeckung.
+- Seitlicher Versatz: höchstens 40 Prozent der Wagenbreite, also mindestens 60 Prozent Überdeckung.
 - Der Wagen muss fahren und sich auf der Fahrbahn befinden.
 
 Eine Unterbrechung setzt den Zähler sofort zurück, auch innerhalb eines einzelnen
@@ -80,3 +80,8 @@ abbrechen. Die volle kontaktfreie Dauer wird zusätzlich bei 30/60/120 FPS
 in den isolierten Fällen geprüft. Gegnerwerte, Spurbewegungen, Kurven und
 Hindernisse werden dabei nicht fixiert oder entfernt. Das ersetzt keinen
 Bedienungstest auf einem echten Telefon.
+
+Zwei zusätzliche Fahrten auf Midnight Highway halten bewusst rund 70 Prozent
+Überdeckung, links beziehungsweise rechts versetzt. Dabei muss der Wagen während
+des Aufladens über 1,5 Sekunden außerhalb der früheren 80-Prozent-Toleranz bleiben
+und den Bonus trotzdem tatsächlich auslösen und zum Überholen nutzen.
