@@ -60,13 +60,10 @@ Das Auto beschleunigt automatisch. Blitze geben Boost-Ladungen, maximal drei.
 Im Space-Level geben fünf Energiekugeln eine Ladung; Pfeilfelder auf der Strecke
 lösen einen zusätzlichen Turbo aus.
 
-Windschatten gibt allen Fahrern einen Miniturbo: 2,5 Sekunden hinter demselben
-Wagen bleiben, mit mindestens 60 Prozent seitlicher Überdeckung und einer freien
-Lücke von einer halben bis zwei Wagenlängen. Danach zeigt eine dünne blaue Corona
-den bereiten Bonus an. Erst beim vollständigen seitlichen Ausscheren (null
-Überdeckung) starten zwei Sekunden mit 10 Prozent zusätzlichem Tempo. Bis dahin
-hält die Tempoautomatik den Abstand. Jede Berührung verwirft den bereiten Bonus
-oder beendet seine Wirkung. [Regeln und Prüfungen](docs/slipstream.md).
+Die fünf Gegner haben eigene Fahrerprofile, planen Überholmanöver gegen alle
+Rennwagen und sammeln Turbo-Ladungen. Führende Gegner behalten ihr eigenes
+Tempo. Turbo-Pickups kehren nach 1,5 Sekunden zurück; das neue Modell und seine
+Browserprüfungen sind in [Gegner-KI](docs/racecraft.md) beschrieben.
 
 ## Im Browser über GitHub Pages spielen
 

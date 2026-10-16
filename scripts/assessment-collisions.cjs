@@ -1,5 +1,6 @@
 // Collision regressions in a real browser. Flat, empty fixtures isolate the
-// contacts; the normal game loop handles acceleration, AI and collision response.
+// contacts; the normal game loop handles acceleration and collision response.
+// AI decisions are fixed here so a smarter driver cannot avoid the test impact.
 module.exports = async function runCollisions(browser, baseUrl) {
   const page = await browser.newPage({ viewport: { width: 480, height: 800 } });
   const errors = [];
@@ -14,7 +15,8 @@ module.exports = async function runCollisions(browser, baseUrl) {
       const tick = (count = 1) => {
         for (let i = 0; i < count; i++) { ts += 1000 / fps; loop(ts); }
       };
-      const random = Math.random;
+      const random = Math.random, racecraft=updateOpponentRacecraft;
+      updateOpponentRacecraft=car=>car.maxSpeed;
       // No random boosts/lane changes during controlled contact fixtures.
       Math.random = () => 0.5;
       const setup = (level = 1, frameRate = 60) => {
@@ -178,8 +180,8 @@ module.exports = async function runCollisions(browser, baseUrl) {
         record('separation-allows-a-new-impact', released && player.speed < firstImpactSpeed && side.contactAxis === 'x', { released, firstImpactSpeed, speed: player.speed, axis: side.contactAxis });
 
         setup(); player.steerLean = 1;
-        const stationarySide = addOpponent({ x: 0.22, relZ: 0, speed: player.speed });
-        stationarySide.baseX -= Math.sin(stationarySide.z * 0.0015 + stationarySide.color.charCodeAt(1)) * 0.15;
+        const stationarySide = addOpponent({ x: COLLISION_X_RANGE + .005, relZ: 0, speed: player.speed });
+        stationarySide.targetX = stationarySide.x;
         tick();
         record('visual-lean-does-not-cause-impact', player.speed === player.maxSpeed && player.collisionCooldown === 0, { speed: player.speed, cooldown: player.collisionCooldown });
 
@@ -221,7 +223,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
         startRace();
         record('restart-clears-contact-state', player.wallContactSide === 0 && player.wallHitCooldown === 0 && player.collisionCooldown === 0 && opponents.every(opponent => opponent.contactAxis === null && opponent.collisionCooldown === 0), { wallContact: player.wallContactSide, wallCooldown: player.wallHitCooldown, cooldown: player.collisionCooldown });
       } finally {
-        Math.random = random;
+        Math.random = random;updateOpponentRacecraft=racecraft;
       }
       return results;
     });

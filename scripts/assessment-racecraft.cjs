@@ -1,67 +1,74 @@
-// Exercise real acceleration and lane motion, rather than only the target-speed formula.
+// Controlled situations exercise the real planner, steering and contacts.
+// Full-course driving is in assessment-racecraft-play.cjs; these are not manual playtests.
 module.exports=async function runRacecraft(browser,baseUrl){
-  const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];
-  page.on('pageerror',e=>errors.push(e.message));
-  try{
-    await page.addInitScript(()=>window.requestAnimationFrame=()=>0);
-    await page.goto(baseUrl,{waitUntil:'domcontentloaded'});
-    const checks=await page.evaluate(()=>{
-      const checks=[],record=(name,pass,actual)=>checks.push({name,pass,actual});
-      let time=1000,rate=60;const draw=render,random=Math.random;
-      render=()=>{};Math.random=()=>.99;
-      const reset=(level=1,fps=60,gap=-350)=>{
-        selectLevel(level);startRace();state='playing';rate=fps;lastTime=time;smoothedDt=1/rate;
-        panelStarts=[];keys.left=keys.right=keys.boost=false;
-        for(const s of segments){s.curve=s.hillDelta=s.worldY=0;s.pylon=s.barrier=s.lightning=null;}
-        player.z=300*SEGMENT_LENGTH;player.speed=4320;player.cleanSpeedBonus=CLEAN_SPEED_LIMIT;player.x=0;
-        opponents.splice(1);const o=opponents[0];
-        o.z=player.z+getPlayerContactDistance()+gap;o.x=o.baseX=o.targetX=.55;
-        o.cleanSpeedBonus=CLEAN_SPEED_LIMIT;o.speed=o.maxSpeed*1.2;o.racePace=o.speed;
-        o.attackCooldown=0;o.tailTime=.6;return o;
-      };
-      const tick=seconds=>{for(let i=0;i<Math.round(seconds*rate);i++){time+=1000/rate;loop(time);}};
-      const gap=o=>getRaceDistance(o)-getRaceDistance(player)-getPlayerContactDistance();
-      try{
-        for(const [level,fps]of[[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
-          const o=reset(level,fps);tick(1/rate);
-          const started=o.attackTimer>0&&Math.abs(o.attackLane-player.x)>.4;
-          let maxSpeed=o.speed,passed=false;
-          for(let i=0;i<6*rate;i++){tick(1/rate);maxSpeed=Math.max(maxSpeed,o.speed);passed||=gap(o)>100;}
-          record(`overtaking-chance-level-${level}-${fps}fps`,started&&passed&&maxSpeed>4320&&maxSpeed<=4320*1.04+.01&&player.speed===4320,
-            {started,passed,maxSpeed,finalGap:gap(o),cooldown:o.attackCooldown,playerSpeed:player.speed});
-          record(`attack-has-recovery-time-level-${level}-${fps}fps`,o.attackTimer===0&&o.attackCooldown>8,{cooldown:o.attackCooldown});
-        }
-        let o=reset(1,60,-6000);const initial=gap(o);tick(12);
-        record('far-behind-driver-catches-up-without-teleport',gap(o)>initial&&o.speed>player.speed&&o.speed<=4320*1.018+.01,{initial,after:gap(o),speed:o.speed});
-        o=reset();const second={...o,oppIdx:1,color:OPP_COLORS[1],x:-.55,baseX:-.55,targetX:-.55,profile:OPP_PROFILES[1],maxSpeed:3600*.87};
-        opponents.push(second);tick(1/rate);
-        record('only-one-opponent-attacks-at-once',opponents.filter(car=>car.attackTimer>0).length===1,{timers:opponents.map(car=>car.attackTimer)});
-        o=reset();o.x=o.baseX=o.targetX=0;o.chasing=true;o.speed=o.racePace=4320;
-        opponents.push({...o,oppIdx:1,z:player.z+getPlayerContactDistance()+100,x:-.55,baseX:-.55,targetX:-.55,attackCooldown:100,chasing:false});
-        opponents.push({...o,oppIdx:2,z:player.z+getPlayerContactDistance()+100,x:.55,baseX:.55,targetX:.55,attackCooldown:100,chasing:false});
-        const route=findPassingLane(o);tick(.25);
-        record('blocked-lanes-do-not-trigger-an-attack',route===null&&o.attackTimer===0,{lane:route,timer:o.attackTimer,gap:gap(o)});
-        o=reset();o.attackTimer=3;o.attackWindup=0;o.attackLane=.55;o.racePace=4320*1.04;
-        const before=o.racePace,after=updateOpponentRacecraft(o,1/60,250,o.maxSpeed*1.2);
-        record('passing-speed-fades-without-sudden-braking',after<before&&after>4320&&before-after<20&&o.attackCooldown>=14,{before,after,cooldown:o.attackCooldown});
-        const references=[];
-        for(const speed of[4320,5940,8316]){
-          o=reset(1,60,-6000);player.speed=speed;player.isBoosting=speed===5940;player.isChevronBoosting=speed===8316;
-          references.push(updateOpponentRacecraft(o,.5,-6000,o.maxSpeed*1.2));
-        }
-        record('rubberband-does-not-copy-player-turbo',Math.max(...references)-Math.min(...references)<1e-9,{references});
-        o=reset();tick(.2);const pausedState=JSON.stringify({z:o.z,speed:o.speed,timer:o.attackTimer,cooldown:o.attackCooldown});
-        togglePause();tick(2);record('pause-freezes-racecraft',pausedState===JSON.stringify({z:o.z,speed:o.speed,timer:o.attackTimer,cooldown:o.attackCooldown}));
-        togglePause();startRace();record('restart-clears-attacks-and-catchup',opponents.every(car=>!car.chasing&&car.attackTimer===0&&car.attackCooldown>=8));
-        o=reset();o.attackTimer=3;o.isBoosting=true;o.boostTimer=1;
-        const turboSpeed=updateOpponentRacecraft(o,.1,-350,o.maxSpeed*1.65);
-        record('turbo-replaces-assisted-attack',turboSpeed===o.maxSpeed*1.65&&o.attackTimer===0&&o.attackCooldown>0,{turboSpeed,cooldown:o.attackCooldown});
-        o=reset();o.attackTimer=3;o.collisionCooldown=.3;
-        const contactSpeed=updateOpponentRacecraft(o,.1,-350,o.maxSpeed);
-        record('contacts-cancel-assisted-attack',contactSpeed===o.maxSpeed&&o.attackTimer===0&&!o.chasing);
-      }finally{render=draw;Math.random=random;}
-      return checks;
-    });
-    return checks.map(c=>({...c,errors,pass:c.pass&&errors.length===0}));
-  }finally{await page.close();}
+ const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.addInitScript(()=>window.requestAnimationFrame=()=>0);await page.goto(baseUrl,{waitUntil:'domcontentloaded'});
+  const checks=await page.evaluate(()=>{
+   const checks=[],record=(name,pass,actual)=>checks.push({name,pass,actual});const draw=render,random=Math.random;
+   let time=1000,rate=60;render=()=>{};Math.random=()=>.5;
+   const reset=(level=1,fps=60)=>{
+    selectLevel(level);startRace();state='playing';lastTime=time;smoothedDt=1/fps;rate=fps;panelStarts=[];
+    keys.left=keys.right=keys.boost=false;player.z=300*SEGMENT_LENGTH;player.x=0;player.speed=4320;player.cleanSpeedBonus=.2;
+    for(const s of segments){s.curve=s.hillDelta=s.worldY=0;s.pylon=s.barrier=s.lightning=s.parkedCar=null;}
+    opponents.forEach(o=>{o.cleanSpeedBonus=.2;o.speed=o.maxSpeed*1.2;o.profile={...o.profile,form:0};
+      o.surfaceVisits=new Set([...DREAM_ICE.map(p=>'ice'+p.start),...DREAM_PUDDLES.map(p=>'clock'+p.start)]);});
+   };
+   const tick=(seconds,onStep)=>{for(let i=0;i<Math.round(seconds*rate);i++){time+=1000/rate;loop(time);onStep?.();}};
+   const gap=o=>racePosition(o)-racePosition(player);
+   try{
+    reset();record('slipstream-state-and-functions-removed',[player,...opponents].every(c=>!Object.keys(c).some(k=>/^draft/i.test(k)))&&typeof DRAFT==='undefined'&&typeof drawDraftCorona==='undefined'&&typeof draftAudio==='undefined');
+    for(const [level,fps]of [[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
+     reset(level,fps);const fast=opponents[2];opponents=[fast];fast.x=fast.baseX=fast.targetX=0;fast.z=racePosition(player)-600;fast.boosts=1;
+     let passed=false,max=0,changes=0,last=fast.targetX,contact=false;
+     tick(15,()=>{passed||=gap(fast)>300;max=Math.max(max,fast.speed);contact||=player.collisionCooldown>0;if(Math.abs(fast.targetX-last)>.2){changes++;last=fast.targetX;}});
+     record(`leader-can-be-passed-level-${level}-${fps}`,passed&&gap(fast)>300&&!contact&&max<=5940.01&&fast.boosts===0,{passed,gap:gap(fast),max,contact,changes});
+     record(`no-immediate-slowdown-after-pass-${level}-${fps}`,fast.speed>4320&&changes<6,{speed:fast.speed,changes});
+    }
+    reset();player.z=100*SEGMENT_LENGTH;
+    const slow=opponents[0],fast=opponents[2];opponents=[slow,fast];
+    slow.profile={...slow.profile,pace:.96,lane:0};slow.maxSpeed=3600*.96;slow.speed=slow.maxSpeed*1.2;slow.x=slow.targetX=slow.baseX=0;slow.z=400*SEGMENT_LENGTH;
+    fast.x=fast.targetX=fast.baseX=0;fast.z=slow.z-700;let maneuver=false,contact=false;
+    tick(10,()=>{maneuver||=fast.maneuver==='pass';contact||=fast.collisionCooldown>0;});
+    record('ai-passes-ai-away-from-player',maneuver&&racePosition(fast)>racePosition(slow)+200&&!contact,{maneuver,contact,gap:racePosition(fast)-racePosition(slow)});
+    reset();player.z=0;
+    const pairs=[opponents[0],opponents[1],opponents[2],opponents[3]];opponents=pairs;
+    pairs.forEach((o,i)=>{o.z=(i<2?400:500)*SEGMENT_LENGTH+(i%2?0:-600);o.x=o.targetX=o.baseX=0;o.speed=i%2?3800:4400;});
+    for(const o of pairs)planOpponent(o,raceSnapshot());
+    record('independent-simultaneous-overtakes',pairs[0].maneuver==='pass'&&pairs[2].maneuver==='pass',{modes:pairs.map(o=>o.maneuver),lanes:pairs.map(o=>o.targetX)});
+    reset();const follower=opponents[0];follower.x=follower.targetX=0;follower.z=racePosition(player)-500;
+    opponents.slice(1).forEach((o,i)=>{o.z=follower.z+400;o.x=o.targetX=[-.6,-.2,.2,.6][i];o.speed=3300;});
+    player.z=0;const initial=follower.speed;tick(.5);
+    record('blocked-driver-lifts-instead-of-phasing-through',follower.speed<initial&&Number.isFinite(follower.x),{before:initial,after:follower.speed,mode:follower.maneuver});
+    reset();player.z=0;const crossing=opponents[0],obstruction=opponents[1];opponents=[crossing,obstruction];
+    crossing.z=400*SEGMENT_LENGTH;crossing.x=crossing.targetX=-.6;crossing.speed=8000;
+    obstruction.z=crossing.z+1000;obstruction.x=obstruction.targetX=0;obstruction.speed=1000;
+    const crossingChoice=evaluateRaceLane(crossing,.6,raceSnapshot(),roadPreview(crossing,crossing.profile));planOpponent(crossing,raceSnapshot());
+    record('fast-closing-crossing-path-is-rejected',crossingChoice.blocked&&crossing.targetX<0,{blocked:crossingChoice.blocked,target:crossing.targetX});
+    reset();const lone=opponents[0];opponents=[lone];player.z=0;lone.z=300*SEGMENT_LENGTH;lone.x=lone.targetX=lone.baseX=.55;
+    segments[315].barrier={active:true,x:.55,state:'idle',timer:0};tick(1.5);
+    record('plans-around-barrier',segments[315].barrier.state==='idle'&&Math.abs(lone.x-.55)>.45&&lone.collisionCooldown===0,{x:lone.x,speed:lone.speed});
+    reset();const collector=opponents[0];opponents=[collector];player.z=0;collector.z=300*SEGMENT_LENGTH;collector.x=collector.targetX=collector.baseX=.55;collector.boostCooldown=20;
+    segments[301].lightning={active:true,x:.55};tick(.1);
+    record('ai-collects-real-charge',collector.boosts===1&&!segments[301].lightning.active,{charges:collector.boosts});
+    tick(1.6);record('pickup-returns-for-following-drivers',segments[301].lightning.active&&collector.boosts===1);
+    collector.boostCooldown=0;tick(.1);record('ai-spends-charge-on-clear-straight',collector.boosts===0&&collector.isBoosting);
+    tick(10);record('no-free-random-turbos',!collector.isBoosting&&collector.boosts===0);
+    const references=[];
+    for(const speed of [4320,5940,8316]){reset();const o=opponents[0];opponents=[o];o.z=racePosition(player)-30000;player.speed=speed;references.push(updateOpponentRacecraft(o,.1,raceSnapshot()));}
+    record('recovery-does-not-copy-player-turbo',Math.max(...references)-Math.min(...references)<.001,{references});
+    reset();const o=opponents[0];opponents=[o];o.z=racePosition(player)-60000;
+    const target=updateOpponentRacecraft(o,.1,raceSnapshot()),natural=o.maxSpeed*1.2;
+    record('recovery-capped-at-two-percent',Math.abs(target/natural-1.02)<1e-6,{target,natural});
+    reset();const a=opponents[0],b=opponents[1];opponents=[a,b];a.x=b.x=0;a.z=300*SEGMENT_LENGTH;b.z=a.z+80;a.speed=5940;b.speed=1000;
+    const before=[{x:a.x,z:a.z-40},{x:b.x,z:b.z-10}];checkOpponentPairContacts(before,1/120);
+    record('ai-contact-has-penalty-and-separation',a.speed<5940&&a.cleanSpeedBonus===0&&b.z-a.z>=90&&a.collisionCooldown>0,{speed:a.speed,gap:b.z-a.z});
+    reset();tick(.5);const pausedState=JSON.stringify(opponents);togglePause();tick(2);record('pause-freezes-entire-ai',JSON.stringify(opponents)===pausedState);togglePause();
+    startRace();record('restart-clears-tactics-and-resources',opponents.every(o=>!o.passTarget&&o.boosts===0&&o.maneuver==='cruise'&&o.raceAge===0)&&opponentContacts.size===0&&respawningPickups.size===0);
+    reset();opponents.forEach(o=>{o.z=player.z+30000+o.oppIdx*12000;});tick(2);record('all-drivers-remain-finite',opponents.every(o=>Number.isFinite(o.x)&&Number.isFinite(o.speed)&&Number.isFinite(o.z)));
+   }finally{render=draw;Math.random=random;}
+   return checks;
+  });
+  return checks.map(c=>({...c,pass:c.pass&&errors.length===0,errors}));
+ }finally{await page.close();}
 };
