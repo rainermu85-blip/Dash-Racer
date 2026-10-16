@@ -62,9 +62,11 @@ lösen einen zusätzlichen Turbo aus.
 
 Windschatten gibt allen Fahrern einen Miniturbo: 2,5 Sekunden hinter demselben
 Wagen bleiben, mit mindestens 60 Prozent seitlicher Überdeckung und einer freien
-Lücke von einer halben bis zwei Wagenlängen. Danach gibt es zwei Sekunden lang
-10 Prozent zusätzliches Tempo und eine dünne blaue Corona. Jede Berührung
-beendet den Bonus. [Regeln und Prüfungen](docs/slipstream.md).
+Lücke von einer halben bis zwei Wagenlängen. Danach zeigt eine dünne blaue Corona
+den bereiten Bonus an. Erst beim vollständigen seitlichen Ausscheren (null
+Überdeckung) starten zwei Sekunden mit 10 Prozent zusätzlichem Tempo. Bis dahin
+hält die Tempoautomatik den Abstand. Jede Berührung verwirft den bereiten Bonus
+oder beendet seine Wirkung. [Regeln und Prüfungen](docs/slipstream.md).
 
 ## Im Browser über GitHub Pages spielen
 

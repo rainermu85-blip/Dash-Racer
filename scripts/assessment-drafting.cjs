@@ -15,6 +15,7 @@ module.exports=async function runDrafting(browser,baseUrl){
     const leader=(gap=1.25,offset=0,follower=player)=>addCar(follower.x+offset,getDraftPosition(follower).z+(1+gap)*getDraftDimensions().length);
     const qualify=(seconds,fps=120)=>{for(let i=0;i<Math.round(seconds*fps);i++){const cars=[player,...opponents],before=prepareDraftStep(cars);updateDrafting(cars,before,1/fps);}};
     const prime=()=>{const cars=[player,...opponents];updateDrafting(cars,prepareDraftStep(cars),0);};
+    const release=(car=player,side=1)=>{car.x=car.draftTarget.x+side*getDraftDimensions().width;const cars=[player,...opponents];updateDrafting(cars,prepareDraftStep(cars),1/120);};
     const tick=(seconds,fps=60)=>{for(let n=0;n<Math.round(seconds*fps);n++){
       // Hold an isolated AI's chosen lane. Acceleration, boost, contacts and
       // slipstream timing still run through the normal game loop.
@@ -24,7 +25,11 @@ module.exports=async function runDrafting(browser,baseUrl){
     try{
      for(const fps of[30,60,120]){
       reset(1,fps);leader();prime();qualify(2.5-1/fps,fps);const early=player.draftTimer;qualify(1/fps,fps);
-      record(`exact-two-and-a-half-seconds-${fps}`,early===0&&player.draftTimer===2,{early,timer:player.draftTimer});
+      record(`ready-after-exact-two-and-a-half-seconds-${fps}`,early===0&&player.draftReady&&player.draftTimer===0,{early,ready:player.draftReady,timer:player.draftTimer});
+      qualify(3,fps);record(`waiting-does-not-use-the-bonus-${fps}`,player.draftReady&&player.draftTimer===0);
+      player.x=opponents[0].x+getDraftDimensions().width*.999;qualify(.5,fps);
+      record(`partial-overlap-stays-ready-${fps}`,player.draftReady&&player.draftTimer===0);
+      release();record(`zero-overlap-releases-full-two-seconds-${fps}`,!player.draftReady&&player.draftTimer===2);
       player.x=.7;opponents.length=0;qualify(1,fps);
       record(`can-leave-wake-after-trigger-${fps}`,Math.abs(player.draftTimer-1)<1e-8&&player.draftCharge===0,{timer:player.draftTimer});
       qualify(1,fps);record(`ends-after-two-seconds-${fps}`,player.draftTimer===0&&player.draftCharge===0);
@@ -39,11 +44,14 @@ module.exports=async function runDrafting(browser,baseUrl){
      }
      for(const gap of[.5,2])for(const side of[-1,1]){
       reset();leader(gap,side*getDraftDimensions().width*.4);prime();qualify(2.5);
-      record(`exact-sixty-percent-gap-${gap}-side-${side}`,player.draftTimer===2,{timer:player.draftTimer});
+      record(`exact-sixty-percent-gap-${gap}-side-${side}`,player.draftReady&&player.draftTimer===0,{ready:player.draftReady,timer:player.draftTimer});
+      player.x=opponents[0].x-side*getDraftDimensions().width*.999;qualify(.2);
+      record(`not-quite-clear-${gap}-side-${side}`,player.draftReady&&player.draftTimer===0);
+      release(player,-side);record(`fully-clear-${gap}-side-${side}`,player.draftTimer===2&&!player.draftReady);
      }
      for(const side of[-1,1]){
       reset();leader(1.25,side*getDraftDimensions().width*.3);prime();qualify(2.5);
-      record(`seventy-percent-overlap-now-qualifies-${side}`,player.draftTimer===2);
+      record(`seventy-percent-overlap-now-qualifies-${side}`,player.draftReady&&player.draftTimer===0);
       reset();leader(1.25,side*getDraftDimensions().width*.4001);prime();qualify(3);
       record(`below-sixty-percent-never-charges-${side}`,player.draftTimer===0&&player.draftCharge===0);
      }
@@ -51,11 +59,44 @@ module.exports=async function runDrafting(browser,baseUrl){
      record('nearer-car-blocks-wake-of-farther-car',player.draftTimer===0&&player.draftCharge===0&&player.draftTarget===null);
      record('wake-depth-matches-game-car-contact-length',getDraftDimensions().length===COLLISION_Z_RANGE);
      reset();const slower=leader(2);slower.speed=slower.maxSpeed=3000;tick(2.6);
-     record('auto-throttle-keeps-real-close-follow-without-contact',player.draftTimer>1.8&&player.collisionCooldown===0,{timer:player.draftTimer,gap:getDraftPosition(slower).z-getDraftPosition(player).z});
+     record('auto-throttle-keeps-real-close-follow-without-contact',player.draftReady&&player.draftTimer===0&&player.collisionCooldown===0,{timer:player.draftTimer,ready:player.draftReady,gap:getDraftPosition(slower).z-getDraftPosition(player).z});
+     const heldSpeed=player.speed;player.x=getDraftDimensions().width*.7;tick(.8);
+     record('partial-exit-still-matches-pace-without-spending-bonus',player.draftReady&&player.draftTimer===0&&player.collisionCooldown===0&&player.speed<=heldSpeed+.01&&Math.abs(player.speed-slower.speed)<10,{speed:player.speed,leaderSpeed:slower.speed,heldSpeed,ready:player.draftReady});
+     release();tick(.4);
+     record('only-full-clearance-accelerates',!player.draftReady&&player.draftTimer>1.5&&player.speed>heldSpeed+200,{speed:player.speed,heldSpeed,timer:player.draftTimer});
      reset();leader();prime();qualify(1);const cars=[player,...opponents];
      const limited=getDraftFollowSpeed(player,cars,new Map(cars.map(c=>[c,getDraftPosition(c)])))<Infinity;
      player.x=.5;const free=getDraftFollowSpeed(player,cars,new Map(cars.map(c=>[c,getDraftPosition(c)])))===Infinity;qualify(1/120);
      record('steering-out-frees-auto-throttle',limited&&free&&player.draftCharge===0&&player.draftTimer===0);
+     // The earned state stays bound to its leader; leaving the allowed gap,
+     // losing the leader or touching another car discards it without releasing.
+     for(const loss of['near','far','removed']){
+      reset();const lead=leader();prime();qualify(2.5);
+      if(loss==='removed')opponents.length=0;
+      else lead.z=getDraftPosition(player).z+getDraftDimensions().length*(loss==='near'?1.49:3.01);
+      qualify(1/120);record(`ready-${loss}-is-discarded`,!player.draftReady&&player.draftTimer===0&&player.draftTarget===null);
+     }
+     reset();const readylead=leader();prime();qualify(2.5);paused=true;tick(1);paused=false;
+     record('pause-preserves-ready-without-thrust',player.draftReady&&player.draftTimer===0&&player.draftTarget===readylead);
+     reset();const touch=leader();prime();qualify(2.5);touch.z=getDraftPosition(player).z;
+     checkOpponentCollision(getDraftPosition(player),[getDraftPosition(touch)],1/120);
+     record('ready-car-touch-discards-before-release',!player.draftReady&&player.draftTimer===0&&player.draftTarget===null);
+     reset();const reentry=leader();prime();qualify(2.5);release();
+     player.x=reentry.x;reentry.z=getDraftPosition(player).z;
+     checkOpponentCollision(getDraftPosition(player),[getDraftPosition(reentry)],1/120);
+     record('steering-back-into-source-after-release-kills-bonus',!player.draftReady&&player.draftTimer===0&&player.draftTarget===null);
+     reset();player.x=.7;const readyA=addCar(0,player.z+1000),readyB=addCar(.001,readyA.z+1);readyA.draftReady=readyB.draftReady=true;
+     checkDraftOpponentContacts(new Map([player,readyA,readyB].map(c=>[c,getDraftPosition(c)])));
+     record('ready-ai-contact-discards-both',!readyA.draftReady&&!readyB.draftReady&&readyA.draftTimer===0&&readyB.draftTimer===0);
+     reset();leader();prime();qualify(2.5);player.x=getRoadLimits(player.z).right+.001;applyRoadContact(1/120,.01);
+     record('ready-wall-touch-discards',!player.draftReady&&player.draftTimer===0);
+     for(const big of['manual','chevron']){
+      reset();leader();prime();qualify(2.5);player.boosts=1;
+      if(big==='manual')keys.boost=true;else{player.isChevronBoosting=true;player.chevronBoostTimer=1;}
+      tick(1/60);record(`ready-${big}-takes-priority`,!player.draftReady&&player.draftTimer===0);
+     }
+     reset();leader();prime();qualify(2.5);startRace();
+     record('restart-discards-ready-bonus',[player,...opponents].every(c=>!c.draftReady&&c.draftTimer===0&&c.draftTarget===null));
      reset();const old=leader();prime();qualify(2.4);const next=leader(.8);qualify(1/120);
      record('closer-new-opponent-starts-over',player.draftTimer===0&&player.draftCharge===0&&player.draftTarget===next&&player.draftTarget!==old);
      reset();leader();prime();qualify(2);player.speed=0;qualify(1/120);
@@ -63,20 +104,21 @@ module.exports=async function runDrafting(browser,baseUrl){
      reset();leader();prime();qualify(2.4);paused=true;tick(.5);paused=false;
      record('pause-does-not-charge',player.draftTimer===0&&Math.abs(player.draftCharge-2.4)<1e-8);
      player.draftTimer=1.5;paused=true;tick(.5);paused=false;record('pause-does-not-consume-mini',player.draftTimer===1.5);
-     startRace();record('restart-clears-all-draft-state',[player,...opponents].every(c=>c.draftTimer===0&&c.draftCharge===0&&c.draftTarget===null));
+     startRace();record('restart-clears-all-draft-state',[player,...opponents].every(c=>c.draftTimer===0&&!c.draftReady&&c.draftExitLane===null&&c.draftCharge===0&&c.draftTarget===null));
      // Isolated, straight equal-pace fixtures on every course. Normal races
      // with unmodified courses and AI are checked separately below.
      for(const level of[1,2,3,4,5,6]){
       reset(level);leader();tick(2.4);const early=player.draftTimer;tick(.2);
-      record(`isolated-loop-qualifies-level-${level}`,early===0&&player.draftTimer>1.8,{early,timer:player.draftTimer,charge:player.draftCharge});
+      record(`isolated-loop-arms-level-${level}`,early===0&&player.draftReady&&player.draftTimer===0,{early,ready:player.draftReady,timer:player.draftTimer,charge:player.draftCharge});
+      release();record(`isolated-release-level-${level}`,player.draftTimer===2&&!player.draftReady);
      }
      reset();player.z=TRACK_LENGTH-3500;leader();tick(2.6);
-     record('charging-survives-leader-and-player-lap-wrap',player.lap===2&&opponents[0].lap===2&&player.draftTimer>1.8,{lap:player.lap,leaderLap:opponents[0].lap,timer:player.draftTimer});
+     record('charging-survives-leader-and-player-lap-wrap',player.lap===2&&opponents[0].lap===2&&player.draftReady&&player.draftTarget===opponents[0],{lap:player.lap,leaderLap:opponents[0].lap,timer:player.draftTimer});
      for(const targetType of['player','opponent']){
       reset();let follower;
       if(targetType==='player'){player.accel=0;follower=addCar(0,getDraftPosition(player).z-2.25*getDraftDimensions().length);}
       else{player.x=.7;follower=addCar(0,player.z+2000);leader(1.25,0,follower);}
-      tick(2.6);record(`isolated-ai-earns-mini-behind-${targetType}`,follower.draftTimer>1.8,{timer:follower.draftTimer,charge:follower.draftCharge});
+      tick(3.6);record(`isolated-ai-arms-and-exits-behind-${targetType}`,follower.draftTimer>0&&!follower.draftReady,{timer:follower.draftTimer,charge:follower.draftCharge});
      }
      for(const fps of[30,60,120]){
       reset(1,fps);player.cleanSpeedBonus=.2;player.speed=4320;player.boosts=2;player.draftTimer=2;
@@ -89,7 +131,8 @@ module.exports=async function runDrafting(browser,baseUrl){
       reset();const car=addCar(0,getDraftPosition(player).z-2.25*getDraftDimensions().length);
       if(targetType==='opponent'){player.x=.7;leader(1.25,0,car);}
       prime();qualify(2.5);
-      record(`ai-earns-mini-behind-${targetType}`,car.draftTimer===2,{timer:car.draftTimer});
+      record(`ai-earns-ready-bonus-behind-${targetType}`,car.draftReady&&car.draftTimer===0,{ready:car.draftReady,timer:car.draftTimer});
+      release(car);record(`ai-releases-after-clearance-${targetType}`,!car.draftReady&&car.draftTimer===2);
      }
      reset();player.x=.7;const boosted=addCar(0,player.z+3000);boosted.draftTimer=2;tick(.4);
      record('ai-gets-ten-percent-speed-too',Math.abs(boosted.speed-3960)<1,{speed:boosted.speed});
@@ -128,7 +171,10 @@ module.exports=async function runDrafting(browser,baseUrl){
     let changed=0,outside=0,blue=0;
     for(let i=0;i<plain.length;i+=4)if(plain[i]!==aura[i]||plain[i+1]!==aura[i+1]||plain[i+2]!==aura[i+2]){changed++;const x=(i/4)%W,y=Math.floor(i/4/W);if(x<g.px-12||x>g.px+g.bw+12||y<g.py-12||y>g.py+g.bh+12)outside++;if(aura[i+2]-plain[i+2]>aura[i]-plain[i]&&aura[i+2]>plain[i+2])blue++;}
     record('corona-is-thin-blue-and-local',changed>150&&changed<W*H*.025&&outside===0&&blue>changed*.8,{changed,outside,blue});
-    player.draftTimer=0;const lead=leader(.8);render(6000);const noAI=pixels();lead.draftTimer=1.5;render(6000);const withAI=pixels();let aiGlow=0;for(let i=0;i<noAI.length;i+=4)if(noAI[i]!==withAI[i]||noAI[i+1]!==withAI[i+1]||noAI[i+2]!==withAI[i+2])aiGlow++;
+    player.draftTimer=0;player.draftReady=true;render(6000);const readyPixels=pixels();let readyGlow=0;
+    for(let i=0;i<plain.length;i+=4)if(plain[i]!==readyPixels[i]||plain[i+1]!==readyPixels[i+1]||plain[i+2]!==readyPixels[i+2])readyGlow++;
+    record('ready-corona-with-no-active-turbo',player.draftTimer===0&&readyGlow>150&&readyGlow<W*H*.025,{pixels:readyGlow});
+    player.draftReady=false;const lead=leader(.8);render(6000);const noAI=pixels();lead.draftTimer=1.5;render(6000);const withAI=pixels();let aiGlow=0;for(let i=0;i<noAI.length;i+=4)if(noAI[i]!==withAI[i]||noAI[i+1]!==withAI[i+1]||noAI[i+2]!==withAI[i+2])aiGlow++;
     record('opponent-corona-reaches-the-renderer',aiGlow>30,{pixels:aiGlow});Math.random=random;
     return checks;
    });

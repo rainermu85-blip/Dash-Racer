@@ -992,7 +992,7 @@ function getSeg(z) {
     return segments[(idx % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
 }
 
-const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, cleanSpeedBonus:0, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, lastChevronPanelLap:0, wallContactSide:0, wallHitCooldown:0, draftCharge:0, draftTimer:0, draftTarget:null, draftBlocked:false };
+const player = { x:0, z:0, speed:0, maxSpeed:3600, accel:900, cleanSpeedBonus:0, lap:1, finished:false, collisionCooldown:0, hitFlash:0, steerLean:0, pitch:0, curveAheadSmooth:0, fovOffset:0, boosts:0, isBoosting:false, boostTimer:0, energyBallsCollected:0, isChevronBoosting:false, chevronBoostTimer:0, lastChevronPanelIdx:-1, lastChevronPanelLap:0, wallContactSide:0, wallHitCooldown:0, draftCharge:0, draftTimer:0, draftReady:false, draftExitLane:null, draftTarget:null, draftBlocked:false };
 
 // --- EINSTELLUNGEN FÜR DICH ZUM SPIELEN ---
 const STEER_SENSITIVITY = 2.0; // steering speed multiplier
@@ -1024,7 +1024,7 @@ function initOpponents() {
       isBoosting: false, boostTimer: 0, timeInLane: Math.random() * 5.0,
       chevronDecisions: {}, energyBallsCollected: 0, isChevronBoosting: false, chevronBoostTimer: 0, lastChevronPanelIdx: -1,
       collisionCooldown: 0, contactSide: 0, contactAxis: null,
-      draftCharge:0,draftTimer:0,draftTarget:null,draftBlocked:false,
+      draftCharge:0,draftTimer:0,draftReady:false,draftExitLane:null,draftTarget:null,draftBlocked:false,
       chasing:false,racePace:0,attackTimer:0,attackCooldown:8+i*2,tailTime:0,attackLane:null,chaseLane:null,attackWindup:0
     };
   });
@@ -1032,10 +1032,10 @@ function initOpponents() {
 
 // Shared slipstream rules, measured in road space for every racing car.
 const DRAFT={chargeTime:2.5,duration:2,speedBonus:.10,minGap:.5,maxGap:2,alignment:.40};
-function resetDraftCar(car){car.draftCharge=0;car.draftTimer=0;car.draftTarget=null;car.draftBlocked=false;}
+function resetDraftCar(car){car.draftCharge=0;car.draftTimer=0;car.draftReady=false;car.draftExitLane=null;car.draftTarget=null;car.draftBlocked=false;}
 function cancelDraft(car){
   const active=(car.draftTimer||0)>0;
-  car.draftCharge=0;car.draftTimer=0;car.draftTarget=null;car.draftBlocked=true;
+  car.draftCharge=0;car.draftTimer=0;car.draftReady=false;car.draftExitLane=null;car.draftTarget=null;car.draftBlocked=true;
   if(active&&!car.isBoosting&&!car.isChevronBoosting){
     const natural=(car.maxSpeed||player.maxSpeed)*(1+(car.cleanSpeedBonus||0));
     car.speed=Math.min(car.speed,car===player?natural:Math.max(natural,car.racePace||0));
@@ -1053,9 +1053,37 @@ function canDraft(car){
      car.collisionCooldown>0||car.wallContactSide||car.parkedContact!=null||Math.abs(car.x)>=.94)return false;
   const limits=getRoadLimits(car.z);return car.x>-limits.left&&car.x<limits.right;
 }
-function draftPairWithin(follower,leader,size){
+function draftGapWithin(follower,leader,size){
   const gap=leader.z-follower.z-size.length;
-  return gap>=size.length*DRAFT.minGap-1e-7&&gap<=size.length*DRAFT.maxGap+1e-7&&Math.abs(leader.x-follower.x)<=size.width*DRAFT.alignment+1e-9;
+  return gap>=size.length*DRAFT.minGap-1e-7&&gap<=size.length*DRAFT.maxGap+1e-7;
+}
+function draftPairWithin(follower,leader,size){
+  return draftGapWithin(follower,leader,size)&&Math.abs(leader.x-follower.x)<=size.width*DRAFT.alignment+1e-9;
+}
+function readyDraftLeader(car,positions,size){
+  const leader=car.draftTarget;
+  return leader&&positions.has(leader)&&!draftFinished(leader)&&leader.speed>0&&
+    draftGapWithin(positions.get(car),positions.get(leader),size)?leader:null;
+}
+function findDraftExitLane(car,cars,positions,size){
+  const own=positions.get(car),leader=positions.get(car.draftTarget);if(!leader)return null;
+  let left=.88,right=.88;
+  for(let n=0;n<25;n++){
+    const limits=getRoadLimits(car.z+n*SEGMENT_LENGTH);left=Math.min(left,limits.left-.06);right=Math.min(right,limits.right-.06);
+  }
+  return [leader.x-size.width-.08,leader.x+size.width+.08,-.55,0,.55]
+    .map(lane=>clamp(lane,-left,right))
+    .filter(lane=>Math.abs(lane-leader.x)>=size.width+.025)
+    .filter(lane=>cars.every(other=>other===car||Math.abs(positions.get(other).z-own.z)>1000||Math.abs(positions.get(other).x-lane)>.3))
+    .filter(lane=>{
+      for(let n=1;n<25;n++){
+        const seg=getSeg(car.z+n*SEGMENT_LENGTH);
+        for(const object of[seg.barrier,seg.parkedCar,currentLevel===LEVEL_SPACE?null:seg.pylon]){
+          if(object?.active&&Math.abs(object.x-lane)<.5)return false;
+        }
+      }
+      return true;
+    }).sort((a,b)=>Math.abs(a-car.x)-Math.abs(b-car.x))[0]??null;
 }
 function findDraftLeader(car,cars,positions,size){
   const follower=positions.get(car);
@@ -1067,10 +1095,11 @@ function findDraftLeader(car,cars,positions,size){
 }
 function getDraftFollowSpeed(car,cars,positions){
   if(!canDraft(car)||car.draftTimer>0)return Infinity;
-  const size=getDraftDimensions(),leader=findDraftLeader(car,cars,positions,size);
-  if(!leader)return Infinity;
-  // There is no brake control. Auto-throttle leaves room to complete the hold
-  // instead of running into a slower leader. Steering remains entirely manual.
+  const size=getDraftDimensions(),leader=car.draftReady?readyDraftLeader(car,positions,size):findDraftLeader(car,cars,positions,size);
+  if(!leader||(car.draftReady&&Math.abs(positions.get(leader).x-positions.get(car).x)>=size.width-1e-9))return Infinity;
+  // Keep matching pace while ready and partly alongside; only full clearance
+  // releases the mini-turbo. Auto-throttle prevents running into a slower
+  // leader while charging or waiting; steering remains entirely manual.
   const gap=positions.get(leader).z-positions.get(car).z-size.length;
   const desiredGap=size.length*(DRAFT.minGap+DRAFT.maxGap)/2;
   return Math.max(0,leader.speed+(gap-desiredGap)*3);
@@ -1078,7 +1107,7 @@ function getDraftFollowSpeed(car,cars,positions){
 function prepareDraftStep(cars){
   const before=new Map();
   for(const car of cars){
-    car.draftCharge??=0;car.draftTimer??=0;car.draftTarget??=null;car.draftBlocked=false;
+    car.draftCharge??=0;car.draftTimer??=0;car.draftReady??=false;car.draftExitLane??=null;car.draftTarget??=null;car.draftBlocked=false;
     if(!canDraft(car))cancelDraft(car);
     before.set(car,getDraftPosition(car));
   }
@@ -1089,7 +1118,7 @@ function checkDraftOpponentContacts(before){
   // existing AI avoidance has no separate physical impact response.
   for(let i=0;i<opponents.length;i++)for(let j=i+1;j<opponents.length;j++){
     const a=opponents[i],b=opponents[j];
-    if(!(a.draftTimer||a.draftCharge||b.draftTimer||b.draftCharge))continue;
+    if(!(a.draftTimer||a.draftReady||a.draftCharge||b.draftTimer||b.draftReady||b.draftCharge))continue;
     const p=before.get(a),q=before.get(b),r=getDraftPosition(a),s=getDraftPosition(b);
     if(sweepContact(q.x-p.x,q.z-p.z,s.x-r.x,s.z-r.z,COLLISION_X_RANGE,-COLLISION_Z_RANGE,COLLISION_Z_RANGE)){cancelDraft(a);cancelDraft(b);}
   }
@@ -1098,14 +1127,30 @@ function updateDrafting(cars,before,dt){
   const size=getDraftDimensions(),after=new Map(cars.map(car=>[car,getDraftPosition(car)]));
   for(const car of cars){
     if(!canDraft(car)){cancelDraft(car);continue;}
-    if(car.draftTimer>0){car.draftTimer=car.draftTimer-dt>1e-9?car.draftTimer-dt:0;car.draftCharge=0;car.draftTarget=null;continue;}
+    if(car.draftTimer>0){
+      car.draftTimer=car.draftTimer-dt>1e-9?car.draftTimer-dt:0;car.draftCharge=0;car.draftTarget=null;
+      if(car.draftTimer===0)car.draftExitLane=null;
+      continue;
+    }
     const end=after.get(car),start=before.get(car);
+    if(car.draftReady){
+      const leader=readyDraftLeader(car,after,size);
+      if(!leader||!readyDraftLeader(car,before,size)){cancelDraft(car);continue;}
+      // Partial lateral overlap keeps the earned bonus ready, without thrust.
+      if(Math.abs(after.get(leader).x-end.x)>=size.width-1e-9){
+        car.draftReady=false;car.draftTimer=DRAFT.duration;car.draftTarget=null;
+      }
+      continue;
+    }
     const target=findDraftLeader(car,cars,after,size);
     if(!target){car.draftCharge=0;car.draftTarget=null;continue;}
     // A new leader or any out-of-range part of this physics step starts over.
     if(car.draftTarget!==target||!draftPairWithin(start,before.get(target),size)){car.draftCharge=0;car.draftTarget=target;continue;}
     car.draftCharge+=dt;
-    if(car.draftCharge+1e-9>=DRAFT.chargeTime){car.draftTimer=DRAFT.duration;car.draftCharge=0;car.draftTarget=null;}
+    if(car.draftCharge+1e-9>=DRAFT.chargeTime){
+      car.draftReady=true;car.draftCharge=0;
+      if(car!==player)car.draftExitLane=findDraftExitLane(car,cars,after,size);
+    }
   }
 }
 
@@ -1248,10 +1293,10 @@ function unlockDraftAudio(){
 function updateDraftAudio(){
   if(!draftAudio)return;
   const level=state==='playing'&&!paused&&!player.finished&&!document.hidden?
-    (player.draftTimer>0?.012:.018*Math.pow((player.draftCharge||0)/DRAFT.chargeTime,2)):0;
+    (player.draftTimer>0?.012:player.draftReady?.008:.018*Math.pow((player.draftCharge||0)/DRAFT.chargeTime,2)):0;
   const now=draftAudio.context.currentTime;
   draftAudio.gain.gain.setTargetAtTime(level,now,.035);
-  draftAudio.filter.frequency.setTargetAtTime(650+Math.min(1,(player.draftCharge||0)/DRAFT.chargeTime)*700,now,.08);
+  draftAudio.filter.frequency.setTargetAtTime(650+(player.draftReady?1:Math.min(1,(player.draftCharge||0)/DRAFT.chargeTime))*700,now,.08);
 }
 window.addEventListener('pointerdown',unlockDraftAudio,{capture:true,passive:true});
 window.addEventListener('keydown',unlockDraftAudio,{capture:true});
@@ -4358,20 +4403,20 @@ function getCarExhausts(cx,cy,sc,isPlayer,lean=0){
     return{x:cx+dx*cos-dy*sin,y:g.pivotY+dx*sin+dy*cos,radius:g.bw*.031};
   });
 }
-function drawDraftCorona(cx,cy,sc,isPlayer,lean,remaining){
+function drawDraftCorona(cx,cy,sc,isPlayer,lean,remaining,ready=false){
   const {bw,bh,px,py,pivotY}=getCarGeometry(cx,cy,sc,isPlayer);
   const outline=[[.065,.015],[.935,.015],[.935,.10],[.82,.10],[.82,.165],[.96,.50],[.94,.64],[.975,.645],[.945,.94],[.775,.94],[.775,.77],[.72,.885],[.28,.885],[.225,.77],[.225,.94],[.055,.94],[.025,.645],[.06,.64],[.04,.50],[.18,.165],[.18,.10],[.065,.10]];
   ctx.save();ctx.translate(cx,pivotY);ctx.rotate(lean);ctx.translate(-cx,-pivotY);
-  ctx.globalAlpha=Math.min(1,remaining/.15)*(.72+Math.sin(chapterTime*.007+cx*.02)*.12);
+  ctx.globalAlpha=Math.min(1,remaining/.15)*(ready?.6:.72+Math.sin(chapterTime*.007+cx*.02)*.12);
   ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
   outline.forEach(([x,y],i)=>i?ctx.lineTo(px+x*bw,py+y*bh):ctx.moveTo(px+x*bw,py+y*bh));ctx.closePath();
   ctx.shadowColor='#6dc9ff';ctx.shadowBlur=2.2*sc;ctx.strokeStyle='rgba(100,190,255,.30)';ctx.lineWidth=Math.max(1,sc*1.25);ctx.stroke();
   ctx.shadowBlur=0;ctx.strokeStyle='#b6e8ff';ctx.lineWidth=Math.max(.65,Math.min(1,sc));ctx.stroke();ctx.restore();
 }
 
-function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=false,isBraking=false,isChevronBoosting=false,draftTimer=0){
+function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=false,isBraking=false,isChevronBoosting=false,draftTimer=0,draftReady=false){
   const {bw,bh,px,py,pivotY}=getCarGeometry(cx,cy,sc,isPlayer);if(bw<8)return;
-  if(draftTimer>0&&!isBoosting&&!isChevronBoosting)drawDraftCorona(cx,cy,sc,isPlayer,lean,draftTimer);
+  if((draftReady||draftTimer>0)&&!isBoosting&&!isChevronBoosting)drawDraftCorona(cx,cy,sc,isPlayer,lean,draftReady?DRAFT.duration:draftTimer,draftReady);
   const body=hit>0?'#ffd7d7':isPlayer?'#ffc521':color;
   const bumper=hit>0?'#ffffff':isPlayer?'#efa619':shadeColor(color,-18);
   const ports=getCarExhausts(cx,cy,sc,isPlayer);
@@ -9512,7 +9557,7 @@ function render(ts) {
           const s = getCleanSpriteFromPool(); s.type = 'car';
           s.x = p.x; s.y = p.y;
           s.sc = Math.min(1.8, p.scale * (692 * H / Math.max(10, H * 0.5 - 76))) * responsiveFactor;
-          s.color = opp.color; s.depth = n + (oppWorldZ - segWorldZ) / SEGMENT_LENGTH; s.isOppBoosting = opp.isBoosting; s.isOppChevronBoosting = opp.isChevronBoosting; s.draftTimer=opp.draftTimer||0; s.clipY = segmentClipY; s.segIdx = segIdx;
+          s.color = opp.color; s.depth = n + (oppWorldZ - segWorldZ) / SEGMENT_LENGTH; s.isOppBoosting = opp.isBoosting; s.isOppChevronBoosting = opp.isChevronBoosting; s.draftTimer=opp.draftTimer||0;s.draftReady=!!opp.draftReady; s.clipY = segmentClipY; s.segIdx = segIdx;
         }
       }
     }
@@ -9777,7 +9822,7 @@ function render(ts) {
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawCarSprite(s.x, s.y, s.sc, s.color, false, 0, 1, 0, s.isOppBoosting, (state === 'countdown' || state === 'intro'), s.isOppChevronBoosting,s.draftTimer);
+        drawCarSprite(s.x, s.y, s.sc, s.color, false, 0, 1, 0, s.isOppBoosting, (state === 'countdown' || state === 'intro'), s.isOppChevronBoosting,s.draftTimer,s.draftReady);
         if ((state === 'countdown' || state === 'intro') && Math.random() < 0.08) {
             spawnExhaustSmoke(s.x, s.y, s.sc, false);
         }
@@ -9896,7 +9941,7 @@ function render(ts) {
   const shakeY = ((player.isBoosting || player.isChevronBoosting) ? (Math.random() - 0.5) * 6 : 0) + (player.isSparking ? (Math.random() - 0.5) * 8 : 0);
   
   const playerScale = playerPose.scale;
-  drawCarSprite(playerScreenX + shakeX, H - 76 + bounceY + shakeY, playerScale, '#ffe066', true, lean, thrust, player.hitFlash, player.isBoosting, player.finished || state === 'countdown' || state === 'intro', player.isChevronBoosting,player.draftTimer);
+  drawCarSprite(playerScreenX + shakeX, H - 76 + bounceY + shakeY, playerScale, '#ffe066', true, lean, thrust, player.hitFlash, player.isBoosting, player.finished || state === 'countdown' || state === 'intro', player.isChevronBoosting,player.draftTimer,player.draftReady);
 
   const isPlayerStanding = (state === 'countdown' || state === 'intro' || (player.finished && player.speed < 50));
   if (isPlayerStanding && Math.random() < 0.12) {
@@ -10996,6 +11041,10 @@ function loop(ts) {
           } else {
               opp.targetX = (upcomingChevron.side === 'left') ? 0.25 : -0.25;
           }
+      } else if(opp.draftReady||(opp.draftTimer>0&&opp.draftExitLane!==null)){
+          if(opp.draftReady&&opp.draftExitLane===null)opp.draftExitLane=findDraftExitLane(opp,draftCars,draftBefore,getDraftDimensions());
+          opp.targetX=opp.draftExitLane??opp.draftTarget?.x??opp.x;
+          if(opp.draftExitLane!==null)opp.baseX=opp.draftExitLane;
       } else if((opp.attackTimer>0&&opp.attackLane!==null)||(opp.chasing&&opp.chaseLane!==null)){
           opp.targetX=opp.attackTimer>0?opp.attackLane:opp.chaseLane;opp.baseX=opp.targetX;
       } else if(opp.draftTarget&&canDraft(opp)&&opp.draftCharge>0){
@@ -11019,7 +11068,7 @@ function loop(ts) {
           opp.targetX = opp.baseX + Math.sin(opp.z * 0.0015 + opp.color.charCodeAt(1)) * 0.15;
       }
       
-      const steerSpd = avoiding ? 3.5 : (upcomingChevron || opp.attackTimer>0 || opp.chaseLane!==null ? 3.0 : 1.2);
+      const steerSpd = avoiding ? 3.5 : (upcomingChevron || opp.draftReady || opp.draftTimer>0 || opp.attackTimer>0 || opp.chaseLane!==null ? 3.0 : 1.2);
       updatePolishHandling(opp,dt);
       if(opp.dreamEffectTimer>0)opp.targetX+=Math.sin((5-opp.dreamEffectTimer)*3.8+opp.oppIdx)*.11;
       opp.x += (opp.targetX - opp.x) * dt * steerSpd * polishSteeringGrip(opp) * (opp.dreamEffectTimer>0?.65:1);
