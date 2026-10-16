@@ -160,6 +160,22 @@ module.exports=async function runPolish(browser,baseUrl){
      const seamColors=seams.filter(p=>p.x>=1&&p.x<W-1&&p.y>=1&&p.y<H-1).map(p=>Array.from(ctx.getImageData(Math.round(p.x),Math.round(p.y),1,1).data).slice(0,3));
      checks.push({name:`clock-drips-into-puddle-center-${W}-${patch.start}-${distance}`,pass:!!drip&&!!center&&Math.hypot(drip.x-center.x,drip.y-center.y)<.01&&seamColors.every(c=>c[0]>150&&c[1]>125&&c[2]>110),actual:{drip,center,seamColors}});
     }}finally{drawPolishScene=draw;drawDreamSurfaces=surface;}
+    selectLevel(5);startRace();state='playing';opponents.length=0;weatherParticles=[];player.speed=4320;chapterTime=6000;
+    const wildlife=drawDeer,scenery=drawPolishScene,herd=[];
+    const winterPose=index=>{player.z=index*SEGMENT_LENGTH;player.pitch=Array.from({length:20},(_,j)=>getSeg(player.z+j*SEGMENT_LENGTH).hillDelta).reduce((a,b)=>a+b,0)/20;curveCamera.look=0;for(let j=0;j<90;j++)updateCurveCamera(1/60);};
+    try{for(const distance of[105,95,85,75,65,55,50,45,35,34,20]){
+      winterPose(1215-distance);let drawn=0;drawDeer=(...args)=>{drawn++;wildlife(...args);};render(6000);
+      const on=ctx.getImageData(0,0,W,H).data;drawDeer=()=>{};render(6000);const off=ctx.getImageData(0,0,W,H).data;
+      let visible=0;for(let i=0;i<on.length;i+=4)if(on[i]!==off[i]||on[i+1]!==off[i+1]||on[i+2]!==off[i+2])visible++;
+      herd.push({distance,drawn,visible});
+    }}finally{drawDeer=wildlife;}
+    checks.push({name:`reindeer-actually-cross-then-stay-hidden-in-forest-${W}`,pass:herd.some(s=>s.distance>=65&&s.distance<=95&&s.visible>40)&&herd.filter(s=>s.distance<=50).every(s=>s.drawn===4&&s.visible===0),actual:herd});
+    const observatory=[];
+    try{for(const distance of[45,40,35,30,25]){
+      winterPose(802-distance);
+      drawPolishScene=s=>{if(s.kind==='observatory')observatory.push({distance,left:s.x-140*s.sc,right:s.x+145*s.sc,top:s.y-260*s.sc,bottom:s.y});scenery(s);};render(6000);
+    }}finally{drawPolishScene=scenery;}
+    checks.push({name:`taller-observatory-fully-visible-on-approach-${W}`,pass:observatory.filter(s=>s.left>=0&&s.right<=W&&s.top>175&&s.bottom<H).length>=2,actual:observatory});
     // Compare each isolated sign with the same road view with its facade removed.
     // A facade must not paint over the billboard it stands behind.
     selectLevel(4);startRace();state='playing';opponents.length=0;weatherParticles=[];chapterTime=6000;

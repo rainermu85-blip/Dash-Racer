@@ -1408,7 +1408,7 @@ function addPolishScenery(){
       add(i,'pine_grove',(Math.floor(i/19)%2?-1:1)*(1.7+polishHash(i)*.65),.85+polishHash(i+1)*.35);
     }
     for(let i=730;i<825;i++)if(segments[i].sprite==='tree')segments[i].sprite=null;
-    add(802,'observatory',-2.2,1.35);
+    add(802,'observatory',-2.1,1.35);
     for(let i=965;i<1010;i++)if(segments[i].sprite==='tree'&&segments[i].spriteX>0)segments[i].sprite=null;
     add(1005,'forest_deer',1.65,.65);add(1215,'reindeer_crossing',0,1.05);
     for(const [i,x,kind]of[[1535,-2.2,'dali_arch'],[1590,2.0,'dali_stage'],[1760,-2.2,'dali_arch'],[1875,2.0,'dali_stage'],[2080,-2.2,'dali_arch']])add(i,kind,x,1.0);
@@ -1472,13 +1472,26 @@ function drawPineGrove(seed){
 function drawObservatory(){
   for(const x of[-148,148]){ctx.save();ctx.translate(x,-2);ctx.scale(.38,.38);drawPineGrove(x+211);ctx.restore();}
   scenePoly([[-132,0],[140,0],[119,-19],[-112,-19]],'#718194');
-  sceneRect(-110,-24,220,8,'#dce7e5');sceneRect(-95,-99,190,76,'#899aaf');sceneRect(-105,-104,210,10,'#d9e0e8');
-  sceneEllipse(0,-104,96,78,'#b1c9d5');sceneRect(-100,-104,200,12,'#738a9d');
-  scenePoly([[0,-182],[17,-179],[32,-106],[10,-104]],'#213b56');
-  ctx.save();ctx.translate(18,-148);ctx.rotate(-.48);sceneRect(-8,-10,104,20,'#7891a3');sceneRect(73,-14,26,28,'#d3dce5');sceneEllipse(98,0,5,12,'#071d32');ctx.restore();
-  sceneRect(-18,-65,36,42,'#23394b');sceneRect(46,-75,26,20,'#f8d494');sceneRect(-73,-75,27,20,'#f8d494');
+  sceneRect(-110,-24,220,8,'#dce7e5');
+  const roof=-166,bottom=-23,radius=95;
+  const wall=ctx.createLinearGradient(-radius,0,radius,0);
+  wall.addColorStop(0,'#637d90');wall.addColorStop(.3,'#94adbd');wall.addColorStop(.58,'#adbfcb');wall.addColorStop(1,'#70899c');
+  sceneEllipse(0,bottom,radius,17,'#738c9e');sceneRect(-radius,roof,radius*2,bottom-roof,wall);
+  // Two storeys wrap around a cylindrical tower under the existing dome.
+  ctx.strokeStyle='#d2e0e5';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,-94,radius,15,0,0,Math.PI);ctx.stroke();
+  for(const y of[-143,-68])for(const x of[-66,-28,28,66]){
+    if(y===-68&&Math.abs(x)<40)continue;
+    const width=Math.abs(x)>40?11:15;sceneRect(x-width/2,y,width,20,'#344c60');
+    sceneRect(x-width/2+2,y+2,width-4,15,(x+y)%3?'#f0cd94':'#7eb7c5');
+  }
+  sceneRect(-16,-63,32,40,'#243e53');sceneRect(-12,-59,24,18,'#52778a');
+  sceneEllipse(0,roof,radius+4,17,'#c8dce3');
+  ctx.fillStyle='#b1c9d5';ctx.beginPath();ctx.ellipse(0,roof,96,78,0,Math.PI,Math.PI*2);ctx.closePath();ctx.fill();
+  sceneRect(-100,roof,200,12,'#738a9d');
+  scenePoly([[0,roof-78],[17,roof-75],[32,roof-2],[10,roof]],'#213b56');
+  ctx.save();ctx.translate(18,roof-44);ctx.rotate(-.48);sceneRect(-8,-10,104,20,'#7891a3');sceneRect(73,-14,26,28,'#d3dce5');sceneEllipse(98,0,5,12,'#071d32');ctx.restore();
   sceneLine([[-88,-22],[-80,-3],[80,-3],[89,-22]],'#d0dfdf',3);
-  ctx.font='bold 9px "Gravity Pixel"';ctx.fillStyle='#c4f4ff';ctx.textAlign='center';ctx.fillText('NORTH STAR',0,-82);
+  ctx.font='bold 9px "Gravity Pixel"';ctx.fillStyle='#d7f2f4';ctx.textAlign='center';ctx.fillText('NORTH STAR',0,-106);
 }
 function drawDeer(x,y,size,reindeer=false,phase=0){
   ctx.save();ctx.translate(x,y);ctx.scale(size,size);
@@ -1489,6 +1502,35 @@ function drawDeer(x,y,size,reindeer=false,phase=0){
   sceneEllipse(40,-79,1.8,1.8,'#182026');sceneEllipse(-28,-34,6,7,'#eee2ca');
   if(reindeer)for(const side of[-1,1]){sceneLine([[28+side*3,-83],[25+side*12,-111],[31+side*14,-123]],'#c6bda3',2.7);sceneLine([[25+side*10,-105],[18+side*15,-111]],'#c6bda3',2);}
   ctx.restore();
+}
+function drawReindeerCover(edge,side,seed){
+  ctx.save();ctx.scale(side,1);ctx.translate(edge+18,0);
+  // A continuous thicket hides hooves and antlers before the herd stops.
+  scenePoly([[0,2],[9,-23],[28,-40],[31,-67],[58,-81],[72,-112],[103,-133],[139,-128],[177,-153],[210,-144],[250,-131],[286,-111],[309,-66],[317,4]],'#173c44');
+  for(let j=0;j<6;j++){
+    const x=40+j*46+(polishHash(seed+j)-.5)*18,h=118+polishHash(seed+40+j)*78;
+    sceneRect(x-3,-h*.68,6,h*.68,'#493f4a');
+    for(let k=0;k<4;k++){
+      const top=-h+k*h*.18,w=h*(.13+k*.05);
+      scenePoly([[x-w,top+h*.34],[x,top],[x+w,top+h*.34]],j%2?'#1d464b':'#28545a');
+      scenePoly([[x-w*.72,top+h*.25],[x,top],[x+w*.43,top+h*.22]],'#c5dfe3');
+    }
+  }
+  for(const [x,y,w,h]of[[43,-3,42,31],[155,2,54,38],[264,-2,45,26]]){
+    scenePoly([[x-w,y],[x-w*.8,y-h*.7],[x-w*.18,y-h],[x+w*.65,y-h*.81],[x+w,y-h*.3],[x+w*.85,y]],'#687e88');
+    scenePoly([[x-w*.8,y-h*.7],[x-w*.18,y-h],[x+w*.65,y-h*.81],[x+w*.43,y-h*.54],[x-w*.38,y-h*.51]],'#e2eef0');
+  }
+  ctx.restore();
+}
+function drawReindeerCrossing(s){
+  const distance=(s.segIdx*SEGMENT_LENGTH-player.z)/SEGMENT_LENGTH,edge=s.roadHalf/s.sc;
+  for(let j=0;j<4;j++){
+    const run=clamp((100-distance-j*4)/38,0,1),x=(run*2-1)*(edge+230);
+    drawDeer(x,-j*5-Math.sin(run*Math.PI*16+j)*2,.75+j*.03,true,run*32+j);
+  }
+  // Draw both forest edges in front of the animals. Their end positions stay
+  // behind opaque foliage; there is no distance cutoff or disappearance fade.
+  drawReindeerCover(edge,-1,s.segIdx+19);drawReindeerCover(edge,1,s.segIdx);
 }
 function drawDeepDiver(time){
   const sway=Math.sin(time*.0005)*4;
@@ -1569,8 +1611,7 @@ function drawPolishScene(s){
     const distance=(idx*SEGMENT_LENGTH-player.z)/SEGMENT_LENGTH,escape=clamp((50-distance)/34,0,1);
     ctx.translate(-s.side*escape*130,0);ctx.scale(escape>.15?-s.side:s.side,1);ctx.globalAlpha=1-escape*.9;drawDeer(0,0,1,false,escape*17);
   }else if(k==='reindeer_crossing'){
-    const distance=(idx*SEGMENT_LENGTH-player.z)/SEGMENT_LENGTH,run=clamp((100-distance)/40,0,1);
-    if(distance>35&&distance<100){ctx.translate(-290+run*630,0);for(let j=0;j<4;j++)drawDeer(j*65,-j*5,.75+j*.03,true,run*25+j);}
+    drawReindeerCrossing(s);
   }else if(k==='deep_diver')drawDeepDiver(t);
   else if(k==='nautilus'){ctx.translate(Math.sin(t*.00016)*15,-Math.sin(t*.00012)*4);drawNautilus(t);}
   else if(k==='dali_arch')drawDaliArch(idx);
@@ -3892,12 +3933,56 @@ function drawDreamDistortion(){
   // A brief white transition introduces each five-second vision; HUD is DOM.
   if(elapsed<.3){ctx.save();ctx.fillStyle=`rgba(255,255,255,${.82*(1-elapsed/.3)})`;ctx.fillRect(0,0,W,H);ctx.restore();}
 }
+function getSnowEaglePose(index,time=chapterTime){
+  const progress=clamp((index-660)/660,0,1),orbit=time*.00023,depart=clamp((progress-.68)/.25,0,1);
+  const alpha=clamp(Math.min(progress/.08,(.96-progress)/.18),0,1);
+  const x=backdropX(W*(.47+Math.cos(orbit)*.27+depart*.48),bgOffset*.07,70);
+  const y=H*(.24+Math.sin(orbit)*.035-depart*.17),heading=Math.atan2(Math.cos(orbit)*H*.035,-Math.sin(orbit)*W*.27);
+  return{x,y,alpha,heading,bank:Math.sin(orbit)*.45,scale:clamp(W/480,.72,1)*(.78+.06*Math.cos(orbit))*(1-depart*.52)};
+}
 function drawSnowEagle(index){
-  const p=clamp((index-660)/660,0,1),fade=clamp(Math.min(p/.08,(.93-p)/.18),0,1);
-  if(fade<=0)return;
-  const x=W*(.32+p*.65+Math.cos(p*12)*.16),y=H*(.20+Math.sin(p*8)*.035);
-  ctx.save();ctx.globalAlpha=fade;ctx.translate(x,y);ctx.scale(.8+Math.sin(p*6)*.15,.8);
-  scenePoly([[-23,-2],[-13,-6],[-4,-1],[0,-4],[4,-1],[15,-8],[25,-6],[14,0],[4,3],[2,8],[-1,5],[-4,3],[-14,1]],'#302c3c');ctx.restore();
+  const pose=getSnowEaglePose(index);if(pose.alpha<=0)return;
+  const beat=(chapterTime*.001)%6.8,flap=beat<1.2?Math.sin(beat/1.2*Math.PI*2)*Math.sin(beat/1.2*Math.PI)*7:0;
+  ctx.save();ctx.globalAlpha=pose.alpha;ctx.translate(pose.x,pose.y);ctx.rotate(pose.heading+Math.PI/2);ctx.scale(pose.scale,pose.scale);
+  for(const side of[-1,1]){
+    ctx.save();ctx.scale(side*(1-Math.max(0,side*pose.bank)*.55),1);
+    ctx.fillStyle='#34353d';ctx.beginPath();ctx.moveTo(2,-5);
+    ctx.quadraticCurveTo(10,-11,20,-10+flap*.4);ctx.quadraticCurveTo(28,-10+flap*.5,33,-7+flap);
+    ctx.lineTo(39,-6+flap);ctx.quadraticCurveTo(41,-4+flap,34,-3+flap);
+    ctx.lineTo(39,0+flap);ctx.quadraticCurveTo(39,2+flap,32,1+flap);
+    ctx.lineTo(36,5+flap);ctx.quadraticCurveTo(35,7+flap,29,4+flap);
+    ctx.lineTo(31,9+flap);ctx.quadraticCurveTo(29,10+flap,25,6+flap);
+    ctx.quadraticCurveTo(17,10+flap*.4,11,5);ctx.lineTo(2,6);ctx.closePath();ctx.fill();
+    scenePoly([[3,-5],[12,-9],[23,-8+flap*.4],[28,-5+flap*.7],[19,-2+flap*.4],[11,2],[3,4]],'#65594e');
+    sceneLine([[11,3],[19,4+flap*.4],[25,3+flap*.7]],'#8f795c',1.2);
+    ctx.restore();
+  }
+  scenePoly([[-3,8],[-6,18],[-3,20],[0,18],[3,20],[6,18],[3,8]],'#403a40');
+  sceneEllipse(0,1,4,11,'#544b47');sceneEllipse(0,-10,3.3,4.5,'#aa916c');
+  scenePoly([[-2,-13],[0,-16],[2,-14],[2,-11]],'#c5ac78');sceneEllipse(1.5,-11.5,.65,.65,'#101a23');
+  ctx.restore();
+}
+function snowFoothillHeight(x){
+  const a=x/BG_W*Math.PI*2;
+  return 43+Math.sin(a*3+.4)*15+Math.sin(a*5-1.1)*8+Math.cos(a*2)*7;
+}
+function drawSnowFoothills(horizonY){
+  drawTile(bgOffset*.52,horizonY,()=>{
+    const points=[[0,18]];for(let j=0;j<=120;j++){const x=j/120*BG_W;points.push([x,-snowFoothillHeight(x)]);}points.push([BG_W,18]);
+    scenePoly(points,'#183443');
+    ctx.strokeStyle='#759ba9';ctx.lineWidth=2;ctx.beginPath();
+    for(let j=0;j<=120;j++){const x=j/120*BG_W,y=-snowFoothillHeight(x)+4;j?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();
+    // A low forest with tiered branches reads as trees, below the rounded ridge.
+    for(let j=0;j<82;j++){
+      const x=j*BG_W/82,y=4-polishHash(j+24)*8,h=15+polishHash(j+71)*16;
+      sceneRect(x-1,y-h*.55,2,h*.55,'#30434b');
+      for(let k=0;k<3;k++){
+        const top=y-h+k*h*.23,w=h*(.15+k*.06);
+        scenePoly([[x-w,top+h*.43],[x,top],[x+w,top+h*.43]],j%2?'#12353d':'#214b52');
+        if(j%4===0)scenePoly([[x-w*.7,top+h*.31],[x,top],[x+w*.4,top+h*.26]],'#b6d2d9');
+      }
+    }
+  });
 }
 function drawUnderseaPassage(index,time){
   const s=Math.min(W,H)/460;
@@ -8885,13 +8970,7 @@ function render(ts) {
               ctx.stroke();
           }
         });
-        drawTile(bgOffset*DREAM_PARALLAX.mountains,horizonY,()=>{
-          for(let j=0;j<72;j++){
-            const x=j*20,y=-5-polishHash(j+24)*12,h=33+polishHash(j+71)*44;
-            scenePoly([[x-h*.4,y],[x,y-h],[x+h*.4,y]],j%2?'#133840':'#204854');
-            if(j%3===0)scenePoly([[x-h*.2,y-h*.35],[x,y-h],[x+h*.12,y-h*.4]],'#b4d2d7');
-          }
-        });
+        drawSnowFoothills(horizonY);
         drawSnowEagle(startSegIdx);
     } else if (zone === 'dali') {
         // Abstract floating surreal structures
