@@ -390,8 +390,8 @@ const UNDERWATER_FLORA = ['coral_spire', 'sea_grass', 'kelp', 'fan_coral', 'tube
 // Dream Odyssey: slow distant skies, livelier landscape and nearer sea life.
 const DREAM_PARALLAX = {
   stars: 0.018, atmosphere: 0.055, sun: 0.10, birds: 0.20,
-  landscape: 0.38, mountains: 0.42, reef: 0.30,
-  jellyfish: 0.115, faunaMultiplier: 1.4
+  landscape: 0.38, mountains: 0.42, reef: 0.65,
+  jellyfish: 0.32, faunaMultiplier: 3.4, marineLight: 0.14, marinePass: 0.40
 };
 
 // What each world contributes to a portal it touches.
@@ -1270,10 +1270,8 @@ function getPlayerChevronFootprint(){
   const left=Math.min(...corners.map(p=>p.x)),right=Math.max(...corners.map(p=>p.x));
   return{left,right,top:Math.min(...corners.map(p=>p.y)),bottom:Math.max(...corners.map(p=>p.y)),width:right-left};
 }
-function chevronStrokeSpan(a,b,r,top,bottom){
-  // Project the actual round-ended paint stroke intersecting the car's ground footprint onto x.
-  const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1,nx=-dy/length*r,ny=dx/length*r;
-  let points=[{x:a.x+nx,y:a.y+ny},{x:b.x+nx,y:b.y+ny},{x:b.x-nx,y:b.y-ny},{x:a.x-nx,y:a.y-ny}];
+function clipHorizontalBand(points,top,bottom){
+  if(bottom<top)return [];
   for(const [edge,greater]of[[top,true],[bottom,false]]){
     const clipped=[];
     for(let i=0;i<points.length;i++){
@@ -1283,6 +1281,13 @@ function chevronStrokeSpan(a,b,r,top,bottom){
     }
     points=clipped;
   }
+  return points;
+}
+function chevronStrokeSpan(a,b,r,top,bottom){
+  // Project the actual round-ended paint stroke intersecting the car's ground footprint onto x.
+  const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1,nx=-dy/length*r,ny=dx/length*r;
+  let points=[{x:a.x+nx,y:a.y+ny},{x:b.x+nx,y:b.y+ny},{x:b.x-nx,y:b.y-ny},{x:a.x-nx,y:a.y-ny}];
+  points=clipHorizontalBand(points,top,bottom);
   const xs=points.map(p=>p.x);
   for(const p of[a,b]){const distance=Math.max(top-p.y,p.y-bottom,0);if(distance<=r){const half=Math.sqrt(Math.max(0,r*r-distance*distance));xs.push(p.x-half,p.x+half);}}
   return xs.length?[Math.min(...xs),Math.max(...xs)]:null;
@@ -1296,9 +1301,8 @@ function getChevronOverlap(shape,footprint,clipY=H){
   for(const [left,right]of spans){width+=Math.max(0,right-Math.max(left,end));end=Math.max(end,right);}
   return width;
 }
-function getPlayerChevronContact(){
-  if(currentLevel!==LEVEL_SPACE||player.finished)return null;
-  const footprint=getPlayerChevronFootprint(),start=Math.floor(player.z/SEGMENT_LENGTH),base=segments[start%SEGMENT_COUNT];
+function getPlayerRoadProjection(footprint){
+  const start=Math.floor(player.z/SEGMENT_LENGTH),base=segments[start%SEGMENT_COUNT];
   const fraction=player.z/SEGMENT_LENGTH-start,camY=CAMERA_HEIGHT+base.worldY+base.hillDelta*fraction,horizon=Math.trunc(H*.5)+player.pitch*1.5;
   const projected=new Map();let offset=0,delta=0,maxY=H,stop=Infinity;
   for(let n=0;n<450;n++){
@@ -1315,6 +1319,11 @@ function getPlayerChevronContact(){
     if(maxY<footprint.top&&stop===Infinity)stop=n;
   }
   const at=(index,t)=>{const p=projected.get(index);return p?{x:p.x1+(p.x2-p.x1)*t,y:p.p1.y+(p.p2.y-p.p1.y)*t,w:p.p1.w+(p.p2.w-p.p1.w)*t}:null;};
+  return{projected,at};
+}
+function getPlayerChevronContact(){
+  if(currentLevel!==LEVEL_SPACE||player.finished)return null;
+  const footprint=getPlayerChevronFootprint(),{projected,at}=getPlayerRoadProjection(footprint);
   for(const lapOffset of[0,SEGMENT_COUNT])for(let panel=0;panel<panelStarts.length;panel++)for(const arrow of[0,2,4]){
     const index=lapOffset+panelStarts[panel]+arrow,slice=projected.get(index);
     if(!slice?.visible)continue;
@@ -1386,8 +1395,8 @@ function addPolishScenery(){
     for(const [i,kind,x,size] of [[135,'hotel',2.55,1.05],[325,'tennis',-2.1,.95],[490,'hill_mansion',2.45,1.05],[540,'detour_sign',1.06,.8],[865,'overlook',-2.35,1],[1060,'hill_mansion',-2.4,.9]])add(i,kind,x,size);
     segments[548].barrier={active:true,x:1.43,state:'idle',timer:0,blinkCount:0};
     for(const i of[590,632,688,733])add(i,'estate_gate',i%2?-1.04:1.04,.8);
-    for(const [i,x,color] of[[605,.47,'#f3e9cf'],[705,-.47,'#f07285']]){
-      segments[i].parkedCar={active:true,x,color};
+    for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
+      segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
     }
     for(const i of[173,369,487,817,1055])add(i,'driveway_car',i%2?2.0:-2.0,.65);
@@ -1619,6 +1628,49 @@ function drawSideCoupe(x,y,color){
   sceneRect(x-40,y-14,7,5,'#f58194');sceneRect(x+35,y-14,7,4,'#fff3c5');
   ctx.restore();
 }
+// Roadside luxury cars have their own silhouettes; racing Countachs keep their skin.
+function drawEstateCar(model,color){
+  const dark=shadeColor(color,-29),trim='#c7bfcb',glass='#303347';
+  sceneEllipse(0,-2,69,6,'rgba(15,12,25,.40)');
+  const tires=(w,h)=>{for(const side of[-1,1]){sceneRect(side*w-8,-h,16,h,'#11101c');sceneRect(side*w-7,-h,3,h-2,'#41404a');}};
+  if(model==='suv'){
+    tires(61,27);
+    scenePoly([[-66,-15],[-70,-81],[-53,-111],[51,-111],[70,-81],[66,-15]],color);
+    scenePoly([[-49,-101],[47,-101],[55,-66],[-56,-66]],glass);
+    sceneLine([[-44,-96],[40,-96]],'#62617a',2);
+    sceneRect(-65,-62,130,43,dark);sceneRect(-59,-60,118,35,color);
+    for(const side of[-1,1]){sceneRect(side<0?-64:53,-76,11,49,'#752e50');sceneRect(side<0?-61:56,-72,5,40,'#ff7f98');}
+    sceneLine([[-44,-107],[-40,-115],[39,-115],[45,-107]],trim,3);
+    sceneLine([[-47,-65],[45,-65]],trim,2);sceneRect(-16,-42,32,10,'#e8dcca');
+    sceneRect(-66,-22,132,8,'#3b3445');sceneRect(-59,-23,118,3,trim);
+    sceneRect(-48,-14,13,4,'#a9a2b6');sceneRect(35,-14,13,4,'#a9a2b6');
+  }else if(model==='coupe'){
+    tires(57,22);
+    scenePoly([[-65,-15],[-68,-35],[-57,-59],[-37,-79],[-16,-87],[18,-87],[39,-78],[59,-57],[68,-33],[64,-15]],color);
+    scenePoly([[-36,-72],[-18,-81],[19,-81],[39,-68],[43,-49],[-43,-49]],glass);
+    sceneLine([[-31,-70],[-17,-77],[17,-77],[31,-69]],'#717084',2);
+    scenePoly([[-54,-47],[-42,-59],[-44,-37],[-62,-28]],dark);
+    scenePoly([[54,-47],[42,-59],[44,-37],[62,-28]],dark);
+    sceneRect(-57,-42,114,6,'#63233f');sceneRect(-54,-40,108,3,'#ff7b97');
+    sceneLine([[-53,-48],[53,-48]],shadeColor(color,21),3);
+    scenePoly([[-63,-24],[63,-24],[57,-13],[-57,-13]],dark);sceneRect(-16,-28,32,10,'#e9dece');
+    for(const x of[-43,43]){sceneEllipse(x,-13,7,4,trim);sceneEllipse(x,-13,5,2.5,'#15121e');}
+  }else{
+    tires(58,24);
+    scenePoly([[-65,-17],[-66,-62],[-46,-95],[45,-95],[65,-62],[65,-17]],color);
+    scenePoly([[-42,-86],[41,-86],[52,-61],[-53,-61]],glass);
+    sceneLine([[-36,-81],[35,-81]],'#64677c',2);sceneRect(-62,-57,124,36,color);
+    sceneLine([[-60,-58],[60,-58]],trim,2);
+    for(const x of[-57,32]){
+      sceneRect(x,-49,25,15,'#832f4e');sceneRect(x+2,-47,21,4,'#ff8aa0');
+      sceneRect(x+2,-41,21,2,'#d66c87');sceneRect(x+2,-37,21,2,'#ffd5ad');
+    }
+    sceneRect(-16,-47,32,11,'#e4dac6');sceneRect(-63,-25,126,8,'#3c3747');
+    sceneRect(-61,-25,122,3,trim);sceneRect(-44,-17,15,4,'#aaa3b4');
+    sceneLine([[-52,-91],[52,-91]],shadeColor(color,25),2);
+  }
+}
+
 function drawSunsetScene(kind,seed,time){
   if(kind==='hotel'){
     sceneRect(-145,-116,290,103,'#dfb4a8');sceneRect(-110,-192,220,76,'#e9c4b2');sceneRect(-122,-198,244,9,'#ffe0c5');
@@ -1648,8 +1700,11 @@ function drawSunsetScene(kind,seed,time){
     sceneRect(-65,-69,130,69,'#e7ccbb');sceneRect(-49,-58,98,58,'#3b3b48');for(let j=0;j<10;j++)sceneLine([[-43+j*10,-54],[-43+j*10,0]],'#a98a88',2);
     sceneRect(-71,-82,22,83,'#f0d9c1');sceneRect(49,-82,22,83,'#f0d9c1');sceneEllipse(-60,-88,6,8,'#f8db9d');sceneEllipse(60,-88,6,8,'#f8db9d');
   }else if(kind==='parked_car'){
-    const color=segments[seed]?.parkedCar?.color||'#f3e9cf';drawCarSprite(0,0,.95,color,false);
-  }else if(kind==='driveway_car')drawSideCoupe(0,0,seed%2?'#d68bb6':'#d7d1ac');
+    const car=segments[seed]?.parkedCar;drawEstateCar(car?.model||'sedan',car?.color||'#f3e9cf');
+  }else if(kind==='driveway_car'){
+    const index=[173,369,487,817,1055].indexOf(seed),models=['sedan','coupe','suv'];
+    ctx.save();ctx.scale(.85,.85);drawEstateCar(models[index%3]||'sedan',['#bec4d1','#b6698d','#d7d1ac'][index%3]||'#bec4d1');ctx.restore();
+  }
   else if(kind==='detour_sign'){
     sceneLine([[-21,0],[-21,-78],[21,-78],[21,0]],'#997d86',4);sceneRect(-47,-114,94,42,'#ffca63');
     ctx.font='bold 10px "Gravity Pixel"';ctx.fillStyle='#463441';ctx.textAlign='center';ctx.fillText('DETOUR',0,-95);sceneLine([[23,-83],[-24,-83],[-13,-92]],'#463441',4);
@@ -3691,26 +3746,72 @@ function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Sca
     }
 }
 
+const SURFACE_MIN_OVERLAP=.05,ICE_SKID_DURATION=.44,ICE_RECOVERY_TIME=.20;
+function dreamSurfaceRadius(kind,patch,index){
+  if(kind==='ice')return .485;
+  const center=(patch.start+patch.end+1)/2,half=(patch.end-patch.start+1)/2;
+  return .32*Math.sqrt(Math.max(0,1-((index-center)/half)**2));
+}
+function getPlayerSurfaceOverlap(patch,kind,footprint,projected){
+  const spans=[];
+  for(let index=patch.start;index<=patch.end;index++){
+    const p=projected.get(index);if(!p?.visible)continue;
+    const r1=dreamSurfaceRadius(kind,patch,index),r2=dreamSurfaceRadius(kind,patch,index+1);
+    const points=clipHorizontalBand([
+      {x:p.x1+(patch.x-r1)*p.p1.w,y:p.p1.y},{x:p.x1+(patch.x+r1)*p.p1.w,y:p.p1.y},
+      {x:p.x2+(patch.x+r2)*p.p2.w,y:p.p2.y-(kind==='clock'?1.8:0)},
+      {x:p.x2+(patch.x-r2)*p.p2.w,y:p.p2.y-(kind==='clock'?1.8:0)}
+    ],footprint.top,Math.min(footprint.bottom,p.clipY));
+    if(!points.length)continue;
+    const left=Math.max(footprint.left,Math.min(...points.map(p=>p.x))),right=Math.min(footprint.right,Math.max(...points.map(p=>p.x)));
+    if(right>left)spans.push([left,right]);
+  }
+  spans.sort((a,b)=>a[0]-b[0]);let width=0,end=-Infinity;
+  for(const [left,right]of spans){width+=Math.max(0,right-Math.max(left,end));end=Math.max(end,right);}
+  return width/footprint.width;
+}
+function getOpponentSurfaceWidth(){
+  // Invert the existing opponent sprite projection into road-width units.
+  return 136*.95*(692*H/Math.max(10,H*.5-76))*clamp(W/1000,.85,1)/(ROAD_WIDTH*W/2);
+}
+function sweepDreamSurface(from,to,patch,kind,carWidth){
+  if(Math.max(from.z,to.z)<patch.start*SEGMENT_LENGTH||Math.min(from.z,to.z)>(patch.end+1)*SEGMENT_LENGTH)return false;
+  // The puddle tapers exactly like its drawn mesh, including its narrow ends.
+  for(let index=patch.start;index<=patch.end;index++){
+    let enter=0,exit=1;
+    const clip=(a,b)=>{if(a<0&&b<0)return false;if(a<0)enter=Math.max(enter,a/(a-b));else if(b<0)exit=Math.min(exit,a/(a-b));return enter<=exit;};
+    const z=index*SEGMENT_LENGTH,r=dreamSurfaceRadius(kind,patch,index),slope=(dreamSurfaceRadius(kind,patch,index+1)-r)/SEGMENT_LENGTH;
+    const r0=r+(from.z-z)*slope,r1=r+(to.z-z)*slope,pad=carWidth*(.5-SURFACE_MIN_OVERLAP),x0=from.x-patch.x,x1=to.x-patch.x;
+    if(clip(from.z-z,to.z-z)&&clip(z+SEGMENT_LENGTH-from.z,z+SEGMENT_LENGTH-to.z)&&
+       clip(2*r0-carWidth*SURFACE_MIN_OVERLAP,2*r1-carWidth*SURFACE_MIN_OVERLAP)&&
+       clip(r0+pad-x0,r1+pad-x1)&&clip(r0+pad+x0,r1+pad+x1))return true;
+  }
+  return false;
+}
+
 // Swept, per-car surface events. The patches stay available to every entrant.
 function resetPolishCar(car){car.iceTimer=0;car.iceVelocity=0;car.dreamEffectTimer=0;car.dreamEffectType=0;car.surfaceVisits=new Set();car.parkedContact=null;car.wallContactSide=0;car.wallHitCooldown=0;}
 function updatePolishHandling(car,dt){
   if(car.finished)return;
-  if(car.iceTimer>0){car.iceTimer=Math.max(0,car.iceTimer-dt);car.x+=car.iceVelocity*Math.min(1,car.iceTimer/.18)*dt;}
+  if(car.iceTimer>0){car.iceTimer=Math.max(0,car.iceTimer-dt);car.x+=car.iceVelocity*Math.min(1,car.iceTimer/ICE_RECOVERY_TIME)*dt;}
   if(car.dreamEffectTimer>0)car.dreamEffectTimer=Math.max(0,car.dreamEffectTimer-dt);
 }
-function polishSteeringGrip(car){return car.iceTimer>0?.18+.82*(1-Math.min(1,car.iceTimer/.18)):1;}
+function polishSteeringGrip(car){return car.iceTimer>0?.08+.92*(1-Math.min(1,car.iceTimer/ICE_RECOVERY_TIME)):1;}
 function checkPolishContacts(car,from,to){
   if(car.finished)return;
   if(currentLevel===LEVEL_DREAM){
     car.surfaceVisits??=new Set();
+    const footprint=car===player?getPlayerChevronFootprint():null;
+    const projection=footprint?getPlayerRoadProjection(footprint).projected:null;
     for(const [kind,patches]of[['ice',DREAM_ICE],['clock',DREAM_PUDDLES]])for(const patch of patches){
       const id=kind+patch.start;
       if(car.surfaceVisits.has(id))continue;
-      const hit=sweepContact(from.x-patch.x,from.z,to.x-patch.x,to.z,kind==='ice'?.54:.34,patch.start*SEGMENT_LENGTH,(patch.end+1)*SEGMENT_LENGTH);
+      const hit=footprint?getPlayerSurfaceOverlap(patch,kind,footprint,projection)>=SURFACE_MIN_OVERLAP:
+        sweepDreamSurface(from,to,patch,kind,getOpponentSurfaceWidth());
       if(!hit)continue;
       car.surfaceVisits.add(id);
       if(kind==='ice'){
-        car.iceTimer=.62;car.iceVelocity=(Math.random()<.5?-1:1)*(.85+Math.random()*.3);
+        car.iceTimer=ICE_SKID_DURATION;car.iceVelocity=(Math.random()<.5?-1:1)*(3.0+Math.random()*.7);
       }else{car.dreamEffectTimer=5;car.dreamEffectType=Math.floor(Math.random()*3);}
     }
   }
@@ -3734,14 +3835,13 @@ function checkPolishContacts(car,from,to){
 function drawDreamSurfaces(x1,y1,w1,x2,y2,w2,index){
   if(currentLevel!==LEVEL_DREAM)return;
   for(const patch of DREAM_ICE)if(index>=patch.start&&index<=patch.end){
-    const l=patch.x-.485,r=patch.x+.485;
+    const radius=dreamSurfaceRadius('ice',patch,index),l=patch.x-radius,r=patch.x+radius;
     scenePoly([[x1+l*w1,y1],[x1+r*w1,y1],[x2+r*w2,y2],[x2+l*w2,y2]],index%3?'#91c5db':'#bfdde8');
     if(index%2===0)sceneLine([[x1+(l+.10)*w1,y1],[x2+(r-.13)*w2,y2]],'#e5f8fb',Math.max(.7,w2*.007));
     if(index%4===1)sceneLine([[x1+(l+.22)*w1,y1],[x2+(l+.34)*w2,y2]],'#638da9',Math.max(.6,w2*.004));
   }
   for(const patch of DREAM_PUDDLES)if(index>=patch.start&&index<=patch.end){
-    const center=(patch.start+patch.end+1)/2,half=(patch.end-patch.start+1)/2;
-    const radius=z=>.32*Math.sqrt(Math.max(0,1-((z-center)/half)**2));
+    const radius=z=>dreamSurfaceRadius('clock',patch,z);
     // Cover the pavement's 1.2px overlap plus its antialiased edge.
     const r1=radius(index),r2=radius(index+1),farY=y2-1.8;
     scenePoly([[x1+(patch.x-r1)*w1,y1],[x1+(patch.x+r1)*w1,y1],[x2+(patch.x+r2)*w2,farY],[x2+(patch.x-r2)*w2,farY]],'#dbbca2');
@@ -3802,13 +3902,13 @@ function drawSnowEagle(index){
 function drawUnderseaPassage(index,time){
   const s=Math.min(W,H)/460;
   const phase=clamp((index-2370)/250,0,1);
-  if(phase>0&&phase<1){ctx.save();ctx.globalAlpha=Math.min(1,phase/.1,(1-phase)/.1)*.8;drawSquid(W*1.35-phase*W*1.9,H*.27+Math.sin(phase*Math.PI*2)*H*.035,s*2.8,time);ctx.restore();}
+  if(phase>0&&phase<1){ctx.save();ctx.globalAlpha=Math.min(1,phase/.1,(1-phase)/.1)*.8;drawSquid(backdropX(W*1.35-phase*W*1.9,bgOffset*DREAM_PARALLAX.marinePass,220*s),H*.27+Math.sin(phase*Math.PI*2)*H*.035,s*2.8,time);ctx.restore();}
 }
 function drawNautilusPassage(index,time){
   const phase=(index-2625)/205;
   if(phase<=0||phase>=1)return;
   ctx.save();ctx.globalAlpha=.85*clamp(Math.min(phase/.12,(1-phase)/.12),0,1);
-  drawNautilusInWater(W*(1.6-2.2*phase),H*.28+Math.sin(phase*Math.PI)*H*.025,Math.min(W,H)/460,time);
+  drawNautilusInWater(backdropX(W*(1.6-2.2*phase),bgOffset*DREAM_PARALLAX.marinePass,220*Math.min(W,H)/460),H*.28+Math.sin(phase*Math.PI)*H*.025,Math.min(W,H)/460,time);
   ctx.restore();
 }
 function drawNautilusInWater(x,y,scale,time){ctx.save();ctx.translate(x,y);ctx.scale(-scale,scale);drawNautilus(time);ctx.restore();}
@@ -8514,7 +8614,7 @@ function render(ts) {
           
           // Draw 4 light shafts filtering from top
           for (let i = 0; i < 4; i++) {
-              const startX = backdropX(W * (0.2 + i * 0.2) + Math.sin(ts * 0.0005 + i) * 50, bgOffset * DREAM_PARALLAX.atmosphere, H * 0.1 + 140);
+              const startX = backdropX(W * (0.2 + i * 0.2) + Math.sin(ts * 0.0005 + i) * 50, bgOffset * DREAM_PARALLAX.marineLight, H * 0.1 + 140);
               const angle = Math.sin(ts * 0.0002 + i) * 0.15;
               ctx.fillStyle = 'rgba(0, 245, 212, 0.05)';
               ctx.beginPath();
@@ -8601,8 +8701,8 @@ function render(ts) {
             ctx.globalAlpha = 0.95 * edge;
             // Sweep centred on the screen, not on x=0: starts a full body-length
             // clear of the right edge and ends the same clear of the left.
-            const turnDrift = Math.sin(bgOffset * 0.001) * W * 0.05;
-            ctx.translate(W * 1.5 - pass * (W * 2) - turnDrift, H * 0.30 - Math.sin(pass * Math.PI) * H * 0.05);
+            const passX=backdropX(W*1.5-pass*W*2,bgOffset*.70,S*310);
+            ctx.translate(passX, H * 0.30 - Math.sin(pass * Math.PI) * H * 0.05);
             ctx.rotate(Math.cos(pass * Math.PI) * 0.06);
             drawReefShark(0, 0, S * 2.7, ts);
             ctx.restore();
@@ -10710,7 +10810,7 @@ function loop(ts) {
       updatePolishHandling(opp,dt);
       if(opp.dreamEffectTimer>0)opp.targetX+=Math.sin((5-opp.dreamEffectTimer)*3.8+opp.oppIdx)*.11;
       opp.x += (opp.targetX - opp.x) * dt * steerSpd * polishSteeringGrip(opp) * (opp.dreamEffectTimer>0?.65:1);
-      if(currentLevel===LEVEL_HILLS){opp.wallHitCooldown=Math.max(0,(opp.wallHitCooldown||0)-dt);applyRoadContact(dt,(opp.x-previousOpponents[oppIndex].x)/dt,opp);}
+      if(currentLevel===LEVEL_HILLS||(currentLevel===LEVEL_DREAM&&(opp.iceTimer>0||Math.abs(opp.x)>.94))){opp.wallHitCooldown=Math.max(0,(opp.wallHitCooldown||0)-dt);applyRoadContact(dt,(opp.x-previousOpponents[oppIndex].x)/dt,opp);}
       checkPolishContacts(opp,previousOpponents[oppIndex],{x:opp.x,z:oTotal+opp.speed*dt});
       
       // Opponent Chevron crossing check

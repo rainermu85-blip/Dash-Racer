@@ -247,6 +247,7 @@ NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chrom
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs portals
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs collisions
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs chevrons
+NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs surfaces
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs chapter
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs edges
 NODE_PATH=/tmp/dash-racer-browser-tools/node_modules BROWSER_PATH=/usr/bin/chromium node scripts/assess-game.cjs races
@@ -264,3 +265,10 @@ Der Lauf vergleicht die gezeichnete Pfeilfarbe an allen sieben Feldern mit
 der Überlappung der Wagenbreite, jeweils unter und über einem Drittel.
 Zusätzlich prüft er schnelle Überfahrten bei 30/60/120 FPS, die Gegenseite,
 das erneute Auslösen in der nächsten Runde und den Reset beim Neustart.
+
+`surfaces` prüft sichtbare Eis- und Uhrenpfützen-Randkontakte unter und über
+5 Prozent Wagenbreite, einschließlich der schmalen Pfützenenden und schneller
+Turbo-Überfahrten. Spieler und Gegner erhalten die gleiche Schwelle relativ
+zu ihrer eigenen Breite. Weitere Fälle prüfen kräftige zufällige Eis-Ausbrüche,
+Erholung der Lenkung, Fahrbahnbegrenzungen, gerichtete Unterwasser-Parallaxe
+mit gestaffelter Tiefe und die drei eigenen Sunset-Hills-Autotypen.
