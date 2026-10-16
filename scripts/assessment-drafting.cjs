@@ -41,6 +41,15 @@ module.exports=async function runDrafting(browser,baseUrl){
       reset();leader(gap,side*getDraftDimensions().width*.199);prime();qualify(2.5);
       record(`boundary-gap-${gap}-side-${side}`,player.draftTimer===2,{timer:player.draftTimer});
      }
+     reset();const close=leader(.25),far=leader(1.5);prime();qualify(2.6);
+     record('nearer-car-blocks-wake-of-farther-car',player.draftTimer===0&&player.draftCharge===0&&player.draftTarget===null);
+     record('wake-depth-matches-game-car-contact-length',getDraftDimensions().length===COLLISION_Z_RANGE);
+     reset();const slower=leader(2);slower.speed=slower.maxSpeed=3000;tick(2.6);
+     record('auto-throttle-keeps-real-close-follow-without-contact',player.draftTimer>1.8&&player.collisionCooldown===0,{timer:player.draftTimer,gap:getDraftPosition(slower).z-getDraftPosition(player).z});
+     reset();leader();prime();qualify(1);const cars=[player,...opponents];
+     const limited=getDraftFollowSpeed(player,cars,new Map(cars.map(c=>[c,getDraftPosition(c)])))<Infinity;
+     player.x=.5;const free=getDraftFollowSpeed(player,cars,new Map(cars.map(c=>[c,getDraftPosition(c)])))===Infinity;qualify(1/120);
+     record('steering-out-frees-auto-throttle',limited&&free&&player.draftCharge===0&&player.draftTimer===0);
      reset();const old=leader();prime();qualify(2.4);const next=leader(.8);qualify(1/120);
      record('closer-new-opponent-starts-over',player.draftTimer===0&&player.draftCharge===0&&player.draftTarget===next&&player.draftTarget!==old);
      reset();leader();prime();qualify(2);player.speed=0;qualify(1/120);
@@ -49,18 +58,19 @@ module.exports=async function runDrafting(browser,baseUrl){
      record('pause-does-not-charge',player.draftTimer===0&&Math.abs(player.draftCharge-2.4)<1e-8);
      player.draftTimer=1.5;paused=true;tick(.5);paused=false;record('pause-does-not-consume-mini',player.draftTimer===1.5);
      startRace();record('restart-clears-all-draft-state',[player,...opponents].every(c=>c.draftTimer===0&&c.draftCharge===0&&c.draftTarget===null));
-     // End-to-end on every course, without special course tuning.
+     // Isolated, straight equal-pace fixtures on every course. Normal races
+     // with unmodified courses and AI are checked separately below.
      for(const level of[1,2,3,4,5,6]){
       reset(level);leader();tick(2.4);const early=player.draftTimer;tick(.2);
-      record(`real-loop-qualifies-level-${level}`,early===0&&player.draftTimer>1.8,{early,timer:player.draftTimer,charge:player.draftCharge});
+      record(`isolated-loop-qualifies-level-${level}`,early===0&&player.draftTimer>1.8,{early,timer:player.draftTimer,charge:player.draftCharge});
      }
      reset();player.z=TRACK_LENGTH-3500;leader();tick(2.6);
      record('charging-survives-leader-and-player-lap-wrap',player.lap===2&&opponents[0].lap===2&&player.draftTimer>1.8,{lap:player.lap,leaderLap:opponents[0].lap,timer:player.draftTimer});
      for(const targetType of['player','opponent']){
       reset();let follower;
-      if(targetType==='player')follower=addCar(0,getDraftPosition(player).z-2.25*getDraftDimensions().length);
+      if(targetType==='player'){player.accel=0;follower=addCar(0,getDraftPosition(player).z-2.25*getDraftDimensions().length);}
       else{player.x=.7;follower=addCar(0,player.z+2000);leader(1.25,0,follower);}
-      tick(2.6);record(`real-ai-earns-mini-behind-${targetType}`,follower.draftTimer>1.8,{timer:follower.draftTimer,charge:follower.draftCharge});
+      tick(2.6);record(`isolated-ai-earns-mini-behind-${targetType}`,follower.draftTimer>1.8,{timer:follower.draftTimer,charge:follower.draftCharge});
      }
      for(const fps of[30,60,120]){
       reset(1,fps);player.cleanSpeedBonus=.2;player.speed=4320;player.boosts=2;player.draftTimer=2;
@@ -126,5 +136,6 @@ module.exports=async function runDrafting(browser,baseUrl){
    }
   }finally{await page.close();}
  }
+ results.push(...await require('./assessment-drafting-play.cjs')(browser,baseUrl));
  return results;
 };

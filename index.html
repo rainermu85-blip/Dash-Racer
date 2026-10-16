@@ -1042,9 +1042,9 @@ function cancelDraft(car){
   }
 }
 function getDraftDimensions(){
-  // The same 1.9 m body-width reference as scenery scaling; Countach length is 4.14 m.
-  const width=getOpponentSurfaceWidth();
-  return{width,length:width*ROAD_WIDTH*4.14/1.9};
+  // This pseudo-3D renderer stretches width independently of road depth.
+  // Use the actual bumper-to-bumper contact length, not real-world proportions.
+  return{width:getOpponentSurfaceWidth(),length:COLLISION_Z_RANGE};
 }
 function getDraftPosition(car){return{x:car.x,z:getRaceDistance(car)+(car===player?getPlayerContactDistance():0)};}
 function draftFinished(car){return !!car.finished||(currentLevel===LEVEL_DREAM?car.z>=TRACK_LENGTH:car.lap>3);}
@@ -1056,6 +1056,24 @@ function canDraft(car){
 function draftPairWithin(follower,leader,size){
   const gap=leader.z-follower.z-size.length;
   return gap>=size.length*DRAFT.minGap-1e-7&&gap<=size.length*DRAFT.maxGap+1e-7&&Math.abs(leader.x-follower.x)<=size.width*DRAFT.alignment+1e-9;
+}
+function findDraftLeader(car,cars,positions,size){
+  const follower=positions.get(car);
+  // Choose the first car in this lane before testing range: no drafting through it.
+  const leader=cars.filter(other=>other!==car&&!draftFinished(other)&&other.speed>0&&
+    positions.get(other).z>follower.z&&Math.abs(positions.get(other).x-follower.x)<=size.width*DRAFT.alignment+1e-9)
+    .sort((a,b)=>positions.get(a).z-positions.get(b).z)[0];
+  return leader&&draftPairWithin(follower,positions.get(leader),size)?leader:null;
+}
+function getDraftFollowSpeed(car,cars,positions){
+  if(!canDraft(car)||car.draftTimer>0)return Infinity;
+  const size=getDraftDimensions(),leader=findDraftLeader(car,cars,positions,size);
+  if(!leader)return Infinity;
+  // There is no brake control. Auto-throttle leaves room to complete the hold
+  // instead of running into a slower leader. Steering remains entirely manual.
+  const gap=positions.get(leader).z-positions.get(car).z-size.length;
+  const desiredGap=size.length*(DRAFT.minGap+DRAFT.maxGap)/2;
+  return Math.max(0,leader.speed+(gap-desiredGap)*3);
 }
 function prepareDraftStep(cars){
   const before=new Map();
@@ -1082,8 +1100,7 @@ function updateDrafting(cars,before,dt){
     if(!canDraft(car)){cancelDraft(car);continue;}
     if(car.draftTimer>0){car.draftTimer=car.draftTimer-dt>1e-9?car.draftTimer-dt:0;car.draftCharge=0;car.draftTarget=null;continue;}
     const end=after.get(car),start=before.get(car);
-    const target=cars.filter(other=>other!==car&&!draftFinished(other)&&other.speed>0&&draftPairWithin(end,after.get(other),size))
-      .sort((a,b)=>after.get(a).z-after.get(b).z)[0];
+    const target=findDraftLeader(car,cars,after,size);
     if(!target){car.draftCharge=0;car.draftTarget=null;continue;}
     // A new leader or any out-of-range part of this physics step starts over.
     if(car.draftTarget!==target||!draftPairWithin(start,before.get(target),size)){car.draftCharge=0;car.draftTarget=target;continue;}
@@ -10749,6 +10766,11 @@ function loop(ts) {
     } else if(player.draftTimer>0){currentMax*=1+DRAFT.speedBonus;}
     
     let targetSpeed = offroad ? currentMax * 0.36 : currentMax;
+    const draftFollowSpeed=getDraftFollowSpeed(player,draftCars,draftBefore);
+    targetSpeed=Math.min(targetSpeed,draftFollowSpeed);
+    // Limit closure immediately on entering the short wake, before contact.
+    // This is only a throttle cap, never extra acceleration or lane assistance.
+    player.speed=Math.min(player.speed,draftFollowSpeed);
     if (player.finished) targetSpeed = 0;
 
     const speedRatio = player.speed / player.maxSpeed; 
@@ -10881,7 +10903,9 @@ function loop(ts) {
       const catchup=dist<-3500?1.04:1;
       const physicalGap=oTotal-pTotal-getPlayerContactDistance();
       const raceTarget=updateOpponentRacecraft(opp,dt,physicalGap,oppMax);
-      const oppTarget=raceTarget*(opp.draftTimer>0&&!opp.isBoosting&&!opp.isChevronBoosting?1+DRAFT.speedBonus:1)*(oppOffroad?.36:1);
+      const draftFollowSpeed=getDraftFollowSpeed(opp,draftCars,draftBefore);
+      const oppTarget=Math.min(draftFollowSpeed,raceTarget*(opp.draftTimer>0&&!opp.isBoosting&&!opp.isChevronBoosting?1+DRAFT.speedBonus:1)*(oppOffroad?.36:1));
+      opp.speed=Math.min(opp.speed,draftFollowSpeed);
       const assisted=oppTarget>oppMax+1;
       const oppAccelMod=opp.isChevronBoosting?2.1:opp.isBoosting?1.5:opp.draftTimer>0?2:1;
       if(opp.speed<oppTarget){
@@ -10974,6 +10998,8 @@ function loop(ts) {
           }
       } else if((opp.attackTimer>0&&opp.attackLane!==null)||(opp.chasing&&opp.chaseLane!==null)){
           opp.targetX=opp.attackTimer>0?opp.attackLane:opp.chaseLane;opp.baseX=opp.targetX;
+      } else if(opp.draftTarget&&canDraft(opp)&&opp.draftCharge>0){
+          opp.targetX=opp.draftTarget.x;
       } else {
           const nearby=[...opponents.filter(other=>other!==opp),player];
           const blocked=nearby.some(other=>{
