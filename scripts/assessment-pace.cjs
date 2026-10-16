@@ -53,7 +53,11 @@ module.exports = async function runPace(browser, baseUrl) {
           for(const [level,rate]of[[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
             reset(level,rate);initOpponents();panelStarts=[];
             player.speed=3600;player.x=-.55;
-            opponents.forEach(o=>{o.speed=o.maxSpeed;o.z=player.z+40000;o.x=o.baseX=o.targetX=.55;});
+            // Measure natural profile caps with clear spacing and without surface hazards.
+            // Drafting, parked cars and ice have their own contact/bonus fixtures.
+            opponents.forEach((o,i)=>{o.speed=o.maxSpeed;o.z=player.z+40000+i*20000;o.x=o.baseX=o.targetX=0;
+              o.surfaceVisits=new Set([...DREAM_ICE.map(p=>'ice'+p.start),...DREAM_PUDDLES.map(p=>'clock'+p.start)]);
+            });
             tick(7);const halfway=opponents.map(o=>o.speed);tick(7);const full=opponents.map(o=>o.speed);tick(1);
             const expected=opponents.map(o=>o.maxSpeed*1.2);
             record(`distinct-opponents-at-least-ten-percent-slower-level-${level}-${rate}fps`,

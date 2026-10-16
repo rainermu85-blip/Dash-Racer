@@ -60,6 +60,12 @@ Das Auto beschleunigt automatisch. Blitze geben Boost-Ladungen, maximal drei.
 Im Space-Level geben fünf Energiekugeln eine Ladung; Pfeilfelder auf der Strecke
 lösen einen zusätzlichen Turbo aus.
 
+Windschatten gibt allen Fahrern einen Miniturbo: 2,5 Sekunden hinter demselben
+Wagen bleiben, mit mindestens 80 Prozent seitlicher Überdeckung und einer freien
+Lücke von einer halben bis zwei Wagenlängen. Danach gibt es zwei Sekunden lang
+10 Prozent zusätzliches Tempo und eine dünne blaue Corona. Jede Berührung
+beendet den Bonus. [Regeln und Prüfungen](docs/slipstream.md).
+
 ## Im Browser über GitHub Pages spielen
 
 Der Workflow `.github/workflows/pages.yml` baut das Spiel bei jedem Push auf
