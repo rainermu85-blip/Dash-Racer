@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-22",
+  "method": "Automated Chromium tests against the production build; detour screenshots also inspected visually. No manual phone playtest.",
+  "checks": {
+    "racecraft": {
+      "passed": 32,
+      "failed": 0
+    },
+    "collisions": {
+      "passed": 61,
+      "failed": 0
+    },
+    "pace": {
+      "passed": 21,
+      "failed": 0
+    },
+    "polish": {
+      "passed": 101,
+      "failed": 0
+    },
+    "detour": {
+      "passed": 26,
+      "failed": 0
+    },
+    "racecraft-play": {
+      "passed": 11,
+      "failed": 0
+    }
+  },
+  "races": [
+    {
+      "name": "full-field-1-1989-tactical",
+      "rank": 1,
+      "seconds": 117.56666666666666,
+      "contacts": 0
+    },
+    {
+      "name": "full-field-2-1989-tactical",
+      "rank": 2,
+      "seconds": 130.98333333333332,
+      "contacts": 1
+    },
+    {
+      "name": "full-field-3-1989-tactical",
+      "rank": 4,
+      "seconds": 128.51666666666668,
+      "contacts": 1
+    },
+    {
+      "name": "full-field-4-1989-tactical",
+      "rank": 2,
+      "seconds": 125.76666666666667,
+      "contacts": 1
+    },
+    {
+      "name": "full-field-5-1989-tactical",
+      "rank": 1,
+      "seconds": 102.55,
+      "contacts": 2
+    },
+    {
+      "name": "full-field-6-1989-tactical",
+      "rank": 4,
+      "seconds": 103.93333333333334,
+      "contacts": 0
+    },
+    {
+      "name": "full-field-4-2026-tactical",
+      "rank": 2,
+      "seconds": 125.8,
+      "contacts": 1
+    },
+    {
+      "name": "full-field-4-2001-tactical",
+      "rank": 2,
+      "seconds": 126.48333333333333,
+      "contacts": 1
+    },
+    {
+      "name": "full-field-4-1989-conservative",
+      "rank": 3,
+      "seconds": 127.23333333333333,
+      "contacts": 0
+    }
+  ]
+}

@@ -9,7 +9,7 @@ Alle sechs Strecken verwenden dasselbe Modell. Die fünf Farben haben
 unterschiedliche Stärken: Rot ist ausgewogen, Cyan fährt Kurven sicherer,
 Orange ist auf Geraden schneller, Grün plant vorsichtiger und Violett reagiert
 etwas später. Die Grundspitze nach sauberem Beschleunigen liegt je nach Fahrer
-bei rund 392–406 km/h; beim Spieler sind es weiterhin 402 km/h.
+bei rund 385–399 km/h; beim Spieler sind es weiterhin 402 km/h.
 
 Dazu kommen eine beim Start gewählte Form von ±0,8 Prozent und kleine, langsame
 Leistungsschwankungen. Kurven, Hindernisse, Kontakte und Turboeinsatz bestimmen
@@ -79,3 +79,22 @@ Ein Bild aus dem laufenden Rennen wird pro Durchlauf gespeichert.
 Das sind automatisierte Browserprüfungen, keine manuellen Handy-Playtests.
 Sie belegen funktionierende Rennabläufe und Manöver. Wie angenehm die erste
 Abstimmung über viele menschliche Rennen ist, muss sich beim Spielen zeigen.
+
+## Moderate Korrektur vom 22. Oktober 2026
+
+Nach dem Feedback zur zu hohen Schwierigkeit sinkt die Grundgeschwindigkeit
+der fünf Fahrer um etwa 1,7–2,2 Prozent gegenüber der ersten Version. Profile,
+Überholplanung, Kontaktregeln und Turboziele bleiben erhalten. Die schnellsten
+Gegner liegen ohne Form- und Aufholmodifikatoren knapp unter der Spielerspitze,
+können mit einer guten Linie und gesammelten Turbos weiter vorbeiziehen.
+
+Der automatische Testfahrer erreicht in den sechs Standardrennen Platz
+1, 2, 4, 2, 1 und 4. Auf Midnight Highway ergeben zwei weitere Startvarianten
+jeweils Platz 2, ohne Turboeinsatz Platz 3. Vor der Korrektur gab es in diesen
+Standardrennen keinen Sieg. Das ist eine reproduzierbare Orientierung für
+die Abstimmung, kein Versprechen über die Schwierigkeit für jeden Menschen.
+
+Der Langtest berücksichtigt jetzt die tatsächliche Breite des neuen Gatters
+und hält die Zieleinlaufreihenfolge fest, statt nach dem Ausrollen neu zu
+sortieren. Ein zusätzlicher Ergebnischeck verlangt sowohl Siege als auch
+Rennen mit stärkeren Gegnern in diesem festen Vergleichssatz.

@@ -731,6 +731,15 @@ function buildSegments() {
     }
     while (trackDef.length < SEGMENT_COUNT) trackDef = [...trackDef, ...trackDef];
     trackDef = trackDef.slice(0, SEGMENT_COUNT);
+    if(currentLevel===LEVEL_HILLS){
+        // A deliberate left-hand dogleg, with eased entry/exit rather than a seam.
+        for(let i=470;i<554;i++){
+            const t=clamp((i-470)/20,0,1);trackDef[i].curve*=1-t*t*(3-2*t);
+        }
+        for(let i=554;i<600;i++){
+            const t=(i-554)/46;trackDef[i].curve=trackDef[i].curve*t-1.05*Math.sin(t*Math.PI)**2;
+        }
+    }
     if(currentLevel===2){
         // Recover the small remaining elevation smoothly on the new straight,
         // meeting the start road without a height step at the lap boundary.
@@ -936,6 +945,7 @@ function buildSegments() {
     // Adaptive Baustellen und Blitz-Items für die verschiedenen Strecken
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
+    if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
     if (currentLevel === LEVEL_DREAM) {
         siteIndices = [350, 850, 1350, 1850, 2350];
         freeBolts = [180, 600, 1100, 1600, 2100, 2720];
@@ -1000,11 +1010,11 @@ const UNDERWATER_WALL_LIMIT = 0.8; // Leave room for the full car body at the gl
 // ------------------------------------------
 
 const OPP_PROFILES = [
-  {pace:1.006,accel:1.02,buildTime:10,cornerLoss:.012,reaction:.19,lookAhead:1.2,commit:1.1,lane:-.35,form:.004,boostCurve:1.3,boostRest:3.0},
-  {pace:.998,accel:1.08,buildTime:9.5,cornerLoss:.006,reaction:.16,lookAhead:1.3,commit:1.3,lane:.32,form:.003,boostCurve:1.8,boostRest:3.5},
-  {pace:1.010,accel:.98,buildTime:11,cornerLoss:.028,reaction:.24,lookAhead:1.0,commit:1.5,lane:0,form:.006,boostCurve:.8,boostRest:2.4},
-  {pace:.984,accel:1.04,buildTime:10.5,cornerLoss:.009,reaction:.21,lookAhead:1.25,commit:1.2,lane:-.55,form:.004,boostCurve:1.5,boostRest:4.0},
-  {pace:.976,accel:1.0,buildTime:11.5,cornerLoss:.018,reaction:.28,lookAhead:1.1,commit:1.4,lane:.55,form:.007,boostCurve:1.0,boostRest:4.5}
+  {pace:.984,accel:1.02,buildTime:10,cornerLoss:.012,reaction:.19,lookAhead:1.2,commit:1.1,lane:-.35,form:.004,boostCurve:1.3,boostRest:3.0},
+  {pace:.980,accel:1.08,buildTime:9.5,cornerLoss:.006,reaction:.16,lookAhead:1.3,commit:1.3,lane:.32,form:.003,boostCurve:1.8,boostRest:3.5},
+  {pace:.992,accel:.98,buildTime:11,cornerLoss:.028,reaction:.24,lookAhead:1.0,commit:1.5,lane:0,form:.006,boostCurve:.8,boostRest:2.4},
+  {pace:.967,accel:1.04,buildTime:10.5,cornerLoss:.009,reaction:.21,lookAhead:1.25,commit:1.2,lane:-.55,form:.004,boostCurve:1.5,boostRest:4.0},
+  {pace:.958,accel:1.0,buildTime:11.5,cornerLoss:.018,reaction:.28,lookAhead:1.1,commit:1.4,lane:.55,form:.007,boostCurve:1.0,boostRest:4.5}
 ];
 const OPP_COLORS = ['#ff4466','#44ddff','#ff9f1c','#44ff88','#dd88ff'];
 let opponents = [];
@@ -1063,7 +1073,7 @@ function roadPreview(car,profile){
             const distance=n*SEGMENT_LENGTH-car.z%SEGMENT_LENGTH;
             if(distance < -SEGMENT_LENGTH)continue;
             objects.push({type,x:object.x,distance,pickup:type==='lightning'||(type==='pylon'&&currentLevel===LEVEL_SPACE),
-                width:type==='barrier'?.49:type==='parkedCar'?.31:.29});
+                permanent:!!object.permanent,width:type==='barrier'?(object.halfWidth??.45)+.04:type==='parkedCar'?.31:.29});
         }
     }
     return{left,right,curve,demand,objects,horizon};
@@ -1137,6 +1147,12 @@ function planOpponent(car,snapshot){
     if(nearest&&Math.abs(chosen.lane-nearest.x)>.33&&car.speed>=nearest.speed-120)car.passTarget=nearest.car;
     car.maneuver=current.obstacle?'avoid':car.passTarget?'pass':chosen.collect?'collect':chosen.limit<Infinity?'follow':'cruise';
     car.obstacleLimit=chosen.obstacle?chosen.limit:Infinity;
+    // A planned clear lane is not clearance yet. Brake before a permanent
+    // closure while the body is still crossing into its escape lane.
+    for(const o of road.objects)if(o.permanent&&o.distance>0&&o.distance<900&&Math.abs(car.x-o.x)<o.width){
+        car.obstacleLimit=Math.min(car.obstacleLimit,Math.max(600,o.distance*2.5));
+        car.maneuver='avoid';
+    }
 }
 function opponentTrafficLimit(car,snapshot){
     // Immediate safety check between slower planning decisions. Only AI brakes.
@@ -1513,21 +1529,35 @@ function beginChapterSprite(x, y, scale) {
 }
 
 // Road-anchored scenery: all footprints use the existing road depth and crest clipping.
-const HILLS_DETOUR={start:555,end:765};
+const HILLS_DETOUR={start:522,barrier:554,end:765};
+function hillsDetourCenter(index){
+  if(currentLevel!==LEVEL_HILLS)return 0;
+  const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+  return -.60*ease((index-522)/32)*(1-ease((index-570)/35));
+}
 const DREAM_ICE=[{start:735,end:747,x:-.50},{start:995,end:1008,x:.50},{start:1200,end:1214,x:-.50}];
 const DREAM_PUDDLES=[{start:1700,end:1711,x:-.47},{start:1990,end:2001,x:.47}];
 function polishHash(n){const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
 function hillsNarrowness(index){
   if(currentLevel!==LEVEL_HILLS)return 0;
-  const fade=clamp(Math.min((index-HILLS_DETOUR.start)/24,(HILLS_DETOUR.end-index)/24),0,1);
+  const fade=clamp(Math.min((index-HILLS_DETOUR.start)/32,(HILLS_DETOUR.end-index)/24),0,1);
   return fade*fade*(3-2*fade);
 }
 function addPolishScenery(){
   const add=(index,kind,x=1.9,size=1,extra={})=>{if(segments[index]){segments[index].polishScenes??=[];segments[index].polishScenes.push({kind,x,size,...extra});}};
   if(currentLevel===LEVEL_HIGHWAY){add(918,'substation',2.3,1.0);}
   if(currentLevel===LEVEL_HILLS){
-    for(const [i,kind,x,size] of [[135,'hotel',2.55,1.05],[325,'tennis',-2.1,.95],[490,'hill_mansion',2.45,1.05],[540,'detour_sign',1.06,.8],[865,'overlook',-2.35,1],[1060,'hill_mansion',-2.4,.9]])add(i,kind,x,size);
-    segments[548].barrier={active:true,x:1.43,state:'idle',timer:0,blinkCount:0};
+    for(const [i,kind,x,size] of [[135,'hotel',2.55,1.05],[325,'tennis',-2.1,.95],[490,'hill_mansion',2.45,1.05],[865,'overlook',-2.35,1],[1060,'hill_mansion',-2.4,.9]])add(i,kind,x,size);
+    // Keep the sightline to the closure clear, including its closed road beyond.
+    for(let i=522;i<590;i++){segments[i].sprite=null;segments[i].seaSprite=null;}
+    add(486,'detour_warning',-1.35,1.05);
+    add(518,'detour_warning',-1.35,1.05);
+    // Widths are road-space values shared by paint, collision and AI planning.
+    segments[HILLS_DETOUR.barrier].barrier={active:true,x:.49,halfWidth:.83,
+      visualHalfWidth:.71,permanent:true,state:'idle',timer:0,blinkCount:0};
+    add(557,'detour_sign',.58,1.25);
+    add(583,'roadworks',1.4,1.2);
+    for(const i of[563,584]){segments[i].sprite='beverly_villa';segments[i].spriteX=-1.85;}
     for(const i of[590,632,688,733])add(i,'estate_gate',i%2?-1.04:1.04,.8);
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
@@ -1880,9 +1910,27 @@ function drawSunsetScene(kind,seed,time){
     const index=[173,369,487,817,1055].indexOf(seed),models=['sedan','coupe','suv'];
     ctx.save();ctx.scale(.85,.85);drawEstateCar(models[index%3]||'sedan',['#bec4d1','#b6698d','#d7d1ac'][index%3]||'#bec4d1');ctx.restore();
   }
-  else if(kind==='detour_sign'){
-    sceneLine([[-21,0],[-21,-78],[21,-78],[21,0]],'#997d86',4);sceneRect(-47,-114,94,42,'#ffca63');
-    ctx.font='bold 10px "Gravity Pixel"';ctx.fillStyle='#463441';ctx.textAlign='center';ctx.fillText('DETOUR',0,-95);sceneLine([[23,-83],[-24,-83],[-13,-92]],'#463441',4);
+  else if(kind==='detour_sign'||kind==='detour_warning'){
+    const big=kind==='detour_sign',w=big?156:104,top=big?-162:-135;
+    sceneLine([[-w*.34,0],[-w*.34,top],[w*.34,top],[w*.34,0]],'#544652',6);
+    sceneRect(-w/2-4,top-4,w+8,90,'#261d32');sceneRect(-w/2,top,w,82,'#ffbc51');
+    ctx.font='bold '+(big?17:12)+'px "Gravity Pixel"';ctx.fillStyle='#281c30';ctx.textAlign='center';ctx.fillText('DETOUR',0,top+22);
+    // One unmistakable left arrow; the warning has an advance-distance label.
+    scenePoly([[w*.31,top+43],[-w*.11,top+43],[-w*.11,top+33],[-w*.38,top+56],[-w*.11,top+76],[-w*.11,top+65],[w*.31,top+65]],big?'#ae263e':'#302132');
+    if(!big){ctx.font='10px "Gravity Pixel"';ctx.fillText(seed<500?'AHEAD':'KEEP LEFT',0,top+101);}
+    for(const side of[-1,1]){
+      const lit=(Math.floor(chapterTime/320)+(side>0?1:0))%2===0,x=side*w*.36;
+      sceneRect(x-8,top-18,16,14,'#403343');
+      if(lit){const glow=ctx.createRadialGradient(x,top-17,2,x,top-17,23);glow.addColorStop(0,'#ffd968b0');glow.addColorStop(1,'#ffad3800');sceneEllipse(x,top-17,23,23,glow);}
+      sceneEllipse(x,top-17,6,7,lit?'#fff3a2':'#c57932');
+    }
+  }else if(kind==='roadworks'){
+    // Rubble and a small excavator stay on the abandoned carriageway.
+    for(let j=0;j<7;j++)scenePoly([[-95+j*31,0],[-79+j*31,-12-polishHash(seed+j)*18],[-56+j*31,0]],j%2?'#8d727c':'#6d5969');
+    sceneRect(-48,-16,79,16,'#322f3b');sceneRect(-44,-39,71,23,'#e9a144');
+    sceneRect(-33,-70,35,31,'#eab75e');sceneRect(-27,-65,25,23,'#3c4357');
+    sceneLine([[16,-41],[48,-95],[80,-72],[99,-13]],'#e8a744',9);
+    scenePoly([[85,-17],[110,-21],[110,-2],[90,0]],'#4d4049');
   }else if(kind==='closure'){
     sceneRect(-53,-34,106,15,'#f9d1a0');for(let j=0;j<5;j++)scenePoly([[-53+j*23,-34],[-41+j*23,-34],[-53+j*23,-19],[-65+j*23,-19]],'#cb685b');
     sceneRect(-39,-19,5,19,'#d6b79b');sceneRect(34,-19,5,19,'#d6b79b');sceneEllipse(-41,-40,4,4,'#ffa648');sceneEllipse(41,-40,4,4,'#ffa648');
@@ -1908,7 +1956,7 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow){
   if(w1>limit){const r=limit/w1;x1=W/2+(x1-W/2)*r;y1=horizon+(y1-horizon)*r;w1=limit;}
   const period=34,phase=index%period,block=Math.floor(index/period),height=narrow?.95:.20;
   for(const side of[-1,1]){
-    if(side>0&&index>=526&&index<=554)continue;
+    if(index>=500&&index<570)continue;
     const lane=side*(narrow?1.11:1.50),h=height+(narrow?(block%3)*.10:0);
     const a=(l,v)=>[x1+l*w1,y1-v*w1],b=(l,v)=>[x2+l*w2,y2-v*w2];
     const gate=phase>11&&phase<21;
@@ -2614,8 +2662,11 @@ function drawHighwayTunnelPortal(x, y, width, height, exit) {
 }
 
 function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
-    const narrow=hillsNarrowness(index);
-    if(currentLevel===LEVEL_HILLS){w1*=1-.34*narrow;w2*=1-.34*hillsNarrowness(index+1);}
+    const narrow=hillsNarrowness(index),raw={x1,w1,x2,w2};
+    if(currentLevel===LEVEL_HILLS){
+      x1+=hillsDetourCenter(index)*w1;x2+=hillsDetourCenter(index+1)*w2;
+      w1*=1-.34*narrow;w2*=1-.34*hillsNarrowness(index+1);
+    }
     const highway = currentLevel === LEVEL_HIGHWAY;
     const tunnel = isHighwayTunnel(index);
     const band = (left, right, color, height = 0) => {
@@ -2641,16 +2692,26 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
         band(-1.19, -1.08, isAlt ? '#ffd1b7' : '#eaad9f');
         band(1.08, 1.19, isAlt ? '#ffd1b7' : '#eaad9f');
     }
+    if(currentLevel===LEVEL_HILLS&&index>=522&&index<595){
+        // The old boulevard runs onward to the RIGHT of the left exit.
+        const main=(lane,i)=>lane+Math.max(0,i-554)*.035;
+        const strip=(l,r,color)=>{ctx.fillStyle=color;trapezoid(raw.x1+main(l,index)*raw.w1,y1,raw.x1+main(r,index)*raw.w1,raw.x2+main(l,index+1)*raw.w2,y2,raw.x2+main(r,index+1)*raw.w2);};
+        strip(-.22,1.19,'#d49b96');strip(-.20,1.16,index>=554?'#514250':'#3b303f');
+        strip(1.13,1.16,'#ffd0ad');
+        if(index%10<5)for(const lane of[.12,.65])strip(lane,lane+.018,'#bda8a5');
+        if(index>=556&&index%5<2)strip(-.18,1.12,'#765f65');
+    }
     if (isStart) drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt);
     else band(-1, 1, tunnel ? (isAlt ? '#24201b' : '#211c18') : highway ? (isAlt ? '#171222' : '#120e1c') : (isAlt ? '#3b303f' : '#342b3b'));
-    if(currentLevel===LEVEL_HILLS&&index>=526&&index<=554){
-        band(1.05,2.25,'#39303f');band(2.22,2.25,'#e5bba8');
-        if(index%6<3)band(1.63,1.65,'#d4b4b0');
+    if(currentLevel===LEVEL_HILLS&&index>=526&&index<554){
+        // Amber entry stripe and a hatched taper lead into the separate left lane.
+        band(-.98,-.94,'#ffd25d');
+        if(index%4<2)band(.97,1.18,'#ffb45a');
     }
     const edge = tunnel ? '#d4ba77' : highway ? '#ad77fa' : '#ffd0ad';
     band(-1.025, -0.995, edge); band(0.995, 1.025, edge);
     if (!isStart && Math.floor(index / (highway ? 3 : 5)) % 2 === 0) {
-        for (const lane of [-1 / 3, 1 / 3]) {
+        for (const lane of (!highway&&narrow>.35?[0]:[-1 / 3, 1 / 3])) {
             const halfWidth = highway ? 0.01 : 0.008;
             band(lane - halfWidth, lane + halfWidth, tunnel ? '#f0e5c9' : highway ? '#c8bce1' : '#efc6b3');
         }
@@ -8581,6 +8642,25 @@ function drawPylonSprite(cx, cy, sc, rot = 0) {
   ctx.restore();
 }
 
+function drawDetourBarrier(s){
+  // Road-space scaling keeps the visible ends aligned with the collision box.
+  const w=s.visualHalfWidth*2*s.roadHalf,h=s.roadHalf*.23;
+  if(w<2)return;
+  ctx.save();ctx.translate(s.x,s.y);
+  sceneRect(-w*.5,-2,w,5,'#272233');
+  for(const x of[-.45,0,.45]){sceneRect(x*w-w*.018,-h,w*.036,h,'#514755');sceneRect(x*w-w*.055,-3,w*.11,5,'#292632');}
+  for(const y of[-h,-h*.43]){
+    sceneRect(-w/2-1,y-1,w+2,h*.28+2,'#3a293a');
+    for(let j=0;j<8;j++)sceneRect(-w/2+j*w/8,y,w/8+.5,h*.28,j%2?'#fff0d6':'#ff843b');
+  }
+  for(const [i,x]of[-.42,0,.42].entries()){
+    const lit=(Math.floor(chapterTime/320)+i)%2===0,r=Math.max(1.5,h*.09);
+    if(lit){const g=ctx.createRadialGradient(x*w,-h-r,0,x*w,-h-r,r*4);g.addColorStop(0,'#ffcf6bbb');g.addColorStop(1,'#ffb13000');sceneEllipse(x*w,-h-r,r*4,r*4,g);}
+    sceneEllipse(x*w,-h-r,r,r,lit?'#fff4ad':'#a75c31');
+  }
+  ctx.restore();
+}
+
 function drawBarrierSprite(cx, cy, sc, blinkCount) {
   if (blinkCount % 2 !== 0) return; 
   const w = ~~(sc * 190), h = ~~(sc * 90); if (w < 4) return;
@@ -9516,7 +9596,7 @@ function render(ts) {
 
     
     if (seg.pylon && seg.pylon.active) { const s = getCleanSpriteFromPool(); s.type = 'pylon'; s.x = rx2 + seg.pylon.x * p2.w; s.y = p2.y; s.sc = Math.min(1.25, p2.scale * 2800) * responsiveFactor; s.depth = n; s.clipY = segmentClipY; s.segIdx = segIdx; }
-    if (seg.barrier && seg.barrier.active) { const s = getCleanSpriteFromPool(); s.type = 'barrier'; s.x = rx2 + seg.barrier.x * p2.w; s.y = p2.y; s.sc = Math.min(1.25, p2.scale * 2800) * responsiveFactor; s.depth = n; s.blinkCount = seg.barrier.blinkCount; s.clipY = segmentClipY; s.segIdx = segIdx; }
+    if (seg.barrier && seg.barrier.active) { const s = getCleanSpriteFromPool(); s.type = 'barrier'; s.detourBarrier=!!seg.barrier.permanent; s.roadHalf=p2.w; s.visualHalfWidth=seg.barrier.visualHalfWidth; s.x = rx2 + seg.barrier.x * p2.w; s.y = p2.y; s.sc = Math.min(1.25, p2.scale * 2800) * responsiveFactor; s.depth = n; s.blinkCount = seg.barrier.blinkCount; s.clipY = segmentClipY; s.segIdx = segIdx; }
     if (seg.lightning && seg.lightning.active) { const s = getCleanSpriteFromPool(); s.type = 'lightning'; s.x = rx2 + seg.lightning.x * p2.w; s.y = p2.y; s.sc = Math.min(1.25, p2.scale * 2800) * responsiveFactor; s.depth = n; s.clipY = segmentClipY; s.segIdx = segIdx; }
 
     for (const opp of opponents) {
@@ -9777,7 +9857,8 @@ function render(ts) {
         if (s.clipY !== undefined) {
             ctx.beginPath(); ctx.rect(0, 0, W, s.clipY); ctx.clip();
         }
-        drawBarrierSprite(s.x, s.y, s.sc, s.blinkCount);
+        if(s.detourBarrier)drawDetourBarrier(s);
+        else drawBarrierSprite(s.x, s.y, s.sc, s.blinkCount);
         ctx.restore();
     }
     else if (s.type === 'lightning') {
@@ -10560,7 +10641,11 @@ function getRoadLimits(z) {
   if (currentLevel === 2) left = 1.05;
   if (currentLevel === LEVEL_HIGHWAY) left = right = 0.88;
   if (currentLevel === LEVEL_SPACE) left = right = 0.98;
-  if (currentLevel === LEVEL_HILLS) left=right=1.27-.75*hillsNarrowness(segment.index);
+  if (currentLevel === LEVEL_HILLS) {
+    const center=hillsDetourCenter(segment.index);
+    left=1.27-.75*hillsNarrowness(segment.index)-center;
+    right=segment.index<558&&segment.index>=522?1.27:1.27-.75*hillsNarrowness(segment.index)+center;
+  }
   if (currentLevel === LEVEL_DREAM && getDreamZone(segment.index) === 'underwater') left = right = UNDERWATER_WALL_LIMIT;
   return { left, right };
 }
@@ -10606,7 +10691,7 @@ function getTrackContacts(from, to, fields) {
     for (const type of fields) {
       const object = segment[type];
       if (!object?.active || (type === 'barrier' && object.state !== 'idle')) continue;
-      const halfWidth = type === 'barrier' ? 0.45 : type === 'lightning' ? 0.3 : 0.25;
+      const halfWidth = type === 'barrier' ? (object.halfWidth??0.45) : type === 'lightning' ? 0.3 : 0.25;
       const hit = sweepContact(from.x - object.x, from.z, to.x - object.x, to.z, halfWidth, index * SEGMENT_LENGTH, (index + 1) * SEGMENT_LENGTH);
       if (hit) contacts.push({ ...hit, type, object });
     }
@@ -10625,6 +10710,7 @@ function hitBarrier(car, barrier) {
       player.hitFlash = Math.max(player.hitFlash, 0.45 + severity * 0.55);
     }
   }
+  if(barrier.permanent)return; // A closed road stays closed for every racer and lap.
   barrier.state = 'blinking'; barrier.timer = 0.15;
   blinkingBarriers.push(barrier);
 }

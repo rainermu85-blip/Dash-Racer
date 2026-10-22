@@ -272,3 +272,5 @@ Turbo-Überfahrten. Spieler und Gegner erhalten die gleiche Schwelle relativ
 zu ihrer eigenen Breite. Weitere Fälle prüfen kräftige zufällige Eis-Ausbrüche,
 Erholung der Lenkung, Fahrbahnbegrenzungen, gerichtete Unterwasser-Parallaxe
 mit gestaffelter Tiefe und die drei eigenen Sunset-Hills-Autotypen.
+
+Sunset-Hills-Ausfahrt: `node scripts/assess-game.cjs detour` (echter Streckenverlauf, Lenkeingaben, Sperrenkontakt und Screenshots). Details: [sunset-detour.md](sunset-detour.md).

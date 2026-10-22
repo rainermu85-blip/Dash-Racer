@@ -23,7 +23,7 @@ module.exports=async function runRacecraft(browser,baseUrl){
      let passed=false,max=0,changes=0,last=fast.targetX,contact=false;
      tick(15,()=>{passed||=gap(fast)>300;max=Math.max(max,fast.speed);contact||=player.collisionCooldown>0;if(Math.abs(fast.targetX-last)>.2){changes++;last=fast.targetX;}});
      record(`leader-can-be-passed-level-${level}-${fps}`,passed&&gap(fast)>300&&!contact&&max<=5940.01&&fast.boosts===0,{passed,gap:gap(fast),max,contact,changes});
-     record(`no-immediate-slowdown-after-pass-${level}-${fps}`,fast.speed>4320&&changes<6,{speed:fast.speed,changes});
+     record(`no-immediate-slowdown-after-pass-${level}-${fps}`,fast.speed>fast.maxSpeed*1.18&&changes<6,{speed:fast.speed,changes});
     }
     reset();player.z=100*SEGMENT_LENGTH;
     const slow=opponents[0],fast=opponents[2];opponents=[slow,fast];
