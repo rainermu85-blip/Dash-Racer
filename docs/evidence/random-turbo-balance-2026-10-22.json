@@ -1,0 +1,364 @@
+{
+  "date": "2026-10-22",
+  "source_commit": "af1c28b7951d1b6f9d46526a27ad40ce3147cc85",
+  "turbo": {
+    "chance_per_60hz_frame": 0.0015,
+    "original_chance": 0.003,
+    "duration_seconds": 1.5,
+    "range": 4000,
+    "opponents_collect_items": false
+  },
+  "method": "Automated Chromium production-build checks and input-only full races; no manual phone playtest.",
+  "checks": {
+    "racecraft": {
+      "passed": 50,
+      "failed": 0
+    },
+    "collisions": {
+      "passed": 61,
+      "failed": 0
+    },
+    "pace": {
+      "passed": 21,
+      "failed": 0
+    },
+    "chevrons": {
+      "passed": 66,
+      "failed": 0
+    },
+    "detour": {
+      "passed": 26,
+      "failed": 0
+    },
+    "racecraft-play": {
+      "passed": 21,
+      "failed": 0
+    }
+  },
+  "races": [
+    {
+      "name": "full-field-1-1989-tactical",
+      "rank": 1,
+      "seconds": 116.91666666666667,
+      "contacts": 0,
+      "ai_boosts": [
+        2,
+        1,
+        10,
+        2,
+        0
+      ]
+    },
+    {
+      "name": "full-field-2-1989-tactical",
+      "rank": 2,
+      "seconds": 128.9,
+      "contacts": 0,
+      "ai_boosts": [
+        5,
+        3,
+        7,
+        2,
+        6
+      ]
+    },
+    {
+      "name": "full-field-3-1989-tactical",
+      "rank": 2,
+      "seconds": 127.16666666666667,
+      "contacts": 2,
+      "ai_boosts": [
+        7,
+        6,
+        5,
+        3,
+        4
+      ]
+    },
+    {
+      "name": "full-field-4-1989-tactical",
+      "rank": 3,
+      "seconds": 124.26666666666667,
+      "contacts": 0,
+      "ai_boosts": [
+        8,
+        4,
+        7,
+        1,
+        5
+      ]
+    },
+    {
+      "name": "full-field-5-1989-tactical",
+      "rank": 3,
+      "seconds": 102.46666666666667,
+      "contacts": 2,
+      "ai_boosts": [
+        5,
+        1,
+        2,
+        8,
+        1
+      ]
+    },
+    {
+      "name": "full-field-6-1989-tactical",
+      "rank": 1,
+      "seconds": 91.81666666666666,
+      "contacts": 1,
+      "ai_boosts": [
+        1,
+        0,
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "full-field-1-2026-tactical",
+      "rank": 2,
+      "seconds": 121.08333333333333,
+      "contacts": 3,
+      "ai_boosts": [
+        6,
+        4,
+        3,
+        2,
+        10
+      ]
+    },
+    {
+      "name": "full-field-2-2026-tactical",
+      "rank": 2,
+      "seconds": 129.53333333333333,
+      "contacts": 1,
+      "ai_boosts": [
+        8,
+        6,
+        5,
+        3,
+        7
+      ]
+    },
+    {
+      "name": "full-field-3-2026-tactical",
+      "rank": 4,
+      "seconds": 128.6,
+      "contacts": 3,
+      "ai_boosts": [
+        3,
+        9,
+        2,
+        1,
+        7
+      ]
+    },
+    {
+      "name": "full-field-4-2026-tactical",
+      "rank": 3,
+      "seconds": 124.28333333333333,
+      "contacts": 1,
+      "ai_boosts": [
+        8,
+        9,
+        2,
+        2,
+        7
+      ]
+    },
+    {
+      "name": "full-field-5-2026-tactical",
+      "rank": 1,
+      "seconds": 98.8,
+      "contacts": 0,
+      "ai_boosts": [
+        4,
+        6,
+        1,
+        1,
+        7
+      ]
+    },
+    {
+      "name": "full-field-6-2026-tactical",
+      "rank": 1,
+      "seconds": 97.93333333333334,
+      "contacts": 1,
+      "ai_boosts": [
+        2,
+        1,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "full-field-1-2001-tactical",
+      "rank": 2,
+      "seconds": 119.15,
+      "contacts": 1,
+      "ai_boosts": [
+        1,
+        1,
+        9,
+        3,
+        0
+      ]
+    },
+    {
+      "name": "full-field-2-2001-tactical",
+      "rank": 5,
+      "seconds": 132.48333333333332,
+      "contacts": 4,
+      "ai_boosts": [
+        5,
+        5,
+        3,
+        6,
+        2
+      ]
+    },
+    {
+      "name": "full-field-3-2001-tactical",
+      "rank": 4,
+      "seconds": 126.66666666666667,
+      "contacts": 3,
+      "ai_boosts": [
+        6,
+        4,
+        1,
+        2,
+        2
+      ]
+    },
+    {
+      "name": "full-field-4-2001-tactical",
+      "rank": 2,
+      "seconds": 122.4,
+      "contacts": 0,
+      "ai_boosts": [
+        2,
+        11,
+        2,
+        4,
+        1
+      ]
+    },
+    {
+      "name": "full-field-5-2001-tactical",
+      "rank": 3,
+      "seconds": 106.1,
+      "contacts": 1,
+      "ai_boosts": [
+        3,
+        2,
+        1,
+        2,
+        1
+      ]
+    },
+    {
+      "name": "full-field-6-2001-tactical",
+      "rank": 1,
+      "seconds": 100.16666666666667,
+      "contacts": 1,
+      "ai_boosts": [
+        1,
+        4,
+        0,
+        1,
+        1
+      ]
+    },
+    {
+      "name": "full-field-4-1989-conservative",
+      "rank": 6,
+      "seconds": 127.23333333333333,
+      "contacts": 0,
+      "ai_boosts": [
+        4,
+        3,
+        1,
+        7,
+        6
+      ]
+    }
+  ],
+  "balance": {
+    "averageRank": 2.3333333333333335,
+    "ranks": [
+      {
+        "level": 1,
+        "rank": 1
+      },
+      {
+        "level": 2,
+        "rank": 2
+      },
+      {
+        "level": 3,
+        "rank": 2
+      },
+      {
+        "level": 4,
+        "rank": 3
+      },
+      {
+        "level": 5,
+        "rank": 3
+      },
+      {
+        "level": 6,
+        "rank": 1
+      },
+      {
+        "level": 1,
+        "rank": 2
+      },
+      {
+        "level": 2,
+        "rank": 2
+      },
+      {
+        "level": 3,
+        "rank": 4
+      },
+      {
+        "level": 4,
+        "rank": 3
+      },
+      {
+        "level": 5,
+        "rank": 1
+      },
+      {
+        "level": 6,
+        "rank": 1
+      },
+      {
+        "level": 1,
+        "rank": 2
+      },
+      {
+        "level": 2,
+        "rank": 5
+      },
+      {
+        "level": 3,
+        "rank": 4
+      },
+      {
+        "level": 4,
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "rank": 3
+      },
+      {
+        "level": 6,
+        "rank": 1
+      }
+    ]
+  }
+}

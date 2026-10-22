@@ -2,9 +2,8 @@
 // or AI overrides after starting; rendering is skipped while fast-forwarding.
 module.exports=async function runRacecraftPlay(browser,baseUrl,output){
  const fs=require('node:fs'),path=require('node:path'),results=[];
- const trials=[1,2,3,4,5,6].map(level=>({level,seed:1989,style:'tactical'}));
- trials.push({level:4,seed:2026,style:'tactical'},{level:4,seed:2001,style:'tactical'},
-  {level:4,seed:1989,style:'conservative'});
+ const trials=[1989,2026,2001].flatMap(seed=>[1,2,3,4,5,6].map(level=>({level,seed,style:'tactical'})));
+ trials.push({level:4,seed:1989,style:'conservative'});
  for(const trial of trials){
   const {level}=trial;
   const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];
@@ -49,7 +48,8 @@ render=draw;introScreen.style.display='none';document.getElementById('overlay').
  const tactical=results.find(r=>r.name==='full-field-4-1989-tactical').actual;
  const conservative=results.find(r=>r.name==='full-field-4-1989-conservative').actual;
  results.push({name:'tactical-turbos-improve-race-time',pass:tactical.seconds<conservative.seconds,actual:{tactical:tactical.seconds,conservative:conservative.seconds}});
- const standard=results.filter(r=>/^full-field-[1-6]-1989-tactical$/.test(r.name)).map(r=>r.actual.rank);
- results.push({name:'reference-driver-can-win-without-winning-every-race',pass:standard.some(r=>r===1)&&standard.some(r=>r>=3)&&standard.every(r=>r>=1&&r<=4),actual:{ranks:standard}});
+ const tacticalRuns=results.filter(r=>r.name.endsWith('-tactical')).map(r=>r.actual);
+ const averageRank=tacticalRuns.reduce((sum,r)=>sum+r.rank,0)/tacticalRuns.length;
+ results.push({name:'reference-driver-averages-second-to-third',pass:averageRank>=2&&averageRank<=3,actual:{averageRank,ranks:tacticalRuns.map(r=>({level:r.level,rank:r.rank}))}});
  return results;
 };

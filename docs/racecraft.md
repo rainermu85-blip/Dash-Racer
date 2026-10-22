@@ -1,100 +1,76 @@
-# Gegner-KI: erste Version des neuen Rennmodells
+# Gegner-KI und zufällige Turbos
 
-Der Windschatten-Miniturbo ist vollständig entfernt, einschließlich
-Tempoanpassung des Spielers, Bereitschaft, Corona, Audio und KI-Windschatten.
+Der Windschatten-Miniturbo ist vollständig entfernt. Alle sechs Strecken nutzen
+dieselbe Fahr-KI mit fünf unterschiedlichen Fahrerprofilen: Rot ist ausgewogen,
+Cyan fährt Kurven sicherer, Orange ist auf Geraden schneller, Grün plant
+vorsichtiger und Violett reagiert später. Die Grundspitze nach sauberem
+Beschleunigen liegt je nach Fahrer bei rund 385–399 km/h; beim Spieler bei
+402 km/h. Kleine Formschwankungen, Kurven, Kontakte und Turbos beeinflussen das
+Rennergebnis. Die begrenzte Aufholhilfe bleibt bei höchstens zwei Prozent.
 
-## Fahrer statt Aufholskript
+## Turbovergabe ohne Einsammeln
 
-Alle sechs Strecken verwenden dasselbe Modell. Die fünf Farben haben
-unterschiedliche Stärken: Rot ist ausgewogen, Cyan fährt Kurven sicherer,
-Orange ist auf Geraden schneller, Grün plant vorsichtiger und Violett reagiert
-etwas später. Die Grundspitze nach sauberem Beschleunigen liegt je nach Fahrer
-bei rund 385–399 km/h; beim Spieler sind es weiterhin 402 km/h.
+Die normalen Gegner-Turbos verwenden wieder das Zufallsmuster des ersten
+GitHub-Commits
+[`af1c28b`](https://github.com/rainermu85-blip/Dash-Racer/commit/af1c28b7951d1b6f9d46526a27ad40ce3147cc85).
+Gegner sammeln keine Blitze oder Space-Energiekugeln und wechseln für diese
+Gegenstände nicht die Spur. Sie haben keinen Ladungsvorrat.
 
-Dazu kommen eine beim Start gewählte Form von ±0,8 Prozent und kleine, langsame
-Leistungsschwankungen. Kurven, Hindernisse, Kontakte und Turboeinsatz bestimmen
-die tatsächliche Rennleistung. Es gibt keine fest vorgeschriebene Rangfolge.
+Für die inzwischen stärkere Fahr-KI wurde die ursprüngliche Chance von
+0,3 Prozent je Bild bei 60 FPS auf **0,15 Prozent** halbiert. Der Turbo dauert
+wie im ersten Build **1,5 Sekunden**. Die Chance gilt bei weniger als 4000
+Streckeneinheiten Abstand vor oder hinter dem Spieler, auch über die
+Rundengrenze hinweg. Die Umrechnung
+`1 - (1 - 0.0015) ** (60 * dt)` hält die Häufigkeit bei verschiedenen
+Bildraten und Physikschritten gleich. Ein laufender Turbo, ein Chevron,
+eine aktive Kollisionsstrafe oder die eigene Zielankunft verhindern einen
+neuen Zufallsstart. Nach dem Auslaufen entscheidet wieder der Zufall.
 
-Die alte Grundgeschwindigkeit von nur 78–90 Prozent des Spielers entfällt.
-Auch das enge Angriffsfenster hinter dem Spieler, die globale Beschränkung auf
-einen Angreifer und der Tempoabfall direkt nach dem Vorbeifahren entfallen.
-Führende Gegner fahren ihr Rennen weiter.
-
-Eine begrenzte Aufholhilfe beginnt erst ab etwa 4,2 Sekunden Rückstand auf den
-Rennführenden. Sie steigt kontinuierlich auf höchstens zwei Prozent bei etwa
-9,7 Sekunden Abstand. Sie vergleicht Streckenpositionen, kopiert keinen
-Spielerturbo und verlangsamt niemanden vorne. Ein Zusammenstoß verliert
-weiterhin Tempo und den erarbeiteten Geschwindigkeitsbonus.
+Die bisherigen Space-Wave-Chevrons behalten ihre Fahrplanung, tatsächliche
+Bodenberührung, Stärke und Dauer. Der normale Turbo zielt auf 1,65 × 335 km/h,
+der Chevron auf 2,31 × 335 km/h für zwei Sekunden. Der Spielerturbo dauert
+weiterhin 1,2 Sekunden; die Sammel- und Bedienregeln des Spielers bleiben
+bestehen, einschließlich der Wiederkehr eingesammelter Gegenstände nach
+1,5 Sekunden.
 
 ## Fahrentscheidungen
 
-Jeder Fahrer plant im Abstand von 160–280 ms etwa 1–1,3 Sekunden voraus.
-Er bewertet freie Fahrwege, kommende Straßenbegrenzungen, Baustellen,
-geparkte Fahrzeuge, Pickups und die Bewegung aller anderen Rennwagen.
-Das berücksichtigt auch herannahende Wagen und bereits gewählte Überholspuren.
+Jeder Fahrer plant alle 160–280 ms rund 1–1,3 Sekunden voraus. Er berücksichtigt
+Straßenbegrenzungen, Baustellen, geparkte Fahrzeuge, Chevron-Felder und andere
+Rennwagen. Spurwechsel werden eine Zeit lang beibehalten; Gefahr darf sie
+unterbrechen. Mehrere Gegner können unabhängig überholen, auch weit vom
+Spieler entfernt. Bei versperrtem Weg bremst die KI. Kontakte zwischen Gegnern
+haben Kollisionsstrafe und trennen die Wagen. Straßenränder, Eis und Dalí-
+Effekte gelten ebenfalls für Gegner.
 
-Ein gewählter Spurwechsel wird zunächst beibehalten; eine Gefahr kann ihn
-unterbrechen. Es gibt kein permanentes sinusförmiges Schlingern und keine
-zufälligen Spurwechsel ohne Anlass. Gegner überholen einander auch weit weg
-vom Spieler. Mehrere unabhängige Überholversuche sind gleichzeitig möglich.
-Bei versperrtem Weg nimmt die KI Gas weg, bis Platz entsteht. Der Spieler
-hat weiterhin seine normale automatische Beschleunigung ohne Abstandshalter.
+## Prüfung und Ergebnis
 
-Gegnerkontakte untereinander haben nun ebenfalls Kollisionsstrafe und
-Trennung der Karosserien. Straßenränder, Eisflächen und Dalí-Effekte gelten
-weiterhin auch für die Gegner.
+`node scripts/assess-game.cjs racecraft` prüft Überholmanöver, KI gegen KI,
+blockierte Spuren, Kontaktstrafen, Zufallschance und Dauer, Distanzgrenzen,
+Bildratenunabhängigkeit, Nicht-Sammeln der Gegner, Spieler-Pickups, Pause und
+Neustart. Die Verteilung wird in unabhängigen Einsekundenfenstern bei
+30/60/120 FPS gemessen.
 
-## Turbo
+`node scripts/assess-game.cjs racecraft-play` fährt alle sechs Strecken mit
+jeweils drei festen Zufallsstarts (1989, 2026, 2001). Nach dem Rennstart
+verändert der Testfahrer nur Links-/Rechts-/Turboeingaben. Physik, Gegner,
+Streckenverlauf und Hindernisse bleiben aktiv. Ein weiterer Highway-Lauf
+verwendet keine manuellen Turbos.
 
-Gegner beginnen mit null Ladungen, sammeln Blitze beziehungsweise fünf
-Space-Energiekugeln und speichern maximal drei Ladungen. Zufällig geschenkte
-Turbos entfallen. Sie setzen Vorrat zum Überholen, Gegenhalten oder auf einer
-freien Geraden ein und unterscheiden sich bei Risikobereitschaft und Pause
-zwischen Einsätzen.
+Das Ziel für diese Abstimmung ist ein durchschnittlicher Platz zwischen 2
+und 3 über die 18 Rennen. Gemessen wurde **2,33**:
 
-Turbo-Pickups erscheinen 1,5 Sekunden nach dem Einsammeln wieder, für Spieler
-und Gegner gleichermaßen. Dadurch bleiben Ladungen auch für das hintere Feld
-erreichbar. Baustellen und normale Pylonen bekommen keine solche Wiederkehrzeit.
+| Strecke | Start 1989 | Start 2026 | Start 2001 |
+| --- | ---: | ---: | ---: |
+| Neon City | 1 | 2 | 2 |
+| Ocean Drive | 2 | 2 | 5 |
+| Sunset Hills | 2 | 4 | 4 |
+| Midnight Highway | 3 | 3 | 2 |
+| Dream Odyssey | 3 | 1 | 3 |
+| Space Wave | 1 | 1 | 1 |
 
-Der manuelle Turbo verwendet für alle dieselben absoluten Ziele und dieselbe
-Dauer: 1,65 × 335 km/h für 1,2 Sekunden; Chevron 2,31 × 335 km/h für zwei Sekunden.
-Beschleunigung und Abklingen entsprechen den Regeln des Spielers. Ein einzelnes
-Chevron-Feld startet beim Gegner den Timer einmal pro Durchfahrt.
-
-## Prüfung und Grenzen
-
-`node scripts/assess-game.cjs racecraft` prüft kontrollierte Überholsituationen,
-bleibenden Vorsprung, KI gegen KI, gleichzeitige Manöver, blockierte Spuren,
-Kontaktstrafen, tatsächliche Ladungen, Wiederkehr der Pickups, Pause und Reset.
-30/60/120 FPS sowie alle sechs Strecken sind enthalten.
-
-`node scripts/assess-game.cjs racecraft-play` fährt vollständige Rennen auf
-allen sechs unveränderten Strecken mit einem separaten, automatisch lenkenden
-Testfahrer. Zusätzliche Highway-Läufe variieren Zufallsstart und Turboeinsatz.
-Nach dem Start verändert dieser Fahrer nur Links-/Rechts-/Turboeingaben;
-Physik, Gegner, Streckenverlauf und Hindernisse bleiben aktiv. Aufgezeichnet
-werden Überholvorgänge, Führungswechsel, Feldabstände, Turbos und Platzierung.
-Ein Bild aus dem laufenden Rennen wird pro Durchlauf gespeichert.
-
-Das sind automatisierte Browserprüfungen, keine manuellen Handy-Playtests.
-Sie belegen funktionierende Rennabläufe und Manöver. Wie angenehm die erste
-Abstimmung über viele menschliche Rennen ist, muss sich beim Spielen zeigen.
-
-## Moderate Korrektur vom 22. Oktober 2026
-
-Nach dem Feedback zur zu hohen Schwierigkeit sinkt die Grundgeschwindigkeit
-der fünf Fahrer um etwa 1,7–2,2 Prozent gegenüber der ersten Version. Profile,
-Überholplanung, Kontaktregeln und Turboziele bleiben erhalten. Die schnellsten
-Gegner liegen ohne Form- und Aufholmodifikatoren knapp unter der Spielerspitze,
-können mit einer guten Linie und gesammelten Turbos weiter vorbeiziehen.
-
-Der automatische Testfahrer erreicht in den sechs Standardrennen Platz
-1, 2, 4, 2, 1 und 4. Auf Midnight Highway ergeben zwei weitere Startvarianten
-jeweils Platz 2, ohne Turboeinsatz Platz 3. Vor der Korrektur gab es in diesen
-Standardrennen keinen Sieg. Das ist eine reproduzierbare Orientierung für
-die Abstimmung, kein Versprechen über die Schwierigkeit für jeden Menschen.
-
-Der Langtest berücksichtigt jetzt die tatsächliche Breite des neuen Gatters
-und hält die Zieleinlaufreihenfolge fest, statt nach dem Ausrollen neu zu
-sortieren. Ein zusätzlicher Ergebnischeck verlangt sowohl Siege als auch
-Rennen mit stärkeren Gegnern in diesem festen Vergleichssatz.
+Ohne manuelle Turbos landet der Testfahrer auf Midnight Highway auf Platz 6.
+Es wird kein Ergebnis im Spiel erzwungen. Einzelne Rennen bleiben leichter
+oder schwerer; Space Wave ist für den auf Energiekugeln und Chevrons
+optimierten Testfahrer am einfachsten. Diese automatisierten Browserfahrten
+belegen den Vergleich, ersetzen aber keine menschlichen Handy-Playtests.

@@ -19,10 +19,10 @@ module.exports=async function runRacecraft(browser,baseUrl){
    try{
     reset();record('slipstream-state-and-functions-removed',[player,...opponents].every(c=>!Object.keys(c).some(k=>/^draft/i.test(k)))&&typeof DRAFT==='undefined'&&typeof drawDraftCorona==='undefined'&&typeof draftAudio==='undefined');
     for(const [level,fps]of [[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
-     reset(level,fps);const fast=opponents[2];opponents=[fast];fast.x=fast.baseX=fast.targetX=0;fast.z=racePosition(player)-600;fast.boosts=1;
+     reset(level,fps);const fast=opponents[2];opponents=[fast];fast.x=fast.baseX=fast.targetX=0;fast.z=racePosition(player)-600;Math.random=()=>0;tryOpponentTurbo(fast,1/60);Math.random=()=>.5;
      let passed=false,max=0,changes=0,last=fast.targetX,contact=false;
      tick(15,()=>{passed||=gap(fast)>300;max=Math.max(max,fast.speed);contact||=player.collisionCooldown>0;if(Math.abs(fast.targetX-last)>.2){changes++;last=fast.targetX;}});
-     record(`leader-can-be-passed-level-${level}-${fps}`,passed&&gap(fast)>300&&!contact&&max<=5940.01&&fast.boosts===0,{passed,gap:gap(fast),max,contact,changes});
+     record(`leader-can-be-passed-level-${level}-${fps}`,passed&&gap(fast)>300&&!contact&&max<=5940.01&&!('boosts' in fast),{passed,gap:gap(fast),max,contact,changes});
      record(`no-immediate-slowdown-after-pass-${level}-${fps}`,fast.speed>fast.maxSpeed*1.18&&changes<6,{speed:fast.speed,changes});
     }
     reset();player.z=100*SEGMENT_LENGTH;
@@ -48,12 +48,53 @@ module.exports=async function runRacecraft(browser,baseUrl){
     reset();const lone=opponents[0];opponents=[lone];player.z=0;lone.z=300*SEGMENT_LENGTH;lone.x=lone.targetX=lone.baseX=.55;
     segments[315].barrier={active:true,x:.55,state:'idle',timer:0};tick(1.5);
     record('plans-around-barrier',segments[315].barrier.state==='idle'&&Math.abs(lone.x-.55)>.45&&lone.collisionCooldown===0,{x:lone.x,speed:lone.speed});
-    reset();const collector=opponents[0];opponents=[collector];player.z=0;collector.z=300*SEGMENT_LENGTH;collector.x=collector.targetX=collector.baseX=.55;collector.boostCooldown=20;
-    segments[301].lightning={active:true,x:.55};tick(.1);
-    record('ai-collects-real-charge',collector.boosts===1&&!segments[301].lightning.active,{charges:collector.boosts});
-    tick(1.6);record('pickup-returns-for-following-drivers',segments[301].lightning.active&&collector.boosts===1);
-    collector.boostCooldown=0;tick(.1);record('ai-spends-charge-on-clear-straight',collector.boosts===0&&collector.isBoosting);
-    tick(10);record('no-free-random-turbos',!collector.isBoosting&&collector.boosts===0);
+    for(const [level,type]of[[1,'lightning'],[6,'pylon']]){
+     reset(level);const collector=opponents[0];opponents=[collector];player.z=0;
+     collector.z=300*SEGMENT_LENGTH;collector.x=collector.targetX=collector.baseX=.55;
+     for(let i=301;i<=305;i++)segments[i][type]={active:true,x:.55};
+     const withItems=roadPreview(collector,collector.profile);tick(.3);
+     record(`ai-leaves-${type}-for-player`,Array.from({length:5},(_,i)=>segments[301+i][type].active).every(Boolean)&&!('boosts' in collector)&&!collector.isBoosting&&withItems.objects.length===0,{x:collector.x,active:segments[301][type].active});
+    }
+    reset();opponents=[];player.x=.55;player.z=300*SEGMENT_LENGTH-getPlayerContactDistance()-5;segments[300].lightning={active:true,x:.55};tick(.1);
+    record('player-still-collects-turbo',player.boosts===1&&!segments[300].lightning.active);
+    tick(1.6);record('player-pickup-still-respawns',segments[300].lightning.active&&player.boosts===1);
+    reset();const randomCar=opponents[0];opponents=[randomCar];randomCar.z=player.z+1000;
+    Math.random=()=>.0014;tryOpponentTurbo(randomCar,1/60);
+    record('tuned-0.15-percent-trigger-and-1.5-second-duration',randomCar.isBoosting&&randomCar.boostTimer===1.5&&!('boosts' in randomCar),{timer:randomCar.boostTimer});
+    Math.random=()=>.5;tick(1.4);record('random-turbo-lasts-at-least-1.4-seconds',randomCar.isBoosting);
+    tick(.15);record('random-turbo-ends-after-1.5-seconds',!randomCar.isBoosting);
+    randomCar.z=player.z+1000;Math.random=()=>.0016;tryOpponentTurbo(randomCar,1/60);record('tuned-probability-upper-bound',!randomCar.isBoosting);
+    for(const distance of[-4000,-3999,3999,4000]){
+     randomCar.z=player.z+distance;randomCar.isBoosting=false;Math.random=()=>0;tryOpponentTurbo(randomCar,1/60);
+     record(`original-distance-window-${distance}`,randomCar.isBoosting===(Math.abs(distance)<4000));
+    }
+    randomCar.z=player.z+1000;
+    for(const flag of['isBoosting','isChevronBoosting','collisionCooldown','finished']){
+     randomCar.isBoosting=randomCar.isChevronBoosting=randomCar.finished=false;randomCar.collisionCooldown=0;randomCar.boostTimer=.4;
+     randomCar[flag]=flag==='collisionCooldown'?.2:true;tryOpponentTurbo(randomCar,1/60);
+     record(`no-random-retrigger-during-${flag}`,randomCar.boostTimer===.4&&(flag==='isBoosting'||!randomCar.isBoosting));
+    }
+    randomCar.finished=false;randomCar.collisionCooldown=0;randomCar.isBoosting=false;randomCar.isChevronBoosting=false;
+    player.z=TRACK_LENGTH-500;randomCar.z=500;randomCar.lap=2;tryOpponentTurbo(randomCar,1/60);
+    record('turbo-range-crosses-lap-seam',randomCar.isBoosting);
+    randomCar.isBoosting=false;randomCar.lap=1;tryOpponentTurbo(randomCar,1/60);
+    record('lapped-car-is-not-treated-as-close-rival',!randomCar.isBoosting);
+    // Independent one-second windows sample starts, without physics or rendering
+    // randomness changing the sequence. This catches a doubled substep chance.
+    const expected=1-Math.pow(.9985,60),samples=[];
+    for(const fps of[30,60,120]){
+     let seed=1989;Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+     randomCar.z=player.z-1000;let count=0;
+     for(let trial=0;trial<5000;trial++){
+      randomCar.isBoosting=false;
+      for(let f=0;f<fps&&!randomCar.isBoosting;f++)tryOpponentTurbo(randomCar,1/fps);
+      count+=randomCar.isBoosting?1:0;
+     }
+     samples.push(count/5000);
+     record(`same-tuned-frequency-${fps}fps`,Math.abs(count/5000-expected)<.02,{observed:count/5000,expected});
+    }
+    record('framerate-distribution-within-two-percentage-points',Math.max(...samples)-Math.min(...samples)<.02,{samples});
+    Math.random=()=>.5;
     const references=[];
     for(const speed of [4320,5940,8316]){reset();const o=opponents[0];opponents=[o];o.z=racePosition(player)-30000;player.speed=speed;references.push(updateOpponentRacecraft(o,.1,raceSnapshot()));}
     record('recovery-does-not-copy-player-turbo',Math.max(...references)-Math.min(...references)<.001,{references});
@@ -64,7 +105,7 @@ module.exports=async function runRacecraft(browser,baseUrl){
     const before=[{x:a.x,z:a.z-40},{x:b.x,z:b.z-10}];checkOpponentPairContacts(before,1/120);
     record('ai-contact-has-penalty-and-separation',a.speed<5940&&a.cleanSpeedBonus===0&&b.z-a.z>=90&&a.collisionCooldown>0,{speed:a.speed,gap:b.z-a.z});
     reset();tick(.5);const pausedState=JSON.stringify(opponents);togglePause();tick(2);record('pause-freezes-entire-ai',JSON.stringify(opponents)===pausedState);togglePause();
-    startRace();record('restart-clears-tactics-and-resources',opponents.every(o=>!o.passTarget&&o.boosts===0&&o.maneuver==='cruise'&&o.raceAge===0)&&opponentContacts.size===0&&respawningPickups.size===0);
+    startRace();record('restart-clears-tactics-and-resources',opponents.every(o=>!o.passTarget&&!('boosts' in o)&&!o.isBoosting&&Object.keys(o.chevronDecisions).length===0&&o.maneuver==='cruise'&&o.raceAge===0)&&opponentContacts.size===0&&respawningPickups.size===0);
     reset();opponents.forEach(o=>{o.z=player.z+30000+o.oppIdx*12000;});tick(2);record('all-drivers-remain-finite',opponents.every(o=>Number.isFinite(o.x)&&Number.isFinite(o.speed)&&Number.isFinite(o.z)));
    }finally{render=draw;Math.random=random;}
    return checks;
