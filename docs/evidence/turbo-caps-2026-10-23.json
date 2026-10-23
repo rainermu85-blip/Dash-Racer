@@ -1,0 +1,465 @@
+{
+  "date": "2026-10-23",
+  "method": "Automated Chromium production-build mechanics and complete input-only races. No manual phone playtest.",
+  "limits": {
+    "duration": 1.2,
+    "minimum_rest": 6,
+    "rest_after_second_recent_use": 18,
+    "window_seconds": 30,
+    "window_cap": 2,
+    "race_cap": 6,
+    "position_based_pace_bonus": false,
+    "normal_speed_ceiling_kmh": 402
+  },
+  "checks": {
+    "racecraft": {
+      "passed": 72,
+      "failed": 0
+    },
+    "collisions": {
+      "passed": 61,
+      "failed": 0
+    },
+    "pace": {
+      "passed": 21,
+      "failed": 0
+    },
+    "chevrons": {
+      "passed": 66,
+      "failed": 0
+    },
+    "detour": {
+      "passed": 26,
+      "failed": 0
+    },
+    "racecraft-play": {
+      "passed": 20,
+      "failed": 1,
+      "failures": [
+        "reference-driver-averages-second-to-third"
+      ]
+    }
+  },
+  "forced_success_tests": [
+    {
+      "name": "no-turbo-spam-even-with-perfect-luck-30fps",
+      "pass": true,
+      "actual": {
+        "starts": [
+          0,
+          7.2,
+          30,
+          49.2,
+          68.4,
+          87.6
+        ],
+        "gaps": [
+          6,
+          21.6,
+          18.000000000000004,
+          18.000000000000004,
+          17.99999999999999
+        ],
+        "rolls": 6
+      },
+      "errors": []
+    },
+    {
+      "name": "no-turbo-spam-even-with-perfect-luck-60fps",
+      "pass": true,
+      "actual": {
+        "starts": [
+          0,
+          7.2,
+          30,
+          49.2,
+          68.4,
+          87.6
+        ],
+        "gaps": [
+          6,
+          21.6,
+          18.000000000000004,
+          18.000000000000004,
+          17.99999999999999
+        ],
+        "rolls": 6
+      },
+      "errors": []
+    },
+    {
+      "name": "no-turbo-spam-even-with-perfect-luck-120fps",
+      "pass": true,
+      "actual": {
+        "starts": [
+          0,
+          7.2,
+          30,
+          49.2,
+          68.4,
+          87.6
+        ],
+        "gaps": [
+          6,
+          21.6,
+          18.000000000000004,
+          18.000000000000004,
+          17.99999999999999
+        ],
+        "rolls": 6
+      },
+      "errors": []
+    }
+  ],
+  "balance": {
+    "averageRank": 1.7222222222222223,
+    "ranks": [
+      {
+        "level": 1,
+        "rank": 1
+      },
+      {
+        "level": 2,
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "rank": 5
+      },
+      {
+        "level": 4,
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "rank": 2
+      },
+      {
+        "level": 6,
+        "rank": 1
+      },
+      {
+        "level": 1,
+        "rank": 1
+      },
+      {
+        "level": 2,
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "rank": 2
+      },
+      {
+        "level": 4,
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "rank": 2
+      },
+      {
+        "level": 6,
+        "rank": 1
+      },
+      {
+        "level": 1,
+        "rank": 1
+      },
+      {
+        "level": 2,
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "rank": 4
+      },
+      {
+        "level": 4,
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "rank": 3
+      },
+      {
+        "level": 6,
+        "rank": 2
+      }
+    ],
+    "target": [
+      2,
+      3
+    ],
+    "target_met": false,
+    "note": "New fairness constraints make the reference driver more successful. The old balance target remains visible and fails; no replacement rubberband bonus was added."
+  },
+  "races": [
+    {
+      "name": "full-field-1-1989-tactical",
+      "rank": 1,
+      "seconds": 119.06666666666666,
+      "contacts": 1,
+      "normal_turbo_uses": [
+        4,
+        2,
+        6,
+        0,
+        1
+      ],
+      "minimum_start_interval": 13.641666666666
+    },
+    {
+      "name": "full-field-2-1989-tactical",
+      "rank": 1,
+      "seconds": 129.63333333333333,
+      "contacts": 2,
+      "normal_turbo_uses": [
+        4,
+        4,
+        5,
+        1,
+        2
+      ],
+      "minimum_start_interval": 9.524999999999459
+    },
+    {
+      "name": "full-field-3-1989-tactical",
+      "rank": 5,
+      "seconds": 129.43333333333334,
+      "contacts": 8,
+      "normal_turbo_uses": [
+        4,
+        3,
+        3,
+        5,
+        5
+      ],
+      "minimum_start_interval": 7.7499999999995595
+    },
+    {
+      "name": "full-field-4-1989-tactical",
+      "rank": 1,
+      "seconds": 123.23333333333333,
+      "contacts": 1,
+      "normal_turbo_uses": [
+        3,
+        2,
+        0,
+        2,
+        2
+      ],
+      "minimum_start_interval": 12.64999999999939
+    },
+    {
+      "name": "full-field-5-1989-tactical",
+      "rank": 2,
+      "seconds": 101.88333333333334,
+      "contacts": 0,
+      "normal_turbo_uses": [
+        4,
+        3,
+        2,
+        3,
+        3
+      ],
+      "minimum_start_interval": 7.374999999999254
+    },
+    {
+      "name": "full-field-6-1989-tactical",
+      "rank": 1,
+      "seconds": 95.76666666666667,
+      "contacts": 0,
+      "normal_turbo_uses": [
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "minimum_start_interval": null
+    },
+    {
+      "name": "full-field-1-2026-tactical",
+      "rank": 1,
+      "seconds": 119.23333333333333,
+      "contacts": 1,
+      "normal_turbo_uses": [
+        3,
+        3,
+        4,
+        2,
+        2
+      ],
+      "minimum_start_interval": 10.808333333332827
+    },
+    {
+      "name": "full-field-2-2026-tactical",
+      "rank": 1,
+      "seconds": 132,
+      "contacts": 4,
+      "normal_turbo_uses": [
+        5,
+        3,
+        5,
+        4,
+        2
+      ],
+      "minimum_start_interval": 11.57499999999945
+    },
+    {
+      "name": "full-field-3-2026-tactical",
+      "rank": 2,
+      "seconds": 127.83333333333333,
+      "contacts": 2,
+      "normal_turbo_uses": [
+        2,
+        4,
+        2,
+        3,
+        3
+      ],
+      "minimum_start_interval": 12.191666666665974
+    },
+    {
+      "name": "full-field-4-2026-tactical",
+      "rank": 1,
+      "seconds": 121.96666666666667,
+      "contacts": 0,
+      "normal_turbo_uses": [
+        2,
+        2,
+        3,
+        2,
+        2
+      ],
+      "minimum_start_interval": 9.899999999999437
+    },
+    {
+      "name": "full-field-5-2026-tactical",
+      "rank": 2,
+      "seconds": 101.95,
+      "contacts": 2,
+      "normal_turbo_uses": [
+        4,
+        3,
+        3,
+        2,
+        2
+      ],
+      "minimum_start_interval": 8.600000000006844
+    },
+    {
+      "name": "full-field-6-2026-tactical",
+      "rank": 1,
+      "seconds": 101.76666666666667,
+      "contacts": 2,
+      "normal_turbo_uses": [
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "minimum_start_interval": null
+    },
+    {
+      "name": "full-field-1-2001-tactical",
+      "rank": 1,
+      "seconds": 118.48333333333333,
+      "contacts": 1,
+      "normal_turbo_uses": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "minimum_start_interval": 9.624999999999453
+    },
+    {
+      "name": "full-field-2-2001-tactical",
+      "rank": 1,
+      "seconds": 128.28333333333333,
+      "contacts": 0,
+      "normal_turbo_uses": [
+        4,
+        1,
+        3,
+        2,
+        2
+      ],
+      "minimum_start_interval": 10.59166666666644
+    },
+    {
+      "name": "full-field-3-2001-tactical",
+      "rank": 4,
+      "seconds": 129.45,
+      "contacts": 5,
+      "normal_turbo_uses": [
+        4,
+        4,
+        1,
+        2,
+        2
+      ],
+      "minimum_start_interval": 8.150000000006486
+    },
+    {
+      "name": "full-field-4-2001-tactical",
+      "rank": 1,
+      "seconds": 123.96666666666667,
+      "contacts": 1,
+      "normal_turbo_uses": [
+        2,
+        4,
+        3,
+        4,
+        3
+      ],
+      "minimum_start_interval": 12.491666666676608
+    },
+    {
+      "name": "full-field-5-2001-tactical",
+      "rank": 3,
+      "seconds": 106.26666666666667,
+      "contacts": 3,
+      "normal_turbo_uses": [
+        3,
+        1,
+        1,
+        1,
+        3
+      ],
+      "minimum_start_interval": 20.0333333333323
+    },
+    {
+      "name": "full-field-6-2001-tactical",
+      "rank": 2,
+      "seconds": 106.36666666666666,
+      "contacts": 3,
+      "normal_turbo_uses": [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      "minimum_start_interval": null
+    },
+    {
+      "name": "full-field-4-1989-conservative",
+      "rank": 4,
+      "seconds": 128.18333333333334,
+      "contacts": 2,
+      "normal_turbo_uses": [
+        3,
+        4,
+        1,
+        5,
+        1
+      ],
+      "minimum_start_interval": 7.658333333339428
+    }
+  ]
+}

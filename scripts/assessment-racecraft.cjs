@@ -16,6 +16,8 @@ module.exports=async function runRacecraft(browser,baseUrl){
    };
    const tick=(seconds,onStep)=>{for(let i=0;i<Math.round(seconds*rate);i++){time+=1000/rate;loop(time);onStep?.();}};
    const gap=o=>racePosition(o)-racePosition(player);
+   const freshTurbo=(car,age=0)=>{car.randomTurboStarts=[];car.randomTurboReadyAt=0;car.raceAge=age;
+    car.isBoosting=car.isChevronBoosting=car.finished=false;car.boostTimer=0;car.collisionCooldown=0;};
    try{
     reset();record('slipstream-state-and-functions-removed',[player,...opponents].every(c=>!Object.keys(c).some(k=>/^draft/i.test(k)))&&typeof DRAFT==='undefined'&&typeof drawDraftCorona==='undefined'&&typeof draftAudio==='undefined');
     for(const [level,fps]of [[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
@@ -60,24 +62,24 @@ module.exports=async function runRacecraft(browser,baseUrl){
     tick(1.6);record('player-pickup-still-respawns',segments[300].lightning.active&&player.boosts===1);
     reset();const randomCar=opponents[0];opponents=[randomCar];randomCar.z=player.z+1000;
     Math.random=()=>.0014;tryOpponentTurbo(randomCar,1/60);
-    record('tuned-0.15-percent-trigger-and-1.5-second-duration',randomCar.isBoosting&&randomCar.boostTimer===1.5&&!('boosts' in randomCar),{timer:randomCar.boostTimer});
-    Math.random=()=>.5;tick(1.4);record('random-turbo-lasts-at-least-1.4-seconds',randomCar.isBoosting);
-    tick(.15);record('random-turbo-ends-after-1.5-seconds',!randomCar.isBoosting);
-    randomCar.z=player.z+1000;Math.random=()=>.0016;tryOpponentTurbo(randomCar,1/60);record('tuned-probability-upper-bound',!randomCar.isBoosting);
+    record('tuned-0.15-percent-trigger-and-player-duration',randomCar.isBoosting&&randomCar.boostTimer===1.2&&!('boosts' in randomCar),{timer:randomCar.boostTimer});
+    Math.random=()=>.5;tick(1.1);record('random-turbo-lasts-at-least-1.1-seconds',randomCar.isBoosting);
+    tick(.15);record('random-turbo-ends-after-1.2-seconds',!randomCar.isBoosting);
+    freshTurbo(randomCar);randomCar.z=player.z+1000;Math.random=()=>.0016;tryOpponentTurbo(randomCar,1/60);record('tuned-probability-upper-bound',!randomCar.isBoosting);
     for(const distance of[-4000,-3999,3999,4000]){
-     randomCar.z=player.z+distance;randomCar.isBoosting=false;Math.random=()=>0;tryOpponentTurbo(randomCar,1/60);
+     freshTurbo(randomCar);randomCar.z=player.z+distance;Math.random=()=>0;tryOpponentTurbo(randomCar,1/60);
      record(`original-distance-window-${distance}`,randomCar.isBoosting===(Math.abs(distance)<4000));
     }
     randomCar.z=player.z+1000;
     for(const flag of['isBoosting','isChevronBoosting','collisionCooldown','finished']){
-     randomCar.isBoosting=randomCar.isChevronBoosting=randomCar.finished=false;randomCar.collisionCooldown=0;randomCar.boostTimer=.4;
+     freshTurbo(randomCar);randomCar.boostTimer=.4;
      randomCar[flag]=flag==='collisionCooldown'?.2:true;tryOpponentTurbo(randomCar,1/60);
      record(`no-random-retrigger-during-${flag}`,randomCar.boostTimer===.4&&(flag==='isBoosting'||!randomCar.isBoosting));
     }
-    randomCar.finished=false;randomCar.collisionCooldown=0;randomCar.isBoosting=false;randomCar.isChevronBoosting=false;
+    freshTurbo(randomCar);
     player.z=TRACK_LENGTH-500;randomCar.z=500;randomCar.lap=2;tryOpponentTurbo(randomCar,1/60);
     record('turbo-range-crosses-lap-seam',randomCar.isBoosting);
-    randomCar.isBoosting=false;randomCar.lap=1;tryOpponentTurbo(randomCar,1/60);
+    freshTurbo(randomCar);randomCar.lap=1;tryOpponentTurbo(randomCar,1/60);
     record('lapped-car-is-not-treated-as-close-rival',!randomCar.isBoosting);
     // Independent one-second windows sample starts, without physics or rendering
     // randomness changing the sequence. This catches a doubled substep chance.
@@ -86,7 +88,7 @@ module.exports=async function runRacecraft(browser,baseUrl){
      let seed=1989;Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
      randomCar.z=player.z-1000;let count=0;
      for(let trial=0;trial<5000;trial++){
-      randomCar.isBoosting=false;
+      freshTurbo(randomCar);
       for(let f=0;f<fps&&!randomCar.isBoosting;f++)tryOpponentTurbo(randomCar,1/fps);
       count+=randomCar.isBoosting?1:0;
      }
@@ -97,15 +99,71 @@ module.exports=async function runRacecraft(browser,baseUrl){
     Math.random=()=>.5;
     const references=[];
     for(const speed of [4320,5940,8316]){reset();const o=opponents[0];opponents=[o];o.z=racePosition(player)-30000;player.speed=speed;references.push(updateOpponentRacecraft(o,.1,raceSnapshot()));}
-    record('recovery-does-not-copy-player-turbo',Math.max(...references)-Math.min(...references)<.001,{references});
-    reset();const o=opponents[0];opponents=[o];o.z=racePosition(player)-60000;
-    const target=updateOpponentRacecraft(o,.1,raceSnapshot()),natural=o.maxSpeed*1.2;
-    record('recovery-capped-at-two-percent',Math.abs(target/natural-1.02)<1e-6,{target,natural});
+    record('opponent-pace-does-not-copy-player-turbo',Math.max(...references)-Math.min(...references)<.001,{references});
+    // Position cannot increase or decrease natural pace for any driver.
+    for(const level of[1,2,3,4,5,6]){
+     reset(level);const car=opponents[0];opponents=[car];player.z=90000;car.x=car.targetX=.55;
+     const targets=[];
+     for(const offset of[-60000,-18000,-1000,1000,18000,60000]){car.z=player.z+offset;targets.push(updateOpponentRacecraft(car,.01,raceSnapshot()));}
+     const natural=car.maxSpeed*1.2;
+     record(`no-position-based-pace-help-level-${level}`,targets.every(t=>Math.abs(t-natural)<1e-6),{targets,natural});
+    }
+    reset();const fastest=opponents[2];opponents=[fastest];fastest.x=.55;fastest.z=player.z+10000;
+    fastest.raceForm=1.008;fastest.profile={...fastest.profile,form:.006};fastest.pacePhase=Math.PI/2;const naturalCeiling=updateOpponentRacecraft(fastest,.01,raceSnapshot());
+    record('best-driver-form-cannot-exceed-player-normal-ceiling',Math.abs(naturalCeiling-4320)<1e-6,{target:naturalCeiling});
+    reset();const tactical=opponents[0];opponents=[tactical];tactical.x=tactical.targetX=0;tactical.z=racePosition(player)-250;
+    Math.random=()=>0;updateOpponentRacecraft(tactical,.01,raceSnapshot());
+    record('blocked-driver-does-not-spend-a-turbo',!tactical.isBoosting&&tactical.randomTurboStarts.length===0);
+    tactical.x=tactical.targetX=-.55;updateOpponentRacecraft(tactical,.01,raceSnapshot());
+    record('clear-overtaking-lane-can-use-turbo',tactical.isBoosting&&tactical.randomTurboStarts.length===1);
+    // Force every random draw to succeed: hard limits must still hold.
+    for(const fps of[30,60,120]){
+     reset(1,fps);const car=opponents[0];opponents=[car];car.z=player.z+1000;freshTurbo(car);let rolls=0;
+     Math.random=()=>{rolls++;return 0;};
+     for(let f=0;f<180*fps;f++){
+      car.raceAge=f/fps;
+      if(car.isBoosting){car.boostTimer-=1/fps;if(car.boostTimer<=0)car.isBoosting=false;}
+      tryOpponentTurbo(car,1/fps);
+     }
+     const starts=[...car.randomTurboStarts];
+     const gaps=starts.slice(1).map((t,i)=>t-starts[i]-1.2);
+     const cappedWindows=starts.every(t=>starts.filter(s=>s<=t&&t-s<30-1e-8).length<=2);
+     const recovery=starts.every((t,i)=>i===starts.length-1||starts[i+1]-t>=1.2+(starts.slice(0,i).some(s=>t-s<30-1e-8)?18:6)-1e-7);
+     record(`no-turbo-spam-even-with-perfect-luck-${fps}fps`,starts.length===6&&rolls===6&&cappedWindows&&recovery&&gaps[0]>=6-1e-7&&gaps[1]>=18-1e-7,{starts,gaps,rolls});
+    }
+    reset();const limited=opponents[0];opponents=[limited];limited.z=player.z+1000;Math.random=()=>0;
+    tryOpponentTurbo(limited,1/60);const ready=limited.randomTurboReadyAt;
+    limited.isBoosting=false;limited.raceAge=ready-.0001;tryOpponentTurbo(limited,1/60);
+    record('first-turbo-cannot-restart-before-six-second-rest',!limited.isBoosting&&limited.randomTurboStarts.length===1,{ready});
+    limited.raceAge=ready;tryOpponentTurbo(limited,1/60);
+    record('second-turbo-can-start-only-after-rest',limited.isBoosting&&limited.randomTurboStarts.length===2);
+    const second=limited.randomTurboStarts[1],thirdReady=limited.randomTurboReadyAt;
+    record('second-recent-turbo-sets-eighteen-second-rest',Math.abs(thirdReady-second-1.2-18)<1e-7,{thirdReady,second});
+    limited.isBoosting=false;limited.raceAge=thirdReady;tryOpponentTurbo(limited,1/60);
+    record('two-per-thirty-seconds-cap-blocks-third-even-after-rest',!limited.isBoosting&&limited.randomTurboStarts.length===2);
+    limited.raceAge=30;tryOpponentTurbo(limited,1/60);
+    record('oldest-use-expiring-permits-next-chance',limited.isBoosting&&limited.randomTurboStarts.length===3);
+    hitBarrier(limited,{permanent:true});const used=limited.randomTurboStarts.length;
+    limited.collisionCooldown=0;limited.raceAge+=.1;tryOpponentTurbo(limited,1/60);
+    record('crash-does-not-refund-or-clear-turbo-rest',!limited.isBoosting&&limited.randomTurboStarts.length===used&&limited.randomTurboReadyAt>limited.raceAge);
+    reset();const capped=opponents[0];opponents=[capped];capped.z=TRACK_LENGTH-2;capped.x=capped.targetX=.55;
+    capped.raceAge=120;capped.randomTurboStarts=[0,10,20,30,40,50];capped.randomTurboReadyAt=0;
+    player.z=TRACK_LENGTH-1000;Math.random=()=>0;tick(.1);
+    record('lap-change-does-not-refill-race-turbo-budget',capped.lap===2&&capped.randomTurboStarts.length===6&&!capped.isBoosting,{lap:capped.lap,uses:capped.randomTurboStarts.length});
+    capped.z=TRACK_LENGTH-500;capped.lap=3;player.z=capped.z-1000;player.lap=3;tryOpponentTurbo(capped,1/60);
+    record('finish-approach-does-not-bypass-race-cap',!capped.isBoosting&&capped.randomTurboStarts.length===6);
+    reset(6);panelStarts=[300];const ground=opponents[0];opponents=[ground];player.z=0;ground.z=300*150-1;ground.x=ground.targetX=-.5;
+    Math.random=()=>.5;tick(.05);const groundReady=ground.randomTurboReadyAt;
+    record('chevron-also-enforces-rest-before-free-turbo',ground.isChevronBoosting&&groundReady>ground.raceAge+7.8&&ground.randomTurboStarts.length===0,{ready:groundReady,age:ground.raceAge});
+    ground.isChevronBoosting=false;ground.raceAge=groundReady-.0001;player.z=ground.z-1000;Math.random=()=>0;tryOpponentTurbo(ground,1/60);
+    record('no-free-turbo-immediately-after-chevron',!ground.isBoosting);
+    ground.raceAge=groundReady;tryOpponentTurbo(ground,1/60);record('free-turbo-possible-after-chevron-rest',ground.isBoosting);
+    Math.random=()=>.5;
     reset();const a=opponents[0],b=opponents[1];opponents=[a,b];a.x=b.x=0;a.z=300*SEGMENT_LENGTH;b.z=a.z+80;a.speed=5940;b.speed=1000;
     const before=[{x:a.x,z:a.z-40},{x:b.x,z:b.z-10}];checkOpponentPairContacts(before,1/120);
     record('ai-contact-has-penalty-and-separation',a.speed<5940&&a.cleanSpeedBonus===0&&b.z-a.z>=90&&a.collisionCooldown>0,{speed:a.speed,gap:b.z-a.z});
     reset();tick(.5);const pausedState=JSON.stringify(opponents);togglePause();tick(2);record('pause-freezes-entire-ai',JSON.stringify(opponents)===pausedState);togglePause();
-    startRace();record('restart-clears-tactics-and-resources',opponents.every(o=>!o.passTarget&&!('boosts' in o)&&!o.isBoosting&&Object.keys(o.chevronDecisions).length===0&&o.maneuver==='cruise'&&o.raceAge===0)&&opponentContacts.size===0&&respawningPickups.size===0);
+    startRace();record('restart-clears-tactics-and-resources',opponents.every(o=>!o.passTarget&&!('boosts' in o)&&!o.isBoosting&&o.randomTurboStarts.length===0&&o.randomTurboReadyAt===0&&Object.keys(o.chevronDecisions).length===0&&o.maneuver==='cruise'&&o.raceAge===0)&&opponentContacts.size===0&&respawningPickups.size===0);
     reset();opponents.forEach(o=>{o.z=player.z+30000+o.oppIdx*12000;});tick(2);record('all-drivers-remain-finite',opponents.every(o=>Number.isFinite(o.x)&&Number.isFinite(o.speed)&&Number.isFinite(o.z)));
    }finally{render=draw;Math.random=random;}
    return checks;

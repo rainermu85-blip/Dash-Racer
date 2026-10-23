@@ -38,11 +38,14 @@ if(f%30===0){const order=[player,...opponents].map((c,i)=>({i,z:getRaceDistance(
 if(f===2700){render=draw;introScreen.style.display='none';document.getElementById('overlay').classList.add('hide');draw(ts);window.racecraftFrame=ctx.canvas.toDataURL('image/png');render=()=>{};}
 if(f%900===0)timeline.push({t:f/60,rank,gaps:opponents.map(o=>Math.round((getRaceDistance(o)-getRaceDistance(player))/4320*10)/10)});
 }
-render=draw;introScreen.style.display='none';document.getElementById('overlay').classList.add('hide');draw(ts);clearTimeout(resultTimer);rank=finishOrder.indexOf(0)+1;return{level,seconds:f/60,rank,finished:player.finished,leadChanges,passes,playerBoosts,aiBoosts,pcontacts,modes,timeline,spread:Math.round(spreads.reduce((a,b)=>a+b,0)/spreads.length),speed:opponents.map(o=>o.speed),gaps:opponents.map(o=>Math.round((getRaceDistance(o)-getRaceDistance(player))/4320*10)/10)};
+render=draw;introScreen.style.display='none';document.getElementById('overlay').classList.add('hide');draw(ts);clearTimeout(resultTimer);rank=finishOrder.indexOf(0)+1;return{level,seconds:f/60,rank,finished:player.finished,leadChanges,passes,playerBoosts,aiBoosts,pcontacts,modes,timeline,spread:Math.round(spreads.reduce((a,b)=>a+b,0)/spreads.length),turboHistories:opponents.map(o=>({starts:[...o.randomTurboStarts],age:o.raceAge,readyAt:o.randomTurboReadyAt})),speed:opponents.map(o=>o.speed),gaps:opponents.map(o=>Math.round((getRaceDistance(o)-getRaceDistance(player))/4320*10)/10)};
 },{level,seedValue:trial.seed,style:trial.style});
    const frame=await page.evaluate(()=>window.racecraftFrame);
    if(output&&frame)fs.writeFileSync(path.join(output,`racecraft-${level}-${trial.seed}-${trial.style}.png`),Buffer.from(frame.split(',')[1],'base64'));
-   results.push({name:`full-field-${level}-${trial.seed}-${trial.style}`,pass:data.finished&&data.passes>=4&&data.spread>1800&&data.speed.every(Number.isFinite)&&errors.length===0,actual:data,errors});
+   const boundedTurbos=data.turboHistories.every(h=>h.starts.length<=6&&h.starts.every((t,i)=>
+    h.starts.filter(s=>s<=t&&t-s<30-1e-8).length<=2&&
+    (i===h.starts.length-1||h.starts[i+1]-t>=1.2+(h.starts.slice(0,i).some(s=>t-s<30-1e-8)?18:6)-1e-6)));
+   results.push({name:`full-field-${level}-${trial.seed}-${trial.style}`,pass:data.finished&&data.passes>=4&&data.spread>1800&&data.speed.every(Number.isFinite)&&boundedTurbos&&errors.length===0,actual:data,errors});
   }finally{await page.close();}
  }
  const tactical=results.find(r=>r.name==='full-field-4-1989-tactical').actual;

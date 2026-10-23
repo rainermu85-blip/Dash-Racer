@@ -6,7 +6,10 @@ Cyan fährt Kurven sicherer, Orange ist auf Geraden schneller, Grün plant
 vorsichtiger und Violett reagiert später. Die Grundspitze nach sauberem
 Beschleunigen liegt je nach Fahrer bei rund 385–399 km/h; beim Spieler bei
 402 km/h. Kleine Formschwankungen, Kurven, Kontakte und Turbos beeinflussen das
-Rennergebnis. Die begrenzte Aufholhilfe bleibt bei höchstens zwei Prozent.
+Rennergebnis. Der positionsabhängige Aufholbonus ist vollständig entfernt:
+Abstand zum Führenden und Rang verändern das normale Tempo nicht. Auch die
+positive Fahrerform darf die gemeinsame normale Obergrenze von 402 km/h
+nicht überschreiten.
 
 ## Turbovergabe ohne Einsammeln
 
@@ -18,13 +21,30 @@ Gegenstände nicht die Spur. Sie haben keinen Ladungsvorrat.
 
 Für die inzwischen stärkere Fahr-KI wurde die ursprüngliche Chance von
 0,3 Prozent je Bild bei 60 FPS auf **0,15 Prozent** halbiert. Der Turbo dauert
-wie im ersten Build **1,5 Sekunden**. Die Chance gilt bei weniger als 4000
+**1,2 Sekunden**, genauso lange wie beim Spieler. Die Chance gilt bei weniger als 4000
 Streckeneinheiten Abstand vor oder hinter dem Spieler, auch über die
 Rundengrenze hinweg. Die Umrechnung
 `1 - (1 - 0.0015) ** (60 * dt)` hält die Häufigkeit bei verschiedenen
 Bildraten und Physikschritten gleich. Ein laufender Turbo, ein Chevron,
 eine aktive Kollisionsstrafe oder die eigene Zielankunft verhindern einen
-neuen Zufallsstart. Nach dem Auslaufen entscheidet wieder der Zufall.
+neuen Zufallsstart. Die Nähe zum Spieler allein kann die folgenden festen
+Grenzen nicht umgehen:
+
+- Nach einem normalen Turbo mindestens **6 Sekunden Pause** ab seinem Ende.
+- Nach einem zweiten Einsatz innerhalb von 30 Sekunden mindestens
+  **18 Sekunden Pause** ab seinem Ende.
+- Höchstens **zwei Starts in jedem rollierenden 30-Sekunden-Fenster**.
+- Höchstens **sechs Zufalls-Turbos pro Gegner im gesamten Rennen**.
+
+Die Zeitgrenzen gelten in Rennzeit und bleiben beim Pausieren stehen. Kollision,
+Rundenwechsel und Zielannäherung setzen weder Budget noch Pausen zurück.
+Auch ein abgebrochener Turbo verbraucht einen Einsatz; seine geplante Sperrzeit
+bleibt erhalten. Der Zufall wird nur bei freier Fahrspur und ohne unmittelbar
+bremsendes Hindernis geprüft. Eine ungenutzte Chance verbraucht keinen Einsatz.
+Nach einem Chevron wartet die KI ebenfalls mindestens sechs Sekunden nach
+Ende des Bodenturbos, bevor ein kostenloser normaler Turbo möglich wird.
+Chevron-Felder selbst verbrauchen kein Zufallsbudget und bleiben für alle
+Fahrer nutzbar.
 
 Die bisherigen Space-Wave-Chevrons behalten ihre Fahrplanung, tatsächliche
 Bodenberührung, Stärke und Dauer. Der normale Turbo zielt auf 1,65 × 335 km/h,
@@ -48,7 +68,12 @@ Effekte gelten ebenfalls für Gegner.
 `node scripts/assess-game.cjs racecraft` prüft Überholmanöver, KI gegen KI,
 blockierte Spuren, Kontaktstrafen, Zufallschance und Dauer, Distanzgrenzen,
 Bildratenunabhängigkeit, Nicht-Sammeln der Gegner, Spieler-Pickups, Pause und
-Neustart. Die Verteilung wird in unabhängigen Einsekundenfenstern bei
+Neustart. Ein adversarialer Lauf erzwingt bei 30/60/120 FPS jede Zufallsziehung
+als Erfolg: Die frühestmöglichen Startzeiten sind dennoch 0, 7,2, 30, 49,2,
+68,4 und 87,6 Sekunden. Ein siebter Start bleibt dauerhaft gesperrt. Separate
+Prüfungen decken Kollision, Rundengrenze, Zielannäherung und Chevron-Nachlauf
+ab. Auf allen sechs Strecken wird außerdem identisches normales Solltempo
+bei verschiedenen Rückständen und Vorsprüngen nachgewiesen. Die Verteilung wird in unabhängigen Einsekundenfenstern bei
 30/60/120 FPS gemessen.
 
 `node scripts/assess-game.cjs racecraft-play` fährt alle sechs Strecken mit
@@ -57,20 +82,26 @@ verändert der Testfahrer nur Links-/Rechts-/Turboeingaben. Physik, Gegner,
 Streckenverlauf und Hindernisse bleiben aktiv. Ein weiterer Highway-Lauf
 verwendet keine manuellen Turbos.
 
-Das Ziel für diese Abstimmung ist ein durchschnittlicher Platz zwischen 2
-und 3 über die 18 Rennen. Gemessen wurde **2,33**:
+Der frühere Vergleichswert mit unbeschränkten Zufalls-Turbos war Platz 2,33.
+Mit den neuen Grenzen beträgt der Durchschnitt **1,72** über 18 Rennen:
 
 | Strecke | Start 1989 | Start 2026 | Start 2001 |
 | --- | ---: | ---: | ---: |
-| Neon City | 1 | 2 | 2 |
-| Ocean Drive | 2 | 2 | 5 |
-| Sunset Hills | 2 | 4 | 4 |
-| Midnight Highway | 3 | 3 | 2 |
-| Dream Odyssey | 3 | 1 | 3 |
-| Space Wave | 1 | 1 | 1 |
+| Neon City | 1 | 1 | 1 |
+| Ocean Drive | 1 | 1 | 1 |
+| Sunset Hills | 5 | 2 | 4 |
+| Midnight Highway | 1 | 1 | 1 |
+| Dream Odyssey | 2 | 2 | 3 |
+| Space Wave | 1 | 1 | 2 |
 
-Ohne manuelle Turbos landet der Testfahrer auf Midnight Highway auf Platz 6.
-Es wird kein Ergebnis im Spiel erzwungen. Einzelne Rennen bleiben leichter
-oder schwerer; Space Wave ist für den auf Energiekugeln und Chevrons
-optimierten Testfahrer am einfachsten. Diese automatisierten Browserfahrten
-belegen den Vergleich, ersetzen aber keine menschlichen Handy-Playtests.
+Alle 19 vollständigen Rennläufe einschließlich des Laufs ohne manuelle Turbos
+bestehen die Funktions- und Budgetprüfungen. Die gespeicherten Turbo-Startzeiten
+werden in jedem Rennen zusätzlich auf Gesamtlimit, Fensterlimit und Pausen
+geprüft. Die separate alte Zielmarke „Durchschnitt Platz 2–3“ schlägt mit 1,72
+weiterhin an: Die neue Version ist für den Testfahrer leichter. Dieser
+Balancing-Check wurde ausdrücklich nicht abgeschwächt oder entfernt.
+
+Die individuellen Fahrerprofile bleiben bestehen; es gibt keinen neuen
+abstandsabhängigen Ersatzbonus. Diese automatisierten Browserfahrten zeigen
+den Vergleich und die wirksamen Grenzen, ersetzen aber keine menschlichen
+Handy-Playtests.
