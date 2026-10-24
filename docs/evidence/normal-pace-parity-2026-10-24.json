@@ -1,0 +1,456 @@
+{
+  "date": "2026-10-24",
+  "method": "Controlled Chromium physics runs with and without turbo at 30/60/120 FPS, plus complete input-only races. No manual phone playtest.",
+  "rules": {
+    "shared_engine": true,
+    "shared_clean_build_seconds": 10,
+    "normal_progress_during_turbo": true,
+    "rear_victim_keeps_bonus_and_turbo": true,
+    "rear_rammer_penalized": true
+  },
+  "checks": {
+    "normal-pace": {
+      "passed": 69,
+      "failed": 0
+    },
+    "pace": {
+      "passed": 21,
+      "failed": 0
+    },
+    "collisions": {
+      "passed": 61,
+      "failed": 0
+    },
+    "racecraft": {
+      "passed": 72,
+      "failed": 0
+    },
+    "chevrons": {
+      "passed": 66,
+      "failed": 0
+    },
+    "surfaces": {
+      "passed": 204,
+      "failed": 0
+    },
+    "controls": {
+      "passed": 26,
+      "failed": 0
+    },
+    "detour": {
+      "passed": 26,
+      "failed": 0
+    },
+    "racecraft-play": {
+      "passed": 20,
+      "failed": 1,
+      "failures": [
+        "reference-driver-averages-second-to-third"
+      ]
+    }
+  },
+  "balance": {
+    "averageRank": 1.5,
+    "ranks": [
+      {
+        "level": 1,
+        "rank": 2
+      },
+      {
+        "level": 2,
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "rank": 3
+      },
+      {
+        "level": 4,
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "rank": 1
+      },
+      {
+        "level": 6,
+        "rank": 1
+      },
+      {
+        "level": 1,
+        "rank": 1
+      },
+      {
+        "level": 2,
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "rank": 3
+      },
+      {
+        "level": 4,
+        "rank": 2
+      },
+      {
+        "level": 5,
+        "rank": 1
+      },
+      {
+        "level": 6,
+        "rank": 1
+      },
+      {
+        "level": 1,
+        "rank": 1
+      },
+      {
+        "level": 2,
+        "rank": 1
+      },
+      {
+        "level": 3,
+        "rank": 4
+      },
+      {
+        "level": 4,
+        "rank": 1
+      },
+      {
+        "level": 5,
+        "rank": 1
+      },
+      {
+        "level": 6,
+        "rank": 1
+      }
+    ],
+    "target": [
+      2,
+      3
+    ],
+    "target_met": false
+  },
+  "measured_examples": {
+    "collisions": [
+      {
+        "before": {
+          "player": 400,
+          "opponent": 402,
+          "opponentBoosting": false
+        },
+        "after": {
+          "player": 401,
+          "opponent": 375.52,
+          "playerNormalLimit": 400,
+          "axis": "z"
+        }
+      },
+      {
+        "before": {
+          "player": 380,
+          "opponent": 400,
+          "opponentBoosting": false
+        },
+        "after": {
+          "player": 390,
+          "opponent": 375.52,
+          "playerNormalLimit": 380,
+          "axis": "z"
+        }
+      },
+      {
+        "before": {
+          "player": 335,
+          "opponent": 390,
+          "opponentBoosting": false
+        },
+        "after": {
+          "player": 362.5,
+          "opponent": 362.5,
+          "playerNormalLimit": 335,
+          "axis": "z"
+        }
+      },
+      {
+        "before": {
+          "player": 400,
+          "opponent": 552.75,
+          "opponentBoosting": true
+        },
+        "after": {
+          "player": 476.38,
+          "opponent": 476.38,
+          "playerNormalLimit": 400,
+          "axis": "z"
+        }
+      }
+    ],
+    "traces": [
+      {
+        "startSpeed": 330,
+        "bonus": 0,
+        "turbo": true,
+        "samples": [
+          {
+            "t": 0.5,
+            "player": 539.37,
+            "opponent": 335.26,
+            "playerNormalLimit": 337.57,
+            "opponentNormalLimit": 335.26,
+            "boosting": true,
+            "distanceGained": 552.89
+          },
+          {
+            "t": 1,
+            "player": 552.75,
+            "opponent": 338.58,
+            "playerNormalLimit": 340.92,
+            "opponentNormalLimit": 338.58,
+            "boosting": true,
+            "distanceGained": 1710.72
+          },
+          {
+            "t": 1.2,
+            "player": 552.75,
+            "opponent": 339.91,
+            "playerNormalLimit": 342.26,
+            "opponentNormalLimit": 339.91,
+            "boosting": true,
+            "distanceGained": 2169.54
+          },
+          {
+            "t": 1.6,
+            "player": 344.94,
+            "opponent": 342.57,
+            "playerNormalLimit": 344.94,
+            "opponentNormalLimit": 342.57,
+            "boosting": false,
+            "distanceGained": 2615.85
+          },
+          {
+            "t": 2,
+            "player": 347.62,
+            "opponent": 345.23,
+            "playerNormalLimit": 347.62,
+            "opponentNormalLimit": 345.23,
+            "boosting": false,
+            "distanceGained": 2626.09
+          },
+          {
+            "t": 3,
+            "player": 354.32,
+            "opponent": 351.87,
+            "playerNormalLimit": 354.32,
+            "opponentNormalLimit": 351.87,
+            "boosting": false,
+            "distanceGained": 2652.1
+          },
+          {
+            "t": 5,
+            "player": 367.72,
+            "opponent": 365.16,
+            "playerNormalLimit": 367.72,
+            "opponentNormalLimit": 365.16,
+            "boosting": false,
+            "distanceGained": 2705.85
+          },
+          {
+            "t": 10,
+            "player": 401.22,
+            "opponent": 398.4,
+            "playerNormalLimit": 401.22,
+            "opponentNormalLimit": 398.4,
+            "boosting": false,
+            "distanceGained": 2850.29
+          },
+          {
+            "t": 12,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 2919.06
+          }
+        ]
+      },
+      {
+        "startSpeed": 330,
+        "bonus": 0,
+        "turbo": false,
+        "samples": [
+          {
+            "t": 0.5,
+            "player": 337.57,
+            "opponent": 335.26,
+            "playerNormalLimit": 337.57,
+            "opponentNormalLimit": 335.26,
+            "boosting": false,
+            "distanceGained": 10.44
+          },
+          {
+            "t": 1,
+            "player": 340.92,
+            "opponent": 338.58,
+            "playerNormalLimit": 340.92,
+            "opponentNormalLimit": 338.58,
+            "boosting": false,
+            "distanceGained": 22.94
+          },
+          {
+            "t": 1.2,
+            "player": 342.26,
+            "opponent": 339.91,
+            "playerNormalLimit": 342.26,
+            "opponentNormalLimit": 339.91,
+            "boosting": false,
+            "distanceGained": 27.98
+          },
+          {
+            "t": 1.6,
+            "player": 344.94,
+            "opponent": 342.57,
+            "playerNormalLimit": 344.94,
+            "opponentNormalLimit": 342.57,
+            "boosting": false,
+            "distanceGained": 38.13
+          },
+          {
+            "t": 2,
+            "player": 347.62,
+            "opponent": 345.23,
+            "playerNormalLimit": 347.62,
+            "opponentNormalLimit": 345.23,
+            "boosting": false,
+            "distanceGained": 48.38
+          },
+          {
+            "t": 3,
+            "player": 354.32,
+            "opponent": 351.87,
+            "playerNormalLimit": 354.32,
+            "opponentNormalLimit": 351.87,
+            "boosting": false,
+            "distanceGained": 74.38
+          },
+          {
+            "t": 5,
+            "player": 367.72,
+            "opponent": 365.16,
+            "playerNormalLimit": 367.72,
+            "opponentNormalLimit": 365.16,
+            "boosting": false,
+            "distanceGained": 128.13
+          },
+          {
+            "t": 10,
+            "player": 401.22,
+            "opponent": 398.4,
+            "playerNormalLimit": 401.22,
+            "opponentNormalLimit": 398.4,
+            "boosting": false,
+            "distanceGained": 272.57
+          },
+          {
+            "t": 12,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 341.34
+          }
+        ]
+      },
+      {
+        "startSpeed": 402,
+        "bonus": 0.2,
+        "turbo": true,
+        "samples": [
+          {
+            "t": 0.5,
+            "player": 552.75,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": true,
+            "distanceGained": 542.41
+          },
+          {
+            "t": 1,
+            "player": 552.75,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": true,
+            "distanceGained": 1369.69
+          },
+          {
+            "t": 1.2,
+            "player": 552.75,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": true,
+            "distanceGained": 1700.6
+          },
+          {
+            "t": 1.6,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 1939.14
+          },
+          {
+            "t": 2,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 1952.96
+          },
+          {
+            "t": 3,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 1987.52
+          },
+          {
+            "t": 5,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 2056.64
+          },
+          {
+            "t": 10,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 2229.44
+          },
+          {
+            "t": 12,
+            "player": 402,
+            "opponent": 398.78,
+            "playerNormalLimit": 402,
+            "opponentNormalLimit": 398.78,
+            "boosting": false,
+            "distanceGained": 2298.56
+          }
+        ]
+      }
+    ]
+  }
+}

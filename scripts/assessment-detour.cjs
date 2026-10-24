@@ -14,7 +14,8 @@ module.exports=async function assessDetour(browser,baseUrl,output){
    const reset=(fps,x=0,boost=false)=>{
     let seed=1989;Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
     selectLevel(3);startRace();state='playing';lastTime=ts;smoothedDt=1/fps;
-    player.z=500*SEGMENT_LENGTH;player.x=x;player.speed=boost?5940:4320;player.cleanSpeedBonus=.2;
+    player.z=500*SEGMENT_LENGTH;player.x=x;player.speed=4320;player.cleanSpeedBonus=.2;resetNormalPace(player);
+    if(boost)player.speed=5940;
     player.isBoosting=boost;player.boostTimer=1.2;hits=[];keys.left=keys.right=keys.boost=false;
    };
    try{

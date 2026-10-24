@@ -84,7 +84,7 @@ module.exports = async function runPace(browser, baseUrl) {
         reset(); player.speed = 3600; tick(5);
         const bonus = player.cleanSpeedBonus;
         player.boosts = 1; keys.boost = true; tick(1);
-        record('turbo-does-not-build-clean-driving-bonus', player.cleanSpeedBonus === bonus, { bonus, after: player.cleanSpeedBonus });
+        record('turbo-builds-clean-driving-bonus-at-normal-rate', Math.abs(player.cleanSpeedBonus-bonus-.02)<1e-6, { bonus, after: player.cleanSpeedBonus });
         reset(); earn(); player.speed = 900; player.x = 1.0; tick(3.1);
         record('prolonged-offroad-loses-bonus', player.cleanSpeedBonus === 0 && player.speed < 3600, { speed: player.speed, bonus: player.cleanSpeedBonus });
         for (const level of [1, 6]) {

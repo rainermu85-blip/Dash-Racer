@@ -11,6 +11,13 @@ Abstand zum Führenden und Rang verändern das normale Tempo nicht. Auch die
 positive Fahrerform darf die gemeinsame normale Obergrenze von 402 km/h
 nicht überschreiten.
 
+Tempoaufbau, Turbo-Nachlauf und Motorbeschleunigung verwenden jetzt dieselben
+Regeln wie beim Spieler. Der Normaltempo-Aufbau läuft während Turbo und
+Ausrollen parallel weiter; der spätere Rückfall trifft die Geschwindigkeit,
+die ohne Turbo bis dahin erreicht worden wäre. Die alten KI-Sonderregeln
+für früheren Bonusstart, andere Aufbauzeiten und schnelleres Nachbeschleunigen
+sind entfernt. Details und direkte Kontrollläufe: [clean-driving-speed.md](clean-driving-speed.md).
+
 ## Turbovergabe ohne Einsammeln
 
 Die normalen Gegner-Turbos verwenden wieder das Zufallsmuster des ersten
@@ -60,10 +67,15 @@ Straßenbegrenzungen, Baustellen, geparkte Fahrzeuge, Chevron-Felder und andere
 Rennwagen. Spurwechsel werden eine Zeit lang beibehalten; Gefahr darf sie
 unterbrechen. Mehrere Gegner können unabhängig überholen, auch weit vom
 Spieler entfernt. Bei versperrtem Weg bremst die KI. Kontakte zwischen Gegnern
-haben Kollisionsstrafe und trennen die Wagen. Straßenränder, Eis und Dalí-
+trennen die Wagen. Bei Hecktreffern verliert nur der auffahrende Wagen
+Tempo-Bonus und gegebenenfalls Turbo; das Opfer behält beides. Seitliche
+Kontakte behalten ihre bisherigen abgestuften Strafen. Straßenränder, Eis und Dalí-
 Effekte gelten ebenfalls für Gegner.
 
 ## Prüfung und Ergebnis
+
+`node scripts/assess-game.cjs normal-pace` prüft die gemeinsame Beschleunigung,
+die parallel fortgeschriebene Normalfahrt und die Verantwortung bei Hecktreffern.
 
 `node scripts/assess-game.cjs racecraft` prüft Überholmanöver, KI gegen KI,
 blockierte Spuren, Kontaktstrafen, Zufallschance und Dauer, Distanzgrenzen,
@@ -82,26 +94,26 @@ verändert der Testfahrer nur Links-/Rechts-/Turboeingaben. Physik, Gegner,
 Streckenverlauf und Hindernisse bleiben aktiv. Ein weiterer Highway-Lauf
 verwendet keine manuellen Turbos.
 
-Der frühere Vergleichswert mit unbeschränkten Zufalls-Turbos war Platz 2,33.
-Mit den neuen Grenzen beträgt der Durchschnitt **1,72** über 18 Rennen:
+Der Vergleich mit begrenzten Zufalls-Turbos lag vor der Beschleunigungskorrektur
+bei Platz 1,72. Mit der gemeinsamen Normalfahrt und den korrigierten
+Hecktreffern beträgt der Durchschnitt **1,50** über 18 Rennen:
 
 | Strecke | Start 1989 | Start 2026 | Start 2001 |
 | --- | ---: | ---: | ---: |
-| Neon City | 1 | 1 | 1 |
+| Neon City | 2 | 1 | 1 |
 | Ocean Drive | 1 | 1 | 1 |
-| Sunset Hills | 5 | 2 | 4 |
-| Midnight Highway | 1 | 1 | 1 |
-| Dream Odyssey | 2 | 2 | 3 |
-| Space Wave | 1 | 1 | 2 |
+| Sunset Hills | 3 | 3 | 4 |
+| Midnight Highway | 1 | 2 | 1 |
+| Dream Odyssey | 1 | 1 | 1 |
+| Space Wave | 1 | 1 | 1 |
 
 Alle 19 vollständigen Rennläufe einschließlich des Laufs ohne manuelle Turbos
 bestehen die Funktions- und Budgetprüfungen. Die gespeicherten Turbo-Startzeiten
-werden in jedem Rennen zusätzlich auf Gesamtlimit, Fensterlimit und Pausen
-geprüft. Die separate alte Zielmarke „Durchschnitt Platz 2–3“ schlägt mit 1,72
-weiterhin an: Die neue Version ist für den Testfahrer leichter. Dieser
-Balancing-Check wurde ausdrücklich nicht abgeschwächt oder entfernt.
+werden in jedem Rennen auf Gesamtlimit, Fensterlimit und Pausen geprüft.
+Die separate frühere Zielmarke „Durchschnitt Platz 2–3“ wird weiterhin nicht
+erreicht: Der Testfahrer gewinnt häufiger. Dieser Balancing-Check bleibt
+sichtbar und wurde nicht abgeschwächt oder entfernt. Es gibt keinen neuen
+abstandsabhängigen Ersatzbonus.
 
-Die individuellen Fahrerprofile bleiben bestehen; es gibt keinen neuen
-abstandsabhängigen Ersatzbonus. Diese automatisierten Browserfahrten zeigen
-den Vergleich und die wirksamen Grenzen, ersetzen aber keine menschlichen
-Handy-Playtests.
+Die automatisierten Browserfahrten zeigen den reproduzierbaren Vergleich,
+ersetzen aber keine menschlichen Handy-Playtests.

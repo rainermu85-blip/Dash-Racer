@@ -274,3 +274,5 @@ Erholung der Lenkung, Fahrbahnbegrenzungen, gerichtete Unterwasser-Parallaxe
 mit gestaffelter Tiefe und die drei eigenen Sunset-Hills-Autotypen.
 
 Sunset-Hills-Ausfahrt: `node scripts/assess-game.cjs detour` (echter Streckenverlauf, Lenkeingaben, Sperrenkontakt und Screenshots). Details: [sunset-detour.md](sunset-detour.md).
+
+Normaltempo/Turbo-Parität und Hecktreffer: `node scripts/assess-game.cjs normal-pace`. Die Vergleichsläufe und Regeln stehen in [clean-driving-speed.md](clean-driving-speed.md).

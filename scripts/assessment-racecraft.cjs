@@ -12,7 +12,7 @@ module.exports=async function runRacecraft(browser,baseUrl){
     keys.left=keys.right=keys.boost=false;player.z=300*SEGMENT_LENGTH;player.x=0;player.speed=4320;player.cleanSpeedBonus=.2;
     for(const s of segments){s.curve=s.hillDelta=s.worldY=0;s.pylon=s.barrier=s.lightning=s.parkedCar=null;}
     opponents.forEach(o=>{o.cleanSpeedBonus=.2;o.speed=o.maxSpeed*1.2;o.profile={...o.profile,form:0};
-      o.surfaceVisits=new Set([...DREAM_ICE.map(p=>'ice'+p.start),...DREAM_PUDDLES.map(p=>'clock'+p.start)]);});
+      resetNormalPace(o);o.surfaceVisits=new Set([...DREAM_ICE.map(p=>'ice'+p.start),...DREAM_PUDDLES.map(p=>'clock'+p.start)]);});
    };
    const tick=(seconds,onStep)=>{for(let i=0;i<Math.round(seconds*rate);i++){time+=1000/rate;loop(time);onStep?.();}};
    const gap=o=>racePosition(o)-racePosition(player);

@@ -1,81 +1,76 @@
-# Zusatztempo für sauberes Fahren
+# Gemeinsamer Tempoaufbau und Turbo-Nachlauf
 
-10. Oktober 2026. Die anfängliche Beschleunigung auf 335 km/h bleibt bestehen.
-Danach steigt das normale Tempo über zehn Sekunden sauberer Fahrt gleichmäßig
-auf 402 km/h (120 Prozent). Bei fünf Sekunden liegt es bei 368,5 km/h.
-Der Aufbau funktioniert in allen sechs Welten. Auch alle fünf Gegner haben
-jetzt dieselbe Basis von 335 km/h und können über zehn Sekunden sauberer
-Normalfahrt den Zusatz bis 402 km/h verdienen. Harte Hindernisse entfernen
-auch bei ihnen den Zusatz, Gegnerkontakte reduzieren ihn nach ihrer Stärke;
-Offroad baut ihn wieder ab. Aufholhilfe kann ihre anfängliche Beschleunigung
-leicht erhöhen, aber nicht das gemeinsame Tempolimit. Eine weit vorausfahrende
-KI nimmt weiterhin etwas Tempo zurück. Fahrspurentscheidungen und automatische
-Turboentscheidungen bleiben erhalten. Die unveränderten Faktoren 1,65 und
-2,31 beziehen sich nun auch bei der KI auf dieselbe Basis wie beim Spieler.
-Rennzeiten und Schwierigkeit sollten mit Testern abgestimmt werden.
+Die normale Spielerbasis bleibt 335 km/h. Nach Erreichen dieser Basis wächst
+das Zusatztempo über zehn Sekunden sauberer Fahrt auf 402 km/h. Spieler und
+KI verwenden dieselbe Beschleunigungsformel, dieselbe Aufbauschwelle und
+dieselbe Aufbauzeit. Die individuellen KI-Tempoprofile und ihre vorsichtigere
+Kurvenfahrt bleiben bestehen; sie erhalten weder einen früheren Bonusstart
+bei 93 Prozent der Basis noch eine höhere Mindestbeschleunigung darüber.
+Es gibt keinen positionsabhängigen Aufholbonus. Die normale Obergrenze liegt
+für alle bei höchstens 402 km/h.
 
-`player.maxSpeed` bleibt die alte Basis von 3600 internen Einheiten.
-`cleanSpeedBonus` speichert den verdienten Zusatz von null bis 0,2.
-Fortschritt entsteht auf der Fahrbahn ab der alten Höchstgeschwindigkeit,
-ohne laufenden Kontakt-Cooldown oder Wandreibung. Während eines Turbos und
-beim anschließenden Ausrollen oberhalb des verdienten Normaltempos pausiert
-der Aufbau. Nach dem Turbo sinkt das Tempo mit der bestehenden Verzögerung
-weich auf die verdiente Geschwindigkeit.
+## Die Normalfahrt läuft während eines Turbos weiter
 
-Der normale Turbo behält 165 Prozent der alten Basis, der Chevron-Turbo
-231 Prozent. Beschleunigung, Laufzeit und Verkettung der Turbos bleiben gleich.
-Die neue normale Höchstgeschwindigkeit wird nicht als Turbo-Basis verwendet.
+`normalSpeed` speichert die normale Beschleunigungskurve auf der tatsächlich
+gefahrenen Straße. Diese Referenz läuft während Turbo und anschließendem
+Ausrollen mit derselben Formel weiter wie eine Fahrt ohne Turbo. Der
+Tempo-Bonus wächst anhand dieser Referenz, nicht anhand der erhöhten
+Turbo-Geschwindigkeit. Ein Turbo aus dem Stand schaltet den Bonus daher
+nicht vorzeitig frei.
 
-Leichtes Streifen eines Gegners oder der Begrenzung kostet 35 Prozent des
-verdienten Zusatzes. Ein deutlicher Kontakt entfernt den Zusatz vollständig
-und begrenzt normales Tempo auf höchstens 335 km/h. Die Einordnung verwendet
-die vorhandene Aufprallstärke: relative Annäherung bei Gegnern, seitliche
-Geschwindigkeit bei Wänden. Die Schwelle liegt bei 0,18 der normierten Stärke.
-Der vorhandene Kollisionsverlust wirkt zusätzlich; harte Aufpralle können
-weiterhin deutlich unter 335 km/h bremsen. Kein Kontakt hebt ein langsameres
-Auto auf 335 km/h an. Aktive Turbos behalten ihre bisherigen Kontaktreaktionen.
+Nach Ende des Turbos klingt die tatsächliche Geschwindigkeit weich auf die
+inzwischen erreichte Normalfahrt ab. Sie fällt weder auf den alten Wert vor
+dem Turbo zurück noch unter die passende Referenz. Das funktioniert auch
+bei mehreren Turbos und Chevron-Feldern nacheinander.
 
-Drei Sekunden durchgehendes Fahren neben der Strecke entfernen den ganzen
-Zusatz. Ein kürzerer Ausflug verliert ihn anteilig; die bestehende Reibung
-bremst das Auto ebenfalls. Pylonen ändern den verdienten Zusatz nicht:
-außerhalb des Space-Levels gilt weiterhin der kleine vorhandene Tempoverlust,
-im Space-Level bleiben sie Energie-Pickups. Pause friert den Aufbau ein,
-ein Neustart setzt ihn zurück.
+Kollisionsfreies Beispiel ab 330 km/h:
 
-Hohes Normaltempo hat einen eigenen dezenten Hinweis: vier dünne, blass
-cyanfarbene Strömungslinien an den äußeren Bildrändern. Bewegte Lichtsegmente
-laufen gleichmäßig darüber; ihre Stärke steigt weich mit dem Tempo von
-102 bis 120 Prozent. Die Zeit kommt aus `chapterTime`, sodass Pause den
-Effekt ebenfalls einfriert. Es gibt keine zufälligen Richtungswechsel,
-Blitze, zusätzliche Kamerabewegung oder Turbo-Verbreiterung des Sichtfeldes.
-Die kräftigen radialen Warp-Linien erscheinen nur bei einem aktiven Turbo;
-der Chevron-Turbo behält seinen eigenen Effekt. Geschwindigkeitsziele und
-Beschleunigung ändern sich durch diese Darstellung nicht.
+| Zeit | Mit frühem Turbo, nach dessen Abklingen | Ohne Turbo |
+| --- | ---: | ---: |
+| 2 Sekunden | 347,62 km/h | 347,62 km/h |
+| 5 Sekunden | 367,72 km/h | 367,72 km/h |
+| 12 Sekunden | 402 km/h | 402 km/h |
 
-`scripts/assess-game.cjs pace` prüft Zeitverlauf und Maximum bei 30, 60 und
-120 Bildern pro Sekunde, leichte und deutliche Kontakte, harte Hindernisse,
-beide Turbo-Maxima, Rückkehr nach Turbo, Pylonen, Offroad, Pause und Neustart.
-Die Modi `mechanics`, `collisions`, `chapter` und `races` prüfen die übrige
-Mechanik und vollständige Rennen. Browserinstallation und Befehle stehen in
-[assessment.md](assessment.md#prüfungen-wiederholen).
+Der während des Turbos gewonnene Streckenvorsprung bleibt bestehen. Normale
+Turbos behalten 1,2 Sekunden Laufzeit und das Ziel 1,65 × 335 km/h. Chevron
+bleibt bei zwei Sekunden und 2,31 × 335 km/h. Die KI-Turbobudgets und
+Wartezeiten sind unverändert; siehe [racecraft.md](racecraft.md).
 
-Prüfung am 10. Oktober: 21 Tempo-, 29 Kollisions-, 23 Mechanik- und 21
-Kapitelprüfungen bestehen. Alle sechs Rennen liefen mit einem per Tasteneingabe
-steuernden Browserfahrer vom Start bis zum Ergebnis durch, ohne Tempo- oder
-Positionsüberschreibungen. Rundenzeiten, Platzierung und Zieleinlauf bestanden;
-es gab keine JavaScript-Fehler. Der Fahrer gewann alle sechs Rennen. Das zeigt
-den Abschluss der Rennen; eine Bewertung der Schwierigkeit braucht zusätzlich
-Spieltests mit Menschen.
+## Hecktreffer bestrafen den auffahrenden Wagen
 
-Die anschließende Darstellungskorrektur besteht erneut die 21 Tempo- und
-23 Mechanikprüfungen sowie sechs Brückenprüfungen. Normalfahrt bei 335 und
-402 km/h und beide Turboeffekte wurden bei 390 und 480 Pixel Breite im Browser
-verglichen. Bei gleicher Simulationszeit bleibt das Strömungsmuster identisch;
-die Linien sind 0,8 Pixel dünn. Eine achtsekündige reguläre Durchfahrt durch
-die korrigierte Brücke erreichte auf der Cloud-Prüfumgebung rund 60 FPS ohne
-JavaScript-Fehler, mit 2,2 ms medianer Renderzeit und 4 ms beim 95. Perzentil.
+Bei einem Längsaufprall wird weiterhin Geschwindigkeit übertragen und eine
+Überlappung der Wagen verhindert. Den Verlust des Sauberfahr-Bonus erhält
+jedoch nur der hintere, auffahrende Wagen. Auch ein harter Treffer beendet
+nur dessen Turbo. Der vordere, gerammte Wagen behält Bonus und laufenden
+Turbo. Sein physischer Kontakt-Cooldown stoppt den sauberen Tempoaufbau nicht.
+Diese Regeln gelten für Spieler gegen KI in beiden Richtungen und für
+KI gegen KI.
 
-Die aktuelle Tempoprüfung beobachtet außerdem alle fünf Gegner bei 30, 60 und
-120 FPS und auf allen sechs Maps: 368,5 km/h nach fünf Sekunden ab der Basis,
-402 km/h nach zehn Sekunden und derselbe maximale Normalwert wie beim Spieler.
-Eine weitere Prüfung beobachtet den Verlust bei einer harten Baustellenbarriere.
+Im kontrollierten Fall „Spieler 400 km/h, Gegner hinten 402 km/h“ bleibt das
+Normaltempo des Spielers bei 400 km/h. Der Stoß schiebt ihn kurz auf 401 km/h.
+Die frühere zusätzliche Absenkung auf 377,25 km/h entfällt.
+
+Seitliche Kontakte und eigene Fehler behalten ihre abgestuften Strafen.
+Leichtes Streifen verliert 35 Prozent des aufgebauten Zusatztempos, ein
+stärkerer eigener Kontakt den ganzen Zusatz. Pylonen kosten außerhalb von
+Space Wave drei Prozent Geschwindigkeit und behalten den verdienten Bonus.
+Offroad baut den Bonus in drei Sekunden ab. Diese Verluste wirken auch auf
+die Normalfahrt-Referenz: Ein Turbo kann Schäden und Reibung nicht nachträglich
+wegzaubern. Eine Pause friert tatsächliches Tempo, Referenz und Timer ein;
+ein Neustart setzt den Referenzzustand zurück.
+
+## Prüfung
+
+`node scripts/assess-game.cjs normal-pace` vergleicht echte Physikläufe mit und
+ohne Turbo. Die Ausgangstempi 0, 330, 370 und 402 km/h werden bei
+30/60/120 FPS für Spieler und KI mit normalen Turbos und Chevron geprüft.
+Die Normalfahrt-Referenz muss durchgehend mit dem Kontrolllauf übereinstimmen;
+nach dem Ausrollen muss auch die tatsächliche Geschwindigkeit übereinstimmen.
+Weitere Fälle prüfen Turboverkettung, gleiche Motoren, Pylonen, Gatter,
+Offroad, leichte und harte Hecktreffer in beiden Richtungen, KI-Paare,
+Pause und Neustart. Alle 69 Fälle bestehen.
+
+Die vorhandenen Prüfungen für Tempo, Kollisionen, KI, Chevron, Steuerung,
+Eis/Dalí-Flächen und Umleitung bestehen ebenfalls. Vollständige Rennen
+werden separat protokolliert; die frühere Zielmarke Platz 2–3 ist ein
+Balancing-Vergleich und kein Beleg für gleiche physikalische Regeln.
