@@ -53,7 +53,7 @@ Die frühere zusätzliche Absenkung auf 377,25 km/h entfällt.
 Seitliche Kontakte und eigene Fehler behalten ihre abgestuften Strafen.
 Leichtes Streifen verliert 35 Prozent des aufgebauten Zusatztempos, ein
 stärkerer eigener Kontakt den ganzen Zusatz. Pylonen kosten außerhalb von
-Space Wave drei Prozent Geschwindigkeit und behalten den verdienten Bonus.
+Space Wave feste 5 km/h und behalten den verdienten Bonus.
 Offroad baut den Bonus in drei Sekunden ab. Diese Verluste wirken auch auf
 die Normalfahrt-Referenz: Ein Turbo kann Schäden und Reibung nicht nachträglich
 wegzaubern. Eine Pause friert tatsächliches Tempo, Referenz und Timer ein;

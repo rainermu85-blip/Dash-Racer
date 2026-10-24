@@ -1,7 +1,7 @@
 # Hütchen und Turbo-Pickups
 
-Orange-weiße Hütchen sind Spaßobjekte. Der bisherige Abzug von drei Prozent
-wurde für Spieler und Renngegner entfernt. Beim Kontakt fliegen und drehen
+Orange-weiße Hütchen sind Spaßobjekte mit einem leichten Abzug von festen
+5 km/h für Spieler und Renngegner. Beim Kontakt fliegen und drehen
 sie sich weiterhin und werden für die aktuelle Runde eingesammelt.
 Später werden sie wie bisher pro Runde zurückgesetzt. Auch der Bonus für
 fehlerfreie Fahrt bleibt erhalten. Energieobjekte in Space Wave behalten
@@ -20,6 +20,6 @@ Gatters bleiben erhalten.
 Die Browserprüfungen vergleichen identische Fahrzustände mit und ohne
 Kontakt bei 30, 60 und 120 FPS: Grundtempo, verdientes Spitzentempo sowie
 aktiver Turbo. Sie prüfen Tempo, Bonus, Ladung, Boostzustand und das
-wegfliegende Hütchen. Gegner erhalten ebenfalls keinen Hütchenabzug.
+wegfliegende Hütchen. Gegner verlieren ebenfalls 5 km/h pro Hütchen.
 Die vorhandenen Prüfungen für Pickups und Gatter bei Chevron-Tempo laufen
 zusätzlich unverändert weiter.

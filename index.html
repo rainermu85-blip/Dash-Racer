@@ -1061,7 +1061,7 @@ const COLLISION_X_RANGE = 0.24;
 const COLLISION_Z_RANGE = 90;
 const MAX_PHYSICS_STEP = 1 / 120;
 const TURBO_DURATION = 1.2;
-const PYLON_SPEED_PENALTY = .03;
+const PYLON_SPEED_PENALTY_KMH = 5;
 
 function initOpponents() {
   opponentContacts.clear();respawningPickups.clear();
@@ -1287,6 +1287,12 @@ function advanceNormalAndTurboSpeed(car,dt,base,offroad,limit=Infinity){
 function scaleCarSpeed(car,factor){
     car.speed*=factor;
     if(Number.isFinite(car.normalSpeed))car.normalSpeed*=factor;
+}
+function applyPylonPenalty(car){
+    // The HUD uses the player's shared 335 km/h scale, including for slower AI.
+    const loss=PYLON_SPEED_PENALTY_KMH*player.maxSpeed/335;
+    car.speed=Math.max(0,car.speed-loss);
+    if(Number.isFinite(car.normalSpeed))car.normalSpeed=Math.max(0,car.normalSpeed-loss);
 }
 function applyRearImpact(front,rear,closing,severity){
     front.speed=Math.max(0,front.speed+closing*.5);
@@ -11135,7 +11141,7 @@ function advanceRaceStep(dt){
         } else {
           // A single mild slowdown; keep the earned-speed bonus and turbo active.
           const impactSpeed=player.speed;
-          scaleCarSpeed(player,1-PYLON_SPEED_PENALTY);
+          applyPylonPenalty(player);
           playerTravel-=(impactSpeed-player.speed)*dt*(1-contact.time);
           activeFlyingPylons.push({
             x: W/2 + object.x * W * 0.55, y: H - 90,
@@ -11203,7 +11209,7 @@ function advanceRaceStep(dt){
         if (contact.type === 'pylon') {
           object.active = false;
           const impactSpeed=opp.speed;
-          scaleCarSpeed(opp,1-PYLON_SPEED_PENALTY);
+          applyPylonPenalty(opp);
           opponentTravel-=(impactSpeed-opp.speed)*dt*(1-contact.time);
           activeFlyingPylons.push({
             x: W/2 + object.x * W * 0.55, y: H * 0.65,

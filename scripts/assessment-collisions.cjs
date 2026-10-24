@@ -69,7 +69,7 @@ module.exports = async function runCollisions(browser, baseUrl) {
               const hit = sample(type);
               const pass = type === 'barrier'
                 ? hit.speed < control.speed * 0.4 && hit.bonus === 0 && !hit.boosting && hit.state === 'blinking' && hit.flash > 0
-                : !hit.active && Math.abs(hit.speed - control.speed * (type === 'pylon' ? .97 : 1)) < 1e-8 && (mode === 'earned' ? hit.bonus === control.bonus : hit.bonus <= control.bonus)
+                : !hit.active && Math.abs(hit.speed - (type === 'pylon' ? Math.max(0, control.speed - 5 * 3600 / 335) : control.speed)) < 1e-8 && (mode === 'earned' ? hit.bonus === control.bonus : hit.bonus <= control.bonus)
                   && hit.boosting === control.boosting && (type === 'pylon' ? hit.flying === 1 : hit.boosts === control.boosts + 1);
               record(`${type}-${mode}-${frameRate}fps`, pass, { control, hit });
             }
@@ -79,26 +79,43 @@ module.exports = async function runCollisions(browser, baseUrl) {
             const opp = addOpponent({ relZ: 1500, speed: 3400 });
             opp.z = 300 * SEGMENT_LENGTH + 30;
             let observedSpeed=opp.speed;const drops=[];
-            Object.defineProperty(opp,'speed',{get:()=>observedSpeed,set:value=>{if(value<observedSpeed-.01)drops.push(value/observedSpeed);observedSpeed=value;}});
+            Object.defineProperty(opp,'speed',{get:()=>observedSpeed,set:value=>{if(value<observedSpeed-.01)drops.push(observedSpeed-value);observedSpeed=value;}});
             const cone = { active: true, x: 0 };
             if (withCone) segments[300].pylon = cone;
             tick();
             return { speed: opp.speed, active: cone.active, flying: activeFlyingPylons.length, drops };
           };
           const control = opponentSample(false), hit = opponentSample(true);
-          record(`opponent-cone-loses-three-percent-${frameRate}fps`, !hit.active && hit.flying === 1 && hit.drops.length===1&&Math.abs(hit.drops[0]-.97)<1e-8&&control.drops.length===0, { control, hit });
+          record(`opponent-cone-loses-five-kmh-${frameRate}fps`, !hit.active && hit.flying === 1 && hit.drops.length===1&&Math.abs(hit.drops[0]-5*3600/335)<1e-8&&control.drops.length===0, { control, hit });
         }
 
         setup(1,120);player.speed=3600;
         player.z=300*SEGMENT_LENGTH+30-getPlayerContactDistance();
         segments[300].pylon={active:true,x:0};
         tick();const firstConeSpeed=player.speed;tick(2);
-        record('same-cone-penalizes-only-once',Math.abs(firstConeSpeed-3600*.97)<1e-8&&player.speed===firstConeSpeed&&activeFlyingPylons.length===1,{first:firstConeSpeed,after:player.speed});
+        record('same-cone-penalizes-only-once',Math.abs(firstConeSpeed-(3600-5*3600/335))<1e-8&&player.speed===firstConeSpeed&&activeFlyingPylons.length===1,{first:firstConeSpeed,after:player.speed});
         setup(1,120);player.speed=3600;
         player.z=300*SEGMENT_LENGTH+30-getPlayerContactDistance();
         segments[300].pylon={active:true,x:0};segments[301].pylon={active:true,x:0};
         tick(40);
-        record('two-cones-apply-two-small-penalties',!segments[300].pylon.active&&!segments[301].pylon.active&&Math.abs(player.speed-3600*.97*.97)<1e-8,{speed:player.speed});
+        record('two-cones-apply-two-small-penalties',!segments[300].pylon.active&&!segments[301].pylon.active&&Math.abs(player.speed-(3600-10*3600/335))<1e-8,{speed:player.speed});
+
+        // Fixed km/h loss also holds at crawling speed and for AI profiles with
+        // different speed limits; a hit can never produce a negative speed.
+        for(const role of ['player','opponent'])for(const kmh of [2,40,335,402,552.75]){
+          setup(1,120);
+          let car=player;
+          if(role==='opponent'){
+            player.z-=2000;car=addOpponent({relZ:1500,speed:kmh*3600/335});
+            car.z=300*SEGMENT_LENGTH+30;
+          }else player.z=300*SEGMENT_LENGTH+30-getPlayerContactDistance();
+          car.speed=kmh*3600/335;car.cleanSpeedBonus=Math.max(0,kmh/335-1);
+          car.isBoosting=kmh>402;car.boostTimer=1;resetNormalPace(car);
+          segments[300].pylon={active:true,x:0};
+          tick();const afterKmh=car.speed*335/3600;
+          record(`cone-fixed-loss-${role}-${kmh}kmh`,!segments[300].pylon.active&&Math.abs(afterKmh-Math.max(0,kmh-5))<1e-8&&car.normalSpeed>=0,
+            {beforeKmh:kmh,afterKmh,normalKmh:car.normalSpeed*335/3600});
+        }
 
         for (const frameRate of [30, 60, 120]) {
           for (const type of ['lightning', 'pylon', 'barrier']) {
