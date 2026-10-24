@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
 <title>Dash Racer</title>
 <style>
 @font-face{font-family:'Gravity Pixel';font-style:normal;font-weight:400;font-display:swap;src:url('data:font/ttf;base64,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') format('truetype')}
@@ -68,8 +68,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 @media(max-height:720px){#turboGauge{top:38%;padding:6px}#boostBarWrap{height:78px}}
 #overlay{position:absolute;inset:0;z-index:15;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.92)}
 #overlay.hide{display:none}
-.menu-panel{width:90%;max-width:430px;margin:auto;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:18px}
-#overlay{overflow-y:auto;padding:0 8px;background:radial-gradient(ellipse at 50% 35%,rgba(59,15,89,.97),rgba(5,2,13,.98));}
+.menu-panel{flex:none;width:90%;max-width:430px;margin:auto;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:18px}
+#overlay{overflow-y:auto;touch-action:pan-y;justify-content:flex-start;padding:0 8px;background:radial-gradient(ellipse at 50% 35%,rgba(59,15,89,.97),rgba(5,2,13,.98));}
 .menu-panel .otitle,#pauseOverlay .otitle{font-size:clamp(19px,5vw,25px);color:#f8e7ff;text-shadow:3px 3px 0 #7c2db2,0 0 20px #ff4fd8;letter-spacing:2px}
 .menu-kicker{font-size:6px;letter-spacing:2px;color:#fda8d5}
 .campaign-select{width:100%;text-align:left}
@@ -109,6 +109,44 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   66% {color:#b026ff;text-shadow:0 0 12px #b026ff}
   100% {color:#ff6b35;text-shadow:0 0 12px #ff6b35}
 }
+
+/* Arcade driver identity and the end-of-race classification. */
+.menu-footer{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#baa5ce;font-size:8px}
+.menu-footer strong{color:#e4f7ff;letter-spacing:3px;margin-left:7px}
+.menu-options{font:inherit;font-size:8px;letter-spacing:1px;padding:10px 12px;min-height:40px;border:1px solid #77618c;color:#d5b6f1;background:rgba(15,6,31,.6);cursor:pointer}
+.profile-panel,.result-panel{flex:none;width:100%;max-width:420px;margin:auto;padding:25px 20px;position:relative;border:1px solid #7d437f;border-top:3px solid #ff4fd8;border-radius:4px;background:linear-gradient(150deg,rgba(40,12,61,.97),rgba(9,5,24,.98));box-shadow:0 0 28px rgba(209,52,233,.18);text-align:center}
+.profile-panel{max-width:360px;padding:32px 24px}
+.menu-panel,.menu-panel *,.profile-panel,.profile-panel *,.result-panel,.result-panel *{touch-action:pan-y}
+.profile-panel .otitle,.result-panel .otitle{font-size:clamp(21px,6vw,29px);color:#f8e7ff;text-shadow:3px 3px 0 #7c2db2,0 0 20px #ff4fd8;letter-spacing:2px}
+.panel-kicker{color:#d19be3;font-size:8px;letter-spacing:1px;line-height:1.7;margin-bottom:12px}
+.profile-label{display:block;margin-top:24px;color:#a9e9f4;font-size:11px;letter-spacing:1px}
+.driver-slots{display:flex;justify-content:center;gap:17px;margin:20px 0 17px}
+.driver-char{display:block;width:58px;height:68px;padding:0;border:0;border-bottom:3px solid #cf51bb;border-radius:0;background:rgba(12,6,29,.35);font:32px 'Gravity Pixel',monospace;color:#f4e7ff;text-align:center;text-transform:uppercase;caret-color:#59e7ff;box-shadow:0 8px 12px -10px #ff4fd8;touch-action:manipulation!important}
+.driver-char:focus{outline:none;border-bottom-color:#62eeff;color:#b9f5ff;box-shadow:0 8px 14px -9px #5be5ff;text-shadow:0 0 10px rgba(91,229,255,.5)}
+.profile-help{font-size:9px;line-height:2;color:#b7a5cb;margin-bottom:24px}
+.profile-actions{display:flex;flex-direction:column;gap:12px}
+.profile-actions .obtn,.result-panel .obtn{width:100%;touch-action:manipulation;font-size:11px}
+.profile-actions .obtn:disabled{opacity:.35;cursor:default;box-shadow:none}
+.profile-back{font:9px 'Gravity Pixel',monospace;background:none;border:0;padding:10px;color:#b6a1c9;cursor:pointer;touch-action:manipulation!important}
+.result-course{margin:10px 0 21px;font-size:9px;line-height:1.7;letter-spacing:1px;color:#a9deed}
+.results-table{width:100%;border-collapse:separate;border-spacing:0 5px;text-align:left;font-variant-numeric:tabular-nums}
+.results-table th{padding:0 7px 7px;font-weight:normal;color:#a88fbb;font-size:8px;letter-spacing:.5px}
+.results-table th:last-child{text-align:right}
+.results-table td{padding:11px 7px;background:rgba(9,5,23,.48);font-size:12px;white-space:nowrap}
+.results-table tr.is-player td{background:rgba(55,190,221,.12);border-top:1px solid rgba(93,226,242,.6);border-bottom:1px solid rgba(93,226,242,.6)}
+.results-table tr.is-player td:first-child{border-left:2px solid #70eeff}
+.result-position{width:65px}
+.position-content{display:flex;align-items:center;gap:7px;color:#d8c4e9}
+.trophy-icon,.trophy-spacer{display:inline-block;width:21px;height:25px;flex:none}
+.result-driver{font-size:16px;letter-spacing:2px;text-shadow:1px 1px 0 #090411}
+.result-you{display:block;margin-top:5px;color:#81e7f2;font-size:6px;letter-spacing:1px}
+.result-time{text-align:right;color:#f3e5fa;font-size:12px;letter-spacing:0}
+.result-notes{display:flex;justify-content:space-between;gap:10px;margin:18px 3px 22px;color:#b7a3cc;font-size:8px;line-height:1.8}
+.result-notes strong{display:block;color:#ded0ed;font-size:10px;margin-top:5px;font-weight:normal}
+.results-loading{padding:35px 0;color:#b7dbe9;font-size:10px;line-height:2}
+.results-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:350px){.profile-panel,.result-panel{padding:22px 13px}.result-position{width:57px}.results-table td{padding:10px 5px}.result-driver{font-size:15px}.result-time{font-size:11px}.result-notes{font-size:7px}}
+@media(max-height:720px){.menu-panel{gap:13px;padding:20px 0}.profile-panel{padding:24px 18px}.profile-label{margin-top:17px}.driver-slots{margin:14px 0}.result-panel{padding-top:18px;padding-bottom:18px}.result-course{margin-bottom:12px}.results-table td{padding-top:8px;padding-bottom:8px}.result-notes{margin-top:12px;margin-bottom:15px}}
 </style>
 </head>
 <body>
@@ -167,6 +205,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   <div id="pauseOverlay" class="hide">
     <div class="otitle">PAUSED</div>
     <button class="obtn" id="resumeBtn" style="width: 220px;">RESUME</button>
+    <button class="obtn" id="pauseOptionsBtn" style="width:220px;border-color:#7cbbe2;color:#b6e9ff;box-shadow:0 0 12px rgba(80,180,220,.15)">OPTIONS</button>
     <button class="obtn" id="exitRaceBtn" style="width: 220px; border-color:#ff5ba5; color:#ff5ba5; box-shadow:0 0 16px rgba(255,91,165,.35); text-shadow:0 0 5px #ff5ba5;">EXIT RACE</button>
   </div>
   <div id="overlay" class="hide"></div>
@@ -1046,7 +1085,7 @@ function initOpponents() {
 // Limits are relative to the same 335 km/h baseline; there is no leader slowdown.
 const RACECRAFT={clearance:.34};
 function racePosition(car){return getRaceDistance(car)+(car===player?getPlayerContactDistance():0);}
-function racerFinished(car){return !!car.finished||(currentLevel===LEVEL_DREAM?car.z>=TRACK_LENGTH:car.lap>3);}
+function racerFinished(car){return car.finishTime!=null||!!car.finished||(currentLevel===LEVEL_DREAM?car.z>=TRACK_LENGTH:car.lap>3);}
 function raceSnapshot(){return [player,...opponents].filter(c=>!racerFinished(c)).map(car=>({car,x:car.x,z:racePosition(car),speed:car.speed,target:car.targetX??car.x}));}
 const respawningPickups=new Set();
 function collectRacePickup(object){object.active=false;object.respawn=1.5;respawningPickups.add(object);}
@@ -1422,6 +1461,8 @@ function bindTurboControl(element){
 bindTurboControl(turboButton);bindTurboControl(document.getElementById('boostContainer'));
 pauseButton.addEventListener('click',togglePause);
 document.addEventListener('keydown',e=>{
+  if(driverNameContext){if(e.key==='Escape'){e.preventDefault();if(driverNameContext!=='first')closeDriverName();}return;}
+  if(e.target.closest('input,textarea'))return;
   if(e.key==='Escape'){e.preventDefault();if(!e.repeat)togglePause();return;}
   if(!canDriveInput())return;
   if((e.key===' '||e.key==='Enter')&&e.target.closest('button'))return;
@@ -10348,7 +10389,7 @@ function updateHUD(ts) {
   const maxLaps = currentLevel === LEVEL_DREAM ? 1 : 3;
   const totalDist = maxLaps * TRACK_LENGTH;
   const pTotal = (player.lap - 1) * TRACK_LENGTH + player.z;
-  let ahead = opponents.filter(o => (o.lap - 1) * TRACK_LENGTH + o.z > pTotal).length; const place = ahead + 1;
+  const place=getRaceStandings().indexOf(player)+1;
   
   const placeStr = PLACE_NAMES[Math.min(place-1,5)];
   if (dom.place !== placeStr) { placeEl.textContent = placeStr; dom.place = placeStr; }
@@ -10461,6 +10502,66 @@ function bindLevelSelection() {
   }
 }
 
+const DRIVER_TAG_KEY='turboDash.playerTag';
+function cleanDriverTag(value){return String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);}
+function loadDriverTag(){try{const tag=localStorage.getItem(DRIVER_TAG_KEY)||'';return /^[A-Z0-9]{3}$/.test(tag.toUpperCase())?tag.toUpperCase():'';}catch{return '';}}
+let driverTag=loadDriverTag(),driverNameContext=null;
+function assignDriverNames(){
+    player.driverTag=driverTag;
+    const pool=['R3D','ICE','FOX','VPR','LUX','JET','NIX'].filter(tag=>tag!==driverTag);
+    opponents.forEach((car,i)=>car.driverTag=pool[i]);
+}
+function closeDriverName(){
+    const context=driverNameContext;document.activeElement?.blur();driverNameContext=null;
+    if(context==='pause'){
+        document.getElementById('overlay').classList.add('hide');
+        document.getElementById('pauseOverlay').classList.remove('hide');
+        document.getElementById('pauseOptionsBtn').focus();
+    }else showMainMenu();
+}
+function showDriverName(context='options'){
+    resetInputs();driverNameContext=context;
+    document.getElementById('introScreen').classList.add('hide');
+    document.getElementById('pauseOverlay').classList.add('hide');
+    const first=context==='first',ov=document.getElementById('overlay');ov.style.background='';
+    ov.innerHTML=`<form class="profile-panel" id="driverForm" aria-labelledby="driverHeading">
+      <div class="panel-kicker">${first?'MAKE YOUR MARK':'TURBO DASH'}</div>
+      <div class="otitle" id="driverHeading">${first?'DRIVER ID':'OPTIONS'}</div>
+      <label class="profile-label" for="driverChar0">YOUR NAME</label>
+      <div class="driver-slots" role="group" aria-label="Dreistelliger Fahrername">
+        ${[0,1,2].map(i=>`<input class="driver-char" id="driverChar${i}" type="text" inputmode="text" maxlength="1" pattern="[A-Za-z0-9]" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-label="Zeichen ${i+1} von 3" aria-describedby="driverHelp" value="${driverTag[i]||''}">`).join('')}
+      </div>
+      <div class="profile-help" id="driverHelp">3 CHARACTERS<br>A–Z / 0–9</div>
+      <div class="profile-actions"><button class="obtn menu-start" id="saveDriverBtn" type="submit">${first?'CONTINUE':'SAVE'}</button>
+      ${first?'':'<button class="profile-back" id="driverBackBtn" type="button">BACK</button>'}</div>
+    </form>`;
+    ov.classList.remove('hide');ov.scrollTop=0;
+    const fields=[0,1,2].map(i=>document.getElementById('driverChar'+i)),save=document.getElementById('saveDriverBtn');
+    const update=()=>{save.disabled=!fields.every(f=>/^[A-Z0-9]$/.test(f.value));};
+    const focus=i=>{fields[i].focus();fields[i].select();};
+    fields.forEach((field,i)=>{
+        field.addEventListener('input',()=>{field.value=cleanDriverTag(field.value).slice(0,1);update();if(field.value&&i<2)focus(i+1);});
+        field.addEventListener('focus',()=>field.select());
+        field.addEventListener('keydown',e=>{
+            if(e.key==='ArrowLeft'&&i>0){e.preventDefault();focus(i-1);}
+            else if(e.key==='ArrowRight'&&i<2){e.preventDefault();focus(i+1);}
+            else if(e.key==='Backspace'&&!field.value&&i>0){e.preventDefault();fields[i-1].value='';update();focus(i-1);}
+        });
+        field.addEventListener('paste',e=>{
+            e.preventDefault();const text=cleanDriverTag(e.clipboardData?.getData('text'));
+            for(let j=0;j<text.length&&i+j<3;j++)fields[i+j].value=text[j];
+            update();focus(Math.min(2,i+text.length));
+        });
+    });
+    document.getElementById('driverForm').onsubmit=e=>{
+        e.preventDefault();const tag=fields.map(f=>f.value).join('');if(!/^[A-Z0-9]{3}$/.test(tag))return;
+        driverTag=tag;try{localStorage.setItem(DRIVER_TAG_KEY,tag);}catch{}
+        assignDriverNames();closeDriverName();
+    };
+    const back=document.getElementById('driverBackBtn');if(back)back.onclick=closeDriverName;
+    update();focus(0);
+}
+
 function buildMainMenu() {
   const ov = document.getElementById('overlay');
   ov.style.background = '';
@@ -10468,10 +10569,12 @@ function buildMainMenu() {
     <div class="otitle">TURBO DASH</div><div class="menu-kicker">CHASE THE LAST LIGHT</div>
     ${renderLevelSelection()}
     <button class="obtn menu-start" id="startBtn">START RACE</button>
+    <div class="menu-footer"><span>DRIVER<strong>${driverTag||'---'}</strong></span><button class="menu-options" id="optionsBtn" type="button">OPTIONS</button></div>
     <div class="menu-hint">AUTO ACCELERATE · ◀ ▶ STEER · ⚡ BOOST</div>
   </div>`;
   bindLevelSelection();
   document.getElementById('startBtn').onclick = startRace;
+  document.getElementById('optionsBtn').onclick=()=>showDriverName('options');
   selectLevel(currentLevel);
 }
 
@@ -10522,8 +10625,11 @@ let state = 'intro'; let lastTime = 0, cntTimer = 0, cntVal = 3, resultTimer = n
 let lapTimes = [0, 0, 0]; let currentLapTime = 0; let bestLapTime = Infinity;
 let lastLapElapsed=null;
 let paused = false; let smoothedDt = 0.0166;
+let raceElapsed=0,playerLapStart=0,raceRunId=0,fieldCompletionTimer=null;
+
 
 function togglePause() {
+  if(driverNameContext)return;
   if ((state === 'playing' || state === 'countdown') && !paused) {
     paused = true;
     resetInputs();
@@ -10537,6 +10643,7 @@ function togglePause() {
 }
 
 function exitRace() {
+  raceRunId++;clearTimeout(fieldCompletionTimer);fieldCompletionTimer=null;driverNameContext=null;
   resetInputs();
   lastLapElapsed=null;
   clearTimeout(resultTimer); resultTimer = null;
@@ -10636,12 +10743,16 @@ function popNum(n) {
 }
 
 function startRace() {
+    if(!driverTag){showDriverName('first');return;}
+    raceRunId++;clearTimeout(fieldCompletionTimer);fieldCompletionTimer=null;driverNameContext=null;
+    raceElapsed=0;playerLapStart=0;
     resetInputs();
     curveCamera.look=0;
     lastLapElapsed=null;
     clearTimeout(resultTimer); resultTimer = null;
     initBackground(); buildSegments(); initOpponents();
-    initChapterTraffic();
+    initChapterTraffic();assignDriverNames();
+    player.finishTime=null;opponents.forEach(car=>car.finishTime=null);
     activeFlyingPylons = []; blinkingBarriers = []; confettiParticles = []; smokeParticles = []; activePopups = [];
     lapTimes = [0, 0, 0]; currentLapTime = 0; bestLapTime = Infinity;
     player.x = 0; player.z = 0; player.speed = 0; player.lap = 1; player.finished = false; player.collisionCooldown = 0; player.hitFlash = 0; player.steerLean = 0; player.pitch = 0; player.curveAheadSmooth = 0; player.fovOffset = 0;
@@ -10661,43 +10772,71 @@ function startRace() {
     updateControlUI();
 }
 
-function showResult(place) {
-  resetInputs();
-  state = 'result';
-  updateControlUI(); const ov = document.getElementById('overlay');
-  ov.style.background = 'rgba(0,0,0, 0.4)';
-  let placeStr = PLACE_NAMES[Math.min(place-1,5)];
-  
-  let color = '#8892b0';
-  let shadow = '#233554';
-  if (place === 1) { color = '#ffe066'; shadow = '#ff6b35'; }
-  else if (place === 2) { color = '#e2e8f0'; shadow = '#64748b'; }
-  else if (place === 3) { color = '#f59e0b'; shadow = '#b45309'; }
-
-  let resultHTML = `
-  <div style="background: rgba(10, 5, 20, 0.85); border: 2px solid #ff5ba5; box-shadow: 0 0 20px #ff5ba5, inset 0 0 20px #ff5ba5; border-radius: 8px; padding: 25px 35px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; position: relative; width: 90%; max-width: 440px;">
-      <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px); pointer-events: none; border-radius: 8px;"></div>
-      <div style="font-family: 'Gravity Pixel', monospace; font-size: 16px; color: #21d4fd; text-shadow: 0 0 10px #21d4fd; letter-spacing: 1px;">RACE COMPLETED</div>
-      <div style="font-family: 'Gravity Pixel', monospace; font-size: 10px; color: #ffffff;">YOU PLACED</div>
-      <div style="font-family: 'Gravity Pixel', monospace; font-size: 34px; color: ${color}; text-shadow: 0 0 24px ${color}, 4px 4px 0 ${shadow};">${placeStr}</div>
-      <div style="display: flex; flex-direction: column; gap: 6px; margin: 5px 0; font-family: 'Gravity Pixel', monospace; font-size: 9px; color: rgba(255,255,255,0.8); text-align: left; width: 100%;">
-          <div>LAP 1: ${formatTime(lapTimes[0])}</div>
-          ${currentLevel !== LEVEL_DREAM ? `
-          <div>LAP 2: ${formatTime(lapTimes[1])}</div>
-          <div>LAP 3: ${formatTime(lapTimes[2])}</div>
-          ` : ''}
-          <div style="color: #21d4fd; margin-top: 5px; font-size: 11px; text-shadow: 0 0 8px #21d4fd;">BEST: ${formatTime(bestLapTime)}</div>
-      </div>
-      
-      ${renderLevelSelection()}
-      
-      <button class="obtn" id="rb" style="background: rgba(255,91,165,0.2); border: 2px solid #ff5ba5; box-shadow: 0 0 15px #ff5ba5; font-family: 'Gravity Pixel', monospace; padding: 12px 24px; color: #ffffff; cursor: pointer; text-shadow: 1px 1px 0 #000; transition: all 0.2s; z-index: 2; font-size: 11px; width: 100%; margin-top: 5px;">RACE AGAIN</button>
-  </div>`;
-  
-  ov.innerHTML = resultHTML;
-  ov.classList.remove('hide'); 
-  document.getElementById('rb').onclick = startRace;
-  bindLevelSelection();
+function raceFinishDistance(){return TRACK_LENGTH*(currentLevel===LEVEL_DREAM?1:3);}
+function getRaceStandings(){
+    return [player,...opponents].map((car,index)=>({car,index})).sort((a,b)=>{
+        const at=a.car.finishTime,bt=b.car.finishTime;
+        if(at!=null&&bt!=null)return at-bt||a.index-b.index;
+        if(at!=null)return -1;if(bt!=null)return 1;
+        return getRaceDistance(b.car)-getRaceDistance(a.car)||a.index-b.index;
+    }).map(entry=>entry.car);
+}
+function recordRaceFinish(car,previous,start,dt){
+    const distance=getRaceDistance(car),finish=raceFinishDistance();
+    if(car.finishTime!=null||distance<finish)return;
+    const fraction=previous>=finish?0:clamp((finish-previous)/Math.max(.000001,distance-previous),0,1);
+    car.finishTime=start+dt*1000*fraction;
+}
+function formatRaceTime(ms){
+    const cs=Math.max(0,Math.floor(ms/10)),minutes=Math.floor(cs/6000),seconds=Math.floor(cs/100)%60;
+    return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(cs%100).padStart(2,'0')}`;
+}
+function trophyIcon(rank){
+    if(rank>3)return '<span class="trophy-spacer" aria-hidden="true"></span>';
+    const colors=[['#fff4b1','#ffc942','#b87712'],['#f7fcff','#c4cddd','#717e9c'],['#ffe1bb','#d18a59','#87502f']][rank-1];
+    const label=['Gold','Silver','Bronze'][rank-1],id='podium-metal-'+rank;
+    return `<svg class="trophy-icon" viewBox="0 0 24 28" role="img" aria-label="${label} trophy"><defs><linearGradient id="${id}" x2="1" y2="1"><stop stop-color="${colors[0]}"/><stop offset=".52" stop-color="${colors[1]}"/><stop offset="1" stop-color="${colors[2]}"/></linearGradient></defs><g fill="url(#${id})" stroke="${colors[2]}" stroke-width=".7"><path d="M5 3H1v5c0 5 4 7 8 7v-3C5 12 4 10 4 7V6h2zm14 0h4v5c0 5-4 7-8 7v-3c4 0 5-2 5-5V6h-2z"/><path d="M5 1h14v7c0 5-3 9-7 9S5 13 5 8zM10 17h4v6h-4zM6 24h12v3H6z"/></g><path d="M8 3h2v6l-2-1z" fill="${colors[0]}" opacity=".8"/></svg>`;
+}
+function renderScoreboard(){
+    const level=LEVELS.find(level=>level.id===currentLevel),ov=document.getElementById('overlay');
+    const rows=getRaceStandings().map((car,i)=>{
+        const you=car===player,time=car.finishTime??raceElapsed;
+        return `<tr class="${you?'is-player':''}" data-racer="${you?'player':'opp-'+car.oppIdx}" data-finish-ms="${time}" ${you?'aria-current="true"':''}>
+          <td class="result-position"><span class="position-content">${trophyIcon(i+1)}<span>${i+1}</span></span></td>
+          <td><span class="result-driver" style="color:${you?'#ffe066':car.color}">${car.driverTag||driverTag}</span>${you?'<span class="result-you">YOU</span>':''}</td>
+          <td class="result-time">${car.finishTime==null?'DNF ':''}${formatRaceTime(time)}</td></tr>`;
+    }).join('');
+    ov.innerHTML=`<section class="result-panel" aria-labelledby="resultsHeading">
+      <div class="panel-kicker">RACE COMPLETED</div><div class="otitle" id="resultsHeading">RESULTS</div>
+      <div class="result-course">${level.name}</div>
+      <table class="results-table"><caption class="results-sr">Race classification — total race time</caption><thead><tr><th scope="col">POS</th><th scope="col">DRIVER</th><th scope="col">TIME</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="result-notes"><span>YOUR TOTAL<strong>${formatRaceTime(player.finishTime??lapTimes.reduce((sum,t)=>sum+t,0))}</strong></span><span>BEST LAP<strong>${formatRaceTime(bestLapTime===Infinity?0:bestLapTime)}</strong></span></div>
+      <button class="obtn menu-start" type="button" id="continueBtn">CONTINUE</button>
+    </section>`;
+    ov.classList.remove('hide');ov.scrollTop=0;
+    document.getElementById('continueBtn').onclick=()=>{
+        raceRunId++;clearTimeout(resultTimer);resultTimer=null;clearTimeout(fieldCompletionTimer);fieldCompletionTimer=null;
+        state='intro';showMainMenu();updateControlUI();document.getElementById('startBtn').focus();
+    };
+}
+function showResult(){
+    if(state!=='playing'||!player.finished)return;
+    if(paused){resultTimer=setTimeout(()=>{resultTimer=null;showResult();},100);return;}
+    resetInputs();state='result';updateControlUI();
+    const token=raceRunId,ov=document.getElementById('overlay');ov.style.background='';
+    ov.innerHTML='<section class="result-panel"><div class="panel-kicker">RACE COMPLETED</div><div class="otitle">RESULTS</div><div class="results-loading" role="status">FINAL CLASSIFICATION…</div></section>';
+    ov.classList.remove('hide');ov.scrollTop=0;
+    const deadline=raceElapsed+360000;
+    const finishField=()=>{
+        fieldCompletionTimer=null;if(token!==raceRunId||state!=='result')return;
+        // Run the same racing physics offscreen, in small batches, to obtain
+        // actual crossings for cars still behind the player. No invented times.
+        const budget=performance.now()+10;
+        while(opponents.some(car=>car.finishTime==null)&&raceElapsed<deadline&&performance.now()<budget)advanceRaceStep(MAX_PHYSICS_STEP);
+        if(opponents.some(car=>car.finishTime==null)&&raceElapsed<deadline){fieldCompletionTimer=setTimeout(finishField,0);return;}
+        updateHUD(performance.now());renderScoreboard();
+    };
+    fieldCompletionTimer=setTimeout(finishField,0);
 }
 
 function getRaceDistance(car) {
@@ -10883,33 +11022,9 @@ function checkOpponentCollision(previousPlayer, previousOpponents, dt) {
   }
 }
 
-function loop(ts) {
-  if (lastTime === 0) lastTime = ts;
-  let rawDt = Math.min((ts - lastTime) / 1000, 0.05);
-  lastTime = ts;
-  
-  // Smooth dt using a moving average low-pass filter to completely eliminate visual micro-stuttering especially visible during acceleration
-  smoothedDt = smoothedDt * 0.82 + rawDt * 0.18;
-  const dt = smoothedDt;
-
-  if (paused) {
-    render(ts);
-    requestAnimationFrame(loop);
-    return;
-  }
-
-  if (state === 'countdown') {
-    cntTimer += dt;
-    if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
-    if (state === 'countdown') updateHighwayTrains(dt, true);
-  }
-
-  if (state === 'playing') {
-    // Render once, but advance contacts in short steps even on slower devices.
-    const steps = Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP - 1e-8));
-    const stepDt = dt / steps;
-    for (let step = 0; step < steps; step++) {
-    const dt = stepDt;
+function advanceRaceStep(dt){
+    const stepStart=raceElapsed,previousPlayerRaceZ=getRaceDistance(player);
+    raceElapsed+=dt*1000;const ts=raceElapsed;
     prepareNormalPace(player);opponents.forEach(prepareNormalPace);
     const previousPlayer = { x: player.x, z: getRaceDistance(player) + getPlayerContactDistance() };
     const previousOpponents = opponents.map(opp => ({ x: opp.x, z: getRaceDistance(opp) }));
@@ -11111,6 +11226,8 @@ function loop(ts) {
     // Entry transitions and opponent pushes must respect the road's walls too.
     applyRoadContact(0, (player.x - previousPlayer.x) / dt);
 
+    recordRaceFinish(player,previousPlayerRaceZ,stepStart,dt);
+    opponents.forEach((car,i)=>recordRaceFinish(car,previousOpponents[i].z,stepStart,dt));
     for (const opp of opponents) {
       if (opp.z >= TRACK_LENGTH) {
         if (currentLevel === LEVEL_DREAM) { if (opp.lap === 1) opp.lap++; }
@@ -11121,10 +11238,13 @@ function loop(ts) {
     // Finalize laps after contact resolution, so an impact at the line cannot
     // award a lap or finish a race before the movement is actually complete.
     if (player.z >= TRACK_LENGTH && !player.finished) {
+      const distance=getRaceDistance(player),boundary=player.lap*TRACK_LENGTH;
+      const fraction=previousPlayerRaceZ>=boundary?0:clamp((boundary-previousPlayerRaceZ)/Math.max(.000001,distance-previousPlayerRaceZ),0,1);
+      const lapEnd=stepStart+dt*1000*fraction,lapTime=lapEnd-playerLapStart;
       if (currentLevel !== LEVEL_DREAM) player.z -= TRACK_LENGTH;
-      lapTimes[player.lap - 1] = currentLapTime;
-      if (currentLapTime < bestLapTime) bestLapTime = currentLapTime;
-      currentLapTime = 0; player.lap++;
+      lapTimes[player.lap - 1] = lapTime;
+      if (lapTime < bestLapTime) bestLapTime = lapTime;
+      playerLapStart=lapEnd;currentLapTime=raceElapsed-lapEnd;player.lap++;
       if(player.lap===3&&currentLevel!==LEVEL_DREAM)lastLapElapsed=0;
       segments.forEach(s => {
         if (s.pylon) s.pylon.active = true;
@@ -11133,12 +11253,41 @@ function loop(ts) {
       });
       const maxLaps = currentLevel === LEVEL_DREAM ? 1 : 3;
       if (player.lap > maxLaps) {
-        player.finished = true;
+        player.finished = true;currentLapTime=0;
         const finalPlace = updateHUD(ts);
         spawnConfetti(finalPlace);
-        resultTimer = setTimeout(() => { resultTimer = null; showResult(finalPlace); }, 1500);
+        resultTimer = setTimeout(() => { resultTimer = null; showResult(); }, 1500);
       }
     }
+}
+
+function loop(ts) {
+  if (lastTime === 0) lastTime = ts;
+  let rawDt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  // Smooth dt using a moving average low-pass filter to completely eliminate visual micro-stuttering especially visible during acceleration
+  smoothedDt = smoothedDt * 0.82 + rawDt * 0.18;
+  const dt = smoothedDt;
+
+  if (paused) {
+    render(ts);
+    requestAnimationFrame(loop);
+    return;
+  }
+
+  if (state === 'countdown') {
+    cntTimer += dt;
+    if (cntTimer > 1) { cntTimer = 0; cntVal--; if (cntVal < 0) { state = 'playing'; document.getElementById('cntNum').classList.remove('pop'); } else { popNum(cntVal); } }
+    if (state === 'countdown') updateHighwayTrains(dt, true);
+  }
+
+  if (state === 'playing') {
+    // Render once, but advance contacts in short steps even on slower devices.
+    const steps = Math.max(1, Math.ceil(dt / MAX_PHYSICS_STEP - 1e-8));
+    const stepDt = dt / steps;
+    for (let step = 0; step < steps; step++) {
+      advanceRaceStep(stepDt);
     }
     updateHUD(ts);
   }
@@ -11198,6 +11347,8 @@ function loop(ts) {
 
 function showMainMenu() {
   document.getElementById('introScreen').classList.add('hide');
+  if(!driverTag){showDriverName('first');return;}
+  driverNameContext=null;state='intro';
   const ov = document.getElementById('overlay');
   buildMainMenu();
   ov.classList.remove('hide');
@@ -11236,8 +11387,9 @@ else if(introArt.complete)introArt.dispatchEvent(new Event('error'));
 buildMainMenu();
 document.getElementById('resumeBtn').onclick = togglePause;
 document.getElementById('exitRaceBtn').onclick = exitRace;
+document.getElementById('pauseOptionsBtn').onclick=()=>showDriverName('pause');
 
-document.getElementById('introBox').onclick = showMainMenu;
+document.getElementById('introBox').onclick = e=>{e.stopPropagation();showMainMenu();};
 document.getElementById('introScreen').onclick = (e) => {
   if (document.getElementById('introBox').classList.contains('show')) {
     showMainMenu();

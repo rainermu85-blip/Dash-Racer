@@ -1,0 +1,1083 @@
+{
+  "date": "2026-10-24",
+  "base_commit": "87bd8c60dc594a8f317dabe2e8097777e04a8dc1",
+  "method": "Headless Chromium; real touch/keyboard UI journeys and finish fixtures on six courses. Complete seeded races use input-only driving, skip rendering, and advance remaining opponents using the same physics. Screenshots inspected. No manual phone playtest.",
+  "checks": {
+    "scoreboard": {
+      "passed": 13,
+      "failed": 0,
+      "failures": []
+    },
+    "start": {
+      "passed": 8,
+      "failed": 0,
+      "failures": []
+    },
+    "controls": {
+      "passed": 26,
+      "failed": 0,
+      "failures": []
+    },
+    "edges": {
+      "passed": 6,
+      "failed": 0,
+      "failures": []
+    },
+    "normal-pace": {
+      "passed": 69,
+      "failed": 0,
+      "failures": []
+    },
+    "collisions": {
+      "passed": 61,
+      "failed": 0,
+      "failures": []
+    },
+    "racecraft-play": {
+      "passed": 20,
+      "failed": 1,
+      "failures": [
+        "reference-driver-averages-second-to-third"
+      ]
+    }
+  },
+  "ui_results": [
+    {
+      "name": "first-run-name-validation-storage-options",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "first": {
+          "fields": 3,
+          "underlined": true,
+          "disabled": true
+        },
+        "advanced": true,
+        "rejected": true,
+        "saved": "A7Z",
+        "returning": true,
+        "pasted": "B2D",
+        "backspace": true,
+        "canceled": true
+      },
+      "errors": []
+    },
+    {
+      "name": "pause-options-freeze-race-and-keyboard-isolation",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "countdown": true,
+        "before": {
+          "time": 16.66138887773493,
+          "z": 0.5238298066407209,
+          "x": 0
+        },
+        "after": {
+          "time": 16.66138887773493,
+          "z": 0.5238298066407209,
+          "x": 0,
+          "paused": true,
+          "keys": {
+            "left": false,
+            "right": false,
+            "boost": false
+          }
+        },
+        "returned": true,
+        "resumed": true
+      },
+      "errors": []
+    },
+    {
+      "name": "classification-all-drivers-level-1",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "times": [
+          119000,
+          119200,
+          120000.27774688846,
+          120812.47810383233,
+          121427.9678920981,
+          121971.4069515622
+        ],
+        "sorted": true,
+        "stable": true,
+        "names": [
+          "R3D",
+          "FOX",
+          "ICE",
+          "VPR",
+          "LUX",
+          "JET"
+        ],
+        "rows": 6,
+        "displayed": [
+          "01:59.00",
+          "01:59.20",
+          "02:00.00",
+          "02:00.81",
+          "02:01.42",
+          "02:01.97"
+        ],
+        "exact": true,
+        "own": "ICE",
+        "cups": [
+          "Gold trophy",
+          "Silver trophy",
+          "Bronze trophy"
+        ],
+        "total": 120000.27774688846,
+        "sum": 120000.27774688846,
+        "level": 1,
+        "overflow": false,
+        "menu": true,
+        "reset": true
+      },
+      "errors": []
+    },
+    {
+      "name": "classification-all-drivers-level-2",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "times": [
+          119000,
+          119200,
+          120000.27773866164,
+          120803.91433230544,
+          121386.84655124026,
+          121965.90262376612
+        ],
+        "sorted": true,
+        "stable": true,
+        "names": [
+          "R3D",
+          "FOX",
+          "ICE",
+          "VPR",
+          "LUX",
+          "JET"
+        ],
+        "rows": 6,
+        "displayed": [
+          "01:59.00",
+          "01:59.20",
+          "02:00.00",
+          "02:00.80",
+          "02:01.38",
+          "02:01.96"
+        ],
+        "exact": true,
+        "own": "ICE",
+        "cups": [
+          "Gold trophy",
+          "Silver trophy",
+          "Bronze trophy"
+        ],
+        "total": 120000.27773866164,
+        "sum": 120000.27773866164,
+        "level": 2,
+        "overflow": false,
+        "menu": true,
+        "reset": true
+      },
+      "errors": []
+    },
+    {
+      "name": "classification-all-drivers-level-3",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "times": [
+          119000,
+          119200,
+          120000.2777393544,
+          120807.78391464567,
+          121418.65238202809,
+          121973.5366319871
+        ],
+        "sorted": true,
+        "stable": true,
+        "names": [
+          "R3D",
+          "FOX",
+          "ICE",
+          "VPR",
+          "LUX",
+          "JET"
+        ],
+        "rows": 6,
+        "displayed": [
+          "01:59.00",
+          "01:59.20",
+          "02:00.00",
+          "02:00.80",
+          "02:01.41",
+          "02:01.97"
+        ],
+        "exact": true,
+        "own": "ICE",
+        "cups": [
+          "Gold trophy",
+          "Silver trophy",
+          "Bronze trophy"
+        ],
+        "total": 120000.2777393544,
+        "sum": 120000.2777393544,
+        "level": 3,
+        "overflow": false,
+        "menu": true,
+        "reset": true
+      },
+      "errors": []
+    },
+    {
+      "name": "classification-all-drivers-level-4",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "times": [
+          119000,
+          119200,
+          120000.27773467028,
+          120801.33168010434,
+          121416.15434868819,
+          121962.99604391187
+        ],
+        "sorted": true,
+        "stable": true,
+        "names": [
+          "R3D",
+          "FOX",
+          "ICE",
+          "VPR",
+          "LUX",
+          "JET"
+        ],
+        "rows": 6,
+        "displayed": [
+          "01:59.00",
+          "01:59.20",
+          "02:00.00",
+          "02:00.80",
+          "02:01.41",
+          "02:01.96"
+        ],
+        "exact": true,
+        "own": "ICE",
+        "cups": [
+          "Gold trophy",
+          "Silver trophy",
+          "Bronze trophy"
+        ],
+        "total": 120000.27773467028,
+        "sum": 120000.27773467028,
+        "level": 4,
+        "overflow": false,
+        "menu": true,
+        "reset": true
+      },
+      "errors": []
+    },
+    {
+      "name": "classification-all-drivers-level-5",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "times": [
+          119000,
+          119200,
+          120000.27773219596,
+          120635.33274080763,
+          121420.2891915973,
+          121963.03166443743
+        ],
+        "sorted": true,
+        "stable": true,
+        "names": [
+          "R3D",
+          "FOX",
+          "ICE",
+          "VPR",
+          "LUX",
+          "JET"
+        ],
+        "rows": 6,
+        "displayed": [
+          "01:59.00",
+          "01:59.20",
+          "02:00.00",
+          "02:00.63",
+          "02:01.42",
+          "02:01.96"
+        ],
+        "exact": true,
+        "own": "ICE",
+        "cups": [
+          "Gold trophy",
+          "Silver trophy",
+          "Bronze trophy"
+        ],
+        "total": 120000.27773219596,
+        "sum": 120000.27773219596,
+        "level": 5,
+        "overflow": false,
+        "menu": true,
+        "reset": true
+      },
+      "errors": []
+    },
+    {
+      "name": "classification-all-drivers-level-6",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "times": [
+          119000,
+          119200,
+          120000.27773206912,
+          120809.54319513054,
+          121422.37054761412,
+          121981.40936132417
+        ],
+        "sorted": true,
+        "stable": true,
+        "names": [
+          "R3D",
+          "FOX",
+          "ICE",
+          "VPR",
+          "LUX",
+          "JET"
+        ],
+        "rows": 6,
+        "displayed": [
+          "01:59.00",
+          "01:59.20",
+          "02:00.00",
+          "02:00.80",
+          "02:01.42",
+          "02:01.98"
+        ],
+        "exact": true,
+        "own": "ICE",
+        "cups": [
+          "Gold trophy",
+          "Silver trophy",
+          "Bronze trophy"
+        ],
+        "total": 120000.27773206912,
+        "sum": 120000.27773206912,
+        "level": 6,
+        "overflow": false,
+        "menu": true,
+        "reset": true
+      },
+      "errors": []
+    },
+    {
+      "name": "responsive-320x640",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "noOverflow": true,
+        "touchScroll": true,
+        "continued": true
+      },
+      "errors": []
+    },
+    {
+      "name": "responsive-480x360",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "noOverflow": true,
+        "touchScroll": true,
+        "continued": true
+      },
+      "errors": []
+    },
+    {
+      "name": "finish-timer-exit-cannot-reopen-results",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "stable": true,
+        "completionCanceled": true
+      },
+      "errors": []
+    },
+    {
+      "name": "same-step-finish-order-is-independent-of-array-order",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "order": [
+          4,
+          3,
+          2,
+          1,
+          0,
+          "player"
+        ],
+        "times": [
+          100000.28994652422,
+          100000.57387651446,
+          100000.84245530443,
+          100001.13257231684,
+          100001.41491771114,
+          100004.16597233794
+        ],
+        "allCrossed": true,
+        "sumMatches": true
+      },
+      "errors": []
+    },
+    {
+      "name": "blocked-storage-still-allows-name-and-play",
+      "pass": true,
+      "actual": {
+        "pass": true,
+        "playable": true
+      },
+      "errors": []
+    }
+  ],
+  "complete_races": [
+    {
+      "level": 1,
+      "player_rank": 2,
+      "classification": [
+        {
+          "tag": "FOX",
+          "time": 120439.54330006283
+        },
+        {
+          "tag": "ACE",
+          "time": 120668.69754771786
+        },
+        {
+          "tag": "R3D",
+          "time": 123576.8500313509
+        },
+        {
+          "tag": "ICE",
+          "time": 124566.54587204396
+        },
+        {
+          "tag": "VPR",
+          "time": 124782.61652039742
+        },
+        {
+          "tag": "LUX",
+          "time": 127139.70685735095
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 2,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 129575.30079219311
+        },
+        {
+          "tag": "R3D",
+          "time": 132896.41473984794
+        },
+        {
+          "tag": "FOX",
+          "time": 133064.93110139205
+        },
+        {
+          "tag": "ICE",
+          "time": 134406.42336941877
+        },
+        {
+          "tag": "VPR",
+          "time": 136150.36237766797
+        },
+        {
+          "tag": "LUX",
+          "time": 137062.30636788797
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 3,
+      "player_rank": 3,
+      "classification": [
+        {
+          "tag": "R3D",
+          "time": 128260.38133016723
+        },
+        {
+          "tag": "ICE",
+          "time": 128661.45149626395
+        },
+        {
+          "tag": "ACE",
+          "time": 129525.46706279975
+        },
+        {
+          "tag": "FOX",
+          "time": 131403.3350917322
+        },
+        {
+          "tag": "VPR",
+          "time": 132141.38011301254
+        },
+        {
+          "tag": "LUX",
+          "time": 133411.8825912862
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 4,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 125763.54317773548
+        },
+        {
+          "tag": "R3D",
+          "time": 126732.97780344625
+        },
+        {
+          "tag": "ICE",
+          "time": 128362.90457750249
+        },
+        {
+          "tag": "FOX",
+          "time": 129161.47708595157
+        },
+        {
+          "tag": "VPR",
+          "time": 131148.61794339673
+        },
+        {
+          "tag": "LUX",
+          "time": 134947.50569770433
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 5,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 100105.58791235999
+        },
+        {
+          "tag": "ICE",
+          "time": 101017.72989184207
+        },
+        {
+          "tag": "FOX",
+          "time": 105506.74030929792
+        },
+        {
+          "tag": "R3D",
+          "time": 107345.17634481593
+        },
+        {
+          "tag": "VPR",
+          "time": 109705.09852599842
+        },
+        {
+          "tag": "LUX",
+          "time": 110525.99058257777
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 6,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 90816.44182152278
+        },
+        {
+          "tag": "ICE",
+          "time": 103856.9484185607
+        },
+        {
+          "tag": "R3D",
+          "time": 104097.6387842911
+        },
+        {
+          "tag": "LUX",
+          "time": 106093.87084363247
+        },
+        {
+          "tag": "VPR",
+          "time": 106693.98973927597
+        },
+        {
+          "tag": "FOX",
+          "time": 107408.38713145688
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 1,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 122237.62853062614
+        },
+        {
+          "tag": "VPR",
+          "time": 122622.43597089234
+        },
+        {
+          "tag": "R3D",
+          "time": 122822.47048371336
+        },
+        {
+          "tag": "ICE",
+          "time": 123655.52507281063
+        },
+        {
+          "tag": "FOX",
+          "time": 124934.11042036668
+        },
+        {
+          "tag": "LUX",
+          "time": 127514.14580681415
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 2,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 129784.85921834965
+        },
+        {
+          "tag": "FOX",
+          "time": 131961.5882563815
+        },
+        {
+          "tag": "ICE",
+          "time": 133143.49023117995
+        },
+        {
+          "tag": "VPR",
+          "time": 134835.91722065464
+        },
+        {
+          "tag": "R3D",
+          "time": 135352.24266590347
+        },
+        {
+          "tag": "LUX",
+          "time": 139849.6499174017
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 3,
+      "player_rank": 3,
+      "classification": [
+        {
+          "tag": "FOX",
+          "time": 126573.60268394345
+        },
+        {
+          "tag": "R3D",
+          "time": 126917.73881553905
+        },
+        {
+          "tag": "ACE",
+          "time": 128273.55187843506
+        },
+        {
+          "tag": "ICE",
+          "time": 128633.19689865368
+        },
+        {
+          "tag": "LUX",
+          "time": 132009.8671777435
+        },
+        {
+          "tag": "VPR",
+          "time": 133113.0457952751
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 4,
+      "player_rank": 2,
+      "classification": [
+        {
+          "tag": "FOX",
+          "time": 124873.64338696853
+        },
+        {
+          "tag": "ACE",
+          "time": 125304.60998234735
+        },
+        {
+          "tag": "ICE",
+          "time": 127104.90041499195
+        },
+        {
+          "tag": "R3D",
+          "time": 128973.77964077827
+        },
+        {
+          "tag": "VPR",
+          "time": 129754.74220322809
+        },
+        {
+          "tag": "LUX",
+          "time": 133012.46634373686
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 5,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 100597.87237731904
+        },
+        {
+          "tag": "ICE",
+          "time": 103954.12096533764
+        },
+        {
+          "tag": "R3D",
+          "time": 106385.87632399364
+        },
+        {
+          "tag": "VPR",
+          "time": 106803.7760638615
+        },
+        {
+          "tag": "FOX",
+          "time": 109749.78242579506
+        },
+        {
+          "tag": "LUX",
+          "time": 115156.64491341884
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 6,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 101311.27055837553
+        },
+        {
+          "tag": "ICE",
+          "time": 103488.33837574578
+        },
+        {
+          "tag": "VPR",
+          "time": 104109.71901956934
+        },
+        {
+          "tag": "LUX",
+          "time": 106901.90812187185
+        },
+        {
+          "tag": "R3D",
+          "time": 107189.20729459933
+        },
+        {
+          "tag": "FOX",
+          "time": 107700.7089369717
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 1,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 120843.07344049845
+        },
+        {
+          "tag": "ICE",
+          "time": 121990.07605479492
+        },
+        {
+          "tag": "FOX",
+          "time": 122919.48194308004
+        },
+        {
+          "tag": "VPR",
+          "time": 124364.43465662899
+        },
+        {
+          "tag": "R3D",
+          "time": 124764.59743765132
+        },
+        {
+          "tag": "LUX",
+          "time": 128020.06178059563
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 2,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 131399.52060576767
+        },
+        {
+          "tag": "ICE",
+          "time": 132404.9077832361
+        },
+        {
+          "tag": "R3D",
+          "time": 133390.4948146592
+        },
+        {
+          "tag": "VPR",
+          "time": 134349.9713151268
+        },
+        {
+          "tag": "FOX",
+          "time": 137332.24955102883
+        },
+        {
+          "tag": "LUX",
+          "time": 138507.04169671636
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 3,
+      "player_rank": 4,
+      "classification": [
+        {
+          "tag": "FOX",
+          "time": 126524.40921203856
+        },
+        {
+          "tag": "ICE",
+          "time": 127028.71221766823
+        },
+        {
+          "tag": "R3D",
+          "time": 128210.00601621956
+        },
+        {
+          "tag": "ACE",
+          "time": 128492.9718467887
+        },
+        {
+          "tag": "VPR",
+          "time": 131642.68495447884
+        },
+        {
+          "tag": "LUX",
+          "time": 134655.3349301735
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 4,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 125462.5947537745
+        },
+        {
+          "tag": "R3D",
+          "time": 127827.93292982141
+        },
+        {
+          "tag": "FOX",
+          "time": 127932.38245200094
+        },
+        {
+          "tag": "VPR",
+          "time": 128603.80362422628
+        },
+        {
+          "tag": "ICE",
+          "time": 129910.40735790318
+        },
+        {
+          "tag": "LUX",
+          "time": 132522.86436825115
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 5,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 103079.18682517554
+        },
+        {
+          "tag": "FOX",
+          "time": 103348.35042122628
+        },
+        {
+          "tag": "R3D",
+          "time": 106978.45834165401
+        },
+        {
+          "tag": "ICE",
+          "time": 107713.61616610413
+        },
+        {
+          "tag": "VPR",
+          "time": 110811.48461659723
+        },
+        {
+          "tag": "LUX",
+          "time": 116657.86262490133
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 6,
+      "player_rank": 1,
+      "classification": [
+        {
+          "tag": "ACE",
+          "time": 100584.86368900053
+        },
+        {
+          "tag": "R3D",
+          "time": 104653.99951354343
+        },
+        {
+          "tag": "ICE",
+          "time": 105598.96755301509
+        },
+        {
+          "tag": "VPR",
+          "time": 106763.62859498395
+        },
+        {
+          "tag": "LUX",
+          "time": 107077.56021858266
+        },
+        {
+          "tag": "FOX",
+          "time": 107378.74210022947
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    },
+    {
+      "level": 4,
+      "player_rank": 2,
+      "classification": [
+        {
+          "tag": "R3D",
+          "time": 126273.40255083212
+        },
+        {
+          "tag": "ACE",
+          "time": 127232.10855041872
+        },
+        {
+          "tag": "ICE",
+          "time": 129286.07993780305
+        },
+        {
+          "tag": "FOX",
+          "time": 130198.51774864287
+        },
+        {
+          "tag": "VPR",
+          "time": 130745.54096899086
+        },
+        {
+          "tag": "LUX",
+          "time": 134947.50569770392
+        }
+      ],
+      "rank_stable": true,
+      "total_matches_laps": true
+    }
+  ],
+  "known_baseline_failure": {
+    "check": "reference-driver-averages-second-to-third",
+    "average_rank": 1.5,
+    "target": [
+      2,
+      3
+    ],
+    "unchanged_from": "normal-pace-parity-2026-10-24.json",
+    "note": "Existing AI balancing target remains unmet. This UI/timing change does not retune driving profiles or turbo rules."
+  },
+  "viewport_checks": [
+    [
+      320,
+      640
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      480,
+      360
+    ]
+  ],
+  "production_build": true
+}

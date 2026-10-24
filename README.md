@@ -60,6 +60,12 @@ Das Auto beschleunigt automatisch. Blitze geben Boost-Ladungen, maximal drei.
 Im Space-Level geben fünf Energiekugeln eine Ladung; Pfeilfelder auf der Strecke
 lösen einen zusätzlichen Turbo aus.
 
+Beim ersten Start wird ein dreistelliger Fahrername aus Buchstaben und Zahlen
+gespeichert; „Options“ in Levelauswahl und Pausemenü erlaubt Änderungen.
+Nach dem Rennen zeigt das Scoreboard alle Fahrer mit Gesamtzeiten und kleinen
+Pokalen für Platz 1–3. „Continue“ führt zur Levelauswahl zurück.
+[Namenseingabe, Zeitmessung und Browserprüfung](docs/race-scoreboard.md).
+
 Die fünf Gegner haben eigene Fahrerprofile, planen Überholmanöver gegen alle
 Rennwagen und sammeln Turbo-Ladungen. Führende Gegner behalten ihr eigenes
 Tempo. Turbo-Pickups kehren nach 1,5 Sekunden zurück; das neue Modell und seine

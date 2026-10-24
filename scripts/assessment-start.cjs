@@ -32,6 +32,8 @@ module.exports=async function runStart(browser,baseUrl){
     await page.screenshot({path:'/tmp/dash-start-after.png'});
     for(const viewport of[{width:320,height:640},{width:480,height:800}]){
       await page.setViewportSize(viewport);
+      // Viewport changes return before the browser dispatches resize.
+      await page.waitForFunction(()=>W===wrap.clientWidth&&H===wrap.clientHeight,null,{polling:20});
       const position=await page.evaluate(()=>{
         const art=introArt.getBoundingClientRect(),box=introBox.getBoundingClientRect();
         const artHeight=Math.min(art.height,art.width*introArt.naturalHeight/introArt.naturalWidth);

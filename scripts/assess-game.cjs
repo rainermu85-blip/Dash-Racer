@@ -5,8 +5,8 @@ const os = require('node:os');
 const path = require('node:path');
 
 const mode = process.argv[2] || 'edges';
-if (!['normal-pace', 'detour', 'edges', 'races', 'mechanics', 'collisions', 'chapter', 'pace', 'bridge', 'traffic', 'tunnel', 'portals', 'coast', 'start', 'controls', 'camera', 'racecraft', 'racecraft-play', 'fonts', 'cars', 'polish', 'chevrons', 'surfaces'].includes(mode)) {
-  console.error('Usage: node scripts/assess-game.cjs [normal-pace|detour|edges|races|mechanics|collisions|chapter|pace|bridge|traffic|tunnel|portals|coast|start|controls|camera|racecraft|racecraft-play|fonts|cars|polish|chevrons|surfaces]');
+if (!['scoreboard', 'normal-pace', 'detour', 'edges', 'races', 'mechanics', 'collisions', 'chapter', 'pace', 'bridge', 'traffic', 'tunnel', 'portals', 'coast', 'start', 'controls', 'camera', 'racecraft', 'racecraft-play', 'fonts', 'cars', 'polish', 'chevrons', 'surfaces'].includes(mode)) {
+  console.error('Usage: node scripts/assess-game.cjs [scoreboard|normal-pace|detour|edges|races|mechanics|collisions|chapter|pace|bridge|traffic|tunnel|portals|coast|start|controls|camera|racecraft|racecraft-play|fonts|cars|polish|chevrons|surfaces]');
   process.exit(2);
 }
 const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:3000';
@@ -19,6 +19,12 @@ async function main() {
     headless: true,
     args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'],
   });
+  // Existing mechanics fixtures represent a returning driver. First-run and
+  // storage behavior are exercised without preset data in scoreboard mode.
+  if(mode!=='scoreboard'){
+    const newPage=browser.newPage.bind(browser),origin=new URL(baseUrl).origin;
+    browser.newPage=options=>newPage({storageState:{cookies:[],origins:[{origin,localStorage:[{name:'turboDash.playerTag',value:'ACE'}]}]},...options});
+  }
   const results = [];
 
   async function run(name, fn, options = {}) {
@@ -73,7 +79,8 @@ async function main() {
         await start(page);
         await nearFinish(page);
         await page.waitForFunction(() => state === 'result');
-        await page.locator('#rb').tap();
+        await page.locator('#continueBtn').tap();
+        await page.locator('#startBtn').tap();
         await page.waitForFunction(() => state === 'playing');
         await page.keyboard.press('Escape');
         await page.locator('#exitRaceBtn').tap();
@@ -90,12 +97,13 @@ async function main() {
         const before = await page.evaluate(() => ({ z: player.z, keys: { ...keys }, paused }));
         await page.waitForTimeout(500);
         const after = await page.evaluate(() => ({ z: player.z, paused }));
-        return { pass: after.paused && before.z === after.z, before, after, kind: 'proposed-ux-requirement' };
+        return { pass: !after.paused && after.z > before.z && !Object.values(before.keys).some(Boolean), before, after };
       });
       await run('mobile-pause-control', async page => {
         await start(page);
         const visibleButtons = await page.locator('button:visible').allTextContents();
-        return { pass: visibleButtons.some(text => /pause/i.test(text)), visibleButtons, kind: 'proposed-ux-requirement' };
+        const pauseButton = page.getByRole('button', { name: 'Rennen pausieren' });
+        return { pass: await pauseButton.isVisible(), visibleButtons };
       });
       await run('pause-freezes-progress-and-time', async page => {
         await start(page);
@@ -112,8 +120,9 @@ async function main() {
         await start(page);
         await nearFinish(page);
         await page.waitForFunction(() => state === 'result');
+        await page.locator('#continueBtn').tap();
         await page.locator('#lvl6Btn').tap();
-        await page.locator('#rb').tap();
+        await page.locator('#startBtn').tap();
         await page.waitForFunction(() => state === 'playing');
         const actual = await page.evaluate(() => ({
           level: currentLevel, count: SEGMENT_COUNT, segments: segments.length,
@@ -165,7 +174,7 @@ async function main() {
       }, { viewport: { width: 480, height: 800 }, isMobile: false, hasTouch: false })));
     } else {
       // Fixed-frame mechanics fixtures live separately to make their scope explicit.
-      const runMechanics = require(mode === 'normal-pace' ? './assessment-normal-pace.cjs' : mode === 'detour' ? './assessment-detour.cjs' : mode === 'racecraft-play' ? './assessment-racecraft-play.cjs' : mode === 'surfaces' ? './assessment-surfaces.cjs' : mode === 'chevrons' ? './assessment-chevrons.cjs' : mode === 'polish' ? './assessment-polish.cjs' : mode === 'cars' ? './assessment-cars.cjs' : mode === 'fonts' ? './assessment-fonts.cjs' : mode === 'racecraft' ? './assessment-racecraft.cjs' : mode === 'camera' ? './assessment-camera.cjs' : mode === 'controls' ? './assessment-controls.cjs' : mode === 'start' ? './assessment-start.cjs' : mode === 'coast' ? './assessment-coast.cjs' : mode === 'portals' ? './assessment-portals.cjs' : mode === 'tunnel' ? './assessment-tunnel.cjs' : mode === 'traffic' ? './assessment-traffic.cjs' : mode === 'bridge' ? './assessment-bridge.cjs' : mode === 'pace' ? './assessment-pace.cjs' : mode === 'chapter' ? './assessment-chapter.cjs' : mode === 'collisions' ? './assessment-collisions.cjs' : './assessment-mechanics.cjs');
+      const runMechanics = require(mode === 'scoreboard' ? './assessment-scoreboard.cjs' : mode === 'normal-pace' ? './assessment-normal-pace.cjs' : mode === 'detour' ? './assessment-detour.cjs' : mode === 'racecraft-play' ? './assessment-racecraft-play.cjs' : mode === 'surfaces' ? './assessment-surfaces.cjs' : mode === 'chevrons' ? './assessment-chevrons.cjs' : mode === 'polish' ? './assessment-polish.cjs' : mode === 'cars' ? './assessment-cars.cjs' : mode === 'fonts' ? './assessment-fonts.cjs' : mode === 'racecraft' ? './assessment-racecraft.cjs' : mode === 'camera' ? './assessment-camera.cjs' : mode === 'controls' ? './assessment-controls.cjs' : mode === 'start' ? './assessment-start.cjs' : mode === 'coast' ? './assessment-coast.cjs' : mode === 'portals' ? './assessment-portals.cjs' : mode === 'tunnel' ? './assessment-tunnel.cjs' : mode === 'traffic' ? './assessment-traffic.cjs' : mode === 'bridge' ? './assessment-bridge.cjs' : mode === 'pace' ? './assessment-pace.cjs' : mode === 'chapter' ? './assessment-chapter.cjs' : mode === 'collisions' ? './assessment-collisions.cjs' : './assessment-mechanics.cjs');
       results.push(...await runMechanics(browser, baseUrl, output));
       fs.writeFileSync(path.join(output, `${mode}.json`), JSON.stringify(results, null, 2));
       for (const result of results) console.log(JSON.stringify(result));
