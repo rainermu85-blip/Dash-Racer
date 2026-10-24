@@ -6434,29 +6434,56 @@ function getMiamiPalmModel(seed) {
     const model={height,lean,stem,edge,rings,fronds,variant};miamiPalmModels.set(variant,model);return model;
 }
 
-function drawMiamiPalm(x,y,scale,seed,ts,night,coastal) {
+// Neon City alone gets colored crowns. Keep color stable across frames/laps
+// and use existing deterministic hashes so scenery cannot change race RNG.
+const NEON_CITY_PALM_PALETTES=[
+    {name:'pink',leaves:['#f933bc','#c72b97','#73174f','#fa60d0'],outline:'#3d1236',rib:'#92215f',tip:'#ffb7eb',glow:'#ff42d2'},
+    {name:'blue',leaves:['#398eff','#3473ce','#173970','#60aaff'],outline:'#14234f',rib:'#244e94',tip:'#a7dcff',glow:'#469eff'},
+    {name:'purple',leaves:['#b65cff','#8544bc','#46236e','#cd89ff'],outline:'#2d164d',rib:'#62328c',tip:'#e8c5ff',glow:'#be6aff'},
+    {name:'green',leaves:['#51ed71','#30b858','#175e3e','#7cf599'],outline:'#12382d',rib:'#25824d',tip:'#bdffd2',glow:'#60ff8c'},
+    {name:'yellow',leaves:['#ffda42','#c39d2c','#746222','#ffe778'],outline:'#42341d',rib:'#917528',tip:'#fff6bc',glow:'#ffe35d'}
+];
+// Loose neighborhoods favor pink/blue/purple, with green and yellow accents.
+const NEON_CITY_PALM_GROUPS=[0,2,1,0,1,2,3,0,1,4,2,0,3,2,1,2];
+function getNeonCityPalmPalette(seed){
+    const group=NEON_CITY_PALM_GROUPS[Math.floor(seed/72)%NEON_CITY_PALM_GROUPS.length];
+    if(polishHash(seed+452)<.68)return NEON_CITY_PALM_PALETTES[group];
+    const mix=polishHash(seed+921);
+    return NEON_CITY_PALM_PALETTES[mix<.27?0:mix<.54?1:mix<.80?2:mix<.93?3:4];
+}
+function drawNeonCityPalm(x,y,scale,seed,ts){
+    drawMiamiPalm(x,y,scale,seed,ts,.85,false,getNeonCityPalmPalette(seed));
+}
+
+function drawMiamiPalm(x,y,scale,seed,ts,night,coastal,neon=null) {
     if(scale*240<8)return;
     const model=getMiamiPalmModel(seed);
     beginChapterSprite(x,y,scale);
     ctx.fillStyle='rgba(12,8,25,.22)';ctx.beginPath();ctx.ellipse(8,0,25,4,.04,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=coastal?'#362033':'#59404a';ctx.fill(model.stem);
-    ctx.strokeStyle=coastal?'#b0517d':'#a46b78';ctx.lineWidth=2;ctx.stroke(model.edge);
-    ctx.strokeStyle=coastal?'#64364f':'#805761';ctx.lineWidth=1;ctx.stroke(model.rings);
+    ctx.fillStyle=neon?'#24112f':coastal?'#362033':'#59404a';ctx.fill(model.stem);
+    ctx.strokeStyle=neon?'#63396f':coastal?'#b0517d':'#a46b78';ctx.lineWidth=2;ctx.stroke(model.edge);
+    ctx.strokeStyle=neon?'#3e224d':coastal?'#64364f':'#805761';ctx.lineWidth=1;ctx.stroke(model.rings);
     ctx.translate(model.lean,-model.height);
     // A very small, slow breeze moves only the crown around its attachment.
     ctx.rotate(Math.sin(ts*.00045+model.variant*1.7)*.009);
     const day=coastal?['#103c39','#1b5147','#0e2c32','#246054']:['#29413b','#355344','#243837','#405746'];
     const dark=['#101b2b','#17303a','#0b1825','#203b40'];
+    const leaves=neon?neon.leaves:night>.65?dark:day;
     for(let i=0;i<model.fronds.length;i++){
-        const frond=model.fronds[i];ctx.fillStyle=night>.65?dark[i%4]:day[i%4];ctx.fill(frond.shape);
-        ctx.strokeStyle=night>.65?'#0a1220':'#10272b';ctx.lineWidth=.8;ctx.stroke(frond.shape);
-        ctx.strokeStyle=coastal?'#347765':'#6a8060';ctx.lineWidth=.75;ctx.stroke(frond.rib);
+        const frond=model.fronds[i];ctx.fillStyle=leaves[i%4];ctx.fill(frond.shape);
+        ctx.strokeStyle=neon?neon.outline:night>.65?'#0a1220':'#10272b';ctx.lineWidth=.8;ctx.stroke(frond.shape);
+        ctx.strokeStyle=neon?neon.rib:coastal?'#347765':'#6a8060';ctx.lineWidth=.75;ctx.stroke(frond.rib);
         if(i===1||i===5||i===7){
-            ctx.strokeStyle=coastal?(i===5?'#eb5ba8':'#44d4bc'):'#c2939b';
-            ctx.lineWidth=coastal?1.3:.8;ctx.stroke(frond.rim);
+            if(neon&&scale>.38){
+                // Keep glow confined to a few leaf edges, with no distant haze.
+                ctx.save();ctx.globalAlpha=.45;ctx.strokeStyle=neon.glow;ctx.lineWidth=1.2;
+                ctx.shadowColor=neon.glow;ctx.shadowBlur=3.5;ctx.stroke(frond.rim);ctx.restore();
+            }
+            ctx.strokeStyle=neon?neon.tip:coastal?(i===5?'#eb5ba8':'#44d4bc'):'#c2939b';
+            ctx.lineWidth=neon?1.15:coastal?1.3:.8;ctx.stroke(frond.rim);
         }
     }
-    ctx.fillStyle=night>.65?'#261a2d':'#49323a';
+    ctx.fillStyle=neon?'#321638':night>.65?'#261a2d':'#49323a';
     for(const [cx,cy,r]of[[-5,5,4],[3,7,4.5],[6,1,3]]){ctx.beginPath();ctx.ellipse(cx,cy,r,r*1.25,-.2,0,Math.PI*2);ctx.fill();}
     ctx.restore();
 }
@@ -9703,6 +9730,8 @@ function render(ts) {
             drawPalmTreeSprite(s.x,s.y,s.sc,s.segIdx,ts,currentProgressRatio);
         } else if (currentLevel === LEVEL_DREAM) {
             drawSnowTreeSprite(s.x, s.y, s.sc);
+        } else if(currentLevel===1){
+            drawNeonCityPalm(s.x,s.y,s.sc*.8,s.segIdx,chapterTime);
         } else {
             drawMiamiPalm(s.x,s.y,s.sc*.8,s.segIdx,chapterTime,.85,false);
         }
