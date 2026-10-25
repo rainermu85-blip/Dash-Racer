@@ -10529,6 +10529,19 @@ function closeDriverName(){
         document.getElementById('pauseOptionsBtn').focus();
     }else showMainMenu();
 }
+function showPauseOptions(){
+    if(!paused)return;
+    resetInputs();driverNameContext='pause';
+    document.getElementById('pauseOverlay').classList.add('hide');
+    const ov=document.getElementById('overlay');ov.style.background='';
+    ov.innerHTML=`<section class="profile-panel" aria-labelledby="pauseOptionsHeading">
+      <div class="otitle" id="pauseOptionsHeading">OPTIONS</div>
+      <div class="profile-actions" style="margin-top:48px"><button class="profile-back" id="pauseOptionsBackBtn" type="button">BACK</button></div>
+    </section>`;
+    ov.classList.remove('hide');ov.scrollTop=0;
+    document.getElementById('pauseOptionsBackBtn').onclick=closeDriverName;
+    document.getElementById('pauseOptionsBackBtn').focus();
+}
 function showDriverName(context='options'){
     resetInputs();driverNameContext=context;
     document.getElementById('introScreen').classList.add('hide');
@@ -11427,7 +11440,7 @@ else if(introArt.complete)introArt.dispatchEvent(new Event('error'));
 buildMainMenu();
 document.getElementById('resumeBtn').onclick = togglePause;
 document.getElementById('exitRaceBtn').onclick = exitRace;
-document.getElementById('pauseOptionsBtn').onclick=()=>showDriverName('pause');
+document.getElementById('pauseOptionsBtn').onclick=showPauseOptions;
 
 document.getElementById('introBox').onclick = e=>{e.stopPropagation();showMainMenu();};
 document.getElementById('introScreen').onclick = (e) => {

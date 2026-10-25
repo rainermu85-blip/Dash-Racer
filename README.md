@@ -61,7 +61,7 @@ Im Space-Level geben fünf Energiekugeln eine Ladung; Pfeilfelder auf der Streck
 lösen einen zusätzlichen Turbo aus.
 
 Beim ersten Start wird ein dreistelliger Fahrername aus Buchstaben und Zahlen
-gespeichert; „Options“ in Levelauswahl und Pausemenü erlaubt Änderungen.
+gespeichert; „Options“ in der Levelauswahl erlaubt Änderungen.
 Nach dem Rennen zeigt das Scoreboard alle Fahrer mit Gesamtzeiten und kleinen
 Pokalen für Platz 1–3. „Continue“ führt zur Levelauswahl zurück.
 [Namenseingabe, Zeitmessung und Browserprüfung](docs/race-scoreboard.md).

@@ -7,10 +7,12 @@ Pfeiltasten und Rückschritt werden unterstützt. Der Name wird unter
 `turboDash.playerTag` im lokalen Browser-Speicher abgelegt. Ist der Speicher
 gesperrt, bleibt der Name für die laufende Sitzung nutzbar.
 
-„Options“ in der Levelauswahl und im Pausemenü öffnet dieselbe Eingabe zum
-Ändern des Namens. Änderungen im Rennen halten das Spiel weiter pausiert;
-„Save“ und „Back“ führen zuerst zurück ins Pausemenü. Texteingaben lösen weder
-Lenkung noch Turbo aus. Gegner haben ebenfalls eindeutige dreistellige Namen,
+„Options“ in der Levelauswahl öffnet die Eingabe zum Ändern des Namens.
+Die Optionen im Pausemenü sind derzeit leer und für spätere Musik- und
+Effekteinstellungen vorgesehen. „Back“ oder Escape führt zum Pausemenü zurück;
+das Rennen bleibt dabei pausiert. Während des Rennens gibt es keine
+Namenseingabe. Texteingaben im Hauptmenü lösen weder Lenkung noch Turbo aus.
+Gegner haben ebenfalls eindeutige dreistellige Namen,
 passend zu ihren Wagenfarben. Die Namensvergabe verändert keinen Zufallswert
 der Gegner-KI.
 
