@@ -6551,7 +6551,7 @@ function getMiamiPalmModel(seed) {
     const model={height,lean,stem,edge,rings,fronds,variant};miamiPalmModels.set(variant,model);return model;
 }
 
-// Neon City alone gets colored crowns. Keep color stable across frames/laps
+// Neon City alone gets colored crowns and trunks. Keep color stable across frames/laps
 // and use existing deterministic hashes so scenery cannot change race RNG.
 const NEON_CITY_PALM_PALETTES=[
     {name:'pink',leaves:['#f933bc','#c72b97','#73174f','#fa60d0'],outline:'#3d1236',rib:'#92215f',tip:'#ffb7eb',glow:'#ff42d2'},
@@ -6577,9 +6577,9 @@ function drawMiamiPalm(x,y,scale,seed,ts,night,coastal,neon=null) {
     const model=getMiamiPalmModel(seed);
     beginChapterSprite(x,y,scale);
     ctx.fillStyle='rgba(12,8,25,.22)';ctx.beginPath();ctx.ellipse(8,0,25,4,.04,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=neon?'#24112f':coastal?'#362033':'#59404a';ctx.fill(model.stem);
-    ctx.strokeStyle=neon?'#63396f':coastal?'#b0517d':'#a46b78';ctx.lineWidth=2;ctx.stroke(model.edge);
-    ctx.strokeStyle=neon?'#3e224d':coastal?'#64364f':'#805761';ctx.lineWidth=1;ctx.stroke(model.rings);
+    ctx.fillStyle=neon?neon.leaves[1]:coastal?'#362033':'#59404a';ctx.fill(model.stem);
+    ctx.strokeStyle=neon?neon.leaves[3]:coastal?'#b0517d':'#a46b78';ctx.lineWidth=2;ctx.stroke(model.edge);
+    ctx.strokeStyle=neon?neon.leaves[2]:coastal?'#64364f':'#805761';ctx.lineWidth=1;ctx.stroke(model.rings);
     ctx.translate(model.lean,-model.height);
     // A very small, slow breeze moves only the crown around its attachment.
     ctx.rotate(Math.sin(ts*.00045+model.variant*1.7)*.009);
@@ -6600,7 +6600,7 @@ function drawMiamiPalm(x,y,scale,seed,ts,night,coastal,neon=null) {
             ctx.lineWidth=neon?1.15:coastal?1.3:.8;ctx.stroke(frond.rim);
         }
     }
-    ctx.fillStyle=neon?'#321638':night>.65?'#261a2d':'#49323a';
+    ctx.fillStyle=neon?neon.leaves[2]:night>.65?'#261a2d':'#49323a';
     for(const [cx,cy,r]of[[-5,5,4],[3,7,4.5],[6,1,3]]){ctx.beginPath();ctx.ellipse(cx,cy,r,r*1.25,-.2,0,Math.PI*2);ctx.fill();}
     ctx.restore();
 }
