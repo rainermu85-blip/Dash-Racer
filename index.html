@@ -1886,7 +1886,10 @@ function drawNeonPyramid(){
 function drawChromeOrbit(time){
   sceneRect(-40,-13,80,13,'#332747');scenePoly([[-29,-13],[-18,-68],[18,-68],[29,-13]],'#574367');
   const grad=ctx.createLinearGradient(0,-201,0,-68);grad.addColorStop(0,'#f0d7ff');grad.addColorStop(.4,'#8072bd');grad.addColorStop(.52,'#24153e');grad.addColorStop(.7,'#e78bda');grad.addColorStop(1,'#49568b');
-  sceneEllipse(0,-133,65,65,grad);ctx.strokeStyle='#41dfeb';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,-131,95,24,-.35,0,Math.PI*2);ctx.stroke();
+  const ring=(from,to)=>{ctx.strokeStyle='#41dfeb';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,-131,95,24,-.35,from,to);ctx.stroke();};
+  ring(Math.PI,Math.PI*2); // Far half is occluded by the opaque sphere.
+  sceneEllipse(0,-133,65,65,grad);
+  ring(0,Math.PI);
 }
 function drawPolishScene(s){
   if(s.sc<.025)return;
