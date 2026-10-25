@@ -1685,9 +1685,18 @@ function addPolishScenery(){
       visualHalfWidth:.71,permanent:true,state:'idle',timer:0,blinkCount:0};
     add(557,'detour_sign',.58,1.25);
     add(583,'roadworks',1.4,1.2);
-    for(const i of[563,584]){segments[i].sprite='beverly_villa';segments[i].spriteX=-1.85;}
-    // Entrances are now continuous parts of the projected property walls.
-    for(let i=570;i<HILLS_DETOUR.end;i++)if(['bougainvillea','beverly_villa'].includes(segments[i].sprite))segments[i].sprite=null;
+    // Individual plots replace the continuous apartment facades. Only one in
+    // five ordinary properties is an apartment; the narrow lane is all villas.
+    for(const seg of segments)if(seg.sprite==='beverly_villa')seg.sprite=null;
+    for(let i=570;i<HILLS_DETOUR.end;i++)if(segments[i].sprite==='bougainvillea')segments[i].sprite=null;
+    for(const side of[-1,1])for(let i=44+(side>0?17:0),plot=0;i<segments.length-30;i+=34,plot++){
+      if(i>=470&&i<590)continue; // Preserve the closure's advance sightline.
+      const grand=i>=590&&i<HILLS_DETOUR.end;
+      const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:serial%4;
+      add(i,'hills_estate',side*(grand?1.65:2.05),grand?1:.85,
+        {estateStyle:style,estatePalette:(plot+(side>0?1:0))%2,estateGrand:grand});
+      getHillsEstate(style,(plot+(side>0?1:0))%2,grand);
+    }
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
@@ -1894,10 +1903,12 @@ function drawChromeOrbit(time){
 }
 function drawPolishScene(s){
   if(s.sc<.025)return;
+  if(s.kind==='hills_estate'&&(s.x+200*s.sc<0||s.x-200*s.sc>W))return;
   ctx.save();if(s.clipY!==undefined){ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();}
   ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
   const k=s.kind,t=chapterTime,idx=s.segIdx;
-  if(k==='substation')drawSubstation();
+  if(k==='hills_estate')drawHillsEstate(s.estateStyle,s.estatePalette,s.estateGrand);
+  else if(k==='substation')drawSubstation();
   else if(k==='pine_grove')drawPineGrove(idx);
   else if(k==='observatory')drawObservatory();
   else if(k==='tundra_cairn'){
@@ -1921,6 +1932,84 @@ function drawPolishScene(s){
   else if(k==='chrome_orbit')drawChromeOrbit(t);
   else drawSunsetScene(k,idx,t);
   ctx.restore();
+}
+// Cache a small set of complete properties, rather than rebuilding floors and
+// windows for both sides of every road segment on every frame.
+const hillsEstateCache=new Map();
+function getHillsEstate(style=0,palette=0,grand=false){
+  const key=`${style}:${palette}:${grand?1:0}`;
+  let image=hillsEstateCache.get(key);
+  if(!image){
+    image=document.createElement('canvas');image.width=400;image.height=300;
+    const g=image.getContext('2d');g.translate(200,298);
+    const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+    const poly=(points,c)=>{g.fillStyle=c;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
+    const oval=(x,y,rx,ry,c)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
+    const wall=palette?'#efc9bd':'#f4d9bb',shade=palette?'#b8849e':'#c3958b',cream='#ffead1',glass='#46425b',roof=palette?'#a16981':'#b97071';
+    const window=(x,y,w,h)=>{rect(x,y,w,h,glass);rect(x+3,y+3,w-6,3,'#dd969e');for(let j=1;j<Math.ceil(w/23);j++)rect(x+j*w/Math.ceil(w/23),y,2,h,cream);};
+    const hip=(x,y,w,h)=>{poly([[x-9,y],[x+w*.22,y-h],[x+w*.77,y-h],[x+w+9,y]],roof);poly([[x-9,y],[x+w*.22,y-h],[x+w*.5,y-h],[x+w*.27,y]],'#ce8b83');rect(x-9,y,w+18,5,cream);};
+    // Terrace, lawn and a curved pool keep each building attached to its plot.
+    poly([[-185,0],[-175,-33],[153,-38],[185,0]],'#61755d');
+    poly([[-161,-1],[-146,-50],[132,-49],[156,-1]],'#c99ca0');
+    if(style===0){ // Low Spanish courtyard villa, asymmetric garage wing.
+      rect(-126,-132,168,98,wall);hip(-126,-132,168,39);
+      rect(42,-91,92,57,shade);hip(42,-91,92,27);
+      rect(-91,-184,67,52,cream);hip(-91,-184,67,26);
+      for(const x of[-105,-53]){oval(x+13,-97,13,17,glass);rect(x,-97,26,45,glass);rect(x+12,-110,2,53,shade);}
+      rect(1,-92,28,58,'#725567');rect(5,-88,20,50,'#b77d76');
+      rect(55,-76,65,41,'#655268');for(let j=0;j<4;j++)rect(58,-68+j*8,59,2,'#b899a2');
+      window(-78,-174,40,26);
+    }else if(style===1){ // 1980s glass villa: cantilever, roof deck, pergola.
+      rect(-139,-116,183,81,wall);rect(44,-83,99,48,shade);
+      rect(-69,-192,156,76,cream);rect(-78,-198,176,8,wall);
+      window(-58,-179,125,46);window(-127,-101,142,51);
+      rect(-145,-122,206,7,cream);rect(-145,-128,206,3,'#eda5bd');
+      for(let j=0;j<7;j++)rect(-137+j*29,-139,2,17,'#e4c8be');
+      rect(57,-76,72,41,'#67546a');for(let j=0;j<4;j++)rect(60,-69+j*8,66,2,'#bd9da3');
+      rect(94,-135,5,100,cream);rect(137,-135,5,100,cream);
+      for(let j=0;j<5;j++)rect(72+j*17,-143,7,10,'#b18496');rect(65,-135,86,5,cream);
+      rect(-35,-212,76,13,'#e5c6b8');
+    }else if(style===2){ // Palm Springs butterfly roof and sunken glass lounge.
+      rect(-139,-117,181,82,wall);rect(42,-151,92,116,shade);
+      poly([[-154,-144],[-34,-116],[57,-142],[57,-133],[-34,-107],[-154,-134]],cream);
+      rect(34,-156,111,7,cream);window(-126,-97,149,50);window(58,-137,58,63);
+      rect(55,-65,64,30,'#6d5365');rect(-17,-120,11,85,shade);
+      rect(-151,-47,201,5,cream);rect(-145,-39,188,4,'#a57985');
+    }else if(style===3){ // Formal mansion with wings and a single grand portico.
+      rect(-145,-104,98,69,shade);rect(47,-116,98,81,shade);
+      rect(-72,-181,144,146,wall);hip(-72,-181,144,31);
+      hip(-145,-104,98,22);hip(47,-116,98,25);
+      window(-131,-87,58,35);window(77,-99,52,35);
+      window(-52,-162,104,35);rect(-27,-98,54,63,glass);
+      rect(-66,-110,132,9,cream);
+      for(const x of[-58,45]){rect(x,-101,13,66,cream);rect(x-3,-40,19,6,cream);}
+      poly([[-76,-111],[0,-141],[76,-111]],cream);
+      poly([[-56,-115],[0,-136],[56,-115]],shade);
+    }else{ // Occasional small apartment building; deliberately not the default.
+      rect(-126,-214,252,179,wall);rect(-135,-222,270,9,cream);
+      for(let row=0;row<3;row++){
+        for(let j=0;j<4;j++)window(-109+j*58,-201+row*52,39,32);
+        rect(-135,-162+row*52,270,7,cream);rect(-135,-176+row*52,270,3,'#d5a9b5');
+        for(let j=0;j<13;j++)rect(-129+j*21,-176+row*52,2,14,cream);
+      }
+    }
+    if(grand){ // Taller approach homes have terraces, not repeated storeys.
+      rect(-157,-49,314,9,cream);rect(-150,-37,300,7,'#b48b90');
+      for(const x of[-158,147]){rect(x,-89,11,49,cream);oval(x+5,-97,15,18,'#536d53');}
+    }
+    oval(-83,-18,43,12,'#f5d2c5');oval(-83,-18,37,8,'#529da1');oval(-85,-20,29,3,'#9ee6db');
+    // A sloping drive, low garden walls and foliage leave air between houses.
+    poly([[33,0],[48,-34],[107,-34],[126,0]],'#a28292');
+    for(const x of[-172,-151,151,173]){oval(x,-30-(x%3)*3,12,18,'#426a55');rect(x-2,-18,4,17,'#82716a');}
+    rect(-181,-16,35,14,cream);rect(144,-16,39,14,cream);
+    for(const x of[-169,-155,155,173]){oval(x,-20,8,6,'#45755c');oval(x+4,-24,3,3,'#ff72b9');}
+    hillsEstateCache.set(key,image);
+  }
+  return image;
+}
+function drawHillsEstate(style=0,palette=0,grand=false){
+  ctx.save();ctx.scale(.8,grand?1.8:1.15);
+  ctx.drawImage(getHillsEstate(style,palette,grand),-200,-298);ctx.restore();
 }
 function drawSunsetHouse(seed,variant=null){
   const type=variant??Math.floor(polishHash(seed)*5),warm=['#f2c5ab','#e6bcbd','#f7d6b7','#bda2b5','#ddd8cd'][type];
@@ -2076,7 +2165,7 @@ function drawSunsetBackdrop(horizonY){
   for(let layer=0;layer<2;layer++)drawTile(bgOffset*(.24+layer*.13),horizonY,()=>{
     const points=[[0,0]];for(let j=0;j<=70;j++){const x=j/70*BG_W;points.push([x,-sunsetRidgeHeight(x,layer)]);}points.push([BG_W,0]);scenePoly(points,layer?'#52334f':'#875273');
     if(layer===1){
-      for(let j=0;j<18;j++){const x=430+j*55;ctx.save();ctx.translate(x,-sunsetRidgeHeight(x,layer)+1);ctx.scale(.13+(j%3)*.025,.13+(j%3)*.025);drawSunsetHouse(j+9);ctx.restore();}
+      for(let j=0;j<12;j++){const x=440+j*82;ctx.save();ctx.translate(x,-sunsetRidgeHeight(x,layer)+1);ctx.scale(.085+(j%3)*.012,.085+(j%3)*.012);drawHillsEstate(j%5===4?4:j%4,j%2,false);ctx.restore();}
       const label='SUNSET HILLS';ctx.textAlign='center';ctx.font='bold 19px sans-serif';
       [...label].forEach((letter,j)=>{const x=154+j*15.5,ground=-sunsetRidgeHeight(x,layer);sceneLine([[x,ground],[x,ground-12]],'#b093a1',1.3);ctx.fillStyle='#f4d2c7';ctx.fillText(letter,x,ground-10);});
     }
@@ -2096,48 +2185,8 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow){
     const block=Math.floor((index+(side<0?13:0))/period),variant=(block+(side<0?2:0))%4;
     const lane=side*1.50,h=narrow?.82+(block%3)*.09:.20;
     const a=(l,v)=>[x1+l*w1,y1-v*w1],b=(l,v)=>[x2+l*w2,y2-v*w2];
-    const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color,color);
-    const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color,color);
-    const warm=['#eac7b3','#d8c0c4','#f0d7b9','#cbbdcd'][variant];
-    // Closely spaced properties, with the grandest three-storey homes in the lane.
-    const front=side*(narrow?1.86:2.02),rear=front+side*.48;
-    const visible=Math.min(a(front,0)[0],b(front,0)[0],a(rear,0)[0],b(rear,0)[0])<W+4&&Math.max(a(front,0)[0],b(front,0)[0],a(rear,0)[0],b(rear,0)[0])>-4;
-    if(visible&&phase>=3&&phase<period-9){
-      const top=narrow?1.48+(block%3)*.22:.72+(block%3)*.17;
-      panel(front,0,top,warm);
-      if(variant===0||variant===3){
-        const rise=p=>.12+.28*(1-Math.abs((p-3)/(period-13)*2-1));
-        scenePoly([a(front-side*.04,top),a(front+side*.24,top+rise(phase)),b(front+side*.24,top+rise(phase+1)),b(front-side*.04,top)],variant===0?'#b67578':'#847382');
-        scenePoly([a(front+side*.24,top+rise(phase)),a(rear,top),b(rear,top),b(front+side*.24,top+rise(phase+1))],'#a98187');
-      }else band(front,rear,top,'#e5cbbb');
-      if(phase===3||phase===period-10){
-        const q=phase===3?a:b;
-        scenePoly([q(front,0),q(front,top),q(rear,top-.08),q(rear,0)],'#ab879e');
-      }
-      for(let row=narrow?.44:.22;w1>8&&row<top-.12;row+=narrow?.43:.27){
-        if(variant!==0)panel(front,row-.035,row,'#fff0d6');
-        if(phase%6<4){
-          panel(front,row+.06,Math.min(top-.07,row+(narrow?.29:.16)),phase%3?'#515069':'#cf9e91');
-          if(phase%2===0)panel(front,row+.06,row+.08,'#efb4b2');
-        }
-        if(variant===1){band(front-side*.12,front,row-.01,'#f5ddce');if(phase%3===0)panel(front-side*.12,row,row+.17,'#99798e');}
-      }
-      if(variant===0){
-        if(phase%5===0)panel(front-side*.035,0,top,'#f8e6cb');
-      }else if(variant===2&&phase>7&&phase<period-14){
-        panel(front+side*.10,top,top+.26,'#eee0d4');
-        panel(front+side*.095,top+.05,top+.19,'#54556e');
-        band(front+side*.07,rear,top+.28,'#fff0db');
-      }
-      if(narrow&&phase>=8&&phase<15){
-        const porch=front-side*.20,roof=variant%2?top*.91:top+.13;
-        panel(porch,.10,roof,'#f0d8c2');
-        panel(porch-side*.006,.18,roof-.12,'#514356');
-        if(phase%2===0)panel(porch-side*.015,.10,roof,'#ffe8cf');
-        band(porch-side*.07,front,roof+.045,'#ffe9d3');
-        panel(porch-side*.02,.16,.21,'#d5b6ab');
-      }
-    }
+    const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color);
+    const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color);
     const entrance=phase>=12&&phase<23;
     const wall=['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7'][variant];
     panel(lane,0,h,entrance?(variant===1?'#564857':'#655968'):wall);
@@ -2145,7 +2194,7 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow){
     if(entrance){
       // Gate, timber garage, recessed drive or formal metal entrance.
       if(variant===1){
-        for(let row=.045;row<h-.04;row+=.085)panel(lane-side*.007,row,row+.018,'#bca19d');
+        for(let row=.045;row<h-.04;row+=Math.max(.085,1.5/w1))panel(lane-side*.007,row,row+.018,'#bca19d');
         panel(lane-side*.01,h*.65,h*.79,'#403d50');
       }else if(variant===2){
         panel(lane,.0,h*.82,'#382f42');
@@ -2874,7 +2923,9 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
                   x2 + left * w2, y2 - height * w2, x2 + right * w2);
     };
     ctx.fillStyle = highway ? (isAlt ? '#10091c' : '#0b0715') : (isAlt ? '#50324c' : '#473045');
-    ctx.fillRect(0, y2 - 1, W, y1 - y2 + 1.5);
+    // Hills already has a continuous ground plane. Repainting a full-width
+    // strip here would overwrite the far asphalt at every antialiased join.
+    if(highway)ctx.fillRect(0,y2-1,W,y1-y2+1.5);
     if (highway) {
         // Two real carriageways with a broad central divider. Approaching
         // traffic uses the three left lanes, outside the race road.
@@ -2886,7 +2937,9 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
         band(-1.4, -1.14, '#9b6acd', 0.095);
     } else {
         // Pale curbs, warm pavement and landscaped verges rather than a void.
-        band(-1.65, 1.65, isAlt ? '#b77784' : '#ac7184');
+        // Sidewalks stay outside the asphalt; a full-width underlay leaked
+        // through polygon edges as horizontal pink seams across the road.
+        for(const side of[-1,1])band(side<0?-1.65:1.025,side<0?-1.025:1.65,isAlt?'#b77784':'#ac7184');
         band(-2.3, -1.65, '#394641'); band(1.65, 2.3, '#394641');
         band(-1.19, -1.08, isAlt ? '#ffd1b7' : '#eaad9f');
         band(1.08, 1.19, isAlt ? '#ffd1b7' : '#eaad9f');
@@ -2901,7 +2954,7 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
         if(index>=556&&index%5<2)strip(-.18,1.12,'#765f65');
     }
     if (isStart) drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt);
-    else band(-1, 1, tunnel ? (isAlt ? '#24201b' : '#211c18') : highway ? (isAlt ? '#171222' : '#120e1c') : (isAlt ? '#3b303f' : '#342b3b'));
+    else band(-1, 1, tunnel ? (isAlt ? '#24201b' : '#211c18') : highway ? (isAlt ? '#171222' : '#120e1c') : '#382e3e');
     if(currentLevel===LEVEL_HILLS&&index>=526&&index<554){
         // Amber entry stripe and a hatched taper lead into the separate left lane.
         band(-.98,-.94,'#ffd25d');
@@ -9549,7 +9602,7 @@ function render(ts) {
   }
   
   if (currentLevel !== LEVEL_SPACE) {
-    ctx.fillStyle = '#06030f';
+    ctx.fillStyle = currentLevel===LEVEL_HILLS?'#473045':'#06030f';
     ctx.fillRect(0, 0, W, H - horizonY);
   }
   
@@ -9788,8 +9841,9 @@ function render(ts) {
 
     for(const scene of seg.polishScenes||[]){
         const s=getCleanSpriteFromPool();s.type='polish_scene';s.kind=scene.kind;
+        s.estateStyle=scene.estateStyle;s.estatePalette=scene.estatePalette;s.estateGrand=scene.estateGrand;
         s.x=rx2+scene.x*p2.w;s.y=p2.y;
-        s.sc=Math.min(1.25,p2.scale*2800)*responsiveFactor*scene.size;
+        s.sc=scene.kind==='hills_estate'?p2.w*scene.size/200:Math.min(1.25,p2.scale*2800)*responsiveFactor*scene.size;
         s.side=scene.x<0?1:-1;s.roadHalf=p2.w;s.segIdx=segIdx;s.depth=n;s.clipY=segmentClipY;
         if(scene.dropX!==undefined)s.dripReach=Math.abs(scene.dropX-scene.x)*p2.w/s.sc;
     }
