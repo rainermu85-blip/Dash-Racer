@@ -874,7 +874,7 @@ function buildSegments() {
                     sprite = 'beverly_villa';
                     spriteX = (Math.floor(i / 56) % 2 ? -1 : 1) * 1.95;
                 } else if (i % 56 === 34) {
-                    sprite = 'bougainvillea'; spriteX = (Math.floor(i / 56) % 2 ? -1 : 1) * 1.55;
+                    sprite = 'bougainvillea'; spriteX = (Math.floor(i / 56) % 2 ? -1 : 1) * 1.33;
                 } else if (i % 24 === 8) {
                     sprite = 'beverly_palm'; spriteX = (Math.floor(i / 24) % 2 ? -1 : 1) * 1.65;
                 } else if (i % 64 === 44) {
@@ -1686,7 +1686,8 @@ function addPolishScenery(){
     add(557,'detour_sign',.58,1.25);
     add(583,'roadworks',1.4,1.2);
     for(const i of[563,584]){segments[i].sprite='beverly_villa';segments[i].spriteX=-1.85;}
-    for(const i of[590,632,688,733])add(i,'estate_gate',i%2?-1.04:1.04,.8);
+    // Entrances are now continuous parts of the projected property walls.
+    for(let i=570;i<HILLS_DETOUR.end;i++)if(['bougainvillea','beverly_villa'].includes(segments[i].sprite))segments[i].sprite=null;
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
@@ -2075,28 +2076,94 @@ function drawSunsetBackdrop(horizonY){
   for(let layer=0;layer<2;layer++)drawTile(bgOffset*(.24+layer*.13),horizonY,()=>{
     const points=[[0,0]];for(let j=0;j<=70;j++){const x=j/70*BG_W;points.push([x,-sunsetRidgeHeight(x,layer)]);}points.push([BG_W,0]);scenePoly(points,layer?'#52334f':'#875273');
     if(layer===1){
-      for(let j=0;j<6;j++){const x=460+j*145;ctx.save();ctx.translate(x,-sunsetRidgeHeight(x,layer)+1);ctx.scale(.16,.16);drawSunsetHouse(j+9);ctx.restore();}
+      for(let j=0;j<18;j++){const x=430+j*55;ctx.save();ctx.translate(x,-sunsetRidgeHeight(x,layer)+1);ctx.scale(.13+(j%3)*.025,.13+(j%3)*.025);drawSunsetHouse(j+9);ctx.restore();}
       const label='SUNSET HILLS';ctx.textAlign='center';ctx.font='bold 19px sans-serif';
       [...label].forEach((letter,j)=>{const x=154+j*15.5,ground=-sunsetRidgeHeight(x,layer);sceneLine([[x,ground],[x,ground-12]],'#b093a1',1.3);ctx.fillStyle='#f4d2c7';ctx.fillText(letter,x,ground-10);});
     }
   });
 }
 function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow){
-  const horizon=H*.5+player.pitch*1.5,limit=(CAMERA_DEPTH+player.fovOffset)/64*ROAD_WIDTH*W/2;
+  const limit=(CAMERA_DEPTH+player.fovOffset)/64*ROAD_WIDTH*W/2;
   if(w2>limit)return;
-  if(w1>limit){const r=limit/w1;x1=W/2+(x1-W/2)*r;y1=horizon+(y1-horizon)*r;w1=limit;}
-  const period=34,phase=index%period,block=Math.floor(index/period),height=narrow?.95:.20;
+  if(w1>limit){
+    // Clip along the actual projected edge, including its bend and road offset.
+    const t=(w1-limit)/(w1-w2);
+    x1+=(x2-x1)*t;y1+=(y2-y1)*t;w1=limit;
+  }
+  if(index>=500&&index<570)return; // Keep the advance warning and closure visible.
   for(const side of[-1,1]){
-    if(index>=500&&index<570)continue;
-    const lane=side*(narrow?1.11:1.50),h=height+(narrow?(block%3)*.10:0);
+    const period=narrow?30:34,phase=(index+(side<0?13:0))%period;
+    const block=Math.floor((index+(side<0?13:0))/period),variant=(block+(side<0?2:0))%4;
+    const lane=side*1.50,h=narrow?.82+(block%3)*.09:.20;
     const a=(l,v)=>[x1+l*w1,y1-v*w1],b=(l,v)=>[x2+l*w2,y2-v*w2];
-    const gate=phase>11&&phase<21;
-    const color=gate?(narrow?'#776878':'#54624f'):['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7'][block%4];
-    scenePoly([a(lane,0),a(lane,h),b(lane,h),b(lane,0)],color,color);
-    scenePoly([a(lane,h),a(lane+side*.045,h+.025),b(lane+side*.045,h+.025),b(lane,h)],'#fff0d4');
-    if(gate&&phase%2===0)sceneLine([a(lane,.03),a(lane,h-.04)],'#b59d98',Math.max(.7,w1*.007));
-    if(phase===0||phase===11||phase===21)scenePoly([a(lane-side*.025,0),a(lane-side*.025,h+.055),a(lane+side*.035,h+.055),a(lane+side*.035,0)],'#f8dfc6');
-    if(!narrow&&phase%3<2)scenePoly([a(lane,.20),a(lane,.30),b(lane,.30),b(lane,.20)],'#4b604b');
+    const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color,color);
+    const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color,color);
+    const warm=['#eac7b3','#d8c0c4','#f0d7b9','#cbbdcd'][variant];
+    // Closely spaced properties, with the grandest three-storey homes in the lane.
+    const front=side*(narrow?1.86:2.02),rear=front+side*.48;
+    const visible=Math.min(a(front,0)[0],b(front,0)[0],a(rear,0)[0],b(rear,0)[0])<W+4&&Math.max(a(front,0)[0],b(front,0)[0],a(rear,0)[0],b(rear,0)[0])>-4;
+    if(visible&&phase>=3&&phase<period-9){
+      const top=narrow?1.48+(block%3)*.22:.72+(block%3)*.17;
+      panel(front,0,top,warm);
+      if(variant===0||variant===3){
+        const rise=p=>.12+.28*(1-Math.abs((p-3)/(period-13)*2-1));
+        scenePoly([a(front-side*.04,top),a(front+side*.24,top+rise(phase)),b(front+side*.24,top+rise(phase+1)),b(front-side*.04,top)],variant===0?'#b67578':'#847382');
+        scenePoly([a(front+side*.24,top+rise(phase)),a(rear,top),b(rear,top),b(front+side*.24,top+rise(phase+1))],'#a98187');
+      }else band(front,rear,top,'#e5cbbb');
+      if(phase===3||phase===period-10){
+        const q=phase===3?a:b;
+        scenePoly([q(front,0),q(front,top),q(rear,top-.08),q(rear,0)],'#ab879e');
+      }
+      for(let row=narrow?.44:.22;w1>8&&row<top-.12;row+=narrow?.43:.27){
+        if(variant!==0)panel(front,row-.035,row,'#fff0d6');
+        if(phase%6<4){
+          panel(front,row+.06,Math.min(top-.07,row+(narrow?.29:.16)),phase%3?'#515069':'#cf9e91');
+          if(phase%2===0)panel(front,row+.06,row+.08,'#efb4b2');
+        }
+        if(variant===1){band(front-side*.12,front,row-.01,'#f5ddce');if(phase%3===0)panel(front-side*.12,row,row+.17,'#99798e');}
+      }
+      if(variant===0){
+        if(phase%5===0)panel(front-side*.035,0,top,'#f8e6cb');
+      }else if(variant===2&&phase>7&&phase<period-14){
+        panel(front+side*.10,top,top+.26,'#eee0d4');
+        panel(front+side*.095,top+.05,top+.19,'#54556e');
+        band(front+side*.07,rear,top+.28,'#fff0db');
+      }
+      if(narrow&&phase>=8&&phase<15){
+        const porch=front-side*.20,roof=variant%2?top*.91:top+.13;
+        panel(porch,.10,roof,'#f0d8c2');
+        panel(porch-side*.006,.18,roof-.12,'#514356');
+        if(phase%2===0)panel(porch-side*.015,.10,roof,'#ffe8cf');
+        band(porch-side*.07,front,roof+.045,'#ffe9d3');
+        panel(porch-side*.02,.16,.21,'#d5b6ab');
+      }
+    }
+    const entrance=phase>=12&&phase<23;
+    const wall=['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7'][variant];
+    panel(lane,0,h,entrance?(variant===1?'#564857':'#655968'):wall);
+    band(lane,lane+side*.055,h+.025,'#fff0d4');
+    if(entrance){
+      // Gate, timber garage, recessed drive or formal metal entrance.
+      if(variant===1){
+        for(let row=.045;row<h-.04;row+=.085)panel(lane-side*.007,row,row+.018,'#bca19d');
+        panel(lane-side*.01,h*.65,h*.79,'#403d50');
+      }else if(variant===2){
+        panel(lane,.0,h*.82,'#382f42');
+        if(phase%3===0)panel(lane-side*.01,.04,h*.8,'#9a8592');
+        if(phase===17)panel(lane-side*.015,.05,h*.80,'#e4bca5');
+      }else if(phase%2===0)panel(lane-side*.01,.03,h-.04,'#bda5a0');
+      if(phase===12||phase===22){
+        const q=phase===12?a:b;
+        scenePoly([q(lane-side*.045,0),q(lane-side*.045,h+.10),q(lane+side*.055,h+.10),q(lane+side*.055,0)],'#f9e4c9');
+      }
+      // Drive paving meets the sidewalk without a raised flower box in its way.
+      band(side*1.19,lane,0,'#bca1a1');
+    }else{
+      if(phase%7===0)panel(lane-side*.012,0,h+.035,'#d3b19f');
+      if(!narrow)panel(lane,.20,.31,'#4b604b');
+      if(phase%13<3)panel(lane-side*.01,h*.62,h+.04,'#496354');
+      if(phase%13===1)panel(lane-side*.015,h*.74,h*.85,'#de68a6');
+    }
   }
 }
 
@@ -2160,6 +2227,7 @@ function drawBeverlyPalm(x,y,scale,seed,ts) {
 }
 
 function drawBougainvillea(x, y, scale, seed) {
+    if(currentLevel===LEVEL_HILLS)scale*=.36;
     if (scale < 0.025) return;
     beginChapterSprite(x, y, scale);
     ctx.fillStyle = '#e1ad9c'; ctx.fillRect(-48, -14, 96, 14);

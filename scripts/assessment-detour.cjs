@@ -49,6 +49,20 @@ module.exports=async function assessDetour(browser,baseUrl,output){
     reset(60);const closure=segments[554].barrier;
     selectLevel(4);startRace();record('detour-is-sunset-only',!segments.some(s=>s.barrier?.permanent)&&hillsDetourCenter(554)===0);
     selectLevel(3);startRace();record('restart-restores-closure',segments[554].barrier!==closure&&segments[554].barrier.state==='idle');
+    // A clipped near edge must remain on the original projected wall line.
+    // Scaling about the screen center breaks this when the road is offset.
+    const polygon=scenePoly,painted=[];
+    const limit=(CAMERA_DEPTH+player.fovOffset)/64*ROAD_WIDTH*W/2;
+    const x1=-1400,x2=150,y1=3000,y2=500,w1=limit*3,w2=limit*.2;
+    scenePoly=(points,color)=>painted.push({points,color});
+    try{drawEstateWallSlice(x1,y1,w1,x2,y2,w2,600,true);}finally{scenePoly=polygon;}
+    const walls=painted.filter(p=>['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7','#655968','#564857'].includes(p.color));
+    const residual=walls.map(({points})=>{
+      const p=points[0],side=p[0]<0?-1:1;
+      const a=[x1+side*1.5*w1,y1],b=[x2+side*1.5*w2,y2];
+      return Math.abs((p[0]-a[0])*(b[1]-a[1])-(p[1]-a[1])*(b[0]-a[0]));
+    });
+    record('near-clipped-walls-stay-on-their-projected-edges',residual.length===2&&residual.every(r=>r<1e-5),{residual});
    }finally{render=draw;hitBarrier=hit;}
    return result;
   });
