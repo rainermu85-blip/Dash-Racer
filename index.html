@@ -9637,7 +9637,7 @@ function render(ts) {
 
   // Clip every cable once in world space before perspective division. This
   // also keeps the forward half visible after its mast has passed the camera.
-  const projectBridgeLine = (from, to) => {
+  const projectBridgeLine = (from, to, road) => {
     const nearZ = camZ + 64;
     if (from[2] < nearZ && to[2] < nearZ) return null;
     const cut = (a, b) => {
@@ -9646,8 +9646,17 @@ function render(ts) {
     };
     if (from[2] < nearZ) from = cut(from, to);
     if (to[2] < nearZ) to = cut(to, from);
-    const a = project3D(...from), b = project3D(...to);
-    return a && b ? { a, b, scale: Math.min(a.scale, b.scale) } : null;
+    // Both endpoints share this road slice's continuous bend. The far point
+    // may lie at the first undrawn segment, whose cached offset is unavailable.
+    const endpoint=point=>{
+      const scale=(CAMERA_DEPTH+player.fovOffset)/(point[2]-camZ);
+      const t=clamp((point[2]-road.worldZReal)/SEGMENT_LENGTH,0,1);
+      const bend=road.curveOffset+(road.curveOffsetEnd-road.curveOffset)*t;
+      return{x:W/2+scale*(point[0]-camX)*W/2+bend-lookOffset,
+        y:horizonY-scale*(point[1]-camY)*H/2,scale};
+    };
+    const a=endpoint(from),b=endpoint(to);
+    return {a,b,scale:Math.min(a.scale,b.scale)};
   };
 
   const segmentsToDraw = [];
@@ -9690,6 +9699,7 @@ function render(ts) {
     
     // Immer Kurven-Mathematik fortführen
     curveDX += seg.curve * 5; curveOffset += curveDX; curveDX *= 0.85;
+    seg.curveOffsetEnd=curveOffset;
 
     const rx2 = p2.x + curveOffset - lookOffset;
     if(coastal)rx1+=(curveOffset-seg.curveOffset)*(firstZ-segWorldZ)/SEGMENT_LENGTH;
@@ -9861,7 +9871,7 @@ function render(ts) {
         if (!road?.visibleInFrame) continue;
         const z1 = index * SEGMENT_LENGTH, z2 = z1 + SEGMENT_LENGTH;
         if (z2 <= camZ + 64) continue;
-        const lines = [-1, 1].map(side => projectBridgeLine(point(z1, side), point(z2, side))).filter(Boolean);
+        const lines = [-1, 1].map(side => projectBridgeLine(point(z1, side), point(z2, side), road)).filter(Boolean);
         if (!lines.length) continue;
         let stays = bridgeStays.get(index);
         if (!stays) { stays = []; bridgeStays.set(index, stays); }

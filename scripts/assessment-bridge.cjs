@@ -27,6 +27,19 @@ module.exports = async function runBridge(browser, baseUrl) {
         return strokes.map(s => ({ ...s, points: s.points.map(p => [...p]) }));
       };
       try {
+        // The far endpoint can be the first segment outside DRAW_DISTANCE.
+        // Its unavailable cache used to turn a short cable piece into a blue
+        // line stretching across the skyline on the approach to the bridge.
+        for(const lap of[1,2,3]){
+          player.lap=lap;let pieces=0,widest=0;
+          for(let index=700;index<=750;index+=2){
+            for(const stroke of view(index))for(let p=0;p+1<stroke.points.length;p+=2){
+              widest=Math.max(widest,Math.abs(stroke.points[p+1][0]-stroke.points[p][0]));pieces++;
+            }
+          }
+          record(`distant-cable-slices-do-not-span-skyline-lap-${lap}`,pieces>0&&widest<64,{pieces,widestPixels:widest});
+        }
+        player.lap=1;
         for (const [mast, other] of [[950, 1030], [1030, 950]]) {
           segments[other].isPillar = false;
           const before = view(mast - 1), after = view(mast + 1), departed = view(mast + 29);

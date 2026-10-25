@@ -1,5 +1,13 @@
 # Neon-City-Brücke
 
+Nachtrag vom 25. Oktober: Die blauen Querlinien auf der Anfahrt um Segment
+700–750 kamen von Seilstücken an der Sichtweitengrenze. Ihr ferner Endpunkt
+lag im ersten noch nicht projizierten Segment und erhielt deshalb einen
+Kurvenversatz von null. Ein kurzes Seilstück spannte sich so durch die Skyline.
+Das betraf alle drei Runden. Beide Endpunkte verwenden jetzt den interpolierten
+Versatz ihres eigenen Straßenabschnitts. Neue Prüfungen sichern diese Grenze
+in allen drei Runden ab; die Wasserfläche bleibt unverändert.
+
 10. Oktober 2026. Die beiden Türme bei Segment 950 und 1030, ihre Kreuzstreben,
 die cyanfarbenen Seilfächer und die breite Fahrbahn bleiben erhalten.
 
