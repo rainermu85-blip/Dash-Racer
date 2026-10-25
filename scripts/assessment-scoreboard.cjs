@@ -180,7 +180,8 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
       player.lap = 3; player.z = TRACK_LENGTH - 15; player.x = 0;
       player.speed = player.maxSpeed; resetNormalPace(player);
       opponents.forEach((o, i) => {
-        o.lap = 3; o.z = TRACK_LENGTH - (5 - i); o.x = o.targetX = -.7 + i * .35;
+        o.lap = 3; o.z = TRACK_LENGTH - (5 - i);
+        o.x = o.targetX = (i - 2) * (getCarCollisionRange(opponents[0], opponents[1]) + .01);
         o.speed = o.maxSpeed; resetNormalPace(o);
       });
       advanceRaceStep(1 / 120);

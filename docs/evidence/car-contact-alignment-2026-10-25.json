@@ -1,0 +1,176 @@
+{
+  "date": "2026-10-25",
+  "base_commit": "32f19acb7c54d18abb43f7ef6adf0016a2e34573",
+  "method": "Chromium fixtures measure actual drawn car anchors and silhouette edges, then exercise the real swept-contact solver. Screenshots inspected. Full races use input-only steering with rendering skipped. No manual phone playtest.",
+  "rules": {
+    "render_width_scale": 0.94,
+    "collision_edge_allowance": 0.02,
+    "projection_and_curve_position_shared": true,
+    "both_player_and_ai": true,
+    "ai_uses_body_clearance": true
+  },
+  "checks": {
+    "car-contacts": {
+      "passed": 33,
+      "failed": 0,
+      "failures": []
+    },
+    "cars": {
+      "passed": 27,
+      "failed": 0,
+      "failures": []
+    },
+    "chevrons": {
+      "passed": 66,
+      "failed": 0,
+      "failures": []
+    },
+    "racecraft": {
+      "passed": 72,
+      "failed": 0,
+      "failures": []
+    },
+    "collisions": {
+      "passed": 71,
+      "failed": 0,
+      "failures": []
+    },
+    "normal-pace": {
+      "passed": 69,
+      "failed": 0,
+      "failures": []
+    },
+    "pace": {
+      "passed": 21,
+      "failed": 0,
+      "failures": []
+    },
+    "traffic": {
+      "passed": 17,
+      "failed": 0,
+      "failures": []
+    },
+    "surfaces": {
+      "passed": 204,
+      "failed": 0,
+      "failures": []
+    },
+    "racecraft-play": {
+      "passed": 20,
+      "failed": 1,
+      "failures": [
+        "reference-driver-averages-second-to-third"
+      ]
+    },
+    "scoreboard-photo-finish": {
+      "passed": 1,
+      "failed": 0,
+      "failures": []
+    }
+  },
+  "rendered_contact_gap_pixels": {
+    "minimum_outside": -1.4304264814454086,
+    "maximum_outside": 0.7146318651336969,
+    "minimum_after_contact": -1.795685052873985,
+    "maximum_after_contact": 0.22557265727994036,
+    "cases": 30,
+    "viewports": [
+      [
+        320,
+        640
+      ],
+      [
+        390,
+        844
+      ],
+      [
+        480,
+        800
+      ]
+    ]
+  },
+  "full_races_completed": 19,
+  "all_finish_times_valid": true,
+  "known_balance_target": {
+    "name": "reference-driver-averages-second-to-third",
+    "pass": false,
+    "actual": {
+      "averageRank": 1.4444444444444444,
+      "ranks": [
+        {
+          "level": 1,
+          "rank": 1
+        },
+        {
+          "level": 2,
+          "rank": 3
+        },
+        {
+          "level": 3,
+          "rank": 2
+        },
+        {
+          "level": 4,
+          "rank": 1
+        },
+        {
+          "level": 5,
+          "rank": 1
+        },
+        {
+          "level": 6,
+          "rank": 1
+        },
+        {
+          "level": 1,
+          "rank": 1
+        },
+        {
+          "level": 2,
+          "rank": 1
+        },
+        {
+          "level": 3,
+          "rank": 3
+        },
+        {
+          "level": 4,
+          "rank": 1
+        },
+        {
+          "level": 5,
+          "rank": 2
+        },
+        {
+          "level": 6,
+          "rank": 1
+        },
+        {
+          "level": 1,
+          "rank": 1
+        },
+        {
+          "level": 2,
+          "rank": 1
+        },
+        {
+          "level": 3,
+          "rank": 2
+        },
+        {
+          "level": 4,
+          "rank": 1
+        },
+        {
+          "level": 5,
+          "rank": 2
+        },
+        {
+          "level": 6,
+          "rank": 1
+        }
+      ]
+    }
+  },
+  "production_build": true
+}

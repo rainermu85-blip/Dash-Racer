@@ -180,10 +180,11 @@ module.exports = async function runCollisions(browser, baseUrl) {
         const gentleLoss = player.maxSpeed - player.speed;
         record('gentle-rear-end-is-mild', gentleLoss > 0 && gentleLoss < 100 && gentle.speed > 3480, { loss: gentleLoss, opponentSpeed: gentle.speed });
 
-        setup(); const side = addOpponent({ x: 0.25, relZ: 0, speed: player.speed });
+        setup(); const side = addOpponent({ x: 0, relZ: 0, speed: player.speed });
+        side.x=side.baseX=side.targetX=getCarCollisionRange(player,side)+.01;
         keys.right = true; tick();
         const sideLoss = player.maxSpeed - player.speed;
-        record('sideswipe-is-milder-than-hard-rear-end', sideLoss > 0 && sideLoss < player.maxSpeed * 0.15 && side.x - player.x >= 0.24 - 1e-6 && side.contactAxis === 'x', { loss: sideLoss, gap: side.x - player.x, axis: side.contactAxis });
+        record('sideswipe-is-milder-than-hard-rear-end', sideLoss > 0 && sideLoss < player.maxSpeed * 0.15 && side.x - player.x >= getCarCollisionRange(player,side) - 1e-6 && side.contactAxis === 'x', { loss: sideLoss, gap: side.x - player.x, axis: side.contactAxis });
         const firstImpactSpeed = player.speed; tick(4);
         record('sustained-contact-does-not-repeat-impact', player.speed === firstImpactSpeed && player.collisionCooldown > 0, { firstImpactSpeed, speed: player.speed, cooldown: player.collisionCooldown });
         keys.right = false; keys.left = true; tick(24);
@@ -197,7 +198,8 @@ module.exports = async function runCollisions(browser, baseUrl) {
         record('separation-allows-a-new-impact', released && player.speed < firstImpactSpeed && side.contactAxis === 'x', { released, firstImpactSpeed, speed: player.speed, axis: side.contactAxis });
 
         setup(); player.steerLean = 1;
-        const stationarySide = addOpponent({ x: COLLISION_X_RANGE + .005, relZ: 0, speed: player.speed });
+        const stationarySide = addOpponent({ x: 0, relZ: 0, speed: player.speed });
+        stationarySide.x=getCarCollisionRange(player,stationarySide)+.005;
         stationarySide.targetX = stationarySide.x;
         tick();
         record('visual-lean-does-not-cause-impact', player.speed === player.maxSpeed && player.collisionCooldown === 0, { speed: player.speed, cooldown: player.collisionCooldown });
@@ -209,11 +211,11 @@ module.exports = async function runCollisions(browser, baseUrl) {
         const pinned = [];
         for (const direction of [-1, 1]) {
           setup(5); player.z = 2820 * SEGMENT_LENGTH; player.x = direction * 0.799;
-          const opponent = addOpponent({ x: direction * 0.5595, baseX: direction * 0.8, relZ: 0, speed: player.speed });
+          const opponent = addOpponent({ x: direction * (0.799-getCarCollisionRange(player,{})+.001), baseX: direction * 0.8, relZ: 0, speed: player.speed });
           tick();
-          pinned.push({ direction, x: player.x, gap: Math.abs(player.x - opponent.x), cooldown: player.collisionCooldown });
+          pinned.push({ direction, x: player.x, gap: Math.abs(getPlayerCollisionX() - opponent.x), required:getCarCollisionRange(player,opponent), cooldown: player.collisionCooldown });
         }
-        record('opponent-push-respects-glass-and-separates-cars', pinned.every(sample => Math.abs(sample.x) <= 0.8 && sample.gap >= 0.24 - 1e-6 && sample.cooldown > 0), pinned);
+        record('opponent-push-respects-glass-and-separates-cars', pinned.every(sample => Math.abs(sample.x) <= 0.8 && sample.gap >= sample.required - 1e-6 && sample.cooldown > 0), pinned);
 
         setup(); player.z = TRACK_LENGTH - 10 - getPlayerContactDistance();
         segments[0].lightning = { x: 0, active: true }; tick();

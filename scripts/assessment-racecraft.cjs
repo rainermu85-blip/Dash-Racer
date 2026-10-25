@@ -21,9 +21,9 @@ module.exports=async function runRacecraft(browser,baseUrl){
    try{
     reset();record('slipstream-state-and-functions-removed',[player,...opponents].every(c=>!Object.keys(c).some(k=>/^draft/i.test(k)))&&typeof DRAFT==='undefined'&&typeof drawDraftCorona==='undefined'&&typeof draftAudio==='undefined');
     for(const [level,fps]of [[1,30],[1,60],[1,120],[2,60],[3,60],[4,60],[5,60],[6,60]]){
-     reset(level,fps);const fast=opponents[2];opponents=[fast];fast.x=fast.baseX=fast.targetX=0;fast.z=racePosition(player)-600;Math.random=()=>0;tryOpponentTurbo(fast,1/60);Math.random=()=>.5;
+     reset(level,fps);const fast=opponents[2];opponents=[fast];fast.x=fast.baseX=fast.targetX=0;fast.z=racePosition(player)-600;let spent=false;
      let passed=false,max=0,changes=0,last=fast.targetX,contact=false;
-     tick(15,()=>{passed||=gap(fast)>300;max=Math.max(max,fast.speed);contact||=player.collisionCooldown>0;if(Math.abs(fast.targetX-last)>.2){changes++;last=fast.targetX;}});
+     tick(15,()=>{if(!spent&&Math.abs(fast.x-getPlayerCollisionX())>getCarCollisionRange(player,fast)+.06){Math.random=()=>0;tryOpponentTurbo(fast,1/60);Math.random=()=>.5;spent=fast.isBoosting;}passed||=gap(fast)>300;max=Math.max(max,fast.speed);contact||=player.collisionCooldown>0;if(Math.abs(fast.targetX-last)>.2){changes++;last=fast.targetX;}});
      record(`leader-can-be-passed-level-${level}-${fps}`,passed&&gap(fast)>300&&!contact&&max<=5940.01&&!('boosts' in fast),{passed,gap:gap(fast),max,contact,changes});
      record(`no-immediate-slowdown-after-pass-${level}-${fps}`,fast.speed>fast.maxSpeed*1.18&&changes<6,{speed:fast.speed,changes});
     }
