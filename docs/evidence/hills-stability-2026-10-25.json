@@ -1,0 +1,122 @@
+{
+  "baseline_commit": "ff1cf74be75ddf00d528cd11a3f4c013abe41dd4",
+  "method": "Real browser render at camera positions immediately before/after Hills road-segment edges; same moving cars and estate anchors. Fixed uphill view for floating-road pixels.",
+  "before": [
+    {
+      "name": "camera-crossings-cars-and-estates-390",
+      "pass": false,
+      "actual": {
+        "boundaries": 42,
+        "maxCarJump": 30.140356056837902,
+        "maxEstateJump": 36.19813854864711
+      }
+    },
+    {
+      "name": "uphill-has-no-floating-return-road",
+      "pass": false,
+      "actual": {
+        "palePixels": 1713
+      }
+    },
+    {
+      "name": "camera-crossings-cars-and-estates-480",
+      "pass": false,
+      "actual": {
+        "boundaries": 42,
+        "maxCarJump": 30.140356056837902,
+        "maxEstateJump": 36.19813996037186
+      }
+    }
+  ],
+  "after": [
+    {
+      "name": "camera-crossings-cars-and-estates-390",
+      "pass": true,
+      "actual": {
+        "boundaries": 42,
+        "maxCarJump": 0.0001313285906121564,
+        "maxEstateJump": 0.0007728433128022516
+      }
+    },
+    {
+      "name": "uphill-has-no-floating-return-road",
+      "pass": true,
+      "actual": {
+        "palePixels": 0
+      }
+    },
+    {
+      "name": "camera-crossings-cars-and-estates-480",
+      "pass": true,
+      "actual": {
+        "boundaries": 42,
+        "maxCarJump": 0.0001313285906121564,
+        "maxEstateJump": 0.0005720270164033536
+      }
+    }
+  ],
+  "current_checks": [
+    {
+      "name": "camera-crossings-cars-and-estates-390",
+      "pass": true
+    },
+    {
+      "name": "camera-lap-seam-390",
+      "pass": true
+    },
+    {
+      "name": "hills-contact-edges-follow-rendered-cars-390",
+      "pass": true
+    },
+    {
+      "name": "villas-modernism-and-apartment-cap-390",
+      "pass": true
+    },
+    {
+      "name": "uphill-has-no-floating-return-road",
+      "pass": true
+    },
+    {
+      "name": "offscreen-terrain-cannot-draw-screen-bars-390",
+      "pass": true
+    },
+    {
+      "name": "asphalt-without-transverse-seams-390",
+      "pass": true
+    },
+    {
+      "name": "physics-drive-visual-coverage-390",
+      "pass": true
+    },
+    {
+      "name": "camera-crossings-cars-and-estates-480",
+      "pass": true
+    },
+    {
+      "name": "camera-lap-seam-480",
+      "pass": true
+    },
+    {
+      "name": "hills-contact-edges-follow-rendered-cars-480",
+      "pass": true
+    },
+    {
+      "name": "villas-modernism-and-apartment-cap-480",
+      "pass": true
+    },
+    {
+      "name": "offscreen-terrain-cannot-draw-screen-bars-480",
+      "pass": true
+    },
+    {
+      "name": "asphalt-without-transverse-seams-480",
+      "pass": true
+    },
+    {
+      "name": "physics-drive-visual-coverage-1000",
+      "pass": true
+    }
+  ],
+  "visual_review": "Physics drive with steering inputs, screenshots at segments 490,530,555,580,620,650,700,750,800 in 390px and 1000px browser windows (game width capped at 480px).",
+  "device_limit": "Headless Chromium in the cloud, not a physical-phone performance measurement."
+}

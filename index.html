@@ -1692,11 +1692,12 @@ function addPolishScenery(){
     for(const side of[-1,1])for(let i=44+(side>0?17:0),plot=0;i<segments.length-30;i+=34,plot++){
       if(i>=470&&i<590)continue; // Preserve the closure's advance sightline.
       const grand=i>=590&&i<HILLS_DETOUR.end;
-      const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:serial%4;
+      const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:[0,1,2,3,5,0,1,3][serial%8];
       add(i,'hills_estate',side*(grand?1.65:2.05),grand?1:.85,
         {estateStyle:style,estatePalette:(plot+(side>0?1:0))%2,estateGrand:grand});
       getHillsEstate(style,(plot+(side>0?1:0))%2,grand);
     }
+    getHillsBackdropTile(0);getHillsBackdropTile(1);
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
@@ -1985,6 +1986,18 @@ function getHillsEstate(style=0,palette=0,grand=false){
       for(const x of[-58,45]){rect(x,-101,13,66,cream);rect(x-3,-40,19,6,cream);}
       poly([[-76,-111],[0,-141],[76,-111]],cream);
       poly([[-56,-115],[0,-136],[56,-115]],shade);
+    }else if(style===5){ // 80s modernism: interlocking cubes, ribbon glazing.
+      const concrete=palette?'#e5d4d0':'#f3e6d3',recess='#ad949e';
+      rect(-143,-108,188,73,concrete);rect(45,-148,97,113,recess);
+      rect(-72,-196,163,88,concrete);rect(-82,-203,183,8,cream);
+      window(-57,-178,130,46);window(-129,-94,154,45);
+      rect(62,-133,62,76,glass);rect(84,-133,3,76,cream);
+      rect(-11,-197,6,89,'#6b5367');rect(46,-151,101,6,cream);
+      rect(-147,-115,193,7,cream);rect(-147,-121,193,3,'#efa0b7');
+      rect(48,-51,91,6,cream);rect(-148,-42,296,7,cream);
+      rect(-143,-144,42,29,'#cc8b95');rect(-138,-140,32,21,'#e5b4a8');
+      for(let j=0;j<5;j++)rect(61,-63+j*5,64,2,'#a4929e');
+      rect(102,-193,27,45,concrete);rect(108,-185,15,28,'#655268');
     }else{ // Occasional small apartment building; deliberately not the default.
       rect(-126,-214,252,179,wall);rect(-135,-222,270,9,cream);
       for(let row=0;row<3;row++){
@@ -2158,18 +2171,39 @@ function drawSunsetScene(kind,seed,time){
   }
 }
 function sunsetRidgeHeight(x,layer){return 38+layer*13+Math.sin(x/BG_W*Math.PI*4+layer)*24+Math.cos(x/BG_W*Math.PI*6)*12;}
+function hillsDistanceVisibility(distance){
+  const t=clamp((distance-95)/60,0,1);return 1-t*t*(3-2*t);
+}
+const hillsBackdropTiles=new Map();
+function getHillsBackdropTile(layer){
+  if(hillsBackdropTiles.has(layer))return hillsBackdropTiles.get(layer);
+  const tile=document.createElement('canvas');tile.width=BG_W;tile.height=220;
+  const g=tile.getContext('2d');g.translate(0,220);
+  g.fillStyle=layer?'#52334f':'#875273';g.beginPath();g.moveTo(0,0);
+  for(let j=0;j<=140;j++){const x=j/140*BG_W;g.lineTo(x,-sunsetRidgeHeight(x,layer));}
+  g.lineTo(BG_W,0);g.closePath();g.fill();
+  if(layer===1){
+    for(let j=0;j<12;j++){
+      const x=440+j*82,scale=.085+(j%3)*.012;
+      g.save();g.translate(x,-sunsetRidgeHeight(x,layer)+1);g.scale(scale*.8,scale*1.15);
+      g.drawImage(getHillsEstate(j%5===4?4:j%6===2?5:j%4,j%2,false),-200,-298);g.restore();
+    }
+    // Letters, supports and houses share one fixed hillside bitmap. Font
+    // hinting cannot move individual letters as the panorama slides subpixel.
+    g.textAlign='center';g.font='bold 19px sans-serif';
+    [...'SUNSET HILLS'].forEach((letter,j)=>{
+      const x=154+j*15.5,ground=-sunsetRidgeHeight(x,layer);
+      g.strokeStyle='#b093a1';g.lineWidth=1.3;g.beginPath();g.moveTo(x,ground);g.lineTo(x,ground-12);g.stroke();
+      g.fillStyle='#f4d2c7';g.fillText(letter,x,ground-10);
+    });
+  }
+  hillsBackdropTiles.set(layer,tile);return tile;
+}
 function drawSunsetBackdrop(horizonY){
-  drawTile(bgOffset*.16,horizonY,()=>{
+  drawTile(bgOffset*.075,horizonY,()=>{
     for(let j=0;j<44;j++){const x=j*33,h=12+j*17%34;sceneRect(x,-h-8,24,h+8,'#71516f');for(let k=0;k<3;k++)sceneRect(x+4+k*6,-h,2,2,'#edb7a1');}
   });
-  for(let layer=0;layer<2;layer++)drawTile(bgOffset*(.24+layer*.13),horizonY,()=>{
-    const points=[[0,0]];for(let j=0;j<=70;j++){const x=j/70*BG_W;points.push([x,-sunsetRidgeHeight(x,layer)]);}points.push([BG_W,0]);scenePoly(points,layer?'#52334f':'#875273');
-    if(layer===1){
-      for(let j=0;j<12;j++){const x=440+j*82;ctx.save();ctx.translate(x,-sunsetRidgeHeight(x,layer)+1);ctx.scale(.085+(j%3)*.012,.085+(j%3)*.012);drawHillsEstate(j%5===4?4:j%4,j%2,false);ctx.restore();}
-      const label='SUNSET HILLS';ctx.textAlign='center';ctx.font='bold 19px sans-serif';
-      [...label].forEach((letter,j)=>{const x=154+j*15.5,ground=-sunsetRidgeHeight(x,layer);sceneLine([[x,ground],[x,ground-12]],'#b093a1',1.3);ctx.fillStyle='#f4d2c7';ctx.fillText(letter,x,ground-10);});
-    }
-  });
+  for(let layer=0;layer<2;layer++)drawTile(bgOffset*(layer?.17:.10),horizonY,()=>ctx.drawImage(getHillsBackdropTile(layer),0,-220));
 }
 function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow){
   const limit=(CAMERA_DEPTH+player.fovOffset)/64*ROAD_WIDTH*W/2;
@@ -2920,12 +2954,14 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     const band = (left, right, color, height = 0) => {
         ctx.fillStyle = color;
         trapezoid(x1 + left * w1, y1 - height * w1, x1 + right * w1,
-                  x2 + left * w2, y2 - height * w2, x2 + right * w2);
+                  x2 + left * w2, y2 - height * w2-(currentLevel===LEVEL_HILLS?1:0), x2 + right * w2);
     };
     ctx.fillStyle = highway ? (isAlt ? '#10091c' : '#0b0715') : (isAlt ? '#50324c' : '#473045');
-    // Hills already has a continuous ground plane. Repainting a full-width
-    // strip here would overwrite the far asphalt at every antialiased join.
+    // Hills terrain follows the projected road instead of painting a full
+    // screen-width rectangle. A remote, offscreen bend must not erase the
+    // hillside sign with a horizontal bar. Sidewalks stay outside the asphalt.
     if(highway)ctx.fillRect(0,y2-1,W,y1-y2+1.5);
+    else{band(-12,-1.65,'#52334f');band(1.65,12,'#52334f');}
     if (highway) {
         // Two real carriageways with a broad central divider. Approaching
         // traffic uses the three left lanes, outside the race road.
@@ -9602,7 +9638,7 @@ function render(ts) {
   }
   
   if (currentLevel !== LEVEL_SPACE) {
-    ctx.fillStyle = currentLevel===LEVEL_HILLS?'#473045':'#06030f';
+    ctx.fillStyle = currentLevel===LEVEL_HILLS?'#52334f':'#06030f';
     ctx.fillRect(0, 0, W, H - horizonY);
   }
   
@@ -9714,7 +9750,10 @@ function render(ts) {
 
   const segmentsToDraw = [];
 
-  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : DRAW_DISTANCE;
+  // A distant return bend cannot be represented as an isolated road ribbon
+  // above this hilly panorama. Fade its terrain and scenery together, before
+  // that remote section, with a world-distance fade rather than a hard cutoff.
+  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:DRAW_DISTANCE;
   const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
   const projectVehicle = (worldZ, laneX, seg, segmentZ, curveStart, curveEnd) => {
     if (worldZ - camZ < 64) return null;
@@ -9729,15 +9768,16 @@ function render(ts) {
     const lapOffset = (currentLevel !== LEVEL_DREAM && segIdx < startSegIdx) ? TRACK_LENGTH : 0; const segWorldZ = seg.worldZ + lapOffset;
     
     // Die Projektion muss gemacht werden
-    const coastal=currentLevel===2, nearZ=camZ+64;
-    if(coastal && segWorldZ+SEGMENT_LENGTH<=nearZ){
-      curveDX+=seg.curve*5;curveOffset+=curveDX;curveDX*=.85;
+    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS, nearZ=camZ+64;
+    if(clippedRoad && segWorldZ+SEGMENT_LENGTH<=nearZ){
+      const step=currentLevel===LEVEL_HILLS&&n===0?1-percent:1;
+      curveDX+=seg.curve*5*step;curveOffset+=curveDX*step;curveDX*=Math.pow(.85,step);
       continue;
     }
-    const firstZ=coastal?Math.max(segWorldZ,nearZ):segWorldZ;
-    const firstY=coastal?seg.worldY+seg.hillDelta*(firstZ-segWorldZ)/SEGMENT_LENGTH:seg.worldY;
-    let p1 = project(firstZ, 0, firstY, camZ, camX, camY, horizonY,coastal);
-    const p2 = project(segWorldZ + SEGMENT_LENGTH, 0, seg.worldY + seg.hillDelta, camZ, camX, camY, horizonY,coastal);
+    const firstZ=clippedRoad?Math.max(segWorldZ,nearZ):segWorldZ;
+    const firstY=clippedRoad?seg.worldY+seg.hillDelta*(firstZ-segWorldZ)/SEGMENT_LENGTH:seg.worldY;
+    let p1 = project(firstZ, 0, firstY, camZ, camX, camY, horizonY,clippedRoad);
+    const p2 = project(segWorldZ + SEGMENT_LENGTH, 0, seg.worldY + seg.hillDelta, camZ, camX, camY, horizonY,clippedRoad);
     
     // Near clipping of p1 (when the camera is in the middle of the first segment n = 0)
     if (!p1 && p2) {
@@ -9751,11 +9791,12 @@ function render(ts) {
     seg.curveOffset = curveOffset;
     
     // Immer Kurven-Mathematik fortführen
-    curveDX += seg.curve * 5; curveOffset += curveDX; curveDX *= 0.85;
+    const curveStep=currentLevel===LEVEL_HILLS&&n===0?1-percent:1;
+    curveDX+=seg.curve*5*curveStep;curveOffset+=curveDX*curveStep;curveDX*=Math.pow(.85,curveStep);
     seg.curveOffsetEnd=curveOffset;
 
     const rx2 = p2.x + curveOffset - lookOffset;
-    if(coastal)rx1+=(curveOffset-seg.curveOffset)*(firstZ-segWorldZ)/SEGMENT_LENGTH;
+    if(clippedRoad)rx1+=(curveOffset-seg.curveOffset)*(firstZ-segWorldZ)/SEGMENT_LENGTH;
 
     // Speichern der Frame-Daten am Segment für 3D-Brückenprojektion und Kabelclipping
     seg.visibleInFrame = true;
@@ -9792,7 +9833,8 @@ function render(ts) {
       p2Scale: p2.scale,
       isPillar: seg.isPillar,
       segIdx: segIdx,
-      isVisible: isVisible
+      isVisible: isVisible,
+      visibility:currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
     });
 
     if (seg.isPillar) {
@@ -10254,6 +10296,7 @@ function render(ts) {
   // Interleave Road Segments and Sprites back-to-front (Perfect painter's algorithm depth occlusion)
   for (let i = segmentsToDraw.length - 1; i >= 0; i--) {
     const roadSeg = segmentsToDraw[i];
+    if(roadSeg.visibility<1){ctx.save();ctx.globalAlpha*=roadSeg.visibility;}
     
     // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
     drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
@@ -10275,6 +10318,7 @@ function render(ts) {
         drawSprite(s);
       }
     }
+    if(roadSeg.visibility<1)ctx.restore();
   }
 
   const playerPose=getPlayerRenderPose(),playerScreenX=playerPose.x;
@@ -11021,7 +11065,8 @@ function getPlayerCollisionX(){
   // Match the renderer's continuous road bend at the car's contact plane.
   for(let n=0;n<=Math.ceil(distance/SEGMENT_LENGTH)+1;n++){
     const z=first+n*SEGMENT_LENGTH,seg=getSeg(z),before=offset;
-    delta+=seg.curve*5;offset+=delta;delta*=.85;
+    const step=currentLevel===LEVEL_HILLS&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
+    delta+=seg.curve*5*step;offset+=delta*step;delta*=Math.pow(.85,step);
     if(z+SEGMENT_LENGTH>=worldZ){
       const bend=before+(offset-before)*clamp((worldZ-z)/SEGMENT_LENGTH,0,1);
       return player.x*.82+(getPlayerRenderPose().x-W/2+curveCamera.look*W-bend)/roadHalf;

@@ -24,14 +24,15 @@ Wohnstraße liegt nun außerhalb der Umleitung; die beiden geparkten Autos
 bleiben echte Hindernisse. Andere Strecken, Kamera und Höhenprofil bleiben
 unverändert.
 
-## Dichtere Villenstraße
+## Einzelne Villengrundstücke
 
-Seit 25. Oktober stehen entlang der Strecke beidseitig engere Folgen einzelner
-Grundstücke. Der Hintergrund enthält zusätzlich 18 statt sechs Hanghäuser.
-Die Umleitung erhält die höchsten Fassaden mit Vorhallen, Säulen, Balkonen,
-gestaffelten Obergeschossen und verschiedenen Dächern. Zwischen den Häusern
-bleiben sichtbare Grundstücksabstände. Tore, Garagen und Einfahrten werden
-als Teile der projizierten Mauer gezeichnet, statt als überlappende Schilder.
+Entlang der Strecke stehen 60 einzelne Grundstücke, darunter zehn kleine
+Apartmenthäuser (rund 17 Prozent). Spanische Innenhofvillen, Palm-Springs-Dächer,
+klassische Anwesen und moderne 80er-Villen wechseln sich ab. Versetzte Kuben,
+Flachdächer und Fensterbänder ergänzen die moderne Architektur. In der engen
+Umleitung stehen ausschließlich Villen, mit höheren Terrassen hinter den Mauern.
+Die Grundstücksgrafiken werden beim Streckenstart vorbereitet und wiederverwendet.
+Tore, Garagen und Einfahrten bleiben Teile der projizierten Grundstücksmauern.
 
 Die Mauern stehen bei 1,50 lokalen Straßenkoordinaten hinter dem Gehweg; dessen
 innere Kante liegt bei 1,19. Die Blumenkübel stehen bei 1,33, sind auf eine zum
@@ -58,3 +59,38 @@ Einfahrt und Wohnstraße in Hoch- und Querformat.
 Die Bilder wurden visuell geprüft. Das sind automatisierte Browserfahrten,
 keine manuellen Handy-Playtests. Build, Kollisions-, Tempo-, Szenen- und
 KI-Prüfungen sind ebenfalls erfolgreich.
+
+## Kontinuierliche Darstellung
+
+Sunset Hills berücksichtigt jetzt die Position der Kamera innerhalb des ersten
+Straßenstücks bei der Kurvenintegration. Zuvor sprang der Versatz bei jedem
+Segmentwechsel zurück: In der Umleitung wurden bei nahezu unveränderter
+Kameraposition 30 Pixel Sprung für einen Gegner und 36 Pixel für ein sichtbares
+Grundstück gemessen. Dieselben Übergänge liegen jetzt unter 0,001 Pixel.
+Die Berechnung der Spielerkontakte verwendet denselben Kurvenverlauf.
+Fahrzeugtempo, KI-Abstimmung und Kameraeinstellungen bleiben erhalten.
+
+Nahe Straßenpolygone werden vor der Projektion an der Nahgrenze geschnitten.
+Seitliche Bodenflächen folgen der Straße, statt mit einem Bildschirm-breiten
+Rechteck Schrift und Hanghäuser zu übermalen. Der Asphalt bleibt gleichfarbig;
+seine Polygonkanten überlappen ohne die früheren farbigen Querfugen.
+
+Die Fernsicht für Straße, Grundstücke und Fahrzeuge blendet zwischen 95 und
+155 Segmenten gemeinsam weich aus. So erscheint der entfernte Rückweg einer
+S-Kurve nicht als freischwebendes Band über der Landschaft. Die nahen,
+spielrelevanten Streckenteile bleiben vollständig sichtbar. Diese Fernsicht
+betrifft nur Sunset Hills.
+
+Der Schriftzug samt Stützen und Hanghäusern ist Teil derselben vorbereiteten
+Hintergrundfläche. Er bleibt fest am Hang; einzelne Buchstaben werden beim
+Verschieben nicht mehr neu gerastert. Die langsamere Hintergrundbewegung behält
+die Staffelung zwischen ferner Stadt, Bergen und vorderem Hang.
+
+`node scripts/assess-game.cjs hills-stability` ergänzt die bisherigen Prüfungen:
+Kamera über echte Segmentgrenzen in drei Runden bewegen, Rundenübergang,
+sichtbare Grundstücke, die bisher schwebende Querstrecke, Asphaltkanten und
+Geländeteile außerhalb des Bildes. Die gleichen Prüfungen erkennen die Sprünge
+und die Querstrecke in der Vorgängerversion. Zusätzlich speichert eine Fahrt
+mit echten Physikschritten und Lenkeingaben Ansichten von Segment 490 bis 800.
+Die Bilder wurden im schmalen und breiten Browserfenster kontrolliert;
+das ersetzt keinen Test auf dem Handy.
