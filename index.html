@@ -1658,10 +1658,16 @@ function beginChapterSprite(x, y, scale) {
 
 // Road-anchored scenery: all footprints use the existing road depth and crest clipping.
 const HILLS_DETOUR={start:522,barrier:554,end:765};
-function hillsDetourCenter(index){
+function hillsDetourTurn(index){
   if(currentLevel!==LEVEL_HILLS)return 0;
   const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
-  return -.60*ease((index-522)/32)*(1-ease((index-570)/35));
+  return ease((index-522)/32)*(1-ease((index-570)/35));
+}
+function hillsDetourCenter(index){return -.60*hillsDetourTurn(index);}
+function hillsRoadHalfWidth(index){return 1-.34*hillsNarrowness(index)-.20*hillsDetourTurn(index);}
+function hillsClosedRoadOffset(index){
+  const t=clamp((index-HILLS_DETOUR.start)/32,0,1);
+  return .80*t*t*(3-2*t)+Math.max(0,index-HILLS_DETOUR.barrier)*.055;
 }
 const DREAM_ICE=[{start:735,end:747,x:-.50},{start:995,end:1008,x:.50},{start:1200,end:1214,x:-.50}];
 const DREAM_PUDDLES=[{start:1700,end:1711,x:-.47},{start:1990,end:2001,x:.47}];
@@ -1681,10 +1687,19 @@ function addPolishScenery(){
     add(486,'detour_warning',-1.35,1.05);
     add(518,'detour_warning',-1.35,1.05);
     // Widths are road-space values shared by paint, collision and AI planning.
-    segments[HILLS_DETOUR.barrier].barrier={active:true,x:.49,halfWidth:.83,
-      visualHalfWidth:.71,permanent:true,state:'idle',timer:0,blinkCount:0};
-    add(557,'detour_sign',.58,1.25);
+    const closedLeft=hillsDetourCenter(554)+hillsRoadHalfWidth(554),closedRight=hillsClosedRoadOffset(554)+1.2;
+    const closedHalf=(closedRight-closedLeft)/2;
+    segments[HILLS_DETOUR.barrier].barrier={active:true,x:(closedLeft+closedRight)/2,halfWidth:closedHalf+.12,
+      visualHalfWidth:closedHalf,permanent:true,state:'idle',timer:0,blinkCount:0};
+    add(557,'detour_sign',.95,1.25);
     add(583,'roadworks',1.4,1.2);
+    // A continuous cone taper leaves the left exit clear. These are ordinary
+    // knock-away cones with the shared 5 km/h penalty and per-lap reset.
+    for(let i=514;i<=579;i+=5){
+      const t=clamp((i-514)/36,0,1),ease=t*t*(3-2*t);
+      const x=i<554?1.08-1.18*ease:hillsDetourCenter(i)+hillsRoadHalfWidth(i)+.04;
+      segments[i].pylon={active:true,x,detourGuide:true};
+    }
     // Individual plots replace the continuous apartment facades. Only one in
     // five ordinary properties is an apartment; the narrow lane is all villas.
     for(const seg of segments)if(seg.sprite==='beverly_villa')seg.sprite=null;
@@ -2205,20 +2220,21 @@ function drawSunsetBackdrop(horizonY){
   });
   for(let layer=0;layer<2;layer++)drawTile(bgOffset*(layer?.17:.10),horizonY,()=>ctx.drawImage(getHillsBackdropTile(layer),0,-220));
 }
-function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow){
+function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heightScale2=1){
   const limit=(CAMERA_DEPTH+player.fovOffset)/64*ROAD_WIDTH*W/2;
   if(w2>limit)return;
   if(w1>limit){
     // Clip along the actual projected edge, including its bend and road offset.
     const t=(w1-limit)/(w1-w2);
-    x1+=(x2-x1)*t;y1+=(y2-y1)*t;w1=limit;
+    const heightWidth=w1*heightScale1+(w2*heightScale2-w1*heightScale1)*t;
+    x1+=(x2-x1)*t;y1+=(y2-y1)*t;w1=limit;heightScale1=heightWidth/w1;
   }
   if(index>=500&&index<570)return; // Keep the advance warning and closure visible.
   for(const side of[-1,1]){
     const period=narrow?30:34,phase=(index+(side<0?13:0))%period;
     const block=Math.floor((index+(side<0?13:0))/period),variant=(block+(side<0?2:0))%4;
     const lane=side*1.50,h=narrow?.82+(block%3)*.09:.20;
-    const a=(l,v)=>[x1+l*w1,y1-v*w1],b=(l,v)=>[x2+l*w2,y2-v*w2];
+    const a=(l,v)=>[x1+l*w1,y1-v*w1*heightScale1],b=(l,v)=>[x2+l*w2,y2-v*w2*heightScale2];
     const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color);
     const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color);
     const entrance=phase>=12&&phase<23;
@@ -2947,14 +2963,14 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     const narrow=hillsNarrowness(index),raw={x1,w1,x2,w2};
     if(currentLevel===LEVEL_HILLS){
       x1+=hillsDetourCenter(index)*w1;x2+=hillsDetourCenter(index+1)*w2;
-      w1*=1-.34*narrow;w2*=1-.34*hillsNarrowness(index+1);
+      w1*=hillsRoadHalfWidth(index);w2*=hillsRoadHalfWidth(index+1);
     }
     const highway = currentLevel === LEVEL_HIGHWAY;
     const tunnel = isHighwayTunnel(index);
     const band = (left, right, color, height = 0) => {
         ctx.fillStyle = color;
         trapezoid(x1 + left * w1, y1 - height * w1, x1 + right * w1,
-                  x2 + left * w2, y2 - height * w2-(currentLevel===LEVEL_HILLS?1:0), x2 + right * w2);
+                  x2 + left * w2, y2 - height * w2-(currentLevel===LEVEL_HILLS?(color==='#382e3e'&&index>=522&&index<625?3:1):0), x2 + right * w2);
     };
     ctx.fillStyle = highway ? (isAlt ? '#10091c' : '#0b0715') : (isAlt ? '#50324c' : '#473045');
     // Hills terrain follows the projected road instead of painting a full
@@ -2980,14 +2996,24 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
         band(-1.19, -1.08, isAlt ? '#ffd1b7' : '#eaad9f');
         band(1.08, 1.19, isAlt ? '#ffd1b7' : '#eaad9f');
     }
-    if(currentLevel===LEVEL_HILLS&&index>=522&&index<595){
-        // The old boulevard runs onward to the RIGHT of the left exit.
-        const main=(lane,i)=>lane+Math.max(0,i-554)*.035;
-        const strip=(l,r,color)=>{ctx.fillStyle=color;trapezoid(raw.x1+main(l,index)*raw.w1,y1,raw.x1+main(r,index)*raw.w1,raw.x2+main(l,index+1)*raw.w2,y2,raw.x2+main(r,index+1)*raw.w2);};
-        strip(-.22,1.19,'#d49b96');strip(-.20,1.16,index>=554?'#514250':'#3b303f');
-        strip(1.13,1.16,'#ffd0ad');
-        if(index%10<5)for(const lane of[.12,.65])strip(lane,lane+.018,'#bda8a5');
-        if(index>=556&&index%5<2)strip(-.18,1.12,'#765f65');
+    if(currentLevel===LEVEL_HILLS&&index>=522&&index<625){
+        // The closed boulevard retains the normal full-width three-lane
+        // cross-section; only the race route narrows into the left side street.
+        const main=(lane,i)=>lane+hillsClosedRoadOffset(i);
+        const patch=(l1,r1,l2,r2,color)=>{ctx.fillStyle=color;trapezoid(raw.x1+l1*raw.w1,y1,raw.x1+r1*raw.w1,raw.x2+l2*raw.w2,y2-(color==='#382e3e'?3:1),raw.x2+r2*raw.w2);};
+        const strip=(l,r,color)=>patch(main(l,index),main(r,index),main(l,index+1),main(r,index+1),color);
+        strip(-1.65,-1.025,'#ac7184');strip(1.025,1.65,'#ac7184');
+        strip(-1.19,-1.08,'#ffd1b7');strip(1.08,1.19,'#ffd1b7');
+        strip(-1,1,'#382e3e');
+        strip(-1.025,-.995,'#ffd0ad');strip(.995,1.025,'#ffd0ad');
+        if(Math.floor(index/5)%2===0)for(const lane of[-1/3,1/3])strip(lane-.008,lane+.008,'#efc6b3');
+        // Mark the separating wedge only where the two roads have parted.
+        const left=i=>hillsDetourCenter(i)+hillsRoadHalfWidth(i)*1.025;
+        const right=i=>Math.max(left(i),main(-1.025,i));
+        if(right(index)>left(index)||right(index+1)>left(index+1)){
+          patch(left(index),right(index),left(index+1),right(index+1),'#a67a80');
+          if(index%4===0)patch(left(index),right(index),left(index+1),right(index+1),'#f3cb9a');
+        }
     }
     if (isStart) drawCheckeredLine(x1, y1, w1, x2, y2, w2, isAlt);
     else band(-1, 1, tunnel ? (isAlt ? '#24201b' : '#211c18') : highway ? (isAlt ? '#171222' : '#120e1c') : '#382e3e');
@@ -2998,7 +3024,7 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     }
     const edge = tunnel ? '#d4ba77' : highway ? '#ad77fa' : '#ffd0ad';
     band(-1.025, -0.995, edge); band(0.995, 1.025, edge);
-    if (!isStart && Math.floor(index / (highway ? 3 : 5)) % 2 === 0) {
+    if (!isStart && !(currentLevel===LEVEL_HILLS&&index>=522&&index<605) && Math.floor(index / (highway ? 3 : 5)) % 2 === 0) {
         for (const lane of (!highway&&narrow>.35?[0]:[-1 / 3, 1 / 3])) {
             const halfWidth = highway ? 0.01 : 0.008;
             band(lane - halfWidth, lane + halfWidth, tunnel ? '#f0e5c9' : highway ? '#c8bce1' : '#efc6b3');
@@ -3012,7 +3038,9 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
             if (index % 9 === 0) band(edgeX - 0.006, edgeX + 0.006, '#756487', 0.065);
         }
     }
-    if(currentLevel===LEVEL_HILLS)drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow>.05);
+    // Tightening the entrance changes its width, not the height of its walls.
+    if(currentLevel===LEVEL_HILLS)drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow>.05,
+      (1-.34*narrow)/hillsRoadHalfWidth(index),(1-.34*hillsNarrowness(index+1))/hillsRoadHalfWidth(index+1));
 }
 
 function drawChapterBackdrop(horizonY, ts) {
@@ -11121,8 +11149,9 @@ function getRoadLimits(z) {
   if (currentLevel === LEVEL_SPACE) left = right = 0.98;
   if (currentLevel === LEVEL_HILLS) {
     const center=hillsDetourCenter(segment.index);
-    left=1.27-.75*hillsNarrowness(segment.index)-center;
-    right=segment.index<558&&segment.index>=522?1.27:1.27-.75*hillsNarrowness(segment.index)+center;
+    const pinch=.20*hillsDetourTurn(segment.index);
+    left=1.27-.75*hillsNarrowness(segment.index)-pinch-center;
+    right=segment.index<558&&segment.index>=522?1.27:1.27-.75*hillsNarrowness(segment.index)-pinch+center;
   }
   if (currentLevel === LEVEL_DREAM && getDreamZone(segment.index) === 'underwater') left = right = UNDERWATER_WALL_LIMIT;
   return { left, right };

@@ -2,9 +2,18 @@
 
 Die Anfahrt wird ab Segment 470 gerade. Zwei Vorankündigungen mit Linkspfeilen
 und wechselnden gelben Warnlampen bereiten auf die Umleitung vor. Ab Segment
-522 zweigt die Fahrbahn nach links ab und verengt sich. Die Hauptstraße bleibt
-rechts als gesperrter Straßenstummel mit verblassten Fahrbahnmarkierungen,
-Baustellengatter, Schutt und Bagger sichtbar. Der kräftige Linksknick beginnt
+522 zweigt die Fahrbahn nach links ab und verengt sich. Die Hauptstraße führt
+rechts sichtbar weiter, mit der normalen Breite, drei
+Fahrspuren, denselben Fahrbahnmarkierungen und Gehwegen wie die Anfahrt.
+Ein durchgehendes Baustellengatter sperrt sie über die gesamte Breite.
+Links geht die Rennstrecke in eine deutlich schmalere Nebenstraße über: an
+der Einmündung 46 Prozent der Hauptstraßenbreite, ohne mittige Fahrspurteilung.
+Danach öffnet sie sich weich auf die bisherige Breite der Wohnstraße.
+Die Grundstücksmauern behalten dabei ihre bisherige Höhe.
+14 echte Pylonen bilden von Segment 514 bis 579 eine nach links führende
+Leitreihe. Sie lassen sich wegschleudern, kosten beim Treffen die üblichen
+5 km/h und werden für die nächste Runde zurückgesetzt. Schutt und Bagger
+stehen hinter der Sperre. Der kräftige Linksknick beginnt
 an der Sperre, danach führen helle Grundstücksmauern durch die Wohnstraße.
 
 Das orange-weiße Gatter an Segment 554 ist ein echtes Hindernis. Sichtbare
