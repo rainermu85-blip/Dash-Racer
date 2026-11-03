@@ -63,7 +63,13 @@ module.exports=async function assessHillsStability(browser,baseUrl,output){
         // A real uphill view used to show a pale road/wall band across the sky.
         if(W===390){
           player.z=530.5*SEGMENT_LENGTH;player.pitch=segments[530].hillDelta;player.x=hillsDetourCenter(530);opponents=[];curveCamera.look=0;bgOffset=0;
-          for(let i=0;i<60;i++)updateCurveCamera(1/60);render(1000);
+          for(let i=0;i<60;i++)updateCurveCamera(1/60);
+          const road=drawChapterRoad,painted=[];
+          drawChapterRoad=(...args)=>{painted.push({args,alpha:ctx.globalAlpha});road(...args);};
+          try{render(1000);}finally{drawChapterRoad=road;}
+          const property=drawHillsPropertySlice;drawHillsPropertySlice=()=>{};
+          ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#52334f';ctx.fillRect(0,0,W,H);
+          try{for(const r of painted){ctx.save();ctx.globalAlpha=r.alpha;road(...r.args);ctx.restore();}}finally{drawHillsPropertySlice=property;}
           const top=Math.floor(H*.5+player.pitch*1.5)-29;
           const data=ctx.getImageData(25,top,330,20).data;let pale=0;
           for(let k=0;k<data.length;k+=4)if(data[k]>180&&data[k+1]>155&&data[k+2]>130)pale++;

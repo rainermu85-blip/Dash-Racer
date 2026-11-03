@@ -1677,11 +1677,79 @@ function hillsNarrowness(index){
   const fade=clamp(Math.min((index-HILLS_DETOUR.start)/32,(HILLS_DETOUR.end-index)/24),0,1);
   return fade*fade*(3-2*fade);
 }
+function hillsDistrict(index){
+  if(index<220)return 'palms';
+  if(index<400)return 'club';
+  if(index<522)return 'gardens';
+  if(index<765)return 'detour';
+  if(index<960)return 'panorama';
+  return 'modern';
+}
+function addHillsProperty(index,kind,side,size,extra={}){
+  const start=index-6,end=index+7;
+  if(start<3||end>=segments.length-3)return;
+  const grand=!!extra.estateGrand,depth=end-start;
+  const width=kind==='hills_estate'?(grand?1.6:1.2):1.9;
+  const inner=hillsDetourCenter(index)+side*1.5*hillsRoadHalfWidth(index);
+  const x=inner+side*width/2;
+  let baseY=-Infinity;
+  for(let i=start;i<=end;i++)baseY=Math.max(baseY,segments[i].worldY,segments[i].worldY+segments[i].hillDelta);
+  baseY+=35; // A level cut terrace, above every point under the property.
+  const lot={id:index,kind,start,end,side,width,baseY,district:hillsDistrict(index),pool:kind==='hill_mansion'||(kind==='hills_estate'&&Math.floor(index/24)%3===0)};
+  for(let i=start;i<end;i++){
+    segments[i].hillsLots??=[];segments[i].hillsLots.push(lot);
+  }
+  segments[index].polishScenes??=[];
+  segments[index].polishScenes.push({kind,x,size,estateBaseY:baseY,estateLot:lot,...extra});
+}
+function getHillsPropertyGround(index,lane){
+  for(const lot of segments[index]?.hillsLots||[]){
+    const inner=hillsDetourCenter(index)+lot.side*1.5*hillsRoadHalfWidth(index),outer=inner+lot.side*lot.width;
+    if(lane>=Math.min(inner,outer)&&lane<=Math.max(inner,outer))return lot.baseY;
+  }
+  return undefined;
+}
+function drawHillsPropertySlice(x1,y1,w1,x2,y2,w2,index){
+  const seg=segments[index],lots=seg?.hillsLots;
+  if(!lots)return;
+  const ground1=seg.frameRoadY1??seg.worldY,ground2=seg.worldY+seg.hillDelta;
+  const vertical=H/(ROAD_WIDTH*W);
+  for(const lot of lots){
+    const inner=i=>hillsDetourCenter(i)+lot.side*1.5*hillsRoadHalfWidth(i);
+    const a=(lane,height)=>[x1+lane*w1,y1-(height-ground1)*w1*vertical];
+    const b=(lane,height)=>[x2+lane*w2,y2-(height-ground2)*w2*vertical];
+    const near=inner(index),far=inner(index+1),outer1=near+lot.side*lot.width,outer2=far+lot.side*lot.width;
+    const xs=[x1+near*w1,x1+outer1*w1,x2+far*w2,x2+outer2*w2];
+    if(Math.max(...xs)<-2||Math.min(...xs)>W+2)continue;
+    const flat=(l,r,height,color)=>scenePoly([a(near+lot.side*l,height),b(far+lot.side*l,height),b(far+lot.side*r,height),a(near+lot.side*r,height)],color);
+    // Solid retaining faces descend into the sampled hillside, including on
+    // steep climbs. Their upper edge is the same world plane as the house foot.
+    const stone=lot.district==='modern'?'#aa969c':'#b58b90';
+    scenePoly([a(near,ground1-45),a(near,lot.baseY),b(far,lot.baseY),b(far,ground2-45)],stone);
+    scenePoly([a(outer1,ground1-45),a(outer1,lot.baseY),b(outer2,lot.baseY),b(outer2,ground2-45)],'#826476');
+    flat(0,lot.width,lot.baseY,lot.district==='club'?'#668365':'#60775c');
+    flat(0,.035,lot.baseY+12,'#f0d1b6');
+    const phase=(index-lot.start)/(lot.end-lot.start);
+    if(phase>.25&&phase<.62){
+      flat(.04,lot.width*.70,lot.baseY+4,'#c59fa3');
+    }
+    if(lot.pool&&phase>.06&&phase<.25){flat(lot.width*.20,lot.width*.92,lot.baseY+7,'#f2d8bd');flat(lot.width*.24,lot.width*.88,lot.baseY+9,'#48b9be');}
+    if(index%3===0&&Math.abs(lot.baseY-ground1)*w1*vertical>3){
+      const middle=(lot.baseY+ground1)/2;
+      scenePoly([a(near,middle),a(near,middle+12),b(far,middle+12),b(far,middle)],'#9e7d87');
+    }
+    // The leading face closes the terrace instead of leaving a floating slab.
+    if(index===lot.start)scenePoly([a(near,ground1-45),a(outer1,ground1-45),a(outer1,lot.baseY),a(near,lot.baseY)],'#927180');
+  }
+}
 function addPolishScenery(){
   const add=(index,kind,x=1.9,size=1,extra={})=>{if(segments[index]){segments[index].polishScenes??=[];segments[index].polishScenes.push({kind,x,size,...extra});}};
   if(currentLevel===LEVEL_HIGHWAY){add(918,'substation',2.3,1.0);}
   if(currentLevel===LEVEL_HILLS){
-    for(const [i,kind,x,size] of [[135,'hotel',2.55,1.05],[325,'tennis',-2.1,.95],[490,'hill_mansion',2.45,1.05],[865,'overlook',-2.35,1],[1060,'hill_mansion',-2.4,.9]])add(i,kind,x,size);
+    const landmarks=[[135,'hotel',-1,1],[225,'hills_fountain',-1,1],[345,'tennis',1,1],
+      [435,'overlook',1,1],[490,'hill_mansion',1,1],[865,'overlook',-1,1],
+      [930,'hill_mansion',1,1],[1060,'hill_mansion',1,1],[1000,'hills_pergola',1,1]];
+    for(const [i,kind,side,size] of landmarks)addHillsProperty(i,kind,side,size);
     // Keep the sightline to the closure clear, including its closed road beyond.
     for(let i=522;i<590;i++){segments[i].sprite=null;segments[i].seaSprite=null;}
     add(486,'detour_warning',-1.35,1.05);
@@ -1704,15 +1772,17 @@ function addPolishScenery(){
     // five ordinary properties is an apartment; the narrow lane is all villas.
     for(const seg of segments)if(seg.sprite==='beverly_villa')seg.sprite=null;
     for(let i=570;i<HILLS_DETOUR.end;i++)if(segments[i].sprite==='bougainvillea')segments[i].sprite=null;
-    for(const side of[-1,1])for(let i=44+(side>0?17:0),plot=0;i<segments.length-30;i+=34,plot++){
-      if(i>=470&&i<590)continue; // Preserve the closure's advance sightline.
+    for(const side of[-1,1])for(let i=44+(side>0?12:0),plot=0;i<segments.length-30;i+=24,plot++){
+      if((i>=470&&i<590)||landmarks.some(([j,,which])=>which===side&&Math.abs(i-j)<20))continue;
       const grand=i>=590&&i<HILLS_DETOUR.end;
       const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:[0,1,2,3,5,0,1,3][serial%8];
-      add(i,'hills_estate',side*(grand?1.65:2.05),grand?1:.85,
+      addHillsProperty(i,'hills_estate',side,grand?1:.85,
         {estateStyle:style,estatePalette:(plot+(side>0?1:0))%2,estateGrand:grand});
       getHillsEstate(style,(plot+(side>0?1:0))%2,grand);
     }
-    getHillsBackdropTile(0);getHillsBackdropTile(1);
+    for(const i of[210,247,303,370,397])add(i,'hills_cypress',i%2?-1.7:1.7,.75);
+    for(const i of[975,1025,1090,1145,1175])add(i,'hills_agave',i%2?-1.46:1.46,.55);
+    getHillsCityTile();getHillsBackdropTile(0);getHillsBackdropTile(1);
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
@@ -1964,9 +2034,7 @@ function getHillsEstate(style=0,palette=0,grand=false){
     const wall=palette?'#efc9bd':'#f4d9bb',shade=palette?'#b8849e':'#c3958b',cream='#ffead1',glass='#46425b',roof=palette?'#a16981':'#b97071';
     const window=(x,y,w,h)=>{rect(x,y,w,h,glass);rect(x+3,y+3,w-6,3,'#dd969e');for(let j=1;j<Math.ceil(w/23);j++)rect(x+j*w/Math.ceil(w/23),y,2,h,cream);};
     const hip=(x,y,w,h)=>{poly([[x-9,y],[x+w*.22,y-h],[x+w*.77,y-h],[x+w+9,y]],roof);poly([[x-9,y],[x+w*.22,y-h],[x+w*.5,y-h],[x+w*.27,y]],'#ce8b83');rect(x-9,y,w+18,5,cream);};
-    // Terrace, lawn and a curved pool keep each building attached to its plot.
-    poly([[-185,0],[-175,-33],[153,-38],[185,0]],'#61755d');
-    poly([[-161,-1],[-146,-50],[132,-49],[156,-1]],'#c99ca0');
+    // Building-only artwork. Gardens and foundations are projected geometry.
     if(style===0){ // Low Spanish courtyard villa, asymmetric garage wing.
       rect(-126,-132,168,98,wall);hip(-126,-132,168,39);
       rect(42,-91,92,57,shade);hip(42,-91,92,27);
@@ -2023,21 +2091,16 @@ function getHillsEstate(style=0,palette=0,grand=false){
     }
     if(grand){ // Taller approach homes have terraces, not repeated storeys.
       rect(-157,-49,314,9,cream);rect(-150,-37,300,7,'#b48b90');
-      for(const x of[-158,147]){rect(x,-89,11,49,cream);oval(x+5,-97,15,18,'#536d53');}
+      for(const x of[-158,147]){rect(x,-89,11,55,cream);oval(x+5,-97,15,18,'#536d53');}
     }
-    oval(-83,-18,43,12,'#f5d2c5');oval(-83,-18,37,8,'#529da1');oval(-85,-20,29,3,'#9ee6db');
-    // A sloping drive, low garden walls and foliage leave air between houses.
-    poly([[33,0],[48,-34],[107,-34],[126,0]],'#a28292');
-    for(const x of[-172,-151,151,173]){oval(x,-30-(x%3)*3,12,18,'#426a55');rect(x-2,-18,4,17,'#82716a');}
-    rect(-181,-16,35,14,cream);rect(144,-16,39,14,cream);
-    for(const x of[-169,-155,155,173]){oval(x,-20,8,6,'#45755c');oval(x+4,-24,3,3,'#ff72b9');}
+    rect(-147,-38,294,4,shade); // A continuous sill meets the terrace plane.
     hillsEstateCache.set(key,image);
   }
   return image;
 }
 function drawHillsEstate(style=0,palette=0,grand=false){
   ctx.save();ctx.scale(.8,grand?1.8:1.15);
-  ctx.drawImage(getHillsEstate(style,palette,grand),-200,-298);ctx.restore();
+  ctx.drawImage(getHillsEstate(style,palette,grand),0,0,400,264,-200,-264,400,264);ctx.restore();
 }
 function drawSunsetHouse(seed,variant=null){
   const type=variant??Math.floor(polishHash(seed)*5),warm=['#f2c5ab','#e6bcbd','#f7d6b7','#bda2b5','#ddd8cd'][type];
@@ -2137,19 +2200,47 @@ function drawSunsetScene(kind,seed,time){
     scenePoly([[-133,0],[144,0],[120,-68],[-110,-68]],'#b77d84');scenePoly([[-115,-8],[124,-8],[105,-59],[-97,-59]],'#467e7c');
     sceneLine([[-102,-14],[110,-14],[94,-53],[-87,-53],[-102,-14]],'#e6d8b7',1.5);sceneLine([[0,-14],[0,-53]],'#e6d8b7',1.2);
     sceneLine([[-118,-37],[123,-37]],'#f0e2c5',2);for(let x=-112;x<120;x+=9)sceneLine([[x,-37],[x,-25]],'#aeacaa',.8);
-    sceneRect(-89,-136,180,63,'#e2beaa');scenePoly([[-101,-137],[0,-182],[101,-137]],'#bd8083');
+    sceneRect(-89,-75,180,8,'#ad8390');sceneRect(-89,-136,180,63,'#e2beaa');scenePoly([[-101,-137],[0,-182],[101,-137]],'#bd8083');
     ctx.fillStyle='#684c68';ctx.font='bold 11px "Gravity Pixel"';ctx.textAlign='center';ctx.fillText('SUNSET TENNIS',0,-109);
     for(const x of[-133,135]){sceneLine([[x,0],[x,-170]],'#8c8994',3);sceneRect(x-9,-172,18,5,'#f8d9ac');}
   }else if(kind==='hill_mansion'){
-    scenePoly([[-160,0],[164,0],[140,-27],[-133,-27]],'#8c6379');
-    scenePoly([[-149,-22],[150,-22],[114,-75],[-118,-75]],'#ae8290');
-    ctx.save();ctx.translate(0,-56);ctx.scale(1.13,1.13);drawSunsetHouse(seed,seed%2?1:3);ctx.restore();
-    sceneRect(-144,-31,287,6,'#e6b5aa');for(let x=-130;x<145;x+=26)sceneLine([[x,-31],[x,-45]],'#ead3be',1.5);
-    scenePoly([[-65,-30],[63,-30],[48,-46],[-49,-46]],'#72cbc8');
+    drawHillsEstate(seed%3===0?5:1,seed%2,true);
   }else if(kind==='overlook'){
     scenePoly([[-140,0],[142,0],[123,-24],[-120,-24]],'#c494a2');
     sceneLine([[-135,-18],[135,-18]],'#ead0b8',4);for(let j=0;j<10;j++)sceneLine([[-129+j*29,-18],[-129+j*29,0]],'#b48798',3);
     drawSideCoupe(-22,-6,'#b8b8d2');sceneRect(75,-26,37,5,'#705365');sceneRect(78,-21,4,18,'#705365');sceneRect(104,-21,4,18,'#705365');
+  }else if(kind==='hills_cypress'){
+    for(let j=0;j<3;j++){
+      const x=(j-1)*32,h=172+(j===1?42:0);sceneRect(x-3,-h*.7,6,h*.7,'#65505a');
+      scenePoly([[x-18,-12],[x-21,-h*.40],[x-11,-h*.82],[x,-h],[x+13,-h*.77],[x+21,-h*.32],[x+14,-12]],j%2?'#365b49':'#456b50');
+      sceneLine([[x-5,-30],[x-11,-h*.46],[x,-h*.89]],'#648565',2);
+    }
+  }else if(kind==='hills_agave'){
+    scenePoly([[-61,0],[61,0],[54,-22],[-54,-22]],'#d1b8a8');
+    for(const side of[-1,1])for(let j=0;j<6;j++){
+      const angle=-Math.PI/2+(j-2.5)*.26,x=side*25,y=-20,len=50+j%3*14;
+      scenePoly([[x-4,y],[x+Math.cos(angle)*len,y+Math.sin(angle)*len],[x+5,y]],j%3===0?'#e773ac':j%2?'#719b75':'#456c57');
+    }
+  }else if(kind==='hills_fountain'){
+    sceneEllipse(0,-19,139,18,'#ead0b8');sceneEllipse(0,-22,124,13,'#4faeb3');
+    sceneEllipse(0,-25,107,8,'#85dad1');sceneRect(-12,-88,24,78,'#dbb9ac');
+    sceneEllipse(0,-85,59,13,'#f8dbc0');sceneEllipse(0,-88,49,8,'#4ba9b2');
+    sceneRect(-7,-123,14,35,'#ecc6b1');sceneEllipse(0,-122,28,8,'#ffe1c5');
+    for(const side of[-1,1]){
+      const sway=Math.sin(time*.0008+side)*3;
+      ctx.strokeStyle='#9ee3db';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(side*35,-88);ctx.quadraticCurveTo(side*79,-80,side*(88+sway),-11);ctx.stroke();
+      sceneRect(side*135-18,-44,36,33,'#d9b4a4');sceneEllipse(side*135,-50,25,25,'#426c53');
+      for(let j=0;j<5;j++)sceneEllipse(side*135+Math.sin(j*2.1)*21,-53+Math.cos(j*2.1)*18,5,4,'#f979b7');
+    }
+    sceneLine([[-102,-6],[-69,-6]],'#f6ecd0',3);sceneLine([[68,-6],[102,-6]],'#f6ecd0',3);
+  }else if(kind==='hills_pergola'){
+    scenePoly([[-151,0],[151,0],[121,-25],[-121,-25]],'#d6b6a6');
+    for(const x of[-128,-43,43,128])sceneRect(x-4,-115,8,100,'#efcfb7');
+    sceneRect(-145,-124,290,10,'#f4dac1');
+    for(let j=0;j<10;j++)sceneRect(-143+j*31,-145,13,31,'#b08791');
+    for(let j=0;j<9;j++){sceneEllipse(-120+j*31,-133,23,13,j%2?'#42654e':'#597858');if(j%3===0)sceneEllipse(-119+j*31,-139,7,5,'#f36bab');}
+    for(const x of[-89,40]){sceneRect(x,-40,54,7,'#5d4d60');sceneRect(x+5,-33,5,25,'#997a86');sceneRect(x+44,-33,5,25,'#997a86');}
+    sceneRect(-13,-73,26,60,'#c9a4a1');scenePoly([[-37,-75],[0,-112],[39,-73],[3,-42]],'#e187a5');scenePoly([[0,-112],[39,-73],[3,-42],[13,-81]],'#65c6c8');
   }else if(kind==='estate_gate'){
     sceneRect(-65,-69,130,69,'#e7ccbb');sceneRect(-49,-58,98,58,'#3b3b48');for(let j=0;j<10;j++)sceneLine([[-43+j*10,-54],[-43+j*10,0]],'#a98a88',2);
     sceneRect(-71,-82,22,83,'#f0d9c1');sceneRect(49,-82,22,83,'#f0d9c1');sceneEllipse(-60,-88,6,8,'#f8db9d');sceneEllipse(60,-88,6,8,'#f8db9d');
@@ -2189,22 +2280,74 @@ function sunsetRidgeHeight(x,layer){return 38+layer*13+Math.sin(x/BG_W*Math.PI*4
 function hillsDistanceVisibility(distance){
   const t=clamp((distance-95)/60,0,1);return 1-t*t*(3-2*t);
 }
-const hillsBackdropTiles=new Map();
+const hillsBackdropTiles=new Map(),hillsPanoramaLots=new Map();
+function getHillsPanoramaLots(layer){
+  if(hillsPanoramaLots.has(layer))return hillsPanoramaLots.get(layer);
+  const lots=[];
+  for(let row=0;row<(layer?3:1);row++){
+    const count=layer?(row===0?24:row===1?15:17):22,step=BG_W/count;
+    for(let j=0;j<count;j++){
+      const seed=j+row*73+layer*137,x=step*(j+.45)+(polishHash(seed+4)-.5)*step*.3;
+      if(layer&&row===0&&x>130&&x<360)continue; // Leave the hillside sign clear.
+      const scale=(layer?(row?.060:.083):.037)+polishHash(seed+11)*(layer?.018:.012);
+      const half=156*scale,depth=layer?(row===0?7:row===1?31:72):4;
+      const terrain=px=>Math.min(-sunsetRidgeHeight(px,layer)+depth,layer?96:-2);
+      const top=Math.min(terrain(x-half),terrain(x),terrain(x+half))-1;
+      lots.push({x,scale,half,depth,top,leftBottom:Math.max(top+4,terrain(x-half)+5),rightBottom:Math.max(top+4,terrain(x+half)+5),
+        style:j%8===6?4:[0,1,2,5,3][(j+row)%5],palette:j%2,seed});
+    }
+  }
+  hillsPanoramaLots.set(layer,lots);return lots;
+}
+function getHillsCityTile(){
+  if(hillsBackdropTiles.has('city'))return hillsBackdropTiles.get('city');
+  const tile=document.createElement('canvas');tile.width=BG_W;tile.height=160;
+  const g=tile.getContext('2d');g.translate(0,160);
+  for(let j=0;j<57;j++){
+    const x=j*25,w=17+polishHash(j+17)*9,h=(24+polishHash(j+71)*47+([3,25,43].includes(j)?25:0))*(j>=6&&j<=14?.45:1);
+    g.fillStyle=j%3?'#77516e':'#865c79';g.fillRect(x,-h,w,h);
+    g.fillStyle='#ac788a';g.fillRect(x,-h,w,2);
+    for(let y=-h+7;y<-3;y+=8)for(let k=0;k<3;k++){
+      g.fillStyle=(j+k+Math.floor(y))%4?'#dba28d':'#ae91b0';g.fillRect(x+3+k*5,y,2,2);
+    }
+  }
+  hillsBackdropTiles.set('city',tile);return tile;
+}
 function getHillsBackdropTile(layer){
   if(hillsBackdropTiles.has(layer))return hillsBackdropTiles.get(layer);
-  const tile=document.createElement('canvas');tile.width=BG_W;tile.height=220;
+  const tile=document.createElement('canvas');tile.width=BG_W;tile.height=340;
   const g=tile.getContext('2d');g.translate(0,220);
-  g.fillStyle=layer?'#52334f':'#875273';g.beginPath();g.moveTo(0,0);
-  for(let j=0;j<=140;j++){const x=j/140*BG_W;g.lineTo(x,-sunsetRidgeHeight(x,layer));}
-  g.lineTo(BG_W,0);g.closePath();g.fill();
-  if(layer===1){
-    for(let j=0;j<12;j++){
-      const x=440+j*82,scale=.085+(j%3)*.012;
-      g.save();g.translate(x,-sunsetRidgeHeight(x,layer)+1);g.scale(scale*.8,scale*1.15);
-      g.drawImage(getHillsEstate(j%5===4?4:j%6===2?5:j%4,j%2,false),-200,-298);g.restore();
+  const poly=(points,color)=>{g.fillStyle=color;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
+  const ridge=[[0,120]];for(let j=0;j<=140;j++){const x=j/140*BG_W;ridge.push([x,-sunsetRidgeHeight(x,layer)]);}ridge.push([BG_W,120]);
+  poly(ridge,layer?'#52334f':'#875273');
+  g.save();g.clip();
+  // Winding access lanes and planted contours connect the separate plots.
+  for(const depth of[layer?18:12,layer?40:27,...(layer?[80,110]:[])]){
+    g.strokeStyle=layer?'#765064':'#9b697e';g.lineWidth=layer?2.4:1.3;g.beginPath();
+    for(let j=0;j<=140;j++){const x=j/140*BG_W,y=-sunsetRidgeHeight(x,layer)+depth+Math.sin(x*.019)*3;j?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();
+  }
+  for(let j=0;j<(layer?38:20);j++){
+    const x=j*BG_W/(layer?38:20)+polishHash(j+41)*16,y=-sunsetRidgeHeight(x,layer)+13+polishHash(j+21)*32;
+    g.fillStyle=layer?'#435749':'#6c6f5d';g.beginPath();
+    for(let k=0;k<9;k++){const a=k/9*Math.PI*2,r=.7+polishHash(j*13+k)*.5,px=x+Math.cos(a)*r*(8+polishHash(j)*14),py=y+Math.sin(a)*r*5;k?g.lineTo(px,py):g.moveTo(px,py);}g.closePath();g.fill();
+  }
+  g.restore();
+  for(const lot of getHillsPanoramaLots(layer)){
+    const {x,half,top,scale}=lot;
+    // A flat cut terrace has a retaining face all the way to the actual slope
+    // at BOTH corners. A wide house no longer balances on one ridge point.
+    poly([[x-half-2,top],[x+half+2,top],[x+half+2,lot.rightBottom],[x-half-2,lot.leftBottom]],layer?'#a78089':'#b38b96');
+    g.fillStyle=layer?'#d9b5a5':'#d4b1a7';g.fillRect(x-half-2,top-1,half*2+4,2);
+    if(layer&&lot.seed%3===0){g.fillStyle='#6eafad';g.fillRect(x+half*.2,top+1,half*.65,2);}
+    g.save();g.translate(x,top);g.scale(scale*.8,scale*1.15);
+    g.drawImage(getHillsEstate(lot.style,lot.palette,false),0,0,400,264,-200,-264,400,264);g.restore();
+    if(layer&&lot.seed%3===1){
+      const px=x-half-4;g.strokeStyle='#453d49';g.lineWidth=1.1;g.beginPath();g.moveTo(px,top+3);g.quadraticCurveTo(px-2,top-3,px,top-11);g.stroke();
+      g.strokeStyle='#3d5b49';g.beginPath();g.moveTo(px-6,top-9);g.quadraticCurveTo(px,top-16,px+6,top-10);g.moveTo(px,top-12);g.lineTo(px-4,top-15);g.stroke();
     }
-    // Letters, supports and houses share one fixed hillside bitmap. Font
-    // hinting cannot move individual letters as the panorama slides subpixel.
+  }
+  if(layer===1){
+    // Sign and hillside stay on the same cached surface during parallax.
     g.textAlign='center';g.font='bold 19px sans-serif';
     [...'SUNSET HILLS'].forEach((letter,j)=>{
       const x=154+j*15.5,ground=-sunsetRidgeHeight(x,layer);
@@ -2215,9 +2358,7 @@ function getHillsBackdropTile(layer){
   hillsBackdropTiles.set(layer,tile);return tile;
 }
 function drawSunsetBackdrop(horizonY){
-  drawTile(bgOffset*.075,horizonY,()=>{
-    for(let j=0;j<44;j++){const x=j*33,h=12+j*17%34;sceneRect(x,-h-8,24,h+8,'#71516f');for(let k=0;k<3;k++)sceneRect(x+4+k*6,-h,2,2,'#edb7a1');}
-  });
+  drawTile(bgOffset*.075,horizonY,()=>ctx.drawImage(getHillsCityTile(),0,-160));
   for(let layer=0;layer<2;layer++)drawTile(bgOffset*(layer?.17:.10),horizonY,()=>ctx.drawImage(getHillsBackdropTile(layer),0,-220));
 }
 function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heightScale2=1){
@@ -2234,12 +2375,26 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heigh
     const period=narrow?30:34,phase=(index+(side<0?13:0))%period;
     const block=Math.floor((index+(side<0?13:0))/period),variant=(block+(side<0?2:0))%4;
     const lane=side*1.50,h=narrow?.82+(block%3)*.09:.20;
+    const edge1=x1+lane*w1,edge2=x2+lane*w2,margin=Math.max(w1,w2)*.36;
+    if(Math.max(edge1,edge2)+margin<0||Math.min(edge1,edge2)-margin>W)continue;
     const a=(l,v)=>[x1+l*w1,y1-v*w1*heightScale1],b=(l,v)=>[x2+l*w2,y2-v*w2*heightScale2];
     const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color);
     const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color);
+    const courtyard=segments[index]?.hillsLots?.some(lot=>lot.side===side&&['hotel','tennis','hills_fountain','hills_pergola','overlook'].includes(lot.kind));
+    if(courtyard){
+      panel(lane,0,.04,'#c3a3a0');panel(lane,.13,.15,'#f2d8bd');
+      if(phase%4===0)panel(lane,.02,.19,'#e6c9b4');
+      continue;
+    }
+    if(index>=780&&index<950&&side<0){
+      panel(lane,0,.045,'#b59395');panel(lane,.15,.18,'#f2d8bd');panel(lane,.25,.28,'#f2d8bd');
+      if(phase%4===0)panel(lane,.04,.28,'#bfa3a0');
+      continue;
+    }
     const entrance=phase>=12&&phase<23;
+    if(index>=220&&index<400&&!entrance)panel(lane,h,h+.18,'#46634f');
     const wall=['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7'][variant];
-    panel(lane,0,h,entrance?(variant===1?'#564857':'#655968'):wall);
+    panel(lane,0,h,entrance?(index>=960?'#3e3c4c':variant===1?'#564857':'#655968'):wall);
     band(lane,lane+side*.055,h+.025,'#fff0d4');
     if(entrance){
       // Gate, timber garage, recessed drive or formal metal entrance.
@@ -2977,7 +3132,7 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
     // screen-width rectangle. A remote, offscreen bend must not erase the
     // hillside sign with a horizontal bar. Sidewalks stay outside the asphalt.
     if(highway)ctx.fillRect(0,y2-1,W,y1-y2+1.5);
-    else{band(-12,-1.65,'#52334f');band(1.65,12,'#52334f');}
+    else{band(-3.6,-1.65,'#52334f');band(1.65,3.6,'#52334f');}
     if (highway) {
         // Two real carriageways with a broad central divider. Approaching
         // traffic uses the three left lanes, outside the race road.
@@ -3038,6 +3193,7 @@ function drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, index) {
             if (index % 9 === 0) band(edgeX - 0.006, edgeX + 0.006, '#756487', 0.065);
         }
     }
+    if(currentLevel===LEVEL_HILLS)drawHillsPropertySlice(raw.x1,y1,raw.w1,raw.x2,y2,raw.w2,index);
     // Tightening the entrance changes its width, not the height of its walls.
     if(currentLevel===LEVEL_HILLS)drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow>.05,
       (1-.34*narrow)/hillsRoadHalfWidth(index),(1-.34*hillsNarrowness(index+1))/hillsRoadHalfWidth(index+1));
@@ -9439,6 +9595,7 @@ function render(ts) {
   // Distant Mountains & Landscapes
   const mStroke = currentLevel === 2 ? interpolateColor('#2a0f62', '#120428', progressRatio) : (currentLevel === LEVEL_DREAM ? '#0c1a30' : '#2a0f62');
   if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
+    if(currentLevel===LEVEL_HILLS){ctx.fillStyle='#52334f';ctx.fillRect(0,horizonY,W,H-horizonY);}
     drawChapterBackdrop(horizonY, ts);
   } else if (currentLevel === LEVEL_DREAM) {
     const zone = getDreamWorld(startSegIdx);
@@ -9665,8 +9822,8 @@ function render(ts) {
     ctx.fillRect(0, -H*0.08, W, H*0.2);
   }
   
-  if (currentLevel !== LEVEL_SPACE) {
-    ctx.fillStyle = currentLevel===LEVEL_HILLS?'#52334f':'#06030f';
+  if (currentLevel !== LEVEL_SPACE && currentLevel !== LEVEL_HILLS) {
+    ctx.fillStyle = '#06030f';
     ctx.fillRect(0, 0, W, H - horizonY);
   }
   
@@ -9838,6 +9995,7 @@ function render(ts) {
     seg.proj_rx2 = rx2;
     seg.proj_y2 = p2.y;
     seg.proj_w2 = p2.w;
+    seg.frameRoadY1=firstY;
 
     const segmentClipY = maxY;
     
@@ -9897,7 +10055,8 @@ function render(ts) {
         const s = getCleanSpriteFromPool();
         s.type = seg.sprite==='beach_party_night'?'beach_party':seg.sprite; // Roadside scenery shares the road projection and crest clipping.
         s.x = rx2 + seg.spriteX * p2.w;
-        s.y = p2.y;
+        const groundY=currentLevel===LEVEL_HILLS?getHillsPropertyGround(segIdx,seg.spriteX):undefined;
+        s.y=groundY===undefined?p2.y:horizonY-(groundY-camY)*p2.scale*H/2;
         s.sc = Math.min(1.25, p2.scale * (seg.sprite === 'coastal_old_tree' ? 3800 : 2800)) * responsiveFactor;
         if(s.type==='beach_party')s.partyLap=sceneLap;
         if (UNDERWATER_FLORA.includes(seg.sprite)) s.sc *= 0.86 + (seg.index % 5) * 0.055;
@@ -9912,8 +10071,9 @@ function render(ts) {
     for(const scene of seg.polishScenes||[]){
         const s=getCleanSpriteFromPool();s.type='polish_scene';s.kind=scene.kind;
         s.estateStyle=scene.estateStyle;s.estatePalette=scene.estatePalette;s.estateGrand=scene.estateGrand;
-        s.x=rx2+scene.x*p2.w;s.y=p2.y;
-        s.sc=scene.kind==='hills_estate'?p2.w*scene.size/200:Math.min(1.25,p2.scale*2800)*responsiveFactor*scene.size;
+        const groundY=scene.estateBaseY??(currentLevel===LEVEL_HILLS?getHillsPropertyGround(segIdx,scene.x):undefined);
+        s.x=rx2+scene.x*p2.w;s.y=groundY===undefined?p2.y:horizonY-(groundY-camY)*p2.scale*H/2;
+        s.sc=scene.estateBaseY!==undefined?p2.w*scene.size/200:Math.min(1.25,p2.scale*2800)*responsiveFactor*scene.size;
         s.side=scene.x<0?1:-1;s.roadHalf=p2.w;s.segIdx=segIdx;s.depth=n;s.clipY=segmentClipY;
         if(scene.dropX!==undefined)s.dripReach=Math.abs(scene.dropX-scene.x)*p2.w/s.sc;
     }

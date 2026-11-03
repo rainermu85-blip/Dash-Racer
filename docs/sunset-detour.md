@@ -35,13 +35,14 @@ unverändert.
 
 ## Einzelne Villengrundstücke
 
-Entlang der Strecke stehen 60 einzelne Grundstücke, darunter zehn kleine
-Apartmenthäuser (rund 17 Prozent). Spanische Innenhofvillen, Palm-Springs-Dächer,
-klassische Anwesen und moderne 80er-Villen wechseln sich ab. Versetzte Kuben,
-Flachdächer und Fensterbänder ergänzen die moderne Architektur. In der engen
-Umleitung stehen ausschließlich Villen, mit höheren Terrassen hinter den Mauern.
-Die Grundstücksgrafiken werden beim Streckenstart vorbereitet und wiederverwendet.
-Tore, Garagen und Einfahrten bleiben Teile der projizierten Grundstücksmauern.
+Die Grundstücke stehen auf eigenen, ebenen Terrassen mit Stützmauern bis in den
+Hang. Spanische Innenhofvillen, Palm-Springs-Dächer, klassische Anwesen und
+moderne 80er-Villen wechseln sich ab; Apartmenthäuser bleiben deutlich unter
+40 Prozent. In der Umleitung stehen ausschließlich Villen. Hausgrafiken und
+Terrassen verwenden dieselbe Höhenebene. Gärten, Pools und Zufahrten liegen
+auf projizierten Grundstücksflächen statt auf einem flachen Sprite.
+Die vollständige Szenenaufteilung und ihre Prüfungen stehen in
+[Sunset Hills: bewohnte Hänge](sunset-neighborhood.md).
 
 Die Mauern stehen bei 1,50 lokalen Straßenkoordinaten hinter dem Gehweg; dessen
 innere Kante liegt bei 1,19. Die Blumenkübel stehen bei 1,33, sind auf eine zum
