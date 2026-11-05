@@ -22,11 +22,11 @@ module.exports=async function assessHillsNeighborhood(browser,baseUrl,output){
    // building foot. These are produced by different projection paths.
    const poly=scenePoly,paint=drawHillsPropertySlice,art=drawPolishScene;
    let active=null,tops=new Map(),feet=new Map(),residual=[];
-   scenePoly=(points,color,...rest)=>{if(active!==null&&['#60775c','#668365'].includes(color))tops.set(active,[...(tops.get(active)||[]),points[1][1]]);poly(points,color,...rest);};
+   scenePoly=(points,color,...rest)=>{if(active!==null&&['#60775c','#668365','#d6c2b0','#d9b5ad'].includes(color))tops.set(active,[...(tops.get(active)||[]),points[1][1]]);poly(points,color,...rest);};
    drawHillsPropertySlice=(...args)=>{active=args[6];try{paint(...args);}finally{active=null;}};
-   drawPolishScene=s=>{const half=['hills_estate','hill_mansion'].includes(s.kind)?125:160;if(s.x+half*s.sc>=0&&s.x-half*s.sc<=W&&scenes.some(p=>p.index===s.segIdx&&p.kind===s.kind))feet.set(s.segIdx,s.y);art(s);};
+   drawPolishScene=s=>{const half=['hills_estate','hill_mansion'].includes(s.kind)?125:s.kind==='hotel'?214:s.kind==='hills_boutiques'?178:160;if(s.x+half*s.sc>=0&&s.x-half*s.sc<=W&&scenes.some(p=>p.index===s.segIdx&&p.kind===s.kind))feet.set(s.segIdx,s.y);art(s);};
    try{
-    for(const i of[73,180,225,345,405,620,850,1000,1060]){
+    for(const i of[15,40,65,95,110,73,180,225,345,405,620,850,1000,1060]){
      player.z=(i+.35)*150;player.x=hillsDetourCenter(i);player.speed=4320;player.pitch=segments[i].hillDelta;curveCamera.look=0;
      for(let k=0;k<60;k++)updateCurveCamera(1/60);tops=new Map();feet=new Map();render(1000);
      for(const [id,y]of feet)if(tops.has(id))residual.push(Math.min(...tops.get(id).map(top=>Math.abs(y-top))));
@@ -38,7 +38,7 @@ module.exports=async function assessHillsNeighborhood(browser,baseUrl,output){
    return checks;
   });
   // The prominent scenes must have a useful view before the driver passes.
-  for(const [index,ahead,height]of[[135,36,205],[225,28,130],[345,26,185],[435,20,80],[490,28,475],[865,22,80],[930,34,475],[1000,28,150],[1060,34,475]]){
+  for(const [index,ahead,height]of[[48,40,215],[60,40,215],[72,38,215],[84,40,215],[96,38,215],[108,38,215],[135,40,315],[225,28,130],[345,26,185],[435,20,80],[490,28,475],[865,22,80],[930,34,475],[1000,28,150],[1060,34,475]]){
    const view=await page.evaluate(({index,ahead,height})=>{
     const i=index-ahead;player.z=(i+.3)*150;player.x=hillsDetourCenter(i);player.speed=4320;player.pitch=0;for(let j=0;j<20;j++)player.pitch+=segments[(i+j)%1200].hillDelta/20;curveCamera.look=0;for(let j=0;j<60;j++)updateCurveCamera(1/60);
     for(const id of['introScreen','overlay','cntNum'])document.getElementById(id).style.display='none';
@@ -52,7 +52,7 @@ module.exports=async function assessHillsNeighborhood(browser,baseUrl,output){
   const drive=await page.evaluate(()=>{
    let seed=1989;Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
    selectLevel(3);startRace();state='playing';opponents=[];player.speed=4320;player.cleanSpeedBonus=.2;resetNormalPace(player);lastTime=1000;smoothedDt=1/60;
-   const targets=[75,200,320,405,490,540,620,740,820,930,1000,1100],shots=[];let ts=1000;
+   const targets=[20,45,70,95,120,145,200,320,405,490,540,620,740,820,930,1000,1100],shots=[];let ts=1000;
    for(let f=0;f<9000&&player.lap===1;f++){
     const contact=(player.z+getPlayerContactDistance())/150;
     let target=contact<523?0:contact<578?-.65:contact<625?-.15:contact>685&&contact<725?.15:0;
@@ -63,7 +63,7 @@ module.exports=async function assessHillsNeighborhood(browser,baseUrl,output){
    keys.left=keys.right=false;return{lap:player.lap,seconds:raceElapsed/1000,shots};
   });
   for(const shot of drive.shots)fs.writeFileSync(path.join(output,`hills-lap-${shot.index}.png`),Buffer.from(shot.image.split(',')[1],'base64'));
-  checks.push({name:'whole-hills-lap-with-real-physics-and-steering',pass:drive.lap===2&&drive.shots.length===12,actual:{lap:drive.lap,seconds:drive.seconds,captured:drive.shots.map(s=>s.index)}});
+  checks.push({name:'whole-hills-lap-with-real-physics-and-steering',pass:drive.lap===2&&drive.shots.length===17,actual:{lap:drive.lap,seconds:drive.seconds,captured:drive.shots.map(s=>s.index)}});
   return checks.map(c=>({...c,errors,pass:c.pass&&!errors.length}));
  }finally{await page.close();}
 };

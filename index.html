@@ -1678,6 +1678,7 @@ function hillsNarrowness(index){
   return fade*fade*(3-2*fade);
 }
 function hillsDistrict(index){
+  if(index>=30&&index<120)return 'plaza';
   if(index<220)return 'palms';
   if(index<400)return 'club';
   if(index<522)return 'gardens';
@@ -1686,10 +1687,10 @@ function hillsDistrict(index){
   return 'modern';
 }
 function addHillsProperty(index,kind,side,size,extra={}){
-  const start=index-6,end=index+7;
+  const start=index-(kind==='hotel'?14:6),end=index+7;
   if(start<3||end>=segments.length-3)return;
   const grand=!!extra.estateGrand,depth=end-start;
-  const width=kind==='hills_estate'?(grand?1.6:1.2):1.9;
+  const width=kind==='hotel'?2.5:kind==='hills_estate'?(grand?1.6:1.2):1.9;
   const inner=hillsDetourCenter(index)+side*1.5*hillsRoadHalfWidth(index);
   const x=inner+side*width/2;
   let baseY=-Infinity;
@@ -1727,10 +1728,17 @@ function drawHillsPropertySlice(x1,y1,w1,x2,y2,w2,index){
     const stone=lot.district==='modern'?'#aa969c':'#b58b90';
     scenePoly([a(near,ground1-45),a(near,lot.baseY),b(far,lot.baseY),b(far,ground2-45)],stone);
     scenePoly([a(outer1,ground1-45),a(outer1,lot.baseY),b(outer2,lot.baseY),b(outer2,ground2-45)],'#826476');
-    flat(0,lot.width,lot.baseY,lot.district==='club'?'#668365':'#60775c');
+    flat(0,lot.width,lot.baseY,lot.kind==='hills_boutiques'?'#d6c2b0':lot.kind==='hotel'?'#d9b5ad':lot.district==='club'?'#668365':'#60775c');
     flat(0,.035,lot.baseY+12,'#f0d1b6');
     const phase=(index-lot.start)/(lot.end-lot.start);
-    if(phase>.25&&phase<.62){
+    if(lot.kind==='hotel'&&phase<.5){
+      // The arrival court is a projected part of the supported lot, not a
+      // painted patch hanging below the hotel sprite.
+      flat(.10,lot.width*.94,lot.baseY+4,'#a78191');
+      flat(.65,lot.width*.68,lot.baseY+6,'#efd6bd');
+      if(phase>.12&&phase<.34)flat(.72,lot.width*.64,lot.baseY+8,'#54775c');
+    }
+    if(lot.kind!=='hills_boutiques'&&lot.kind!=='hotel'&&phase>.25&&phase<.62){
       flat(.04,lot.width*.70,lot.baseY+4,'#c59fa3');
     }
     if(lot.pool&&phase>.06&&phase<.25){flat(lot.width*.20,lot.width*.92,lot.baseY+7,'#f2d8bd');flat(lot.width*.24,lot.width*.88,lot.baseY+9,'#48b9be');}
@@ -1750,6 +1758,14 @@ function addPolishScenery(){
       [435,'overlook',1,1],[490,'hill_mansion',1,1],[865,'overlook',-1,1],
       [930,'hill_mansion',1,1],[1060,'hill_mansion',1,1],[1000,'hills_pergola',1,1]];
     for(const [i,kind,side,size] of landmarks)addHillsProperty(i,kind,side,size);
+    // A short retail boulevard leads into the pink hotel's arrival court.
+    for(const [i,side,style]of[[48,-1,0],[60,1,1],[72,-1,2],[84,1,0],[96,-1,1],[108,1,2]])
+      addHillsProperty(i,'hills_boutiques',side,1,{estateStyle:style});
+    for(let i=35;i<120;i+=18)add(i,'plaza_lamp',i%2?-1.32:1.32,.62);
+    // Keep the shop windows and hotel arrival clear of old foreground shrubs.
+    for(let i=30;i<148;i++)if(i<120||segments[i].spriteX<0)segments[i].sprite=null;
+    for(let style=0;style<3;style++)getHillsDestinationTile('hills_boutiques',style);
+    getHillsDestinationTile('hotel');
     // Keep the sightline to the closure clear, including its closed road beyond.
     for(let i=522;i<590;i++){segments[i].sprite=null;segments[i].seaSprite=null;}
     add(486,'detour_warning',-1.35,1.05);
@@ -1773,7 +1789,7 @@ function addPolishScenery(){
     for(const seg of segments)if(seg.sprite==='beverly_villa')seg.sprite=null;
     for(let i=570;i<HILLS_DETOUR.end;i++)if(segments[i].sprite==='bougainvillea')segments[i].sprite=null;
     for(const side of[-1,1])for(let i=44+(side>0?12:0),plot=0;i<segments.length-30;i+=24,plot++){
-      if((i>=470&&i<590)||landmarks.some(([j,,which])=>which===side&&Math.abs(i-j)<20))continue;
+      if(i<125||(i>=470&&i<590)||landmarks.some(([j,,which])=>which===side&&Math.abs(i-j)<20))continue;
       const grand=i>=590&&i<HILLS_DETOUR.end;
       const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:[0,1,2,3,5,0,1,3][serial%8];
       addHillsProperty(i,'hills_estate',side,grand?1:.85,
@@ -1994,6 +2010,7 @@ function drawPolishScene(s){
   ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
   const k=s.kind,t=chapterTime,idx=s.segIdx;
   if(k==='hills_estate')drawHillsEstate(s.estateStyle,s.estatePalette,s.estateGrand);
+  else if(k==='hills_boutiques'||k==='hotel')ctx.drawImage(getHillsDestinationTile(k,s.estateStyle||0),-250,-359);
   else if(k==='substation')drawSubstation();
   else if(k==='pine_grove')drawPineGrove(idx);
   else if(k==='observatory')drawObservatory();
@@ -2188,14 +2205,129 @@ function drawEstateCar(model,color){
   }
 }
 
+// The commercial facades are static cached artwork. Terrain, courts and
+// pavements are still projected per segment and share the building's world foot.
+const hillsDestinationCache=new Map();
+function getHillsDestinationTile(kind,variant=0){
+  const key=kind+':'+variant;
+  if(hillsDestinationCache.has(key))return hillsDestinationCache.get(key);
+  const image=document.createElement('canvas');image.width=500;image.height=360;
+  const g=image.getContext('2d');g.translate(250,359);
+  const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  const poly=(points,c)=>{g.fillStyle=c;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
+  const line=(points,c,w=1)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();};
+  const oval=(x,y,rx,ry,c)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
+  const label=(text,x,y,size,color)=>{g.fillStyle=color;g.font=`${size}px "Gravity Pixel"`;g.textAlign='center';g.fillText(text,x,y);};
+  const person=(x,y,color,hat=false)=>{
+    oval(x,y-29,3.5,4,'#c98f70');rect(x-5,y-24,10,14,color);
+    line([[x-3,y-10],[x-4,y]],'#342a40',3);line([[x+3,y-10],[x+4,y]],'#342a40',3);
+    line([[x-5,y-23],[x-8,y-13]],color,3);line([[x+5,y-23],[x+8,y-14]],color,3);
+    if(hat){rect(x-5,y-35,10,5,color);rect(x-6,y-31,12,2,'#e2be79');rect(x-1,y-23,2,12,'#e5bc7f');}
+  };
+  const awning=(x,y,w,striped=false)=>{
+    poly([[x,y],[x+w,y],[x+w+7,y+13],[x-7,y+13]],striped?'#f1e4c8':'#292635');
+    rect(x-7,y+13,w+14,6,striped?'#e6dcc2':'#211f2e');
+    if(striped)for(let j=0;j<w;j+=16){poly([[x+j,y],[x+j+8,y],[x+j+8+(j/w-.5)*14,y+13],[x+j+(j/w-.5)*14,y+13]],'#3b7566');rect(x+j-3,y+13,8,6,'#3b7566');}
+    else line([[x-7,y+18],[x+w+7,y+18]],'#d1ae76',2);
+  };
+  if(kind==='hills_boutiques'){
+    const names=[['ATELIER 89','AUREL'],['VELOUR','LUMIERE'],['STEREO','PALM CLUB']][variant];
+    const colors=[['#e9d2b3','#c9a7ae'],['#d997aa','#e6d8c7'],['#d7c0ba','#a6bcb5']][variant];
+    // Two individual shops: Deco tower, low gallery, or rounded corner salon.
+    for(let b=0;b<2;b++){
+      const x=-178+b*180,h=[174,142,188][(variant+b)%3],body=colors[b];
+      rect(x,-h,176,h,body);rect(x+7,-h+8,162,3,'#f9e8c9');
+      rect(x-3,-h-6,182,7,'#f3ddbf');rect(x,-7,176,7,'#a2888c');
+      if((variant+b)%3===0){
+        rect(x+51,-h-27,74,22,body);rect(x+62,-h-31,52,5,'#f4ddbd');
+        for(let k=0;k<3;k++)rect(x+77+k*9,-h-21,3,13,'#9c7b87');
+      }else if((variant+b)%3===1){
+        for(let j=0;j<5;j++)rect(x+19+j*31,-h+19,20,18,'#6e6379');
+      }else{
+        for(let j=0;j<4;j++){rect(x+17+j*40,-h+16,25,31,'#5f6976');rect(x+17+j*40,-h+16,25,2,'#f2cead');}
+      }
+      rect(x+12,-109,152,99,'#bc9d67');rect(x+16,-105,144,91,'#333747');
+      const glass=g.createLinearGradient(x,-100,x+140,-12);glass.addColorStop(0,'#665870');glass.addColorStop(.55,'#857a8b');glass.addColorStop(1,'#344456');
+      rect(x+18,-102,140,84,glass);
+      // Window displays are recognisable even without readable tiny labels.
+      if(variant===2&&b===0){
+        for(let j=0;j<3;j++){rect(x+29+j*38,-68,30,30,['#df6cab','#75c6c8','#e3bd76'][j]);oval(x+44+j*38,-53,11,11,'#292c3f');oval(x+44+j*38,-53,3,3,'#d9b683');}
+      }else if(b===0){
+        for(const dx of[48,116]){
+          oval(x+dx,-83,5,6,'#e5cdb7');poly([[x+dx-5,-76],[x+dx+5,-76],[x+dx+13,-42],[x+dx-12,-42]],variant===1?'#d996b5':'#f6dfc6');
+          line([[x+dx-3,-42],[x+dx-3,-24]],'#d0bca9',3);line([[x+dx+3,-42],[x+dx+3,-24]],'#d0bca9',3);
+        }
+      }else{
+        for(let j=0;j<3;j++){rect(x+29+j*39,-42,26,24,'#ba9f91');oval(x+42+j*39,-50,10,12,'#e5c592');oval(x+42+j*39,-53,6,7,'#6a4b68');}
+      }
+      poly([[x+21,-102],[x+35,-102],[x+84,-18],[x+71,-18]],'rgba(255,231,214,.15)');
+      rect(x+85,-103,3,88,'#d1b47b');rect(x+81,-51,2,10,'#fbe3b4');
+      awning(x+11,-121,154);label(names[b],x+88,-127,12,'#463248');
+      for(const dx of[7,166]){rect(x+dx,-108,3,96,'#e3cfa6');oval(x+dx,-99,4,5,'#ffe3a6');}
+    }
+    // Small pavement details belong to the same solid terrace as the windows.
+    person(-14,0,'#e5b0cf');person(7,0,'#6d9ca4');
+    rect(-174,-24,20,24,'#bca68e');oval(-164,-30,14,16,'#4a7058');
+    rect(148,-23,23,23,'#c6ad91');oval(159,-30,15,16,'#486c55');
+  }else{
+    // Pink Palace: stepped hotel wings, central Deco crown and deep portico.
+    rect(-214,-182,428,156,'#d985a3');rect(-198,-194,396,12,'#f6c5c2');
+    rect(-146,-234,292,208,'#e997b1');rect(-156,-240,312,8,'#ffe0ca');
+    rect(-63,-282,126,256,'#f0a7ba');rect(-71,-287,142,8,'#ffe4cd');
+    poly([[-44,-287],[-29,-307],[29,-307],[44,-287]],'#e9a7b8');rect(-20,-312,40,6,'#ffe1c3');
+    for(const x of[-54,51])rect(x,-275,3,106,'#ffd9c4');
+    for(const side of[-1,1])for(let floor=0;floor<3;floor++)for(let j=0;j<3;j++){
+      const x=side<0?-196+j*44:86+j*44,y=-162+floor*45;
+      rect(x,y,25,29,'#6c586d');rect(x+12,y,2,29,'#e2b7a6');
+      if(floor===2)awning(x-2,y-5,29,true);
+      else{rect(x-3,y+23,31,4,'#f5ceba');line([[x-2,y+15],[x-2,y+24],[x+27,y+24],[x+27,y+15]],'#eec2ad',2);}
+    }
+    for(const x of[-122,-85,72,109]){rect(x,-219,21,25,'#66556b');rect(x-2,-194,25,4,'#f7d4bc');}
+    rect(-44,-264,88,58,'#76526b');label('PINK',0,-241,19,'#ffe2b5');label('PALACE',0,-218,17,'#ffe2b5');
+    label('SUNSET HILLS',0,-173,13,'#663e59');
+    for(const x of[-38,6]){rect(x,-147,32,48,'#7e6478');rect(x+14,-147,2,48,'#f7cdb8');awning(x-2,-151,36,true);}
+    rect(-58,-90,116,64,'#49364e');rect(-48,-85,96,57,'#ad8d65');rect(-44,-81,88,53,'#44545c');
+    line([[0,-81],[0,-28]],'#dec490',3);rect(-7,-59,3,13,'#f8dfab');rect(5,-59,3,13,'#f8dfab');
+    awning(-104,-99,208,true);rect(-113,-80,226,8,'#f9d8bd');
+    for(const x of[-101,101]){rect(x-5,-72,10,52,'#f5d2b7');rect(x-8,-26,16,7,'#b9828f');}
+    // A broad stair/sill reaches the actual world-space base; no floating lawn.
+    rect(-214,-26,428,26,'#c58d9b');rect(-115,-22,230,9,'#f4d3b8');rect(-123,-13,246,6,'#e1b6a9');rect(-132,-7,264,7,'#f8d8bf');
+    for(const x of[-189,188]){
+      rect(x-17,-22,34,22,'#edbca7');oval(x,-26,23,8,'#49715c');
+      const crown=x+(x<0?16:-14),cy=x<0?-252:-219;
+      // Slim curving palms frame the hotel; roots meet its supported terrace.
+      g.strokeStyle='#876a72';g.lineWidth=7;g.beginPath();g.moveTo(x,-20);g.quadraticCurveTo(x-12,cy*.55,crown,cy);g.stroke();
+      for(let j=0;j<7;j++){
+        const a=-Math.PI+j*Math.PI/6,dx=Math.cos(a)*55,dy=Math.sin(a)*26+16;
+        g.fillStyle=j%2?'#477b65':'#335e53';g.beginPath();g.moveTo(crown,cy);g.quadraticCurveTo(crown+dx*.5,cy-27,crown+dx,cy+dy);g.quadraticCurveTo(crown+dx*.45,cy-7,crown,cy);g.fill();
+      }
+    }
+    person(82,-1,'#ab355d',true);
+    // Bell cart beside the porter; luggage and polished brass, kept car-scaled.
+    line([[123,-3],[123,-54],[127,-62],[146,-62],[151,-54],[151,-3]],'#dfbe79',3);
+    rect(119,-8,36,4,'#d9b06a');rect(125,-29,15,21,'#874364');rect(138,-23,11,15,'#bf855b');
+    for(const x of[124,149])oval(x,-3,3,3,'#332b3c');
+    // Parked eighties stretch limousine on the arrival terrace (not a racer).
+    g.save();g.translate(-67,-1);g.scale(.74,.74);
+    oval(0,-1,92,6,'rgba(35,22,42,.28)');
+    poly([[-92,-8],[-94,-26],[-76,-31],[-60,-50],[43,-50],[65,-31],[91,-27],[94,-8]],'#34303f');
+    poly([[-61,-31],[-50,-45],[39,-45],[55,-31]],'#777c91');
+    for(const x of[-27,3,32])rect(x,-45,3,14,'#b4a7b1');
+    line([[-90,-25],[89,-25]],'#d9c1b5',2);line([[-89,-9],[91,-9]],'#bcaeae',3);
+    for(const x of[-65,65]){oval(x,-8,12,12,'#231f2c');oval(x,-8,6,6,'#cabdc0');}
+    rect(-94,-23,7,5,'#ea7a9e');rect(88,-25,7,6,'#ffe6ad');g.restore();
+  }
+  hillsDestinationCache.set(key,image);return image;
+}
+
 function drawSunsetScene(kind,seed,time){
-  if(kind==='hotel'){
-    sceneRect(-145,-116,290,103,'#dfb4a8');sceneRect(-110,-192,220,76,'#e9c4b2');sceneRect(-122,-198,244,9,'#ffe0c5');
-    for(let floor=0;floor<3;floor++)for(let j=0;j<7;j++)sceneRect(-126+j*39,-99-floor*30,23,18,(j+floor)%3?'#7b5877':'#f8ce93');
-    sceneRect(-54,-151,108,26,'#b783a6');ctx.fillStyle='#fff0cf';ctx.font='bold 12px "Gravity Pixel"';ctx.textAlign='center';ctx.fillText('SUNSET PALMS',0,-132);
-    sceneRect(-66,-52,132,39,'#503f5c');scenePoly([[-94,-56],[94,-56],[71,-75],[-71,-75]],'#df95ad');
-    for(const x of[-79,79])sceneRect(x,-55,5,42,'#efd6bb');
-    scenePoly([[-150,0],[155,0],[122,-15],[-118,-15]],'#9e7183');drawSideCoupe(-67,-1,'#cf728b');drawSideCoupe(76,-1,'#e9dbc3');
+  if(kind==='plaza_lamp'){
+    sceneRect(-5,-146,10,146,'#443b50');sceneRect(-11,-9,22,9,'#bd9b6b');
+    sceneLine([[-29,-145],[-29,-160],[29,-160],[29,-145]],'#c8aa76',3);
+    for(const x of[-29,29]){sceneEllipse(x,-141,9,12,'#ffe2a8');sceneRect(x-7,-155,14,4,'#c6a878');}
+    sceneRect(9,-116,45,71,'#302b3d');sceneRect(11,-114,41,2,'#d8b97f');
+    ctx.fillStyle='#f7ddaa';ctx.textAlign='center';ctx.font='9px "Gravity Pixel"';ctx.fillText('SUNSET',31,-92);ctx.fillText('PLAZA',31,-78);
+    sceneLine([[22,-62],[40,-62]],'#ed8fbe',2);
   }else if(kind==='tennis'){
     scenePoly([[-133,0],[144,0],[120,-68],[-110,-68]],'#b77d84');scenePoly([[-115,-8],[124,-8],[105,-59],[-97,-59]],'#467e7c');
     sceneLine([[-102,-14],[110,-14],[94,-53],[-87,-53],[-102,-14]],'#e6d8b7',1.5);sceneLine([[0,-14],[0,-53]],'#e6d8b7',1.2);
@@ -2380,8 +2512,13 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heigh
     const a=(l,v)=>[x1+l*w1,y1-v*w1*heightScale1],b=(l,v)=>[x2+l*w2,y2-v*w2*heightScale2];
     const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color);
     const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color);
+    if(index>=30&&index<120){
+      // Open pavement in front of shops, with no residential hedge or gate.
+      panel(lane,0,.035,'#ead8bc');band(lane,lane+side*.1,.035,'#ead8bc');continue;
+    }
     const courtyard=segments[index]?.hillsLots?.some(lot=>lot.side===side&&['hotel','tennis','hills_fountain','hills_pergola','overlook'].includes(lot.kind));
     if(courtyard){
+      if(segments[index].hillsLots.some(lot=>lot.side===side&&lot.kind==='hotel')){panel(lane,0,.03,'#efd4be');continue;}
       panel(lane,0,.04,'#c3a3a0');panel(lane,.13,.15,'#f2d8bd');
       if(phase%4===0)panel(lane,.02,.19,'#e6c9b4');
       continue;

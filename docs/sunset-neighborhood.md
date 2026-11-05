@@ -9,18 +9,33 @@ bleiben fest mit derselben zwischengespeicherten Landschaft verbunden.
 
 | Streckenbereich | Charakter und Blickfänge |
 | --- | --- |
-| Anfang bis Segment 220 | Palmenboulevard, Hotel SUNSET PALMS und private Villen |
+| 30–120 | SUNSET PLAZA: offene Einkaufsstraße mit Schaufenstern, schwarzen Markisen und Messinglaternen |
+| 120–220 | Rosa PINK PALACE mit grün-weißen Markisen, eigener Vorfahrt, Limousine und Portier; anschließend private Villen |
 | 220–400 | Heckengärten, Zypressen, Brunnenhof und SUNSET TENNIS |
 | 400–522 | Aussichtsterrasse und großes Anwesen vor der Umleitung |
 | 522–765 | Bestehende schmale Umleitung mit hohen Grundstücksmauern |
 | 765–960 | Offene Aussichtsgeländer, weiterer Aussichtspunkt und moderne Poolvilla |
 | Ab 960 | Moderne Villen, dunklere Tore, Agaven und Pergola mit Gartenskulptur |
 
-Die neun besonderen Grundstücke liegen bei 135, 225, 345, 435, 490, 865, 930,
-1000 und 1060. Ihre Straßenseite ist auf die Sicht in der jeweiligen Kurve
+Die neun größeren Blickfänge liegen bei 135, 225, 345, 435, 490, 865, 930,
+1000 und 1060. Dazu kommen sechs Ladenensembles bei 48, 60, 72, 84, 96 und 108. Ihre Straßenseite ist auf die Sicht in der jeweiligen Kurve
 abgestimmt. Die Brunnenanlage steht vor der Baustelle und wird nicht vom
 Baustellengatter verdeckt. Andere Häuser halten auf derselben Straßenseite
 Abstand zu diesen größeren Grundstücken.
+
+## SUNSET PLAZA und PINK PALACE
+
+Die Einkaufsstraße ersetzt die bisherigen Villen am Anfang. Drei verschiedene
+Ladenpaare verbinden Deco-Fassaden, große goldgerahmte Auslagen, Mode,
+Schmuck und Schallplatten. Offene Gehwege ersetzen hier die Grundstücksmauern;
+Laternen tragen SUNSET-PLAZA-Banner. Die Wohnviertel danach bleiben erhalten.
+
+Das Hotel bei 135 besitzt gestaffelte rosa Flügel, eine Deco-Krone, Balkone,
+einen grün-weiß gestreiften Portikus und zwei schlanke Palmen. Ein Portier,
+Gepäckwagen und eine geparkte Achtziger-Limousine stehen an der Vorfahrt.
+Der verlängerte, breitere Hotelgrund trägt auch die projizierte Vorfahrt
+mit bepflanzter Mittelinsel. Fassaden und Details werden in vier kleinen
+Canvas-Bildern vor der Fahrt vorbereitet.
 
 ## Bodenkontakt
 
@@ -47,8 +62,8 @@ diesen Umbau unverändert.
 
 `node scripts/assess-game.cjs hills-neighborhood` prüft die Tragflächen über
 dem ganzen Hangprofil, Grundstücksabstände, die tatsächliche Deckung von
-gezeichnetem Hausfuß und Plattform sowie die Sichtbarkeit aller neun
-Blickfänge. Eine vollständige Runde fährt mit echten Physikschritten und
+gezeichnetem Hausfuß und Plattform sowie die Sichtbarkeit aller fünfzehn
+Blickfänge einschließlich der neuen Ladenfronten. Eine vollständige Runde fährt mit echten Physikschritten und
 Lenkeingaben; die dabei gespeicherten Bilder wurden kontrolliert.
 
 `hills-stability` und `detour` prüfen zusätzlich die frühere Fahrzeugunruhe,
@@ -63,3 +78,8 @@ Vorgängerversion; die zusätzliche Projektion kostet CPU-Zeit. Cloudmessungen
 sind keine Aussage über die Bildrate auf einem bestimmten Handy.
 
 Messwerte und Prüfresultate: [Belege](evidence/hills-neighborhood-2026-11-03.json).
+
+Die Erweiterung vom 5. November wurde zusätzlich in einer vollständigen
+Physikrunde mit 17 gespeicherten Ansichten kontrolliert, darunter sechs
+Ansichten vom Einkaufsboulevard bis hinter das Hotel. `hills-neighborhood`,
+`hills-stability`, `detour` und der Produktionsbuild bestehen.
