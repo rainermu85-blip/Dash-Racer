@@ -1,0 +1,1224 @@
+{
+  "date": "2026-11-06",
+  "baseline": "fefa800",
+  "checks": {
+    "evening": [
+      {
+        "name": "landmarks-replace-existing-properties",
+        "pass": true,
+        "actual": {
+          "landmarks": [
+            [
+              435,
+              "pool_party"
+            ],
+            [
+              930,
+              "glass_villa"
+            ],
+            [
+              1060,
+              "film_set"
+            ]
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "valley-view-keeps-an-open-foreground",
+        "pass": true,
+        "actual": {},
+        "errors": []
+      },
+      {
+        "name": "actual-render-sun-descends-and-sky-darkens",
+        "pass": true,
+        "actual": [
+          {
+            "lap": 1,
+            "progress": 0.23202777777777778,
+            "pink": 0.4461762139996571,
+            "night": 0,
+            "phase": 0.4833912037037037,
+            "sunY": 334.53413040285284,
+            "sky": [
+              117,
+              68,
+              102,
+              255
+            ]
+          },
+          {
+            "lap": 2,
+            "progress": 0.5653611111111111,
+            "pink": 1,
+            "night": 0.09429717724215857,
+            "phase": 1.0942971772421586,
+            "sunY": 427.37413040285287,
+            "sky": [
+              81,
+              55,
+              94,
+              255
+            ]
+          },
+          {
+            "lap": 3,
+            "progress": 0.8986944444444445,
+            "pink": 1,
+            "night": 0.9861542959063189,
+            "phase": 1.986154295906319,
+            "sunY": 520.2141304028529,
+            "sky": [
+              22,
+              30,
+              58,
+              255
+            ]
+          }
+        ],
+        "errors": []
+      },
+      {
+        "name": "blue-hour-and-lights-arrive-in-last-lap",
+        "pass": true,
+        "actual": [
+          {
+            "lap": 1,
+            "night": 0
+          },
+          {
+            "lap": 2,
+            "night": 0.09429717724215857
+          },
+          {
+            "lap": 3,
+            "night": 0.9861542959063189
+          }
+        ],
+        "errors": []
+      },
+      {
+        "name": "sunset-has-no-lighting-reset-at-lap-boundaries",
+        "pass": true,
+        "actual": {
+          "seam": [
+            9.876543138886973e-09,
+            1.198733245999506e-08
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "panorama-remains-seamless-and-sign-ridge-stays-put",
+        "pass": true,
+        "actual": {},
+        "errors": []
+      },
+      {
+        "name": "film_set-animation-is-local",
+        "pass": true,
+        "actual": {
+          "changed": 6913,
+          "outside": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "pool_party-animation-is-local",
+        "pass": true,
+        "actual": {
+          "changed": 853,
+          "outside": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "evening-reuses-cached-artwork-during-driving",
+        "pass": true,
+        "actual": {
+          "newCanvases": 0
+        },
+        "errors": []
+      }
+    ],
+    "neighborhood": [
+      {
+        "name": "every-property-has-support-above-the-whole-slope",
+        "pass": true,
+        "actual": {
+          "properties": 76,
+          "unsupported": []
+        },
+        "errors": []
+      },
+      {
+        "name": "independent-plots-dont-overlap-on-the-same-side",
+        "pass": true,
+        "actual": {
+          "overlaps": []
+        },
+        "errors": []
+      },
+      {
+        "name": "panorama-homes-have-wide-retaining-footings",
+        "pass": true,
+        "actual": {
+          "homes": 57
+        },
+        "errors": []
+      },
+      {
+        "name": "all-panorama-sectors-are-inhabited-with-villas",
+        "pass": true,
+        "actual": {
+          "sectors": [
+            4,
+            12,
+            9,
+            10
+          ],
+          "apartments": 5,
+          "total": 35
+        },
+        "errors": []
+      },
+      {
+        "name": "rendered-buildings-meet-their-projected-terraces",
+        "pass": true,
+        "actual": {
+          "samples": 51,
+          "maxError": 5.684341886080802e-14
+        },
+        "errors": []
+      },
+      {
+        "name": "pools-are-present-on-separate-front-terraces",
+        "pass": true,
+        "actual": {
+          "pools": 21
+        },
+        "errors": []
+      },
+      {
+        "name": "sunset-has-distinct-neighborhood-sections",
+        "pass": true,
+        "actual": {
+          "districts": [
+            "plaza",
+            "palms",
+            "club",
+            "gardens",
+            "detour",
+            "panorama",
+            "modern"
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "longitudinal-shop-fronts-follow-supported-road-edges",
+        "pass": true,
+        "actual": {
+          "strips": 1686,
+          "shopCount": 6,
+          "maxFootError": 2.2737367544323206e-13
+        },
+        "errors": []
+      },
+      {
+        "name": "shop-textures-face-correct-way-on-both-sides",
+        "pass": true,
+        "actual": {
+          "mirrored": 0,
+          "nonFinite": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "shop-front-slices-join-through-three-laps",
+        "pass": true,
+        "actual": {
+          "maxJoinError": 1.1368683772161603e-13
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-48",
+        "pass": true,
+        "actual": {
+          "width": 70.40828254855165,
+          "height": 142.16181955857195
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-60",
+        "pass": true,
+        "actual": {
+          "width": 69.59057474900408,
+          "height": 149.76405589860252
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-72",
+        "pass": true,
+        "actual": {
+          "width": 71.15291792212759,
+          "height": 142.1618195585719
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-84",
+        "pass": true,
+        "actual": {
+          "width": 68.5384282499245,
+          "height": 149.76405589860252
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-96",
+        "pass": true,
+        "actual": {
+          "width": 72.56309766667943,
+          "height": 142.161819558572
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-108",
+        "pass": true,
+        "actual": {
+          "width": 66.66446143349435,
+          "height": 149.76405589860252
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-135",
+        "pass": true,
+        "actual": {
+          "width": 96.58968058968057,
+          "height": 95.08046683046683
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-225",
+        "pass": true,
+        "actual": {
+          "width": 120.84349171501094,
+          "height": 55.646341463414615
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-345",
+        "pass": true,
+        "actual": {
+          "width": 136.54647807872365,
+          "height": 85.12078651685391
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-435",
+        "pass": true,
+        "actual": {
+          "width": 174.20458497530382,
+          "height": 106.82608695652175
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-490",
+        "pass": true,
+        "actual": {
+          "width": 136.9756097560975,
+          "height": 203.32317073170725
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-865",
+        "pass": true,
+        "actual": {
+          "width": 173.09653537714183,
+          "height": 43.29515418502206
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-930",
+        "pass": true,
+        "actual": {
+          "width": 104.75539292643595,
+          "height": 113.29106628242073
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-1000",
+        "pass": true,
+        "actual": {
+          "width": 136.20062639676198,
+          "height": 64.20731707317071
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-1060",
+        "pass": true,
+        "actual": {
+          "width": 107.11716621253413,
+          "height": 92.05381471389649
+        },
+        "errors": []
+      },
+      {
+        "name": "whole-hills-lap-with-real-physics-and-steering",
+        "pass": true,
+        "actual": {
+          "lap": 2,
+          "seconds": 42.63333333332569,
+          "captured": [
+            20,
+            45,
+            70,
+            95,
+            120,
+            145,
+            200,
+            320,
+            405,
+            490,
+            540,
+            620,
+            740,
+            820,
+            930,
+            1000,
+            1100
+          ]
+        },
+        "errors": []
+      }
+    ],
+    "stability": [
+      {
+        "name": "camera-crossings-cars-and-estates-390",
+        "pass": true,
+        "actual": {
+          "boundaries": 42,
+          "maxCarJump": 0.0001313285906121564,
+          "maxEstateJump": 0.0005458154925008785,
+          "outliers": []
+        },
+        "errors": []
+      },
+      {
+        "name": "camera-lap-seam-390",
+        "pass": true,
+        "actual": {
+          "frames": [
+            {
+              "x": 268.7107109127924,
+              "y": 587.4233855887871,
+              "scale": 0.8034879999999999
+            },
+            {
+              "x": 268.7107109174297,
+              "y": 587.4233855852996,
+              "scale": 0.8034879999999999
+            }
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "hills-contact-edges-follow-rendered-cars-390",
+        "pass": true,
+        "actual": {
+          "gaps": [
+            -1.3611314280497169,
+            -1.3611314280498306,
+            -1.3611314280498306,
+            4.924904634616482,
+            4.924904634616482,
+            4.924904634616482,
+            -3.1939282438862193,
+            -3.193928243886276,
+            -3.193928243886276,
+            2.078691546680872,
+            2.078691546680872,
+            2.0786915466808153
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "villas-modernism-and-apartment-cap-390",
+        "pass": true,
+        "actual": {
+          "plots": 61,
+          "apartments": 7,
+          "modernVillas": 18
+        },
+        "errors": []
+      },
+      {
+        "name": "uphill-has-no-floating-return-road",
+        "pass": true,
+        "actual": {
+          "palePixels": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "offscreen-terrain-cannot-draw-screen-bars-390",
+        "pass": true,
+        "actual": {
+          "changedPixels": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "asphalt-without-transverse-seams-390",
+        "pass": true,
+        "actual": {
+          "channelRange": [
+            0,
+            1,
+            1
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "physics-drive-visual-coverage-390",
+        "pass": true,
+        "actual": {
+          "captured": [
+            490,
+            530,
+            555,
+            580,
+            620,
+            650,
+            700,
+            750,
+            800
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "camera-crossings-cars-and-estates-480",
+        "pass": true,
+        "actual": {
+          "boundaries": 42,
+          "maxCarJump": 0.0001313285906121564,
+          "maxEstateJump": 0.0005619063367987565,
+          "outliers": []
+        },
+        "errors": []
+      },
+      {
+        "name": "camera-lap-seam-480",
+        "pass": true,
+        "actual": {
+          "frames": [
+            {
+              "x": 330.7207109127924,
+              "y": 487.1994904172405,
+              "scale": 0.841512408759124
+            },
+            {
+              "x": 330.7207109174297,
+              "y": 487.199490414348,
+              "scale": 0.841512408759124
+            }
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "hills-contact-edges-follow-rendered-cars-480",
+        "pass": true,
+        "actual": {
+          "gaps": [
+            -3.1014997868667677,
+            -3.1014997868667677,
+            -3.1014997868667677,
+            4.84344926210828,
+            4.84344926210828,
+            4.84344926210828,
+            -3.0333379069129336,
+            -3.0333379069129904,
+            -3.0333379069130473,
+            1.2461078309190299,
+            1.2461078309190299,
+            1.2461078309190867
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "villas-modernism-and-apartment-cap-480",
+        "pass": true,
+        "actual": {
+          "plots": 61,
+          "apartments": 7,
+          "modernVillas": 18
+        },
+        "errors": []
+      },
+      {
+        "name": "offscreen-terrain-cannot-draw-screen-bars-480",
+        "pass": true,
+        "actual": {
+          "changedPixels": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "asphalt-without-transverse-seams-480",
+        "pass": true,
+        "actual": {
+          "channelRange": [
+            0,
+            1,
+            1
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "physics-drive-visual-coverage-1000",
+        "pass": true,
+        "actual": {
+          "captured": [
+            490,
+            530,
+            555,
+            580,
+            620,
+            650,
+            700,
+            750,
+            800
+          ]
+        },
+        "errors": []
+      }
+    ],
+    "detour": [
+      {
+        "name": "left-exit-30-cruise-lane--0.6",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.048861936548013817
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-30-cruise-lane-0",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.13206193654801443
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-30-cruise-lane-0.65",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.06766193654801574
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-30-turbo-lane--0.6",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.07535556286733874
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-30-turbo-lane-0",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": 0.011961937132652499
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-30-turbo-lane-0.65",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.05412349934080656
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-60-cruise-lane--0.6",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.04886193654797485
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-60-cruise-lane-0",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.03446193654801691
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-60-cruise-lane-0.65",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.0676619365480662
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-60-turbo-lane--0.6",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.027913687867307496
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-60-turbo-lane-0",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.036709937867484
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-60-turbo-lane-0.65",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.056260743329118124
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-120-cruise-lane--0.6",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.04886193654785617
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-120-cruise-lane-0",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.05886193654803315
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-120-cruise-lane-0.65",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 3.2666666666666666,
+          "x": -0.06766193654822436
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-120-turbo-lane--0.6",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.051416812867191325
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-120-turbo-lane-0",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.06057181286736922
+        },
+        "errors": []
+      },
+      {
+        "name": "left-exit-120-turbo-lane-0.65",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "minSpeed": 4320,
+          "maxWall": 0,
+          "seconds": 2.7666666666666666,
+          "x": -0.05337743786755564
+        },
+        "errors": []
+      },
+      {
+        "name": "missed-exit-has-heavy-collision-30",
+        "pass": true,
+        "actual": {
+          "hits": [
+            {
+              "player": true,
+              "x": 0.03601294192122646,
+              "z": 549.3693304385463,
+              "before": 4142.874626865696
+            }
+          ],
+          "speed": 1242.862388059709
+        },
+        "errors": []
+      },
+      {
+        "name": "missed-exit-has-heavy-collision-60",
+        "pass": true,
+        "actual": {
+          "hits": [
+            {
+              "player": true,
+              "x": 0.03601294192121861,
+              "z": 549.3693304385431,
+              "before": 4142.874626865696
+            }
+          ],
+          "speed": 1242.862388059709
+        },
+        "errors": []
+      },
+      {
+        "name": "missed-exit-has-heavy-collision-120",
+        "pass": true,
+        "actual": {
+          "hits": [
+            {
+              "player": true,
+              "x": 0.0360129419212343,
+              "z": 549.3693304385625,
+              "before": 4142.874626865696
+            }
+          ],
+          "speed": 1242.862388059709
+        },
+        "errors": []
+      },
+      {
+        "name": "closure-survives-every-driver",
+        "pass": true,
+        "actual": {
+          "hits": 6,
+          "state": "idle"
+        },
+        "errors": []
+      },
+      {
+        "name": "visible-closure-and-collision-agree",
+        "pass": true,
+        "actual": {
+          "left": -0.14000000000000012,
+          "right": 2,
+          "contactRadius": 0.11999999999999988
+        },
+        "errors": []
+      },
+      {
+        "name": "closure-covers-main-road-and-keeps-side-street-clear",
+        "pass": true,
+        "actual": {
+          "left": -0.14000000000000012,
+          "right": 2
+        },
+        "errors": []
+      },
+      {
+        "name": "drawn-main-road-is-normal-width-side-street-is-narrow",
+        "pass": true,
+        "actual": {
+          "asphalts": [
+            {
+              "center": 80,
+              "halfWidth": 100
+            },
+            {
+              "center": -60,
+              "halfWidth": 46
+            }
+          ],
+          "laneDividers": 2
+        },
+        "errors": []
+      },
+      {
+        "name": "guide-cones-taper-left-and-use-real-pylon-contacts",
+        "pass": true,
+        "actual": {
+          "guideCones": [
+            {
+              "index": 514,
+              "x": 1.08
+            },
+            {
+              "index": 519,
+              "x": 1.0180358367626887
+            },
+            {
+              "index": 524,
+              "x": 0.8574348422496572
+            },
+            {
+              "index": 529,
+              "x": 0.6361342592592594
+            },
+            {
+              "index": 534,
+              "x": 0.3920713305898491
+            },
+            {
+              "index": 539,
+              "x": 0.16318329903978068
+            },
+            {
+              "index": 544,
+              "x": -0.01259259259259271
+            },
+            {
+              "index": 549,
+              "x": -0.0973191015089161
+            },
+            {
+              "index": 554,
+              "x": -0.10000000000000006
+            },
+            {
+              "index": 559,
+              "x": -0.10000000000000006
+            },
+            {
+              "index": 564,
+              "x": -0.10000000000000006
+            },
+            {
+              "index": 569,
+              "x": -0.10000000000000006
+            },
+            {
+              "index": 574,
+              "x": -0.0710413994169097
+            },
+            {
+              "index": 579,
+              "x": 0.03148921282798824
+            }
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "junction-asphalt-has-no-transverse-seams",
+        "pass": true,
+        "actual": {
+          "channelRanges": [
+            [
+              0,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1
+            ]
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "all-ai-use-left-exit",
+        "pass": true,
+        "actual": {
+          "hits": [],
+          "cars": [
+            {
+              "z": 784.3016375877927,
+              "x": -0.12002926814317433,
+              "speed": 4256.8581396983245
+            },
+            {
+              "z": 778.0956699080149,
+              "x": 0.3699999806591184,
+              "speed": 4215.056374597072
+            },
+            {
+              "z": 777.2895828743808,
+              "x": -0.585305932369224,
+              "speed": 4212.4285215651535
+            },
+            {
+              "z": 767.6804164621409,
+              "x": -0.1399400768689883,
+              "speed": 4147.064526010892
+            },
+            {
+              "z": 764.9140082282016,
+              "x": 0.4199316014998812,
+              "speed": 4138.86456083405
+            }
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "detour-is-sunset-only",
+        "pass": true,
+        "errors": []
+      },
+      {
+        "name": "restart-restores-closure",
+        "pass": true,
+        "errors": []
+      },
+      {
+        "name": "near-clipped-walls-stay-on-their-projected-edges",
+        "pass": true,
+        "actual": {
+          "residual": [
+            5.960464477539063e-08,
+            0
+          ]
+        },
+        "errors": []
+      }
+    ]
+  },
+  "renderBenchmark": [
+    {
+      "baseline": true,
+      "result": [
+        {
+          "lap": 1,
+          "index": 95,
+          "drawCalls": 3138.366666666667,
+          "medianMs": 3.7000000178813934,
+          "p95Ms": 75.10000002384186
+        },
+        {
+          "lap": 1,
+          "index": 415,
+          "drawCalls": 2786.85,
+          "medianMs": 2.7000000178813934,
+          "p95Ms": 7.5999999940395355
+        },
+        {
+          "lap": 1,
+          "index": 835,
+          "drawCalls": 2851.8333333333335,
+          "medianMs": 3.0999999940395355,
+          "p95Ms": 84.40000000596046
+        },
+        {
+          "lap": 1,
+          "index": 896,
+          "drawCalls": 2756.366666666667,
+          "medianMs": 3.0999999940395355,
+          "p95Ms": 107.59999999403954
+        },
+        {
+          "lap": 1,
+          "index": 1024,
+          "drawCalls": 4031.733333333333,
+          "medianMs": 4.5999999940395355,
+          "p95Ms": 64.2999999821186
+        },
+        {
+          "lap": 3,
+          "index": 95,
+          "drawCalls": 3138.366666666667,
+          "medianMs": 3.4000000059604645,
+          "p95Ms": 75.19999998807907
+        },
+        {
+          "lap": 3,
+          "index": 415,
+          "drawCalls": 2786.85,
+          "medianMs": 2.5999999940395355,
+          "p95Ms": 7.9000000059604645
+        },
+        {
+          "lap": 3,
+          "index": 835,
+          "drawCalls": 2851.8333333333335,
+          "medianMs": 3,
+          "p95Ms": 85.2000000178814
+        },
+        {
+          "lap": 3,
+          "index": 896,
+          "drawCalls": 2756.366666666667,
+          "medianMs": 2.7999999821186066,
+          "p95Ms": 111.40000000596046
+        },
+        {
+          "lap": 3,
+          "index": 1024,
+          "drawCalls": 4031.733333333333,
+          "medianMs": 4.5,
+          "p95Ms": 61.69999998807907
+        }
+      ]
+    },
+    {
+      "baseline": false,
+      "result": [
+        {
+          "lap": 1,
+          "index": 95,
+          "drawCalls": 3203.366666666667,
+          "medianMs": 4.199999988079071,
+          "p95Ms": 73.7000000178814
+        },
+        {
+          "lap": 1,
+          "index": 415,
+          "drawCalls": 2755.8333333333335,
+          "medianMs": 4,
+          "p95Ms": 10.100000023841858
+        },
+        {
+          "lap": 1,
+          "index": 835,
+          "drawCalls": 2699.483333333333,
+          "medianMs": 3.699999988079071,
+          "p95Ms": 90.30000001192093
+        },
+        {
+          "lap": 1,
+          "index": 896,
+          "drawCalls": 2667.5666666666666,
+          "medianMs": 3.5,
+          "p95Ms": 98
+        },
+        {
+          "lap": 1,
+          "index": 1024,
+          "drawCalls": 3999.733333333333,
+          "medianMs": 5.399999976158142,
+          "p95Ms": 62.599999994039536
+        },
+        {
+          "lap": 3,
+          "index": 95,
+          "drawCalls": 3222.366666666667,
+          "medianMs": 4.200000017881393,
+          "p95Ms": 75.2999999821186
+        },
+        {
+          "lap": 3,
+          "index": 415,
+          "drawCalls": 2759.8333333333335,
+          "medianMs": 3,
+          "p95Ms": 10.399999976158142
+        },
+        {
+          "lap": 3,
+          "index": 835,
+          "drawCalls": 2704.7833333333333,
+          "medianMs": 3.0999999940395355,
+          "p95Ms": 80.09999999403954
+        },
+        {
+          "lap": 3,
+          "index": 896,
+          "drawCalls": 2669.866666666667,
+          "medianMs": 3.199999988079071,
+          "p95Ms": 95.59999999403954
+        },
+        {
+          "lap": 3,
+          "index": 1024,
+          "drawCalls": 4006.733333333333,
+          "medianMs": 5.300000011920929,
+          "p95Ms": 59.80000001192093
+        }
+      ]
+    }
+  ],
+  "limitations": "Headless cloud browser; timings are not measurements of phone FPS."
+}

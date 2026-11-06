@@ -69,7 +69,7 @@ module.exports=async function assessDetour(browser,baseUrl,output){
     const x1=-1400,x2=150,y1=3000,y2=500,w1=limit*3,w2=limit*.2;
     scenePoly=(points,color)=>painted.push({points,color});
     try{drawEstateWallSlice(x1,y1,w1,x2,y2,w2,600,true,1.4,1.2);}finally{scenePoly=polygon;}
-    const walls=painted.filter(p=>['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7','#655968','#564857'].includes(p.color));
+    const walls=painted.filter(p=>['#efd3b9','#e3bfba','#d9c8c1','#f2ddc7','#655968','#564857'].map(hillsColor).includes(p.color));
     const residual=walls.map(({points})=>{
       const p=points[0],side=p[0]<0?-1:1;
       const a=[x1+side*1.5*w1,y1],b=[x2+side*1.5*w2,y2];

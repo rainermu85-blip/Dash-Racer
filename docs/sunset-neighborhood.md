@@ -12,10 +12,10 @@ bleiben fest mit derselben zwischengespeicherten Landschaft verbunden.
 | 30–120 | SUNSET PLAZA: offene Einkaufsstraße mit Schaufenstern, schwarzen Markisen und Messinglaternen |
 | 120–220 | Rosa PINK PALACE mit grün-weißen Markisen, eigener Vorfahrt, Limousine und Portier; anschließend private Villen |
 | 220–400 | Heckengärten, Zypressen, Brunnenhof und SUNSET TENNIS |
-| 400–522 | Aussichtsterrasse und großes Anwesen vor der Umleitung |
+| 400–522 | Poolparty auf der Hangterrasse und großes Anwesen vor der Umleitung |
 | 522–765 | Bestehende schmale Umleitung mit hohen Grundstücksmauern |
-| 765–960 | Offene Aussichtsgeländer, weiterer Aussichtspunkt und moderne Poolvilla |
-| Ab 960 | Moderne Villen, dunklere Tore, Agaven und Pergola mit Gartenskulptur |
+| 765–960 | Offene Aussicht ins Lichtermeer und auskragende Glasvilla |
+| Ab 960 | Moderne Villen, Filmset, Agaven und Pergola mit Gartenskulptur |
 
 Die neun größeren Blickfänge liegen bei 135, 225, 345, 435, 490, 865, 930,
 1000 und 1060. Dazu kommen sechs Ladenensembles bei 48, 60, 72, 84, 96 und 108. Ihre Straßenseite ist auf die Sicht in der jeweiligen Kurve
@@ -100,3 +100,5 @@ sich. Kleine überlappende Texturdreiecke vermeiden flimmernde Schnittfugen.
 drei Runden, ihren Bodenkontakt und die Leserichtung auf beiden Straßenseiten.
 Die Sichtbarkeitsprüfung erfasst die tatsächlich gezeichneten Fassaden statt
 der früheren frontal ausgerichteten Sprites.
+
+Sonnenuntergang und neue Szenen: [Sunset Evening](sunset-evening.md).

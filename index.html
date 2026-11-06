@@ -1677,6 +1677,35 @@ function hillsNarrowness(index){
   const fade=clamp(Math.min((index-HILLS_DETOUR.start)/32,(HILLS_DETOUR.end-index)/24),0,1);
   return fade*fade*(3-2*fade);
 }
+let hillsEvening={progress:0,pink:0,night:0,phase:0};
+const hillsToneCache=new WeakMap(),hillsFrameColors=new Map();
+function getHillsEvening(progress){
+  const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+  return{progress:clamp(progress,0,1),pink:smooth(progress/.50),night:smooth((progress-.48)/.45),phase:clamp(progress/.48,0,1)+smooth((progress-.48)/.45)};
+}
+function hillsColor(color){
+  if(hillsFrameColors.has(color))return hillsFrameColors.get(color);
+  const warm=interpolateColor(color,'#d87a9c',hillsEvening.pink*.13);
+  const result=interpolateColor(warm,'#242d4e',hillsEvening.night*.43);
+  hillsFrameColors.set(color,result);return result;
+}
+function getHillsTone(image,phase){
+  if(phase===0)return image;
+  let variants=hillsToneCache.get(image);if(!variants){variants=new Map();hillsToneCache.set(image,variants);}
+  if(variants.has(phase))return variants.get(phase);
+  const tile=document.createElement('canvas');tile.width=image.width;tile.height=image.height;
+  const g=tile.getContext('2d');g.drawImage(image,0,0);g.globalCompositeOperation='source-atop';
+  g.fillStyle=phase===1?'rgba(240,111,161,.16)':'rgba(25,35,74,.48)';g.fillRect(0,0,tile.width,tile.height);
+  if(phase===2&&image.hillsKind==='hills_boutiques'){
+    g.fillStyle='rgba(255,192,135,.22)';for(const x of[90,270])g.fillRect(x,257,140,84);
+  }
+  variants.set(phase,tile);return tile;
+}
+function drawHillsLitImage(image,...args){
+  const phase=hillsEvening.phase,low=Math.floor(phase),mix=phase-low,alpha=ctx.globalAlpha;
+  ctx.drawImage(getHillsTone(image,low),...args);
+  if(mix>.001){ctx.globalAlpha=alpha*mix;ctx.drawImage(getHillsTone(image,Math.min(2,low+1)),...args);ctx.globalAlpha=alpha;}
+}
 function hillsDistrict(index){
   if(index>=30&&index<120)return 'plaza';
   if(index<220)return 'palms';
@@ -1687,10 +1716,10 @@ function hillsDistrict(index){
   return 'modern';
 }
 function addHillsProperty(index,kind,side,size,extra={}){
-  const start=index-(kind==='hotel'?14:6),end=index+7;
+  const start=index-(['hotel','pool_party','glass_villa','film_set'].includes(kind)?14:6),end=index+7;
   if(start<3||end>=segments.length-3)return;
   const grand=!!extra.estateGrand,depth=end-start;
-  const width=kind==='hotel'?2.5:kind==='hills_estate'?(grand?1.6:1.2):1.9;
+  const width=kind==='hotel'?2.5:['pool_party','glass_villa','film_set'].includes(kind)?2.3:kind==='hills_estate'?(grand?1.6:1.2):1.9;
   const inner=hillsDetourCenter(index)+side*1.5*hillsRoadHalfWidth(index);
   const x=inner+side*width/2;
   let baseY=-Infinity;
@@ -1722,12 +1751,12 @@ function drawHillsPropertySlice(x1,y1,w1,x2,y2,w2,index){
     const near=inner(index),far=inner(index+1),outer1=near+lot.side*lot.width,outer2=far+lot.side*lot.width;
     const xs=[x1+near*w1,x1+outer1*w1,x2+far*w2,x2+outer2*w2];
     if(Math.max(...xs)<-2||Math.min(...xs)>W+2)continue;
-    const flat=(l,r,height,color)=>scenePoly([a(near+lot.side*l,height),b(far+lot.side*l,height),b(far+lot.side*r,height),a(near+lot.side*r,height)],color);
+    const flat=(l,r,height,color)=>scenePoly([a(near+lot.side*l,height),b(far+lot.side*l,height),b(far+lot.side*r,height),a(near+lot.side*r,height)],hillsColor(color));
     // Solid retaining faces descend into the sampled hillside, including on
     // steep climbs. Their upper edge is the same world plane as the house foot.
     const stone=lot.district==='modern'?'#aa969c':'#b58b90';
-    scenePoly([a(near,ground1-45),a(near,lot.baseY),b(far,lot.baseY),b(far,ground2-45)],stone);
-    scenePoly([a(outer1,ground1-45),a(outer1,lot.baseY),b(outer2,lot.baseY),b(outer2,ground2-45)],'#826476');
+    scenePoly([a(near,ground1-45),a(near,lot.baseY),b(far,lot.baseY),b(far,ground2-45)],hillsColor(stone));
+    scenePoly([a(outer1,ground1-45),a(outer1,lot.baseY),b(outer2,lot.baseY),b(outer2,ground2-45)],hillsColor('#826476'));
     flat(0,lot.width,lot.baseY,lot.kind==='hills_boutiques'?'#d6c2b0':lot.kind==='hotel'?'#d9b5ad':lot.district==='club'?'#668365':'#60775c');
     flat(0,.035,lot.baseY+12,'#f0d1b6');
     const phase=(index-lot.start)/(lot.end-lot.start);
@@ -1747,7 +1776,7 @@ function drawHillsPropertySlice(x1,y1,w1,x2,y2,w2,index){
       scenePoly([a(near,middle),a(near,middle+12),b(far,middle+12),b(far,middle)],'#9e7d87');
     }
     // The leading face closes the terrace instead of leaving a floating slab.
-    if(index===lot.start)scenePoly([a(near,ground1-45),a(outer1,ground1-45),a(outer1,lot.baseY),a(near,lot.baseY)],'#927180');
+    if(index===lot.start)scenePoly([a(near,ground1-45),a(outer1,ground1-45),a(outer1,lot.baseY),a(near,lot.baseY)],hillsColor('#927180'));
   }
 }
 // The shop front lies along the road, not across it. Each piece uses the
@@ -1785,7 +1814,7 @@ function drawHillsShopTexture(image,u1,u2,nearBottom,farBottom,nearTop,farTop){
     });
     ctx.save();ctx.beginPath();ctx.moveTo(...clip[0]);ctx.lineTo(...clip[1]);ctx.lineTo(...clip[2]);ctx.closePath();ctx.clip();
     ctx.transform(xx,yx,xy,yy,p[0]-xx*a[0]-xy*a[1],p[1]-yx*a[0]-yy*a[1]);
-    ctx.drawImage(image,0,0);ctx.restore();
+    drawHillsLitImage(image,0,0);ctx.restore();
   };
   triangle([[u1,v1],[u2,v1],[u2,v0]],[nearBottom,farBottom,farTop]);
   triangle([[u1,v1],[u2,v0],[u1,v0]],[nearBottom,farTop,nearTop]);
@@ -1834,8 +1863,8 @@ function addPolishScenery(){
   if(currentLevel===LEVEL_HIGHWAY){add(918,'substation',2.3,1.0);}
   if(currentLevel===LEVEL_HILLS){
     const landmarks=[[135,'hotel',-1,1],[225,'hills_fountain',-1,1],[345,'tennis',1,1],
-      [435,'overlook',1,1],[490,'hill_mansion',1,1],[865,'overlook',-1,1],
-      [930,'hill_mansion',1,1],[1060,'hill_mansion',1,1],[1000,'hills_pergola',1,1]];
+      [435,'pool_party',1,1],[490,'hill_mansion',1,1],[865,'overlook',-1,1],
+      [930,'glass_villa',1,1],[1060,'film_set',1,1],[1000,'hills_pergola',1,1]];
     for(const [i,kind,side,size] of landmarks)addHillsProperty(i,kind,side,size);
     // A short retail boulevard leads into the pink hotel's arrival court.
     for(const [i,side,style]of[[48,-1,0],[60,1,1],[72,-1,2],[84,1,0],[96,-1,1],[108,1,2]])
@@ -1868,7 +1897,7 @@ function addPolishScenery(){
     for(const seg of segments)if(seg.sprite==='beverly_villa')seg.sprite=null;
     for(let i=570;i<HILLS_DETOUR.end;i++)if(segments[i].sprite==='bougainvillea')segments[i].sprite=null;
     for(const side of[-1,1])for(let i=44+(side>0?12:0),plot=0;i<segments.length-30;i+=24,plot++){
-      if(i<125||(i>=470&&i<590)||landmarks.some(([j,,which])=>which===side&&Math.abs(i-j)<20))continue;
+      if((side<0&&i>=790&&i<=905)||i<125||(i>=470&&i<590)||landmarks.some(([j,kind,which])=>which===side&&Math.abs(i-j)<(['pool_party','glass_villa','film_set'].includes(kind)?26:20)))continue;
       const grand=i>=590&&i<HILLS_DETOUR.end;
       const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:[0,1,2,3,5,0,1,3][serial%8];
       addHillsProperty(i,'hills_estate',side,grand?1:.85,
@@ -1877,7 +1906,16 @@ function addPolishScenery(){
     }
     for(const i of[210,247,303,370,397])add(i,'hills_cypress',i%2?-1.7:1.7,.75);
     for(const i of[975,1025,1090,1145,1175])add(i,'hills_agave',i%2?-1.46:1.46,.55);
-    getHillsCityTile();getHillsBackdropTile(0);getHillsBackdropTile(1);
+    // Open the valley rail, and preserve approach views of the three scenes.
+    for(let i=790;i<=905;i++)if(segments[i].spriteX<0)segments[i].sprite=null;
+    for(const [anchor,side]of[[435,1],[930,1],[1060,1]])for(let i=anchor-20;i<=anchor+7;i++)
+      if(segments[i].spriteX*side>0)segments[i].sprite=null;
+    getHillsCityTile();getHillsBackdropTile(0);getHillsBackdropTile(1);getHillsValleyTile();
+    for(let group=0;group<3;group++)getHillsValleyTile(group);
+    for(const kind of['pool_party','glass_villa','film_set'])getHillsLifeTile(kind);
+    // Prepare all static evening variants before the countdown.
+    for(const image of[...hillsEstateCache.values(),...hillsDestinationCache.values(),...hillsLifeCache.values(),...[...hillsBackdropTiles.entries()].filter(([key])=>!String(key).startsWith('valley:')||key==='valley:-1').map(([,image])=>image)])
+      for(const phase of[1,2])getHillsTone(image,phase);
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
@@ -2089,7 +2127,8 @@ function drawPolishScene(s){
   ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
   const k=s.kind,t=chapterTime,idx=s.segIdx;
   if(k==='hills_estate')drawHillsEstate(s.estateStyle,s.estatePalette,s.estateGrand);
-  else if(k==='hotel')ctx.drawImage(getHillsDestinationTile(k,s.estateStyle||0),-250,-359);
+  else if(k==='hotel'){drawHillsLitImage(getHillsDestinationTile(k,s.estateStyle||0),-250,-359);drawHillsHotelLights();}
+  else if(['pool_party','glass_villa','film_set'].includes(k))drawHillsLifeScene(k,t);
   else if(k==='substation')drawSubstation();
   else if(k==='pine_grove')drawPineGrove(idx);
   else if(k==='observatory')drawObservatory();
@@ -2196,7 +2235,14 @@ function getHillsEstate(style=0,palette=0,grand=false){
 }
 function drawHillsEstate(style=0,palette=0,grand=false){
   ctx.save();ctx.scale(.8,grand?1.8:1.15);
-  ctx.drawImage(getHillsEstate(style,palette,grand),0,0,400,264,-200,-264,400,264);ctx.restore();
+  drawHillsLitImage(getHillsEstate(style,palette,grand),0,0,400,264,-200,-264,400,264);
+  if(hillsEvening.night>.01){
+    ctx.globalAlpha*=hillsEvening.night*.62;
+    const windows=[[[ -75,-171,15,20],[-49,-94,9,31]],[[-55,-176,16,38],[-123,-98,16,42]],
+      [[-122,-94,17,42],[62,-134,15,54]],[[-48,-159,16,28],[81,-96,16,27]],
+      [[-106,-198,14,25],[10,-94,14,25]],[[-53,-175,17,38],[-125,-91,17,38]]][style];
+    for(const [x,y,w,h]of windows||[])sceneRect(x,y+34,w,h,'#edbb8b');
+  }ctx.restore();
 }
 function drawSunsetHouse(seed,variant=null){
   const type=variant??Math.floor(polishHash(seed)*5),warm=['#f2c5ab','#e6bcbd','#f7d6b7','#bda2b5','#ddd8cd'][type];
@@ -2382,17 +2428,155 @@ function getHillsDestinationTile(kind,variant=0){
     line([[123,-3],[123,-54],[127,-62],[146,-62],[151,-54],[151,-3]],'#dfbe79',3);
     rect(119,-8,36,4,'#d9b06a');rect(125,-29,15,21,'#874364');rect(138,-23,11,15,'#bf855b');
     for(const x of[124,149])oval(x,-3,3,3,'#332b3c');
-    // Parked eighties stretch limousine on the arrival terrace (not a racer).
-    g.save();g.translate(-67,-1);g.scale(.74,.74);
-    oval(0,-1,92,6,'rgba(35,22,42,.28)');
-    poly([[-92,-8],[-94,-26],[-76,-31],[-60,-50],[43,-50],[65,-31],[91,-27],[94,-8]],'#34303f');
-    poly([[-61,-31],[-50,-45],[39,-45],[55,-31]],'#777c91');
-    for(const x of[-27,3,32])rect(x,-45,3,14,'#b4a7b1');
-    line([[-90,-25],[89,-25]],'#d9c1b5',2);line([[-89,-9],[91,-9]],'#bcaeae',3);
-    for(const x of[-65,65]){oval(x,-8,12,12,'#231f2c');oval(x,-8,6,6,'#cabdc0');}
-    rect(-94,-23,7,5,'#ea7a9e');rect(88,-25,7,6,'#ffe6ad');g.restore();
+
   }
-  hillsDestinationCache.set(key,image);return image;
+  image.hillsKind=kind;hillsDestinationCache.set(key,image);return image;
+}
+
+// Landmark artwork stays compact; only dancers, water and the set light animate.
+const hillsLifeCache=new Map();
+function getHillsLifeTile(kind){
+  if(hillsLifeCache.has(kind))return hillsLifeCache.get(kind);
+  const image=document.createElement('canvas');image.width=500;image.height=400;
+  const g=image.getContext('2d');g.translate(250,399);
+  const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+  const poly=(points,c)=>{g.fillStyle=c;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
+  const line=(points,c,w=1)=>{g.strokeStyle=c;g.lineWidth=w;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();};
+  const oval=(x,y,rx,ry,c)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
+  if(kind==='pool_party'){
+    // Terraced pool pavilion. The front retaining face meets the supported lot.
+    rect(-191,-167,145,120,'#e4bcad');rect(-199,-174,160,9,'#f9dcc0');
+    rect(-177,-151,117,60,'#526574');for(let j=0;j<4;j++)rect(-174+j*30,-151,3,60,'#e4c4bc');
+    rect(53,-130,142,83,'#d5a2ad');rect(47,-137,157,9,'#f4d5bd');
+    for(const x of[65,107,149]){rect(x,-117,29,50,'#61556a');rect(x,-117,29,4,'#ee9dbd');}
+    poly([[-214,0],[214,0],[214,-36],[-214,-36]],'#ae8493');
+    poly([[-214,-36],[214,-36],[183,-74],[-179,-74]],'#ecd1b9');
+    rect(-214,-37,428,4,'#ffe0c2');
+    // Infinity lip: water is animated on this bounded deck, not a screen overlay.
+    poly([[-135,-28],[146,-28],[127,-64],[-115,-64]],'#faf0d2');
+    poly([[-125,-31],[135,-31],[117,-60],[-107,-60]],'#51b9c3');
+    rect(-125,-31,260,8,'#499da9');rect(-125,-23,260,4,'#b9d8cb');
+    for(const x of[-194,189]){
+      rect(x-10,-59,20,23,'#be8c8f');oval(x,-68,22,21,'#456954');
+      oval(x-7,-76,9,8,'#ec79b4');oval(x+7,-64,7,7,'#f69ac6');
+    }
+    // One pair of speakers and a low deck bar.
+    for(const x of[-140,154]){rect(x,-110,18,34,'#2c2c43');oval(x+9,-89,6,6,'#6b7289');oval(x+9,-103,3,3,'#b6a5bb');}
+    rect(0,-107,48,30,'#a47c8e');rect(-4,-110,56,5,'#efc8b4');
+    for(const x of[6,21,36]){rect(x,-117,3,7,'#7adddc');line([[x,-117],[x+2,-122]],'#f9d2bc',1);}
+    line([[-183,-153],[-55,-139],[76,-150],[187,-141]],'#504259',1.4);
+    for(let j=0;j<12;j++)oval(-175+j*32,-147+Math.sin(j*.6)*7,2,3,j%2?'#f5b8a1':'#e7a1cb');
+  }else if(kind==='glass_villa'){
+    // Deep columns, visible all the way to their footings, carry the overhang.
+    rect(-205,-16,410,16,'#b894a1');rect(-195,-22,390,6,'#f2cbb7');
+    poly([[-165,-25],[165,-25],[140,-64],[-143,-64]],'#efd9bf');
+    poly([[-152,-28],[152,-28],[132,-59],[-132,-59]],'#55acb9');
+    for(const x of[-156,-48,103,173]){
+      poly([[x-10,-20],[x+12,-20],[x+12,-154],[x-10,-154]],'#d3b7b4');
+      rect(x+6,-154,6,134,'#9c829b');rect(x-16,-20,34,6,'#f6d5c0');
+    }
+    poly([[-213,-148],[220,-148],[205,-164],[-201,-164]],'#826c87');
+    rect(-213,-164,433,10,'#f8d9c9');rect(-213,-252,433,88,'#b7b8c7');
+    const glass=g.createLinearGradient(0,-250,150,-160);glass.addColorStop(0,'#69738f');glass.addColorStop(.5,'#c19cb1');glass.addColorStop(1,'#425b78');
+    rect(-204,-243,415,73,glass);
+    for(let j=0;j<10;j++)rect(-204+j*45,-243,4,73,'#efcfbc');
+    poly([[-193,-241],[-170,-241],[-103,-170],[-126,-170]],'#e2bdcc');
+    poly([[38,-241],[62,-241],[130,-170],[106,-170]],'#d8bfca');
+    // Visible room silhouettes rather than a featureless glass block.
+    rect(-78,-191,77,18,'#725b78');rect(-73,-195,67,7,'#b08da3');rect(110,-192,49,4,'#e2bfa8');
+    rect(133,-189,3,18,'#b39a9f');rect(-215,-260,438,8,'#f9dccc');
+    rect(-82,-309,209,49,'#efd0c2');rect(-73,-301,191,33,'#53647e');
+    for(const x of[-26,24,74])rect(x,-301,3,33,'#e9c8b6');rect(-90,-315,227,7,'#ffe3c7');
+    line([[-211,-264],[-211,-282],[219,-282],[219,-264]],'#edd4c4',2);
+    for(let j=0;j<12;j++)rect(-207+j*38,-282,2,18,'#d9bfbb');
+    rect(144,-301,39,19,'#a18094');oval(163,-311,27,14,'#476956');
+  }else{
+    // A low mansion leaves room for a recognisable camera crane and equipment.
+    rect(-176,-202,351,142,'#dbc1ae');rect(-183,-209,365,9,'#f8dfc2');
+    rect(-140,-260,193,58,'#e7cbb8');rect(-149,-267,211,8,'#ffe1c4');
+    rect(-125,-246,158,34,'#665d76');for(let j=0;j<5;j++)rect(-124+j*33,-246,3,34,'#e6c5b0');
+    for(const x of[-153,-65,52]){rect(x,-185,66,96,'#4b526c');rect(x+31,-185,3,96,'#ceb8b0');}
+    rect(-183,-64,365,9,'#eed1ba');rect(-206,-20,412,20,'#a78b99');
+    poly([[-206,-20],[206,-20],[183,-62],[-183,-62]],'#d0a9aa');
+    // Static crane with a camera head, counterweight and wheeled base.
+    rect(-198,-13,76,9,'#343143');for(const x of[-186,-139])oval(x,-5,6,6,'#222332');
+    line([[-164,-12],[-157,-110]],'#444355',8);
+    line([[-194,-87],[-31,-182]],'#424353',6);line([[-185,-78],[-25,-169]],'#9d9aab',2);
+    rect(-204,-94,27,21,'#353449');rect(-43,-194,30,18,'#343447');rect(-17,-190,12,10,'#7e8da2');
+    line([[-153,-108],[-34,-184],[-163,-48]],'#b8a7b5',1.2);
+    for(const x of[-197,178]){
+      line([[x-15,-6],[x,-80],[x+17,-6]],'#625767',3);rect(x-12,-91,24,17,'#342e43');rect(x-9,-89,18,11,'#ffe3af');
+    }
+    rect(108,-28,45,25,'#484253');line([[114,-23],[148,-23]],'#ccafb6',2);
+    rect(62,-32,24,5,'#504359');line([[65,-27],[83,-4]],'#bc9aa7',2);line([[83,-27],[65,-4]],'#bc9aa7',2);
+    rect(66,-48,16,15,'#70596b');
+  }
+  hillsLifeCache.set(kind,image);return image;
+}
+function drawHillsGuest(x,y,color,phase=0,dance=false,dress=false){
+  const sway=dance?Math.sin(phase)*2:0;
+  sceneEllipse(x+sway,y-31,3.5,4,'#d5a184');
+  scenePoly([[x-5+sway,y-25],[x+5+sway,y-25],[x+(dress?10:5),y-11],[x-(dress?10:5),y-11]],color);
+  for(const side of[-1,1]){
+    sceneLine([[x+side*3,y-11],[x+side*(dance?6+Math.sin(phase+side):4),y]],'#383347',2.6);
+    sceneLine([[x+sway+side*5,y-23],[x+sway+side*11,y-(dance?23+Math.sin(phase+side)*8:14)]],color,2.7);
+  }
+}
+function drawHillsConvertible(x,y,color,scale=1){
+  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+  sceneEllipse(0,-2,53,4,'rgba(26,23,41,.28)');
+  scenePoly([[-53,-7],[-52,-23],[-33,-26],[-27,-36],[-19,-36],[-19,-23],[19,-23],[23,-33],[30,-31],[34,-23],[52,-20],[54,-7]],color);
+  sceneLine([[-27,-36],[-20,-24]],'#c7d9df',3);sceneRect(-13,-29,13,10,'#684c66');sceneRect(5,-28,13,10,'#684c66');
+  sceneLine([[-50,-12],[51,-12]],'#d7c8c4',2);
+  for(const x of[-35,35]){sceneEllipse(x,-7,9,9,'#232432');sceneEllipse(x,-7,4,4,'#cbc8d3');}
+  sceneRect(47,-20,7,4,'#fff1bd');sceneRect(-53,-19,5,5,'#e66691');ctx.restore();
+}
+function drawHillsHotelLights(){
+  const night=hillsEvening.night;
+  if(night>.01){
+    ctx.save();ctx.globalAlpha*=night*.72;
+    for(const side of[-1,1])for(const row of[0,1])for(const col of[0,2])sceneRect((side<0?-196:86)+col*44,-162+row*45,25,22,'#f2bf8e');
+    sceneLine([[-65,-286],[65,-286]],'#f5a2ce',2);ctx.restore();
+  }
+  // The wedding stays inside the existing arrival court.
+  sceneLine([[-47,-3],[-47,-67],[-35,-79],[11,-79],[23,-67],[23,-3]],'#e8d3b4',4);
+  for(let j=0;j<13;j++){
+    const x=j<3?-47:j>9?23:-38+(j-3)*9,y=j<3?-20-j*20:j>9?-20-(12-j)*20:-77;
+    sceneEllipse(x,y,7,6,j%2?'#557c60':'#f7c9d5');if(j%2===0)sceneEllipse(x+3,y-2,4,4,'#ec7eaf');
+  }
+  drawHillsGuest(-23,-3,'#fff1d9',0,false,true);drawHillsGuest(-5,-3,'#38435a');
+  for(const [x,c]of[[37,'#d38eb6'],[55,'#586b87']])drawHillsGuest(x,-1,c,0,false,x===37);
+  drawHillsConvertible(-120,-1,'#f3eadb',.83);
+}
+function drawHillsLifeScene(kind,time){
+  drawHillsLitImage(getHillsLifeTile(kind),-250,-399);
+  const night=hillsEvening.night;
+  if(kind==='pool_party'){
+    const water=interpolateColor('#62c6ca','#62f5e2',night);
+    scenePoly([[-125,-31],[135,-31],[117,-60],[-107,-60]],water);
+    sceneLine([[-125,-30],[135,-30]],'#bbfff0',2);
+    ctx.save();ctx.globalAlpha*=.3;
+    for(let j=0;j<4;j++){const x=-87+j*52+Math.sin(time*.00065+j)*6;sceneLine([[x,-40-j%2*9],[x+24,-42-j%2*9]],'#e0fff4',1.2);}ctx.restore();
+    // Flamingo ring; very slow bobbing, a curved neck and contrasting beak.
+    const bob=Math.sin(time*.001)*1.1;
+    sceneEllipse(60,-46+bob,18,7,'#ed6fa9');sceneEllipse(60,-47+bob,10,3,water);
+    ctx.strokeStyle='#ff99c6';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(73,-47+bob);ctx.bezierCurveTo(84,-51+bob,73,-65+bob,81,-66+bob);ctx.stroke();
+    sceneEllipse(83,-66+bob,5,4,'#ff99c6');scenePoly([[87,-66+bob],[92,-63+bob],[87,-62+bob]],'#353043');
+    for(const [j,x,y,c]of[[0,-93,-71,'#e77cae'],[1,-57,-76,'#76d9d4'],[2,79,-74,'#efca86'],[3,117,-69,'#b69bcf']])drawHillsGuest(x,y,c,time*.0016+j*1.8,true,j%2===0);
+    if(night>.01){ctx.save();ctx.globalAlpha*=night;sceneLine([[-125,-25],[135,-25]],'#71f7e1',2);sceneRect(-169,-145,30,42,'#dfb48e');ctx.restore();}
+  }else if(kind==='glass_villa'){
+    ctx.save();ctx.globalAlpha*=.2+night*.6;
+    sceneRect(-154,-238,40,59,'#efb78f');sceneRect(72,-238,39,59,'#e9a9bc');
+    sceneLine([[-213,-161],[220,-161]],'#f5aed0',2);sceneLine([[-151,-29],[152,-29]],'#86f0e6',2);ctx.restore();
+    sceneLine([[-104+Math.sin(time*.0005)*4,-40],[-47,-40]],'#bceee0',1.2);
+  }else{
+    // A slow spotlight sweeps only the mansion's walls, never the road or sky.
+    ctx.save();ctx.beginPath();ctx.rect(-176,-202,351,142);ctx.clip();
+    const spot=-70+Math.sin(time*.00038)*82;
+    ctx.globalAlpha*=.13+.09*night;scenePoly([[-197,-83],[spot-36,-190],[spot+54,-88]],'#ffedbe');sceneEllipse(spot,-143,40,48,'#ffe5b1');ctx.restore();
+    drawHillsConvertible(-34,-3,'#e895b3',.82);
+    drawHillsGuest(-126,-2,'#61758c');drawHillsGuest(94,-3,'#b98bac',0,false,true);
+  }
 }
 
 function drawSunsetScene(kind,seed,time){
@@ -2483,7 +2667,12 @@ function drawSunsetScene(kind,seed,time){
     sceneRect(-39,-19,5,19,'#d6b79b');sceneRect(34,-19,5,19,'#d6b79b');sceneEllipse(-41,-40,4,4,'#ffa648');sceneEllipse(41,-40,4,4,'#ffa648');
   }
 }
-function sunsetRidgeHeight(x,layer){return 38+layer*13+Math.sin(x/BG_W*Math.PI*4+layer)*24+Math.cos(x/BG_W*Math.PI*6)*12;}
+function sunsetRidgeHeight(x,layer){
+  const wrapped=x>BG_W/2?x-BG_W:x,t=clamp((150-wrapped)/55,0,1);
+  const farCut=clamp((220-Math.abs(x-720))/80,0,1);
+  const hollow=layer?138*Math.exp(-(((wrapped-50)/100)**2))*t*t*(3-2*t)+100*Math.exp(-(((x-720)/150)**2))*farCut*farCut*(3-2*farCut):0;
+  return 38+layer*13+Math.sin(x/BG_W*Math.PI*4+layer)*24+Math.cos(x/BG_W*Math.PI*6)*12-hollow;
+}
 function hillsDistanceVisibility(distance){
   const t=clamp((distance-95)/60,0,1);return 1-t*t*(3-2*t);
 }
@@ -2495,6 +2684,7 @@ function getHillsPanoramaLots(layer){
     const count=layer?(row===0?24:row===1?15:17):22,step=BG_W/count;
     for(let j=0;j<count;j++){
       const seed=j+row*73+layer*137,x=step*(j+.45)+(polishHash(seed+4)-.5)*step*.3;
+      if(layer&&(x<135||x>BG_W-120||(x>620&&x<810)))continue;
       if(layer&&row===0&&x>130&&x<360)continue; // Leave the hillside sign clear.
       const scale=(layer?(row?.060:.083):.037)+polishHash(seed+11)*(layer?.018:.012);
       const half=156*scale,depth=layer?(row===0?7:row===1?31:72):4;
@@ -2564,9 +2754,54 @@ function getHillsBackdropTile(layer){
   }
   hillsBackdropTiles.set(layer,tile);return tile;
 }
+// Valley buildings and three independently fading light groups are cached.
+function getHillsValleyTile(group=-1){
+  const key='valley:'+group;if(hillsBackdropTiles.has(key))return hillsBackdropTiles.get(key);
+  const tile=document.createElement('canvas');tile.width=BG_W;tile.height=340;
+  const g=tile.getContext('2d');g.translate(0,220);
+  if(group<0){
+    const wash=g.createLinearGradient(0,-25,0,115);wash.addColorStop(0,'#967086');wash.addColorStop(1,'#59435d');g.fillStyle=wash;g.fillRect(0,-15,BG_W,135);
+  }
+  for(let row=0;row<7;row++)for(let j=0;j<160;j++){
+    const seed=row*113+j,x=j*8.75+(row%2)*4+polishHash(seed)*3,y=-12+row*row*3+polishHash(seed+31)*4,h=2+row*.5+polishHash(seed+87)*4,w=3+row*.45;
+    if(group<0){g.fillStyle=['#85677f','#795f79','#6a5572'][row%3];g.fillRect(x,y-h,w,h);}
+    else if((j+row*2)%3===group){g.fillStyle=(j+row)%4?'#efbb84':'#89d9db';g.fillRect(x+2,y-h+2,1.4+row*.10,1.1);if(row>1)g.fillRect(x+w-1,y-1,1,1);}
+  }
+  // Low, converging avenues, kept within the valley rather than across the sky.
+  for(let j=0;j<10;j++){
+    g.strokeStyle=group<0?'#a17b89':group===j%3?'#df9e82':'transparent';g.lineWidth=group<0?1.1:.65;
+    g.beginPath();g.moveTo(j*155+65,-8);g.lineTo(j*155-20,120);g.stroke();
+  }
+  hillsBackdropTiles.set(key,tile);return tile;
+}
+// Recompose the slow evening backdrop only when its colour changes by about
+// one RGB step. Keep one reusable surface per layer, not a canvas per time step.
+const hillsEveningBackdropFrames=new Map();
+function getHillsBackdropFrame(layer){
+  let frame=hillsEveningBackdropFrames.get(layer);
+  if(!frame){const image=document.createElement('canvas');image.width=BG_W;image.height=layer==='city'?160:340;frame={image,step:-1};hillsEveningBackdropFrames.set(layer,frame);}
+  const step=Math.round(hillsEvening.progress*256);
+  if(frame.step!==step){
+    const g=frame.image.getContext('2d'),light=getHillsEvening(step/256),low=Math.floor(light.phase),mix=light.phase-low;
+    const paint=image=>{g.globalAlpha=1;g.drawImage(getHillsTone(image,low),0,0);if(mix>.001){g.globalAlpha=mix;g.drawImage(getHillsTone(image,Math.min(2,low+1)),0,0);}g.globalAlpha=1;};
+    g.clearRect(0,0,frame.image.width,frame.image.height);
+    if(layer==='city')paint(getHillsCityTile());
+    else if(layer==='near')paint(getHillsBackdropTile(1));
+    else{
+      paint(getHillsBackdropTile(0));paint(getHillsValleyTile());
+      for(let group=0;group<3;group++){
+        g.globalAlpha=clamp((light.progress-.36-group*.12)/.24,0,1);g.drawImage(getHillsValleyTile(group),0,0);
+      }
+      g.globalAlpha=1;
+    }
+    frame.step=step;
+  }
+  return frame.image;
+}
 function drawSunsetBackdrop(horizonY){
-  drawTile(bgOffset*.075,horizonY,()=>ctx.drawImage(getHillsCityTile(),0,-160));
-  for(let layer=0;layer<2;layer++)drawTile(bgOffset*(layer?.17:.10),horizonY,()=>ctx.drawImage(getHillsBackdropTile(layer),0,-220));
+  drawTile(bgOffset*.075,horizonY,()=>ctx.drawImage(getHillsBackdropFrame('city'),0,-160));
+  drawTile(bgOffset*.10,horizonY,()=>ctx.drawImage(getHillsBackdropFrame('far'),0,-220));
+  drawTile(bgOffset*.17,horizonY,()=>ctx.drawImage(getHillsBackdropFrame('near'),0,-220));
 }
 function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heightScale2=1){
   const limit=(CAMERA_DEPTH+player.fovOffset)/64*ROAD_WIDTH*W/2;
@@ -2585,13 +2820,13 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heigh
     const edge1=x1+lane*w1,edge2=x2+lane*w2,margin=Math.max(w1,w2)*.36;
     if(Math.max(edge1,edge2)+margin<0||Math.min(edge1,edge2)-margin>W)continue;
     const a=(l,v)=>[x1+l*w1,y1-v*w1*heightScale1],b=(l,v)=>[x2+l*w2,y2-v*w2*heightScale2];
-    const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],color);
-    const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],color);
+    const panel=(l,low,high,color)=>scenePoly([a(l,low),a(l,high),b(l,high),b(l,low)],hillsColor(color));
+    const band=(l,r,height,color)=>scenePoly([a(l,height),a(r,height),b(r,height),b(l,height)],hillsColor(color));
     if(index>=30&&index<120){
       // Open pavement in front of shops, with no residential hedge or gate.
       panel(lane,0,.035,'#ead8bc');band(lane,lane+side*.1,.035,'#ead8bc');continue;
     }
-    const courtyard=segments[index]?.hillsLots?.some(lot=>lot.side===side&&['hotel','tennis','hills_fountain','hills_pergola','overlook'].includes(lot.kind));
+    const courtyard=segments[index]?.hillsLots?.some(lot=>lot.side===side&&['hotel','tennis','hills_fountain','hills_pergola','overlook','pool_party','glass_villa','film_set'].includes(lot.kind));
     if(courtyard){
       if(segments[index].hillsLots.some(lot=>lot.side===side&&lot.kind==='hotel')){panel(lane,0,.03,'#efd4be');continue;}
       panel(lane,0,.04,'#c3a3a0');panel(lane,.13,.15,'#f2d8bd');
@@ -9449,6 +9684,7 @@ function render(ts) {
   const progressRatio = clamp(progressDist / (maxLaps * TRACK_LENGTH), 0, 1.0);
 
   currentProgressRatio = progressRatio;
+  if(currentLevel===LEVEL_HILLS){hillsEvening=getHillsEvening(progressRatio);hillsFrameColors.clear();}
   if (currentLevel === 2) oceanRockPalette = OCEAN_ROCK_DAY.map((color, i) => interpolateColor(color, OCEAN_ROCK_NIGHT[i], progressRatio));
 
   const sunBuffer = sunR * 2, sunLoopW = W + sunBuffer * 2;
@@ -9458,7 +9694,7 @@ function render(ts) {
   // Dynamic sky selection or interpolation
   if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
     const colors = currentLevel === LEVEL_HILLS
-      ? ['#1c0c39', '#683365', '#c86886', '#ffa57e', '#ffcf94']
+      ? ['#321735','#a65c77','#dd9293','#ffc695','#ffdbad'].map((c,i)=>{const pink=['#211339','#65446d','#b85d91','#ef89b1','#ffc5b1'][i],night=['#080f25','#19223f','#403454','#7c466e','#c17091'][i];return interpolateColor(interpolateColor(c,pink,hillsEvening.pink),night,hillsEvening.night);})
       : ['#030209', '#10071f', '#241038', '#422058', '#583065'];
     const gradient = ctx.createLinearGradient(0, 0, 0, H * 0.6);
     [0, 0.3, 0.6, 0.85, 1].forEach((position, i) => gradient.addColorStop(position, colors[i]));
@@ -9524,7 +9760,7 @@ function render(ts) {
     // Starts fading in from progressRatio = 0.6, fully faded in at 0.9
     nightFactor = clamp((progressRatio - 0.6) / 0.3, 0, 1.0);
   } else if (currentLevel === LEVEL_HILLS) {
-    nightFactor = 0.18;
+    nightFactor = .03+.29*hillsEvening.night;
   } else if (currentLevel === LEVEL_DREAM) {
     const zone = getDreamWorld(startSegIdx);
     if (zone === 'steppe') nightFactor = 0.0;
@@ -9749,13 +9985,14 @@ function render(ts) {
     ctx.restore();
   }
   if (currentLevel !== LEVEL_DREAM && currentLevel !== LEVEL_SPACE && currentLevel !== LEVEL_HIGHWAY) {
-    const sunY = horizonY - H * 0.18 + (currentLevel === 2 ? progressRatio * H * 0.38 : 0);
+    const sunY = horizonY - H * 0.18 + (currentLevel === 2 ? progressRatio * H * 0.38 : currentLevel===LEVEL_HILLS?progressRatio*H*.33:0);
     ctx.save();
     if (currentLevel === 2) {
       // Sun fades out to exactly 0 by progressRatio = 0.70 (earlier sunset!)
       ctx.globalAlpha = clamp((0.70 - progressRatio) / 0.70, 0, 1.0);
     }
-    ctx.drawImage(sunCanvas, sunX - sunCanvas.width/2, sunY - sunCanvas.height/2);
+    if(currentLevel===LEVEL_HILLS)drawHillsLitImage(sunCanvas,sunX-sunCanvas.width/2,sunY-sunCanvas.height/2);
+    else ctx.drawImage(sunCanvas, sunX - sunCanvas.width/2, sunY - sunCanvas.height/2);
     ctx.restore();
   }
 
@@ -9807,7 +10044,7 @@ function render(ts) {
   // Distant Mountains & Landscapes
   const mStroke = currentLevel === 2 ? interpolateColor('#2a0f62', '#120428', progressRatio) : (currentLevel === LEVEL_DREAM ? '#0c1a30' : '#2a0f62');
   if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
-    if(currentLevel===LEVEL_HILLS){ctx.fillStyle='#52334f';ctx.fillRect(0,horizonY,W,H-horizonY);}
+    if(currentLevel===LEVEL_HILLS){ctx.fillStyle=hillsColor('#52334f');ctx.fillRect(0,horizonY,W,H-horizonY);}
     drawChapterBackdrop(horizonY, ts);
   } else if (currentLevel === LEVEL_DREAM) {
     const zone = getDreamWorld(startSegIdx);
