@@ -25,10 +25,13 @@ race. All six racers get actual finish timestamps.
 
 ## Rendering and landing
 
-`public/paradise.js` contains only the new route, scenery and artwork. It is a
-classic script deliberately copied by Vite's public-directory handling, loaded
-before the game's existing classic script. The Vite notice that it cannot be
-bundled as a module is expected; `dist/paradise.js` must ship beside `index.html`.
+The route, scenery and artwork are included in `index.html` with the existing
+game script. Both direct repository-root hosting and the Vite build therefore
+load the same self-contained code. No separate Paradise script request is needed.
+The first release's separate public script existed at the expected URL only in
+the Vite build; direct root hosting returned 404, then selecting Paradise threw
+and stopped the render loop. This dependency was removed after reproducing both
+the failed start and the frozen subsequent level switches.
 
 Land and shoreline slices share the road plane, against a continuous turquoise
 sea backdrop. The airport island widens underneath its runway. The new level
@@ -63,3 +66,9 @@ for visual review. Also run `scoreboard` and `hills-stability` after integration
 `scripts/profile-paradise.cjs` samples native RAF in jungle, airport, harbour and
 bridge sections at 390×844 with 2× CPU throttling. Run it alone. These are cloud
 Chromium measurements, not a guarantee of performance on the player's phone.
+
+`scripts/assessment-level-loading.cjs` serves the source and production build as
+plain static sites, exercises all seven levels through browser UI clicks in one
+session, and checks real countdown progress, vehicle movement, pause/exit and
+missing scripts. This specifically covers switching away from Paradise after
+its menu preview, the failure that the initial build-only assessment missed.

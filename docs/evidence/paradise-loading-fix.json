@@ -1,0 +1,259 @@
+{
+  "before": {
+    "hosting": "repository-root",
+    "missing": "/Dash-Racer/paradise.js",
+    "errors": [
+      "drawParadiseBackdrop is not defined",
+      "buildParadiseRoute is not defined"
+    ],
+    "subsequentNeonCityStart": {
+      "state": "countdown",
+      "cntTimer": 0,
+      "z": 0
+    }
+  },
+  "after": [
+    {
+      "hosting": "repository-root",
+      "id": 7,
+      "pass": true,
+      "actual": {
+        "level": 7,
+        "state": "playing",
+        "z": 50.38024766403568,
+        "frames": 284,
+        "segments": 3500,
+        "lap": "1/1"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 1,
+      "pass": true,
+      "actual": {
+        "level": 1,
+        "state": "playing",
+        "z": 35.47306223912945,
+        "frames": 576,
+        "segments": 1150,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 2,
+      "pass": true,
+      "actual": {
+        "level": 2,
+        "state": "playing",
+        "z": 45.1777182689478,
+        "frames": 777,
+        "segments": 1250,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 3,
+      "pass": true,
+      "actual": {
+        "level": 3,
+        "state": "playing",
+        "z": 33.64565381755404,
+        "frames": 1067,
+        "segments": 1200,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 4,
+      "pass": true,
+      "actual": {
+        "level": 4,
+        "state": "playing",
+        "z": 40.830324610206006,
+        "frames": 1271,
+        "segments": 1200,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 5,
+      "pass": true,
+      "actual": {
+        "level": 5,
+        "state": "playing",
+        "z": 35.31496532115956,
+        "frames": 1582,
+        "segments": 2875,
+        "lap": "1/1"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 6,
+      "pass": true,
+      "actual": {
+        "level": 6,
+        "state": "playing",
+        "z": 35.41643987150568,
+        "frames": 1882,
+        "segments": 1350,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "repository-root",
+      "id": 7,
+      "pass": true,
+      "actual": {
+        "level": 7,
+        "state": "playing",
+        "z": 35.36410424568239,
+        "frames": 2174,
+        "segments": 3500,
+        "lap": "1/1"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 7,
+      "pass": true,
+      "actual": {
+        "level": 7,
+        "state": "playing",
+        "z": 35.167252055267525,
+        "frames": 277,
+        "segments": 3500,
+        "lap": "1/1"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 1,
+      "pass": true,
+      "actual": {
+        "level": 1,
+        "state": "playing",
+        "z": 35.256859546259705,
+        "frames": 566,
+        "segments": 1150,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 2,
+      "pass": true,
+      "actual": {
+        "level": 2,
+        "state": "playing",
+        "z": 37.55257347130658,
+        "frames": 783,
+        "segments": 1250,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 3,
+      "pass": true,
+      "actual": {
+        "level": 3,
+        "state": "playing",
+        "z": 35.2737988157527,
+        "frames": 1086,
+        "segments": 1200,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 4,
+      "pass": true,
+      "actual": {
+        "level": 4,
+        "state": "playing",
+        "z": 39.442807768798595,
+        "frames": 1300,
+        "segments": 1200,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 5,
+      "pass": true,
+      "actual": {
+        "level": 5,
+        "state": "playing",
+        "z": 35.41996681439459,
+        "frames": 1613,
+        "segments": 2875,
+        "lap": "1/1"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 6,
+      "pass": true,
+      "actual": {
+        "level": 6,
+        "state": "playing",
+        "z": 35.47587709641104,
+        "frames": 1905,
+        "segments": 1350,
+        "lap": "1/3"
+      },
+      "errors": [],
+      "missing": []
+    },
+    {
+      "hosting": "production-build",
+      "id": 7,
+      "pass": true,
+      "actual": {
+        "level": 7,
+        "state": "playing",
+        "z": 35.36059712687695,
+        "frames": 2199,
+        "segments": 3500,
+        "lap": "1/1"
+      },
+      "errors": [],
+      "missing": []
+    }
+  ],
+  "paradiseRegression": "28 passed, 0 failed",
+  "browser": "Chromium; Brave is not installed in the test environment"
+}
