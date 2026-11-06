@@ -216,6 +216,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     </div>
   </div>
 </div>
+<script src="./paradise.js?v=1"></script>
 <script>
 const C = document.getElementById('c');
 const ctx = C.getContext('2d', { alpha: false });
@@ -311,15 +312,17 @@ resize(); window.addEventListener('resize', resize);
 let SEGMENT_COUNT = 1150; const SEGMENT_LENGTH = 150; let TRACK_LENGTH = SEGMENT_COUNT * SEGMENT_LENGTH;
 let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
-const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6;
+const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150 },
   { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1250 },
   { id: LEVEL_HILLS, name: 'SUNSET HILLS', tag: 'CANYONS / GOLDEN HOUR', color: '#ffb17e', segments: 1200 },
   { id: LEVEL_HIGHWAY, name: 'MIDNIGHT HIGHWAY', tag: 'VIOLET / AFTER HOURS', color: '#b88cff', segments: 1200 },
   { id: LEVEL_DREAM, name: 'DREAM ODYSSEY', tag: 'SURREAL WORLDS', color: '#00ffd2', segments: 2875 },
-  { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350 }
+  { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350 },
+  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: 3500 }
 ];
+function raceLapCount(){return currentLevel===LEVEL_DREAM||currentLevel===LEVEL_PARADISE?1:3;}
 const HIGHWAY_CROSSINGS = [
   { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
@@ -617,7 +620,7 @@ function backdropX(base, offset, padding) {
 }
 
 function drawLastLapBanner() {
-  if(currentLevel===LEVEL_DREAM||lastLapElapsed===null||player.finished)return;
+  if(raceLapCount()===1||lastLapElapsed===null||player.finished)return;
   if(lastLapElapsed>=1.5)return;
   ctx.save();ctx.translate(W*.5,H*.5);ctx.globalAlpha=1;
   const maxWidth=Math.min(W*.86,500)*.88;
@@ -712,6 +715,8 @@ function buildSegments() {
             ...makeSection(100, -0.4, -8),
             ...makeSection(110, 0, 0)
         ];
+    } else if (currentLevel === LEVEL_PARADISE) {
+        trackDef=buildParadiseRoute();
     } else if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
         // Closed harmonic routes: soft climbs through Beverly, fast sweeping
         // turns downtown. The start/finish has zero slope and zero curvature.
@@ -794,7 +799,7 @@ function buildSegments() {
     let underwaterPlantCount = 0;
     for (let i = 0; i < SEGMENT_COUNT; i++) {
         const def = trackDef[i]; const isStartLine = i < 3 || i > SEGMENT_COUNT - 3;
-        const isBridge = currentLevel === 1 && (i >= 930 && i <= 1050);
+        const isBridge = (currentLevel === 1 && (i >= 930 && i <= 1050)) || (currentLevel===LEVEL_PARADISE&&i%700>=350);
         const isPillar = currentLevel === 1 && (i === 950 || i === 1030);
         const isTunnel = isHighwayTunnel(i) || isOceanRockTunnel(i) || (currentLevel === LEVEL_DREAM && getDreamZone(i) === 'tunnel');
         
@@ -931,7 +936,7 @@ function buildSegments() {
                     }
                 }
             }
-        } else if (currentLevel === LEVEL_SPACE) {
+        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE) {
             // Space Wave keeps the track edges free of floating crystal spires.
         } else {
             // Level 1: Standard tree distribution
@@ -979,12 +984,14 @@ function buildSegments() {
     }
 
     addPolishScenery();
+    if(currentLevel===LEVEL_PARADISE)buildParadiseScenery();
     const laneOffsets = [-0.65, 0.65];
     
     // Adaptive Baustellen und Blitz-Items für die verschiedenen Strecken
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
+    if(currentLevel===LEVEL_PARADISE){siteIndices=[];freeBolts=[150,550,950,1320,1760,2170,2550,2910,3270];}
     if (currentLevel === LEVEL_DREAM) {
         siteIndices = [350, 850, 1350, 1850, 2350];
         freeBolts = [180, 600, 1100, 1600, 2100, 2720];
@@ -1086,7 +1093,7 @@ function initOpponents() {
 // Independent drivers: pace, cornering, reaction time and willingness to commit.
 // Limits are relative to the same 335 km/h baseline; there is no leader slowdown.
 function racePosition(car){return getRaceDistance(car)+(car===player?getPlayerContactDistance():0);}
-function racerFinished(car){return car.finishTime!=null||!!car.finished||(currentLevel===LEVEL_DREAM?car.z>=TRACK_LENGTH:car.lap>3);}
+function racerFinished(car){return car.finishTime!=null||!!car.finished||(currentLevel===LEVEL_DREAM?car.z>=TRACK_LENGTH:car.lap>raceLapCount());}
 function raceSnapshot(){return [player,...opponents].filter(c=>!racerFinished(c)).map(car=>({car,x:car===player?getPlayerCollisionX():car.x,z:racePosition(car),speed:car.speed,target:car.targetX??car.x}));}
 const respawningPickups=new Set();
 function collectRacePickup(object){object.active=false;object.respawn=1.5;respawningPickups.add(object);}
@@ -4529,6 +4536,7 @@ function drawOceanBeachSpot(x,y,scale,kind,seed) {
 }
 
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
+    if(currentLevel===LEVEL_PARADISE){if(isVisible)drawParadiseRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);return;}
     if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
         if (isVisible) drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, segIdx);
         if (currentLevel === LEVEL_HIGHWAY) drawHighwayDistrictSegment(x1, y1, w1, x2, y2, w2, p1Scale, p2Scale, segIdx);
@@ -9624,7 +9632,7 @@ function render(ts) {
   const playerY = baseSeg.worldY + baseSeg.hillDelta * percent;
   const horizonY = ~~(H * 0.5) + player.pitch * 1.5;
 
-  const maxLaps = currentLevel === LEVEL_DREAM ? 1 : 3;
+  const maxLaps = raceLapCount();
   const progressDist = (player.lap - 1) * TRACK_LENGTH + player.z;
   const progressRatio = clamp(progressDist / (maxLaps * TRACK_LENGTH), 0, 1.0);
 
@@ -9641,7 +9649,10 @@ function render(ts) {
   sunX = ((sunX + sunBuffer) % sunLoopW); if (sunX < 0) sunX += sunLoopW; sunX -= sunBuffer;
 
   // Dynamic sky selection or interpolation
-  if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
+  if(currentLevel===LEVEL_PARADISE){
+    const gradient=ctx.createLinearGradient(0,0,0,H*.6);
+    gradient.addColorStop(0,'#233b76');gradient.addColorStop(.55,'#599dab');gradient.addColorStop(1,'#ffd0ab');ctx.fillStyle=gradient;
+  } else if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
     const colors = currentLevel === LEVEL_HILLS
       ? ['#321735','#a65c77','#dd9293','#ffc695','#ffdbad'].map((c,i)=>{const pink=['#211339','#65446d','#b85d91','#ef89b1','#ffc5b1'][i],night=['#080f25','#19223f','#403454','#7c466e','#c17091'][i];return interpolateColor(interpolateColor(c,pink,hillsEvening.pink),night,hillsEvening.night);})
       : ['#030209', '#10071f', '#241038', '#422058', '#583065'];
@@ -9708,6 +9719,7 @@ function render(ts) {
   if (currentLevel === 2) {
     // Starts fading in from progressRatio = 0.6, fully faded in at 0.9
     nightFactor = clamp((progressRatio - 0.6) / 0.3, 0, 1.0);
+  } else if(currentLevel===LEVEL_PARADISE){nightFactor=0;
   } else if (currentLevel === LEVEL_HILLS) {
     nightFactor = .03+.29*hillsEvening.night;
   } else if (currentLevel === LEVEL_DREAM) {
@@ -9992,7 +10004,8 @@ function render(ts) {
 
   // Distant Mountains & Landscapes
   const mStroke = currentLevel === 2 ? interpolateColor('#2a0f62', '#120428', progressRatio) : (currentLevel === LEVEL_DREAM ? '#0c1a30' : '#2a0f62');
-  if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
+  if(currentLevel===LEVEL_PARADISE){drawParadiseBackdrop(horizonY,ts);
+  } else if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
     if(currentLevel===LEVEL_HILLS){ctx.fillStyle=hillsColor('#52334f');ctx.fillRect(0,horizonY,W,H-horizonY);}
     drawChapterBackdrop(horizonY, ts);
   } else if (currentLevel === LEVEL_DREAM) {
@@ -10220,7 +10233,7 @@ function render(ts) {
     ctx.fillRect(0, -H*0.08, W, H*0.2);
   }
   
-  if (currentLevel !== LEVEL_SPACE && currentLevel !== LEVEL_HILLS) {
+  if (currentLevel !== LEVEL_SPACE && currentLevel !== LEVEL_HILLS && currentLevel!==LEVEL_PARADISE) {
     ctx.fillStyle = '#06030f';
     ctx.fillRect(0, 0, W, H - horizonY);
   }
@@ -10336,7 +10349,7 @@ function render(ts) {
   // A distant return bend cannot be represented as an isolated road ribbon
   // above this hilly panorama. Fade its terrain and scenery together, before
   // that remote section, with a world-distance fade rather than a hard cutoff.
-  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:DRAW_DISTANCE;
+  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:DRAW_DISTANCE;
   const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
   const projectVehicle = (worldZ, laneX, seg, segmentZ, curveStart, curveEnd) => {
     if (worldZ - camZ < 64) return null;
@@ -10351,9 +10364,9 @@ function render(ts) {
     const lapOffset = (currentLevel !== LEVEL_DREAM && segIdx < startSegIdx) ? TRACK_LENGTH : 0; const segWorldZ = seg.worldZ + lapOffset;
     
     // Die Projektion muss gemacht werden
-    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS, nearZ=camZ+64;
+    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE, nearZ=camZ+64;
     if(clippedRoad && segWorldZ+SEGMENT_LENGTH<=nearZ){
-      const step=currentLevel===LEVEL_HILLS&&n===0?1-percent:1;
+      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE)&&n===0?1-percent:1;
       curveDX+=seg.curve*5*step;curveOffset+=curveDX*step;curveDX*=Math.pow(.85,step);
       continue;
     }
@@ -10374,7 +10387,7 @@ function render(ts) {
     seg.curveOffset = curveOffset;
     
     // Immer Kurven-Mathematik fortführen
-    const curveStep=currentLevel===LEVEL_HILLS&&n===0?1-percent:1;
+    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE)&&n===0?1-percent:1;
     curveDX+=seg.curve*5*curveStep;curveOffset+=curveDX*curveStep;curveDX*=Math.pow(.85,curveStep);
     seg.curveOffsetEnd=curveOffset;
 
@@ -10422,6 +10435,7 @@ function render(ts) {
       visibility:currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
     });
 
+    if(currentLevel===LEVEL_PARADISE)collectParadiseSprites(seg,n,rx2,p2,segmentClipY,getCleanSpriteFromPool);
     if (seg.isPillar) {
         const s = getCleanSpriteFromPool(); s.type = 'pillar'; s.x = rx2; s.y = p2.y; s.sc = p2.scale; s.w = p2.w; s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY; s.worldZ = segWorldZ;
     }
@@ -10584,6 +10598,7 @@ function render(ts) {
 
   // Define the comprehensive helper to draw any sprite type
   function drawSprite(s) {
+    if(s.type==='paradise'){drawParadiseSprite(s);return;}
     if(s.type==='polish_scene'){drawPolishScene(s);return;}
     if (['beverly_villa', 'beverly_palm', 'bougainvillea', 'beverly_sign', 'hills_lamp',
          'neon_tower', 'highway_industry', 'fantasy_sign', 'highway_lamp', 'oncoming_car', 'highway_crossing'].includes(s.type)) {
@@ -10897,7 +10912,7 @@ function render(ts) {
     }
     if(currentLevel===LEVEL_HILLS)drawHillsShopSlice(roadSeg);
     // Cable slices share this segment's depth, including after a passed mast.
-    if (roadSeg.isBridge) drawBridgeStays(roadSeg.segIdx);
+    if (currentLevel===1&&roadSeg.isBridge) drawBridgeStays(roadSeg.segIdx);
 
     // 2. Draw any sprites positioned precisely on this segment index
     const segSprites = spritesBySegment.get(roadSeg.segIdx);
@@ -11164,7 +11179,7 @@ function updateHUD(ts) {
   const segStr = String(curSeg);
   if (dom.seg !== segStr) { segmentEl.textContent = segStr; dom.seg = segStr; }
   
-  const maxLaps = currentLevel === LEVEL_DREAM ? 1 : 3;
+  const maxLaps = raceLapCount();
   const totalDist = maxLaps * TRACK_LENGTH;
   const pTotal = (player.lap - 1) * TRACK_LENGTH + player.z;
   const place=getRaceStandings().indexOf(player)+1;
@@ -11563,7 +11578,7 @@ function startRace() {
     updateControlUI();
 }
 
-function raceFinishDistance(){return TRACK_LENGTH*(currentLevel===LEVEL_DREAM?1:3);}
+function raceFinishDistance(){return TRACK_LENGTH*(raceLapCount());}
 function getRaceStandings(){
     return [player,...opponents].map((car,index)=>({car,index})).sort((a,b)=>{
         const at=a.car.finishTime,bt=b.car.finishTime;
@@ -11654,7 +11669,7 @@ function getPlayerCollisionX(){
   // Match the renderer's continuous road bend at the car's contact plane.
   for(let n=0;n<=Math.ceil(distance/SEGMENT_LENGTH)+1;n++){
     const z=first+n*SEGMENT_LENGTH,seg=getSeg(z),before=offset;
-    const step=currentLevel===LEVEL_HILLS&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
+    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
     delta+=seg.curve*5*step;offset+=delta*step;delta*=Math.pow(.85,step);
     if(z+SEGMENT_LENGTH>=worldZ){
       const bend=before+(offset-before)*clamp((worldZ-z)/SEGMENT_LENGTH,0,1);
@@ -11708,6 +11723,7 @@ function getRoadLimits(z) {
   if (currentLevel === 2) left = 1.05;
   if (currentLevel === LEVEL_HIGHWAY) left = right = 0.88;
   if (currentLevel === LEVEL_SPACE) left = right = 0.98;
+  if (currentLevel===LEVEL_PARADISE&&segment.isBridge) left=right=.88;
   if (currentLevel === LEVEL_HILLS) {
     const center=hillsDetourCenter(segment.index);
     const pinch=.20*hillsDetourTurn(segment.index);
@@ -11854,6 +11870,7 @@ function advanceRaceStep(dt){
     const trafficSnapshot=raceSnapshot();
     updateRacePickups(dt);
     updateChapterTraffic(dt);
+    if(currentLevel===LEVEL_PARADISE)updateParadisePlane(dt);
     if (!player.finished) currentLapTime += dt * 1000;
     if(lastLapElapsed!==null){lastLapElapsed+=dt;if(lastLapElapsed>=1.5)lastLapElapsed=null;}
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
@@ -12068,13 +12085,13 @@ function advanceRaceStep(dt){
       lapTimes[player.lap - 1] = lapTime;
       if (lapTime < bestLapTime) bestLapTime = lapTime;
       playerLapStart=lapEnd;currentLapTime=raceElapsed-lapEnd;player.lap++;
-      if(player.lap===3&&currentLevel!==LEVEL_DREAM)lastLapElapsed=0;
+      if(player.lap===3&&raceLapCount()>1)lastLapElapsed=0;
       segments.forEach(s => {
         if (s.pylon) s.pylon.active = true;
         if (s.barrier) { s.barrier.active = true; s.barrier.state = 'idle'; s.barrier.blinkCount = 0; }
         if (s.lightning) s.lightning.active = true;
       });
-      const maxLaps = currentLevel === LEVEL_DREAM ? 1 : 3;
+      const maxLaps = raceLapCount();
       if (player.lap > maxLaps) {
         player.finished = true;currentLapTime=0;
         const finalPlace = updateHUD(ts);
