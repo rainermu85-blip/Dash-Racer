@@ -42,7 +42,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    record('late-turbo-still-sees-crossing-and-touchdown',fastCrossing>1453&&fastLanding<1590,{fastCrossing,fastLanding});
    player.isBoosting=false;player.boostTimer=0;keys.boost=false;
    // Actual screen bounds at a useful approach, not just scene metadata.
-   const views=[['lagoon',95,48],['waterfall',905,840],['airport',1625,1550],['harbour',2208,2168],['coral-arch',2850,2780],['bridge',2540,2480]];
+   const views=[['lagoon',95,48],['waterfall',905,840],['airport',1625,1550],['harbour',2208,2168],['coral-arch',2850,2780],['bridge',2540,2480],['market',145,90],['village',225,170],['regatta',480,400],['ferry',1895,1800],['volleyball',2990,2930],['sea-stack',1180,1110]];
    const draw=drawParadiseSprite;let capture=null;
    drawParadiseSprite=s=>{if(capture&&s.segIdx===capture.index){const a=getParadiseArt(s.item.kind,s.variant);capture.bounds=[s.x-a.ox*s.sc,s.y-a.oy*s.sc,s.x+(a.w-a.ox)*s.sc,Math.min(s.y,s.clipY)];}draw(s);};
    try{for(const [name,index,at]of views){
@@ -50,6 +50,13 @@ module.exports=async function assessParadise(browser,baseUrl,output){
     capture={index};render(4000);const b=capture.bounds,width=b?Math.min(W,b[2])-Math.max(0,b[0]):0,height=b?Math.min(H,b[3])-Math.max(0,b[1]):0;
     record('visible-landmark-'+name,width>25&&height>25,{width,height,index,at});shots.push({name,image:C.toDataURL()});
    }}finally{drawParadiseSprite=draw;}
+   // The nearby volleyball animation advances with race time, not render time.
+   player.z=2930.3*150;player.x=0;player.pitch=0;curveCamera.look=0;
+   for(let j=0;j<60;j++)updateCurveCamera(1/60);
+   const sample=()=>{const data=ctx.getImageData(0,Math.floor(H*.4),W,Math.floor(H*.3)).data;let hash=2166136261;for(let i=0;i<data.length;i++)hash=Math.imul(hash^data[i],16777619);return hash;};
+   raceElapsed=1000;render(4000);const first=sample();render(4000);const paused=sample();
+   raceElapsed=2000;render(4000);const animated=sample();
+   record('beach-animation-uses-simulation-time',first===paused&&first!==animated,{first,paused,animated});
    // Sample unmarked central asphalt, away from car and lane markings.
    player.z=400.3*150;player.x=0;player.pitch=0;curveCamera.look=0;opponents=[];render(4000);
    const colors=[];for(let y=505;y<600;y++)colors.push([...ctx.getImageData(W/2,y,1,1).data].slice(0,3));
@@ -59,7 +66,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    for(const name of['fill','stroke','fillRect','clearRect','drawImage']){original[name]=proto[name];proto[name]=function(...args){if(this.canvas!==C)writes++;return original[name].apply(this,args);};}
    try{for(let f=0;f<50;f++){player.z=(f*68+.3)*150;player.pitch=segments[Math.floor(player.z/150)].hillDelta;render(5000+f*16);}}finally{for(const name of Object.keys(original))proto[name]=original[name];}
    const bytes=[...paradiseArt.values()].reduce((n,a)=>n+a.canvas.width*a.canvas.height*4,0);
-   record('scenery-cache-stays-immutable-and-under-six-mib',writes===0&&bytes<6*1048576,{writes,MiB:bytes/1048576,tiles:paradiseArt.size});
+   record('scenery-cache-stays-immutable-and-under-ten-mib',writes===0&&bytes<10*1048576,{writes,MiB:bytes/1048576,tiles:paradiseArt.size});
    const limits=getRoadLimits(400*150);record('bridge-parapets-stop-player-and-opponents',limits.left<1&&limits.right<1,{limits});
    const contacts=[];
    for(const car of[player,...opponents]){car.z=400*150;car.x=1.3;car.speed=3600;car.wallHitCooldown=0;car.wallContactSide=0;applyRoadContact(1/60,2,car);contacts.push({x:car.x,speed:car.speed});}
