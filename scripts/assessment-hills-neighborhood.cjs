@@ -66,7 +66,7 @@ module.exports=async function assessHillsNeighborhood(browser,baseUrl,output){
    return checks;
   });
   // The prominent scenes must have a useful view before the driver passes.
-  for(const [index,ahead,height]of[[48,24,215],[60,24,215],[72,24,215],[84,24,215],[96,24,215],[108,24,215],[135,40,315],[225,28,130],[345,26,185],[435,20,180],[490,28,475],[865,22,80],[930,34,320],[1000,28,150],[1060,36,275]]){
+  for(const [index,ahead,height]of[[48,24,215],[60,24,215],[72,24,215],[84,24,215],[96,24,215],[108,24,215],[135,40,315],[225,28,130],[345,26,185],[435,20,180],[490,28,475],[865,22,80],[930,34,145],[1000,28,150],[1060,36,275]]){
    const view=await page.evaluate(({index,ahead,height})=>{
     const i=index-ahead;player.z=(i+.3)*150;player.x=hillsDetourCenter(i);player.speed=4320;player.pitch=0;for(let j=0;j<20;j++)player.pitch+=segments[(i+j)%1200].hillDelta/20;curveCamera.look=0;for(let j=0;j<60;j++)updateCurveCamera(1/60);
     for(const id of['introScreen','overlay','cntNum'])document.getElementById(id).style.display='none';

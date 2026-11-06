@@ -1703,12 +1703,12 @@ function hillsDistrict(index){
   return 'modern';
 }
 function addHillsProperty(index,kind,side,size,extra={}){
-  const start=index-(['hotel','pool_party','glass_villa','film_set'].includes(kind)?14:6),end=index+7;
+  const start=index-(['hotel','pool_party','film_set'].includes(kind)?14:6),end=index+7;
   if(start<3||end>=segments.length-3)return;
   const grand=!!extra.estateGrand,depth=end-start;
-  const width=kind==='hotel'?2.5:['pool_party','glass_villa','film_set'].includes(kind)?2.3:kind==='hills_estate'?(grand?1.6:1.2):1.9;
+  const width=kind==='hotel'?2.5:['pool_party','film_set'].includes(kind)?2.3:kind==='hills_estate'?(grand?1.6:1.2):1.9;
   const inner=hillsDetourCenter(index)+side*1.5*hillsRoadHalfWidth(index);
-  const x=inner+side*width/2;
+  const x=inner+side*(kind==='hills_sundial'?.40:width/2);
   let baseY=-Infinity;
   for(let i=start;i<=end;i++)baseY=Math.max(baseY,segments[i].worldY,segments[i].worldY+segments[i].hillDelta);
   baseY+=35; // A level cut terrace, above every point under the property.
@@ -1851,7 +1851,7 @@ function addPolishScenery(){
   if(currentLevel===LEVEL_HILLS){
     const landmarks=[[135,'hotel',-1,1],[225,'hills_fountain',-1,1],[345,'tennis',1,1],
       [435,'pool_party',1,1],[490,'hill_mansion',1,1],[865,'overlook',-1,1],
-      [930,'glass_villa',1,1],[1060,'film_set',1,1],[1000,'hills_pergola',1,1]];
+      [930,'hills_sundial',1,1],[1060,'film_set',1,1],[1000,'hills_pergola',1,1]];
     for(const [i,kind,side,size] of landmarks)addHillsProperty(i,kind,side,size);
     // A short retail boulevard leads into the pink hotel's arrival court.
     for(const [i,side,style]of[[48,-1,0],[60,1,1],[72,-1,2],[84,1,0],[96,-1,1],[108,1,2]])
@@ -1884,7 +1884,7 @@ function addPolishScenery(){
     for(const seg of segments)if(seg.sprite==='beverly_villa')seg.sprite=null;
     for(let i=570;i<HILLS_DETOUR.end;i++)if(segments[i].sprite==='bougainvillea')segments[i].sprite=null;
     for(const side of[-1,1])for(let i=44+(side>0?12:0),plot=0;i<segments.length-30;i+=24,plot++){
-      if((side<0&&i>=790&&i<=905)||i<125||(i>=470&&i<590)||landmarks.some(([j,kind,which])=>which===side&&Math.abs(i-j)<(['pool_party','glass_villa','film_set'].includes(kind)?26:20)))continue;
+      if((side<0&&i>=790&&i<=905)||i<125||(i>=470&&i<590)||landmarks.some(([j,kind,which])=>which===side&&Math.abs(i-j)<(['pool_party','film_set'].includes(kind)?26:20)))continue;
       const grand=i>=590&&i<HILLS_DETOUR.end;
       const serial=plot+(side>0?2:0),style=!grand&&serial%5===4?4:[0,1,2,3,5,0,1,3][serial%8];
       addHillsProperty(i,'hills_estate',side,grand?1:.85,
@@ -1898,7 +1898,7 @@ function addPolishScenery(){
     for(const [anchor,side]of[[435,1],[930,1],[1060,1]])for(let i=anchor-20;i<=anchor+7;i++)
       if(segments[i].spriteX*side>0)segments[i].sprite=null;
     getHillsCityTile();getHillsBackdropTile(0);getHillsBackdropTile(1);getHillsPanoramaLights();
-    for(const kind of['pool_party','glass_villa','film_set'])getHillsLifeTile(kind);
+    for(const kind of['pool_party','film_set'])getHillsLifeTile(kind);
     for(const [i,x,color,model] of[[605,.47,'#f3e9cf','suv'],[705,-.47,'#d789a2','coupe']]){
       segments[i].parkedCar={active:true,x,color,model};
       add(i,'parked_car',x,.62);
@@ -2111,7 +2111,7 @@ function drawPolishScene(s){
   const k=s.kind,t=chapterTime,idx=s.segIdx;
   if(k==='hills_estate')drawHillsEstate(s.estateStyle,s.estatePalette,s.estateGrand);
   else if(k==='hotel'){drawHillsStaticImage(getHillsDestinationTile(k,s.estateStyle||0),-250,-359);drawHillsHotelLights();}
-  else if(['pool_party','glass_villa','film_set'].includes(k))drawHillsLifeScene(k,t);
+  else if(['pool_party','film_set'].includes(k))drawHillsLifeScene(k,t);
   else if(k==='substation')drawSubstation();
   else if(k==='pine_grove')drawPineGrove(idx);
   else if(k==='observatory')drawObservatory();
@@ -2449,30 +2449,6 @@ function getHillsLifeTile(kind){
     for(const x of[6,21,36]){rect(x,-117,3,7,'#7adddc');line([[x,-117],[x+2,-122]],'#f9d2bc',1);}
     line([[-183,-153],[-55,-139],[76,-150],[187,-141]],'#504259',1.4);
     for(let j=0;j<12;j++)oval(-175+j*32,-147+Math.sin(j*.6)*7,2,3,j%2?'#f5b8a1':'#e7a1cb');
-  }else if(kind==='glass_villa'){
-    // Deep columns, visible all the way to their footings, carry the overhang.
-    rect(-205,-16,410,16,'#b894a1');rect(-195,-22,390,6,'#f2cbb7');
-    poly([[-165,-25],[165,-25],[140,-64],[-143,-64]],'#efd9bf');
-    poly([[-152,-28],[152,-28],[132,-59],[-132,-59]],'#55acb9');
-    for(const x of[-156,-48,103,173]){
-      poly([[x-10,-20],[x+12,-20],[x+12,-154],[x-10,-154]],'#d3b7b4');
-      rect(x+6,-154,6,134,'#9c829b');rect(x-16,-20,34,6,'#f6d5c0');
-    }
-    poly([[-213,-148],[220,-148],[205,-164],[-201,-164]],'#826c87');
-    rect(-213,-164,433,10,'#f8d9c9');rect(-213,-252,433,88,'#b7b8c7');
-    const glass=g.createLinearGradient(0,-250,150,-160);glass.addColorStop(0,'#69738f');glass.addColorStop(.5,'#c19cb1');glass.addColorStop(1,'#425b78');
-    rect(-204,-243,415,73,glass);
-    for(let j=0;j<10;j++)rect(-204+j*45,-243,4,73,'#efcfbc');
-    poly([[-193,-241],[-170,-241],[-103,-170],[-126,-170]],'#e2bdcc');
-    poly([[38,-241],[62,-241],[130,-170],[106,-170]],'#d8bfca');
-    // Visible room silhouettes rather than a featureless glass block.
-    rect(-78,-191,77,18,'#725b78');rect(-73,-195,67,7,'#b08da3');rect(110,-192,49,4,'#e2bfa8');
-    rect(133,-189,3,18,'#b39a9f');rect(-215,-260,438,8,'#f9dccc');
-    rect(-82,-309,209,49,'#efd0c2');rect(-73,-301,191,33,'#53647e');
-    for(const x of[-26,24,74])rect(x,-301,3,33,'#e9c8b6');rect(-90,-315,227,7,'#ffe3c7');
-    line([[-211,-264],[-211,-282],[219,-282],[219,-264]],'#edd4c4',2);
-    for(let j=0;j<12;j++)rect(-207+j*38,-282,2,18,'#d9bfbb');
-    rect(144,-301,39,19,'#a18094');oval(163,-311,27,14,'#476956');
   }else{
     // A low mansion leaves room for a recognisable camera crane and equipment.
     rect(-176,-202,351,142,'#dbc1ae');rect(-183,-209,365,9,'#f8dfc2');
@@ -2547,11 +2523,6 @@ function drawHillsLifeScene(kind,time){
     sceneEllipse(83,-66+bob,5,4,'#ff99c6');scenePoly([[87,-66+bob],[92,-63+bob],[87,-62+bob]],'#353043');
     for(const [j,x,y,c]of[[0,-93,-71,'#e77cae'],[1,-57,-76,'#76d9d4'],[2,79,-74,'#efca86'],[3,117,-69,'#b69bcf']])drawHillsGuest(x,y,c,time*.0016+j*1.8,true,j%2===0);
     if(night>.01){ctx.save();ctx.globalAlpha*=night;sceneLine([[-125,-25],[135,-25]],'#71f7e1',2);sceneRect(-169,-145,30,42,'#dfb48e');ctx.restore();}
-  }else if(kind==='glass_villa'){
-    ctx.save();ctx.globalAlpha*=.2+night*.6;
-    sceneRect(-154,-238,40,59,'#efb78f');sceneRect(72,-238,39,59,'#e9a9bc');
-    sceneLine([[-213,-161],[220,-161]],'#f5aed0',2);sceneLine([[-151,-29],[152,-29]],'#86f0e6',2);ctx.restore();
-    sceneLine([[-104+Math.sin(time*.0005)*4,-40],[-47,-40]],'#bceee0',1.2);
   }else{
     // A slow spotlight sweeps only the mansion's walls, never the road or sky.
     ctx.save();ctx.beginPath();ctx.rect(-176,-202,351,142);ctx.clip();
@@ -2607,6 +2578,20 @@ function drawSunsetScene(kind,seed,time){
       for(let j=0;j<5;j++)sceneEllipse(side*135+Math.sin(j*2.1)*21,-53+Math.cos(j*2.1)*18,5,4,'#f979b7');
     }
     sceneLine([[-102,-6],[-69,-6]],'#f6ecd0',3);sceneLine([[68,-6],[102,-6]],'#f6ecd0',3);
+  }else if(kind==='hills_sundial'){
+    // A small direct-drawn garden object, without a dedicated canvas texture.
+    scenePoly([[-42,0],[43,0],[34,-12],[-34,-12]],'#e2bcac');
+    sceneRect(-29,-64,58,52,'#d39bb0');
+    scenePoly([[14,-64],[29,-64],[29,-12],[14,-12]],'#a17598');
+    sceneEllipse(0,-65,65,19,'#eed1a4',-.12);
+    sceneEllipse(0,-66,57,14,'#ac837b',-.12);
+    sceneEllipse(0,-67,51,11,'#e8b879',-.12);
+    for(let j=0;j<8;j++){
+      const a=j*Math.PI/4;sceneLine([[Math.cos(a)*44,-67+Math.sin(a)*8],[Math.cos(a)*52,-67+Math.sin(a)*12]],'#71586b',1.8);
+    }
+    scenePoly([[-10,-68],[17,-140],[23,-69]],'#f1ce8f');
+    scenePoly([[17,-140],[23,-69],[13,-68]],'#b6887e');
+    sceneLine([[-20,-16],[20,-16]],'#f2b0d1',2);
   }else if(kind==='hills_pergola'){
     scenePoly([[-151,0],[151,0],[121,-25],[-121,-25]],'#d6b6a6');
     for(const x of[-128,-43,43,128])sceneRect(x-4,-115,8,100,'#efcfb7');
@@ -2786,7 +2771,7 @@ function drawEstateWallSlice(x1,y1,w1,x2,y2,w2,index,narrow,heightScale1=1,heigh
       // Open pavement in front of shops, with no residential hedge or gate.
       panel(lane,0,.035,'#ead8bc');band(lane,lane+side*.1,.035,'#ead8bc');continue;
     }
-    const courtyard=segments[index]?.hillsLots?.some(lot=>lot.side===side&&['hotel','tennis','hills_fountain','hills_pergola','overlook','pool_party','glass_villa','film_set'].includes(lot.kind));
+    const courtyard=segments[index]?.hillsLots?.some(lot=>lot.side===side&&['hotel','tennis','hills_fountain','hills_pergola','overlook','pool_party','hills_sundial','film_set'].includes(lot.kind));
     if(courtyard){
       if(segments[index].hillsLots.some(lot=>lot.side===side&&lot.kind==='hotel')){panel(lane,0,.03,'#efd4be');continue;}
       panel(lane,0,.04,'#c3a3a0');panel(lane,.13,.15,'#f2d8bd');

@@ -11,7 +11,7 @@ module.exports=async function assessHillsEvening(browser,baseUrl,output){
    const checks=[],shots=[],record=(name,pass,actual)=>checks.push({name,pass,actual});
    const position=(index,lap)=>{player.z=(index+.3)*SEGMENT_LENGTH;player.lap=lap;player.x=hillsDetourCenter(index);player.pitch=0;for(let j=0;j<20;j++)player.pitch+=segments[(index+j)%1200].hillDelta/20;curveCamera.look=0;for(let j=0;j<60;j++)updateCurveCamera(1/60);};
    const scenes=segments.flatMap(s=>(s.polishScenes||[]).map(p=>({index:s.index,...p})));
-   record('landmarks-replace-existing-properties',scenes.some(s=>s.index===435&&s.kind==='pool_party')&&scenes.some(s=>s.index===930&&s.kind==='glass_villa')&&scenes.some(s=>s.index===1060&&s.kind==='film_set'),{landmarks:scenes.filter(s=>['pool_party','glass_villa','film_set'].includes(s.kind)).map(s=>[s.index,s.kind])});
+   record('landmarks-replace-existing-properties',scenes.some(s=>s.index===435&&s.kind==='pool_party')&&scenes.some(s=>s.index===930&&s.kind==='hills_sundial')&&scenes.some(s=>s.index===1060&&s.kind==='film_set'),{landmarks:scenes.filter(s=>['pool_party','hills_sundial','film_set'].includes(s.kind)).map(s=>[s.index,s.kind])});
    record('valley-view-keeps-an-open-foreground',!scenes.some(s=>s.index>=790&&s.index<=905&&s.x<0&&s.kind==='hills_estate'),{});
    let sunY;const paint=drawHillsStaticImage;
    drawHillsStaticImage=(img,...args)=>{if(img===sunCanvas)sunY=args[1]+sunCanvas.height/2;paint(img,...args);};
@@ -35,7 +35,7 @@ module.exports=async function assessHillsEvening(browser,baseUrl,output){
    const ridge=Array.from({length:1401},(_,x)=>sunsetRidgeHeight(x,1));
    const maxSlope=Math.max(...ridge.slice(1).map((h,i)=>Math.abs(h-ridge[i])));
    record('hills-keep-the-original-gentle-contour',maxSlope<.4&&ridge.every((h,x)=>Math.abs(h-(51+Math.sin(x/BG_W*Math.PI*4+1)*24+Math.cos(x/BG_W*Math.PI*6)*12))<1e-6),{maxSlope});
-   for(const lap of[1,3])for(const [name,index]of[['wedding',95],['party',415],['glass-villa',896],['film-set',1024]]){
+   for(const lap of[1,3])for(const [name,index]of[['wedding',95],['party',415],['sundial',896],['film-set',1024]]){
     position(index,lap);chapterTime=3400;render(3400);shots.push({name:`${name}-lap-${lap}`,image:C.toDataURL()});
    }
    // Render each animated scene in isolation: all changed pixels must stay in

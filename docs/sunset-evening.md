@@ -14,10 +14,10 @@ Straße, Fahrzeuge und HUD erhalten keinen vollflächigen Farbfilter.
 | 135, Pink Palace | Hochzeit mit Blumenbogen, Paar, Gästen und weißem Cabrio in der vorhandenen Vorfahrt |
 | 435, rechte Hangterrasse | Infinitypool, vier tanzende Gäste, langsam schaukelnder Flamingo und türkis leuchtende Wasserkante |
 | 790–905, linke Aussichtspassage | Freier Vordergrund mit Blick auf sanfte, bewohnte Hänge und aufleuchtende Fenster und Straßenlichter |
-| 930, rechter Hang | Auskragende Glasvilla mit bis zum Boden sichtbaren Stützen und Pool darunter |
+| 930, rechter Hang | Kleine Sonnenuhr am Gehweg; direkt gezeichnet, ohne eigene Grafikfläche |
 | 1060, rechte Villenzufahrt | Filmset mit Kamerakran, Stativen, Crew, Cabrio und langsam über die Fassade wanderndem Licht |
 
-Poolparty, Glasvilla und Filmset ersetzen bestehende Blickfänge. Ihre
+Poolparty, Sonnenuhr und Filmset ersetzen bestehende Blickfänge. Ihre
 Grundstücke verwenden die vorhandenen projizierten Terrassen, mit genügend
 Abstand zu den Nachbarhäusern und freigehaltenen Sichtachsen. Die Hochzeit
 bleibt innerhalb der Hotelvorfahrt. Die Läden bleiben längs zur Straße.
@@ -64,3 +64,7 @@ ihre Bildabstände sind wegen eines gleichzeitig laufenden Tests nicht direkt
 vergleichbar. Handy-FPS bleiben vom konkreten Gerät abhängig.
 
 Belege: [Vergleich und Prüfungen](evidence/hills-stutter-fix.json).
+
+Die kaum sichtbare Glasvilla wurde auf Wunsch entfernt. Ihre Grafikfläche
+von 500 × 400 Pixeln (rechnerisch 0,76 MiB RGBA) wird nicht mehr angelegt.
+Die Sonnenuhr wird aus wenigen Formen direkt gezeichnet.

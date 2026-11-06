@@ -14,7 +14,7 @@ bleiben fest mit derselben zwischengespeicherten Landschaft verbunden.
 | 220–400 | Heckengärten, Zypressen, Brunnenhof und SUNSET TENNIS |
 | 400–522 | Poolparty auf der Hangterrasse und großes Anwesen vor der Umleitung |
 | 522–765 | Bestehende schmale Umleitung mit hohen Grundstücksmauern |
-| 765–960 | Offene Aussicht auf beleuchtete Hänge und auskragende Glasvilla |
+| 765–960 | Offene Aussicht auf beleuchtete Hänge und kleine Sonnenuhr am Gehweg |
 | Ab 960 | Moderne Villen, Filmset, Agaven und Pergola mit Gartenskulptur |
 
 Die neun größeren Blickfänge liegen bei 135, 225, 345, 435, 490, 865, 930,
