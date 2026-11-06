@@ -13,15 +13,15 @@ module.exports=async function assessHillsEvening(browser,baseUrl,output){
    const scenes=segments.flatMap(s=>(s.polishScenes||[]).map(p=>({index:s.index,...p})));
    record('landmarks-replace-existing-properties',scenes.some(s=>s.index===435&&s.kind==='pool_party')&&scenes.some(s=>s.index===930&&s.kind==='glass_villa')&&scenes.some(s=>s.index===1060&&s.kind==='film_set'),{landmarks:scenes.filter(s=>['pool_party','glass_villa','film_set'].includes(s.kind)).map(s=>[s.index,s.kind])});
    record('valley-view-keeps-an-open-foreground',!scenes.some(s=>s.index>=790&&s.index<=905&&s.x<0&&s.kind==='hills_estate'),{});
-   let sunY;const paint=drawHillsLitImage;
-   drawHillsLitImage=(img,...args)=>{if(img===sunCanvas)sunY=args[1]+sunCanvas.height/2;paint(img,...args);};
+   let sunY;const paint=drawHillsStaticImage;
+   drawHillsStaticImage=(img,...args)=>{if(img===sunCanvas)sunY=args[1]+sunCanvas.height/2;paint(img,...args);};
    const dusk=[];
    try{
     for(const lap of[1,2,3]){
      position(835,lap);render(2400);const sky=Array.from(ctx.getImageData(20,120,1,1).data);
      dusk.push({lap,...hillsEvening,sunY,sky});shots.push({name:`valley-lap-${lap}`,image:C.toDataURL()});
     }
-   }finally{drawHillsLitImage=paint;}
+   }finally{drawHillsStaticImage=paint;}
    record('actual-render-sun-descends-and-sky-darkens',dusk[0].sunY<dusk[1].sunY&&dusk[1].sunY<dusk[2].sunY&&dusk[2].sky[0]+dusk[2].sky[1]<dusk[0].sky[0]+dusk[0].sky[1],dusk);
    record('blue-hour-and-lights-arrive-in-last-lap',dusk[0].night===0&&dusk[2].night>.9&&dusk[2].sunY>H*.5,dusk.map(d=>({lap:d.lap,night:d.night})));
    const seam=[];
@@ -32,6 +32,9 @@ module.exports=async function assessHillsEvening(browser,baseUrl,output){
    }
    record('sunset-has-no-lighting-reset-at-lap-boundaries',seam.every(v=>v<1e-6),{seam});
    record('panorama-remains-seamless-and-sign-ridge-stays-put',Math.abs(sunsetRidgeHeight(0,1)-sunsetRidgeHeight(BG_W,1))<1e-5&&[154,200,300].every(x=>Math.abs(sunsetRidgeHeight(x,1)-(51+Math.sin(x/BG_W*Math.PI*4+1)*24+Math.cos(x/BG_W*Math.PI*6)*12))<.01),{});
+   const ridge=Array.from({length:1401},(_,x)=>sunsetRidgeHeight(x,1));
+   const maxSlope=Math.max(...ridge.slice(1).map((h,i)=>Math.abs(h-ridge[i])));
+   record('hills-keep-the-original-gentle-contour',maxSlope<.4&&ridge.every((h,x)=>Math.abs(h-(51+Math.sin(x/BG_W*Math.PI*4+1)*24+Math.cos(x/BG_W*Math.PI*6)*12))<1e-6),{maxSlope});
    for(const lap of[1,3])for(const [name,index]of[['wedding',95],['party',415],['glass-villa',896],['film-set',1024]]){
     position(index,lap);chapterTime=3400;render(3400);shots.push({name:`${name}-lap-${lap}`,image:C.toDataURL()});
    }
@@ -46,12 +49,18 @@ module.exports=async function assessHillsEvening(browser,baseUrl,output){
     }
     record(`${kind}-animation-is-local`,changed>10&&outside===0,{changed,outside});
    }
-   // Warm every lighting phase, then ensure changing time creates no canvases.
+   // No canvas creation OR mutation while driving: a reused canvas can still
+   // force expensive GPU texture uploads when rewritten every lighting step.
    for(const lap of[1,2,3]){position(415,lap);render(2400);}
-   const create=document.createElement.bind(document);let canvases=0;
+   const create=document.createElement.bind(document),proto=CanvasRenderingContext2D.prototype,original={};
+   let canvases=0,offscreenWrites=0;
    document.createElement=(tag,...args)=>{if(tag==='canvas')canvases++;return create(tag,...args);};
-   try{for(let frame=0;frame<30;frame++){position(415,1+frame%3);render(2400+frame*17);}}finally{document.createElement=create;}
-   record('evening-reuses-cached-artwork-during-driving',canvases===0,{newCanvases:canvases});
+   for(const name of['drawImage','fillRect','clearRect','fill','stroke']){
+    original[name]=proto[name];proto[name]=function(...args){if(this.canvas!==C)offscreenWrites++;return original[name].apply(this,args);};
+   }
+   try{for(let frame=0;frame<36;frame++){position(95+frame*25,1+frame%3);render(2400+frame*17);}}
+   finally{document.createElement=create;for(const name of Object.keys(original))proto[name]=original[name];}
+   record('evening-keeps-textures-immutable-during-driving',canvases===0&&offscreenWrites===0,{newCanvases:canvases,offscreenWrites});
    return{checks,shots};
   });
   for(const shot of result.shots)fs.writeFileSync(path.join(output,shot.name+'.png'),Buffer.from(shot.image.split(',')[1],'base64'));

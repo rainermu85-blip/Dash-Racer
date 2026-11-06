@@ -3,7 +3,8 @@
 Der Sonnenuntergang läuft über die gesamte Renndistanz von drei Runden. Die
 Sonne sinkt hinter die Hügel; der Himmel geht von Apricot über Rosa/Lavendel
 in Dunkelblau über. An der Rundengrenze gibt es keinen Neustart des Lichts.
-Gebäude, Hänge und helle Grundstückskanten bekommen eigene Abendfarben.
+Himmel und helle Grundstückskanten bekommen Abendfarben; die statischen
+Gebäudegrafiken werden aus Leistungsgründen nur einmal gezeichnet.
 Straße, Fahrzeuge und HUD erhalten keinen vollflächigen Farbfilter.
 
 ## Szenen
@@ -12,7 +13,7 @@ Straße, Fahrzeuge und HUD erhalten keinen vollflächigen Farbfilter.
 | --- | --- |
 | 135, Pink Palace | Hochzeit mit Blumenbogen, Paar, Gästen und weißem Cabrio in der vorhandenen Vorfahrt |
 | 435, rechte Hangterrasse | Infinitypool, vier tanzende Gäste, langsam schaukelnder Flamingo und türkis leuchtende Wasserkante |
-| 790–905, linke Aussichtspassage | Freier Vordergrund, Talbebauung und drei nach und nach aufleuchtende Gruppen von Stadtlichtern |
+| 790–905, linke Aussichtspassage | Freier Vordergrund mit Blick auf sanfte, bewohnte Hänge und aufleuchtende Fenster und Straßenlichter |
 | 930, rechter Hang | Auskragende Glasvilla mit bis zum Boden sichtbaren Stützen und Pool darunter |
 | 1060, rechte Villenzufahrt | Filmset mit Kamerakran, Stativen, Crew, Cabrio und langsam über die Fassade wanderndem Licht |
 
@@ -21,28 +22,45 @@ Grundstücke verwenden die vorhandenen projizierten Terrassen, mit genügend
 Abstand zu den Nachbarhäusern und freigehaltenen Sichtachsen. Die Hochzeit
 bleibt innerhalb der Hotelvorfahrt. Die Läden bleiben längs zur Straße.
 
-Der neue Taleinschnitt ist periodisch und läuft an der Kachelgrenze nahtlos
-weiter. Der Hügel unter dem SUNSET-HILLS-Schriftzug bleibt unverändert.
-Die detaillierten Stadtlichter befinden sich in vorbereiteten Bildern.
+Die künstlichen Taleinschnitte wurden nach Rückmeldung zu ihrer steilen,
+unnatürlichen Form vollständig entfernt. Der Hintergrund verwendet wieder
+die ursprüngliche, periodische Hügelkontur. Häuser und Schriftzug bleiben an
+diesem Gelände verankert. Fenster- und Straßenlichter liegen in einem kleinen,
+einmal vorbereiteten Bild an den passenden Positionen auf dem Hang.
 
 ## Aufwand und Prüfungen
 
-Gebäude und Hintergrund haben zwischengespeicherte Farbvarianten. Drei
-wiederverwendbare Hintergrundflächen werden nur bei einer kleinen Änderung
-des Abendlichts neu zusammengesetzt. Es entstehen keine neuen Canvas-Flächen
-während der laufenden Dämmerung. Pro Bild bleiben nur die kleinen lokalen
-Animationen, Vordergrundzeichnung und Perspektivprojektion übrig.
+Die erste Abendlicht-Version verursachte auf dem Gerät des Nutzers starkes
+Ruckeln. Die vielen Farbvarianten, doppelte Zeichnung der Gebäude und laufende
+Neuzusammensetzung großer Hintergrundflächen wurden deshalb entfernt.
 
-Der Produktionsbuild sowie `hills-evening`, `hills-neighborhood`,
-`hills-stability` und `detour` wurden geprüft. Dazu gehören eine vollständige
-Fahrt mit echten Physikschritten, Ansichten aus allen drei Runden, Bodenkontakt,
-Sichtbarkeit, Rundengrenzen und die bisherigen Fahrzeug-/Straßenfehler.
-Pixelvergleiche prüfen, dass die Filmbeleuchtung nur innerhalb der Fassade
-wandert und die Poolanimation auf der Terrasse bleibt.
+Gebäude und Hintergrund bleiben während der Fahrt unveränderte Grafikflächen
+und werden jeweils einmal gezeichnet. Nur die Deckkraft einer vorbereiteten
+Lichtebene ändert sich. Sonnenuntergang, Szenen und ihre kleinen lokalen
+Animationen bleiben erhalten. Die Farben der Grundstückskanten werden nur
+bei einem neuen kleinen Zeitabschnitt berechnet, nicht in jedem Bild.
 
-Ein Vergleich mit Commit `fefa800` an fünf Positionen in Runde 1 und 3 ergab
-in der Cloud mediane Zeichenzeiten von etwa 2,6–4,6 ms vorher und 3,0–5,4 ms
-nachher. Die vorher erhöhten Hintergrundspitzen wurden durch das gemeinsame
-Zwischenspeichern reduziert. Diese Messungen sind keine Handy-FPS-Messung;
-die genaue Bildrate hängt weiterhin vom Gerät ab. Rohwerte und Prüfresultate
-stehen in [den Belegen](evidence/hills-evening-2026-11-06.json).
+`hills-evening` prüft zusätzlich, dass die Fahrt keine Canvas-Flächen anlegt
+oder beschreibt: Eine bloß wiederverwendete, aber ständig neu bemalte Fläche
+kann weiterhin teure Texturübertragungen auslösen. Die vollständige Kontur
+wird auf den ursprünglichen Verlauf und ihre maximale Steigung geprüft.
+`hills-neighborhood` fährt eine ganze Runde und prüft Tragflächen und Sicht.
+
+Ein Vergleich im Browser mit zweifacher CPU-Drosselung ergab:
+
+| Messgröße | Gemeldete Ruckelversion | Korrektur |
+| --- | ---: | ---: |
+| Erzeugte Canvas-Flächen | 109 | 35 |
+| Rechnerische RGBA-Flächengröße | 74,4 MiB | 21,0 MiB |
+| Schreibzugriffe auf Hilfsflächen in 240 Fahrbildern | 112 | 0 |
+| 95. Perzentil der Zeichenzeit, Runde 1 / 3 | 18,1 / 18,4 ms | 14,0 / 9,2 ms |
+
+Die Bildabstände lagen in diesem Cloud-Vergleich überwiegend bei 16,7 ms,
+im 95. Perzentil bei 33,4 ms. Das starke Ruckeln des echten Geräts wurde hier
+nicht identisch reproduziert; die strukturellen Mehrkosten sind beseitigt.
+Die Flächengröße ist eine Berechnung aus Pixelmaßen, keine VRAM-Messung.
+Die alte Version vor dem Abendlicht wurde als zusätzliche Referenz erfasst;
+ihre Bildabstände sind wegen eines gleichzeitig laufenden Tests nicht direkt
+vergleichbar. Handy-FPS bleiben vom konkreten Gerät abhängig.
+
+Belege: [Vergleich und Prüfungen](evidence/hills-stutter-fix.json).

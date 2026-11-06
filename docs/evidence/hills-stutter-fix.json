@@ -1,0 +1,515 @@
+{
+  "baseline": "8322173",
+  "profile": [
+    {
+      "version": "pre-evening",
+      "samples": [
+        {
+          "lap": 1,
+          "medianFrameMs": 33.20000000000027,
+          "p95FrameMs": 33.40000000000009,
+          "over50ms": 0,
+          "medianRenderMs": 9,
+          "p95RenderMs": 12.799999982118607,
+          "offscreenWrites": 0,
+          "imageDrawsPerFrame": 7.416666666666667
+        },
+        {
+          "lap": 3,
+          "medianFrameMs": 33.30000000000018,
+          "p95FrameMs": 50,
+          "over50ms": 1,
+          "medianRenderMs": 9.199999988079071,
+          "p95RenderMs": 14.700000017881393,
+          "offscreenWrites": 0,
+          "imageDrawsPerFrame": 7.416666666666667
+        }
+      ],
+      "canvasCount": 31,
+      "canvasMiB": 17.41061782836914
+    },
+    {
+      "version": "reported-stutter",
+      "samples": [
+        {
+          "lap": 1,
+          "medianFrameMs": 16.700000000000273,
+          "p95FrameMs": 33.40000000000009,
+          "over50ms": 0,
+          "medianRenderMs": 9.099999994039536,
+          "p95RenderMs": 18.099999994039536,
+          "offscreenWrites": 56,
+          "imageDrawsPerFrame": 11.833333333333334
+        },
+        {
+          "lap": 3,
+          "medianFrameMs": 16.699999999999818,
+          "p95FrameMs": 33.399999999999636,
+          "over50ms": 1,
+          "medianRenderMs": 7.699999988079071,
+          "p95RenderMs": 18.400000005960464,
+          "offscreenWrites": 56,
+          "imageDrawsPerFrame": 11.833333333333334
+        }
+      ],
+      "canvasCount": 109,
+      "canvasMiB": 74.37472915649414
+    },
+    {
+      "version": "fix",
+      "samples": [
+        {
+          "lap": 1,
+          "medianFrameMs": 16.700000000000273,
+          "p95FrameMs": 33.40000000000009,
+          "over50ms": 0,
+          "medianRenderMs": 8.599999994039536,
+          "p95RenderMs": 14,
+          "offscreenWrites": 0,
+          "imageDrawsPerFrame": 7.416666666666667
+        },
+        {
+          "lap": 3,
+          "medianFrameMs": 16.699999999999818,
+          "p95FrameMs": 33.400000000000546,
+          "over50ms": 0,
+          "medianRenderMs": 7.200000017881393,
+          "p95RenderMs": 9.199999988079071,
+          "offscreenWrites": 0,
+          "imageDrawsPerFrame": 8.416666666666666
+        }
+      ],
+      "canvasCount": 35,
+      "canvasMiB": 20.98117446899414
+    }
+  ],
+  "conditions": {
+    "viewport": [
+      390,
+      844
+    ],
+    "cpuThrottle": 2,
+    "framesPerLapSample": 120,
+    "caveats": [
+      "Canvas MiB calculated from width * height * 4; not actual GPU memory.",
+      "Pre-evening reference overlapped another browser test; frame cadence not directly comparable.",
+      "Not a measurement on the reporting phone."
+    ]
+  },
+  "checks": {
+    "evening": [
+      {
+        "name": "landmarks-replace-existing-properties",
+        "pass": true,
+        "actual": {
+          "landmarks": [
+            [
+              435,
+              "pool_party"
+            ],
+            [
+              930,
+              "glass_villa"
+            ],
+            [
+              1060,
+              "film_set"
+            ]
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "valley-view-keeps-an-open-foreground",
+        "pass": true,
+        "actual": {},
+        "errors": []
+      },
+      {
+        "name": "actual-render-sun-descends-and-sky-darkens",
+        "pass": true,
+        "actual": [
+          {
+            "lap": 1,
+            "progress": 0.23202777777777778,
+            "pink": 0.4461762139996571,
+            "night": 0,
+            "phase": 0.4833912037037037,
+            "sunY": 334.53413040285284,
+            "sky": [
+              117,
+              68,
+              102,
+              255
+            ]
+          },
+          {
+            "lap": 2,
+            "progress": 0.5653611111111111,
+            "pink": 1,
+            "night": 0.09429717724215857,
+            "phase": 1.0942971772421586,
+            "sunY": 427.37413040285287,
+            "sky": [
+              81,
+              55,
+              94,
+              255
+            ]
+          },
+          {
+            "lap": 3,
+            "progress": 0.8986944444444445,
+            "pink": 1,
+            "night": 0.9861542959063189,
+            "phase": 1.986154295906319,
+            "sunY": 520.2141304028529,
+            "sky": [
+              22,
+              30,
+              58,
+              255
+            ]
+          }
+        ],
+        "errors": []
+      },
+      {
+        "name": "blue-hour-and-lights-arrive-in-last-lap",
+        "pass": true,
+        "actual": [
+          {
+            "lap": 1,
+            "night": 0
+          },
+          {
+            "lap": 2,
+            "night": 0.09429717724215857
+          },
+          {
+            "lap": 3,
+            "night": 0.9861542959063189
+          }
+        ],
+        "errors": []
+      },
+      {
+        "name": "sunset-has-no-lighting-reset-at-lap-boundaries",
+        "pass": true,
+        "actual": {
+          "seam": [
+            9.876543138886973e-09,
+            1.198733245999506e-08
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "panorama-remains-seamless-and-sign-ridge-stays-put",
+        "pass": true,
+        "actual": {},
+        "errors": []
+      },
+      {
+        "name": "hills-keep-the-original-gentle-contour",
+        "pass": true,
+        "actual": {
+          "maxSlope": 0.37683749636748587
+        },
+        "errors": []
+      },
+      {
+        "name": "film_set-animation-is-local",
+        "pass": true,
+        "actual": {
+          "changed": 6906,
+          "outside": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "pool_party-animation-is-local",
+        "pass": true,
+        "actual": {
+          "changed": 855,
+          "outside": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "evening-keeps-textures-immutable-during-driving",
+        "pass": true,
+        "actual": {
+          "newCanvases": 0,
+          "offscreenWrites": 0
+        },
+        "errors": []
+      }
+    ],
+    "neighborhood": [
+      {
+        "name": "every-property-has-support-above-the-whole-slope",
+        "pass": true,
+        "actual": {
+          "properties": 76,
+          "unsupported": []
+        },
+        "errors": []
+      },
+      {
+        "name": "independent-plots-dont-overlap-on-the-same-side",
+        "pass": true,
+        "actual": {
+          "overlaps": []
+        },
+        "errors": []
+      },
+      {
+        "name": "panorama-homes-have-wide-retaining-footings",
+        "pass": true,
+        "actual": {
+          "homes": 74
+        },
+        "errors": []
+      },
+      {
+        "name": "all-panorama-sectors-are-inhabited-with-villas",
+        "pass": true,
+        "actual": {
+          "sectors": [
+            10,
+            14,
+            14,
+            14
+          ],
+          "apartments": 7,
+          "total": 52
+        },
+        "errors": []
+      },
+      {
+        "name": "rendered-buildings-meet-their-projected-terraces",
+        "pass": true,
+        "actual": {
+          "samples": 51,
+          "maxError": 5.684341886080802e-14
+        },
+        "errors": []
+      },
+      {
+        "name": "pools-are-present-on-separate-front-terraces",
+        "pass": true,
+        "actual": {
+          "pools": 21
+        },
+        "errors": []
+      },
+      {
+        "name": "sunset-has-distinct-neighborhood-sections",
+        "pass": true,
+        "actual": {
+          "districts": [
+            "plaza",
+            "palms",
+            "club",
+            "gardens",
+            "detour",
+            "panorama",
+            "modern"
+          ]
+        },
+        "errors": []
+      },
+      {
+        "name": "longitudinal-shop-fronts-follow-supported-road-edges",
+        "pass": true,
+        "actual": {
+          "strips": 1686,
+          "shopCount": 6,
+          "maxFootError": 2.2737367544323206e-13
+        },
+        "errors": []
+      },
+      {
+        "name": "shop-textures-face-correct-way-on-both-sides",
+        "pass": true,
+        "actual": {
+          "mirrored": 0,
+          "nonFinite": 0
+        },
+        "errors": []
+      },
+      {
+        "name": "shop-front-slices-join-through-three-laps",
+        "pass": true,
+        "actual": {
+          "maxJoinError": 1.1368683772161603e-13
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-48",
+        "pass": true,
+        "actual": {
+          "width": 70.40828254855165,
+          "height": 142.16181955857195
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-60",
+        "pass": true,
+        "actual": {
+          "width": 69.59057474900408,
+          "height": 149.76405589860252
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-72",
+        "pass": true,
+        "actual": {
+          "width": 71.15291792212759,
+          "height": 142.1618195585719
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-84",
+        "pass": true,
+        "actual": {
+          "width": 68.5384282499245,
+          "height": 149.76405589860252
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-96",
+        "pass": true,
+        "actual": {
+          "width": 72.56309766667943,
+          "height": 142.161819558572
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-108",
+        "pass": true,
+        "actual": {
+          "width": 66.66446143349435,
+          "height": 149.76405589860252
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-135",
+        "pass": true,
+        "actual": {
+          "width": 96.58968058968057,
+          "height": 95.08046683046683
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-225",
+        "pass": true,
+        "actual": {
+          "width": 120.84349171501094,
+          "height": 55.646341463414615
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-345",
+        "pass": true,
+        "actual": {
+          "width": 136.54647807872365,
+          "height": 85.12078651685391
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-435",
+        "pass": true,
+        "actual": {
+          "width": 174.20458497530382,
+          "height": 106.82608695652175
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-490",
+        "pass": true,
+        "actual": {
+          "width": 136.9756097560975,
+          "height": 203.32317073170725
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-865",
+        "pass": true,
+        "actual": {
+          "width": 173.09653537714183,
+          "height": 43.29515418502206
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-930",
+        "pass": true,
+        "actual": {
+          "width": 104.75539292643595,
+          "height": 113.29106628242073
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-1000",
+        "pass": true,
+        "actual": {
+          "width": 136.20062639676198,
+          "height": 64.20731707317071
+        },
+        "errors": []
+      },
+      {
+        "name": "landmark-visible-before-passing-1060",
+        "pass": true,
+        "actual": {
+          "width": 107.11716621253413,
+          "height": 92.05381471389649
+        },
+        "errors": []
+      },
+      {
+        "name": "whole-hills-lap-with-real-physics-and-steering",
+        "pass": true,
+        "actual": {
+          "lap": 2,
+          "seconds": 42.63333333332569,
+          "captured": [
+            20,
+            45,
+            70,
+            95,
+            120,
+            145,
+            200,
+            320,
+            405,
+            490,
+            540,
+            620,
+            740,
+            820,
+            930,
+            1000,
+            1100
+          ]
+        },
+        "errors": []
+      }
+    ]
+  }
+}
