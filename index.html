@@ -1696,7 +1696,7 @@ function addHillsProperty(index,kind,side,size,extra={}){
   let baseY=-Infinity;
   for(let i=start;i<=end;i++)baseY=Math.max(baseY,segments[i].worldY,segments[i].worldY+segments[i].hillDelta);
   baseY+=35; // A level cut terrace, above every point under the property.
-  const lot={id:index,kind,start,end,side,width,baseY,district:hillsDistrict(index),pool:kind==='hill_mansion'||(kind==='hills_estate'&&Math.floor(index/24)%3===0)};
+  const lot={id:index,kind,start,end,side,width,baseY,district:hillsDistrict(index),style:extra.estateStyle||0,pool:kind==='hill_mansion'||(kind==='hills_estate'&&Math.floor(index/24)%3===0)};
   for(let i=start;i<end;i++){
     segments[i].hillsLots??=[];segments[i].hillsLots.push(lot);
   }
@@ -1749,6 +1749,85 @@ function drawHillsPropertySlice(x1,y1,w1,x2,y2,w2,index){
     // The leading face closes the terrace instead of leaving a floating slab.
     if(index===lot.start)scenePoly([a(near,ground1-45),a(outer1,ground1-45),a(outer1,lot.baseY),a(near,lot.baseY)],'#927180');
   }
+}
+// The shop front lies along the road, not across it. Each piece uses the
+// same clipped projection as its supporting lot and is depth-sorted with traffic.
+function hillsShopPoint(road,t,lane,height){
+  const seg=segments[road.segIdx],from=seg.frameRoadT1||0;
+  const f=clamp((t-from)/(1-from),0,1);
+  const w=1/((1-f)/road.w1+f/road.w2);
+  const q=Math.abs(road.w2-road.w1)>1e-8?(w-road.w1)/(road.w2-road.w1):f;
+  const ground=seg.worldY+seg.hillDelta*t;
+  return [road.rx1+(road.rx2-road.rx1)*q+lane*w,
+    road.y1+(road.y2-road.y1)*q-(height-ground)*w*H/(ROAD_WIDTH*W)];
+}
+function drawHillsShopTexture(image,u1,u2,nearBottom,farBottom,nearTop,farTop){
+  // Two small affine triangles approximate a perspective strip. Subdivision
+  // is screen-size driven, so windows keep their shape as the player passes.
+  const v0=139,v1=359;
+  const triangle=(src,dst)=>{
+    const [a,b,c]=src,[p,q,r]=dst;
+    const den=(b[0]-a[0])*(c[1]-a[1])-(c[0]-a[0])*(b[1]-a[1]);
+    if(Math.abs(den)<1e-6)return;
+    const xx=((q[0]-p[0])*(c[1]-a[1])-(r[0]-p[0])*(b[1]-a[1]))/den;
+    const xy=((r[0]-p[0])*(b[0]-a[0])-(q[0]-p[0])*(c[0]-a[0]))/den;
+    const yx=((q[1]-p[1])*(c[1]-a[1])-(r[1]-p[1])*(b[1]-a[1]))/den;
+    const yy=((r[1]-p[1])*(b[0]-a[0])-(q[1]-p[1])*(c[0]-a[0]))/den;
+    // Overlap the triangle masks by half a pixel: disjoint antialiased
+    // clips otherwise leave bright moving seams on the shop windows.
+    const winding=Math.sign((q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]));
+    const clip=dst.map((v,i)=>{
+      const prev=dst[(i+2)%3],next=dst[(i+1)%3];
+      const normal=(a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1;return[winding*dy/len,-winding*dx/len];};
+      const n=normal(prev,v),m=normal(v,next),k=.55/Math.max(.05,1+n[0]*m[0]+n[1]*m[1]);
+      const dx=(n[0]+m[0])*k,dy=(n[1]+m[1])*k,limit=Math.min(1,2.5/(Math.hypot(dx,dy)||1));
+      return[v[0]+dx*limit,v[1]+dy*limit];
+    });
+    ctx.save();ctx.beginPath();ctx.moveTo(...clip[0]);ctx.lineTo(...clip[1]);ctx.lineTo(...clip[2]);ctx.closePath();ctx.clip();
+    ctx.transform(xx,yx,xy,yy,p[0]-xx*a[0]-xy*a[1],p[1]-yx*a[0]-yy*a[1]);
+    ctx.drawImage(image,0,0);ctx.restore();
+  };
+  triangle([[u1,v1],[u2,v1],[u2,v0]],[nearBottom,farBottom,farTop]);
+  triangle([[u1,v1],[u2,v0],[u1,v0]],[nearBottom,farTop,nearTop]);
+}
+function drawHillsShopSlice(road){
+  for(const lot of segments[road.segIdx].hillsLots||[])
+    if(lot.kind==='hills_boutiques')drawHillsShopLotSlice(road,lot);
+}
+function drawHillsShopLotSlice(road,lot){
+    const seg=segments[road.segIdx];
+    const image=getHillsDestinationTile('hills_boutiques',lot.style),span=lot.end-lot.start;
+    const unit=span*SEGMENT_LENGTH/362,front=lot.side*1.56,back=lot.side*2.65;
+    const point=(t,lane,height)=>hillsShopPoint(road,t,lane,lot.baseY+height*unit);
+    ctx.save();ctx.beginPath();ctx.rect(0,0,W,seg.clipY);ctx.clip();
+    // Treat the two shops as separate volumes, with their own roof height.
+    for(let part=1;part>=0;part--){
+      const start=lot.start+span*part/2,end=lot.start+span*(part+1)/2;
+      const a=Math.max(seg.frameRoadT1||0,start-road.segIdx,0),b=Math.min(1,end-road.segIdx);
+      if(b<=a)continue;
+      const artPart=lot.side<0?part:1-part,h=[174,142,188][(lot.style+artPart)%3]+6;
+      const bounds=[point(a,front,0),point(b,front,0),point(a,back,220),point(b,back,220)];
+      if(Math.max(...bounds.map(p=>p[0]))<0||Math.min(...bounds.map(p=>p[0]))>W)continue;
+      scenePoly([point(a,front,h),point(b,front,h),point(b,back,h),point(a,back,h)],'#b4a0ab');
+      // An opaque backing avoids hairline cracks between texture strips.
+      scenePoly([point(a,front,0),point(b,front,0),point(b,front,h),point(a,front,h)],'#cab7af');
+      const near=point(a,front,0),far=point(b,front,0),steps=Math.min(8,Math.max(1,Math.ceil(Math.hypot(near[0]-far[0],near[1]-far[1])/7)));
+      for(let j=steps-1;j>=0;j--){
+        const t1=a+(b-a)*j/steps,t2=a+(b-a)*(j+1)/steps;
+        const u=t=>{const phase=(road.segIdx+t-lot.start)/span;return lot.side<0?69+362*phase:431-362*phase;};
+        const nb=point(t1,front,0),fb=point(t2,front,0);
+        // A front turning away around a bend must not show mirrored lettering.
+        // Its solid volume remains; only the back-facing window texture is culled.
+        if((u(t2)-u(t1))*(fb[0]-nb[0])<=0)continue;
+        drawHillsShopTexture(image,u(t1),u(t2),nb,fb,point(t1,front,220),point(t2,front,220));
+      }
+      // Solid end wall closes the building. It is outside the sidewalk.
+      if(Math.abs(road.segIdx+a-start)<1e-6){
+        scenePoly([point(a,front,0),point(a,back,0),point(a,back,h),point(a,front,h)],lot.style===1?'#be8195':'#ad9b9f');
+        sceneLine([point(a,front,h),point(a,back,h)],'#ecd4ba',Math.max(.6,road.w2*.004));
+      }
+    }
+    ctx.restore();
 }
 function addPolishScenery(){
   const add=(index,kind,x=1.9,size=1,extra={})=>{if(segments[index]){segments[index].polishScenes??=[];segments[index].polishScenes.push({kind,x,size,...extra});}};
@@ -2010,7 +2089,7 @@ function drawPolishScene(s){
   ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
   const k=s.kind,t=chapterTime,idx=s.segIdx;
   if(k==='hills_estate')drawHillsEstate(s.estateStyle,s.estatePalette,s.estateGrand);
-  else if(k==='hills_boutiques'||k==='hotel')ctx.drawImage(getHillsDestinationTile(k,s.estateStyle||0),-250,-359);
+  else if(k==='hotel')ctx.drawImage(getHillsDestinationTile(k,s.estateStyle||0),-250,-359);
   else if(k==='substation')drawSubstation();
   else if(k==='pine_grove')drawPineGrove(idx);
   else if(k==='observatory')drawObservatory();
@@ -2265,10 +2344,6 @@ function getHillsDestinationTile(kind,variant=0){
       awning(x+11,-121,154);label(names[b],x+88,-127,12,'#463248');
       for(const dx of[7,166]){rect(x+dx,-108,3,96,'#e3cfa6');oval(x+dx,-99,4,5,'#ffe3a6');}
     }
-    // Small pavement details belong to the same solid terrace as the windows.
-    person(-14,0,'#e5b0cf');person(7,0,'#6d9ca4');
-    rect(-174,-24,20,24,'#bca68e');oval(-164,-30,14,16,'#4a7058');
-    rect(148,-23,23,23,'#c6ad91');oval(159,-30,15,16,'#486c55');
   }else{
     // Pink Palace: stepped hotel wings, central Deco crown and deep portico.
     rect(-214,-182,428,156,'#d985a3');rect(-198,-194,396,12,'#f6c5c2');
@@ -10133,6 +10208,7 @@ function render(ts) {
     seg.proj_y2 = p2.y;
     seg.proj_w2 = p2.w;
     seg.frameRoadY1=firstY;
+    seg.frameRoadT1=(firstZ-segWorldZ)/SEGMENT_LENGTH;
 
     const segmentClipY = maxY;
     
@@ -10206,6 +10282,7 @@ function render(ts) {
     }
 
     for(const scene of seg.polishScenes||[]){
+        if(scene.kind==='hills_boutiques')continue; // Longitudinal geometry is drawn with each road slice.
         const s=getCleanSpriteFromPool();s.type='polish_scene';s.kind=scene.kind;
         s.estateStyle=scene.estateStyle;s.estatePalette=scene.estatePalette;s.estateGrand=scene.estateGrand;
         const groundY=scene.estateBaseY??(currentLevel===LEVEL_HILLS?getHillsPropertyGround(segIdx,scene.x):undefined);
@@ -10632,6 +10709,7 @@ function render(ts) {
       drawOceanPier(roadSeg.rx1,roadSeg.y1,roadSeg.w1,roadSeg.rx2,roadSeg.y2,roadSeg.w2,roadSeg.p1Scale,roadSeg.p2Scale,roadSeg.segIdx,pierAnchor);
       ctx.restore();
     }
+    if(currentLevel===LEVEL_HILLS)drawHillsShopSlice(roadSeg);
     // Cable slices share this segment's depth, including after a passed mast.
     if (roadSeg.isBridge) drawBridgeStays(roadSeg.segIdx);
 

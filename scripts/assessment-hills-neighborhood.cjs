@@ -35,14 +35,46 @@ module.exports=async function assessHillsNeighborhood(browser,baseUrl,output){
    record('rendered-buildings-meet-their-projected-terraces',residual.length>=8&&residual.every(r=>r<1e-5),{samples:residual.length,maxError:Math.max(...residual)});
    record('pools-are-present-on-separate-front-terraces',lots.filter(l=>l.pool).length>=10,{pools:lots.filter(l=>l.pool).length});
    record('sunset-has-distinct-neighborhood-sections',new Set(scenes.map(s=>s.estateLot.district)).size>=5&&scenes.some(s=>s.kind==='hills_fountain')&&scenes.some(s=>s.kind==='hills_pergola')&&scenes.some(s=>s.kind==='tennis'),{districts:[...new Set(scenes.map(s=>s.estateLot.district))]});
+   const shop=drawHillsShopLotSlice,texture=drawHillsShopTexture;
+   let activeShop=null,fronts=[],strips=0,nonFinite=0,mirrored=0,maxFootError=0,frameEnds=new Map(),maxJoinError=0;
+   drawHillsShopLotSlice=(road,lot)=>{
+    activeShop={road,lot};
+    const lane=lot.side*1.56,foot=hillsShopPoint(road,1,lane,lot.baseY);
+    const expected=[road.rx2+lane*road.w2,road.y2-(lot.baseY-segments[road.segIdx].worldY-segments[road.segIdx].hillDelta)*road.w2*H/(ROAD_WIDTH*W)];
+    maxFootError=Math.max(maxFootError,Math.hypot(foot[0]-expected[0],foot[1]-expected[1]));
+    const next=frameEnds.get(`${lot.id}:${road.segIdx+1}`);
+    if(next)maxJoinError=Math.max(maxJoinError,Math.hypot(foot[0]-next[0],foot[1]-next[1]));
+    if(!segments[road.segIdx].frameRoadT1)frameEnds.set(`${lot.id}:${road.segIdx}`,hillsShopPoint(road,0,lane,lot.baseY));
+    try{shop(road,lot);}finally{activeShop=null;}
+   };
+   drawHillsShopTexture=(image,u1,u2,near,far,nt,ft)=>{
+    strips++;if(![u1,u2,...near,...far,...nt,...ft].every(Number.isFinite))nonFinite++;
+    if((u2-u1)*(far[0]-near[0])<0)mirrored++;
+    if(activeShop)fronts.push(activeShop.lot.id);
+    texture(image,u1,u2,near,far,nt,ft);
+   };
+   try{
+    for(const lap of[1,2,3])for(const i of[25,42,48,60,72,84,96,108])for(const fraction of[.001,.999]){
+     player.lap=lap;player.z=(i+fraction)*150;player.x=0;player.pitch=segments[i].hillDelta;curveCamera.look=0;
+     frameEnds=new Map();render(1000);
+    }
+   }finally{drawHillsShopLotSlice=shop;drawHillsShopTexture=texture;}
+   record('longitudinal-shop-fronts-follow-supported-road-edges',strips>100&&new Set(fronts).size===6&&maxFootError<1e-5,{strips,shopCount:new Set(fronts).size,maxFootError});
+   record('shop-textures-face-correct-way-on-both-sides',mirrored===0&&nonFinite===0,{mirrored,nonFinite});
+   record('shop-front-slices-join-through-three-laps',maxJoinError<1e-5,{maxJoinError});
    return checks;
   });
   // The prominent scenes must have a useful view before the driver passes.
-  for(const [index,ahead,height]of[[48,40,215],[60,40,215],[72,38,215],[84,40,215],[96,38,215],[108,38,215],[135,40,315],[225,28,130],[345,26,185],[435,20,80],[490,28,475],[865,22,80],[930,34,475],[1000,28,150],[1060,34,475]]){
+  for(const [index,ahead,height]of[[48,24,215],[60,24,215],[72,24,215],[84,24,215],[96,24,215],[108,24,215],[135,40,315],[225,28,130],[345,26,185],[435,20,80],[490,28,475],[865,22,80],[930,34,475],[1000,28,150],[1060,34,475]]){
    const view=await page.evaluate(({index,ahead,height})=>{
     const i=index-ahead;player.z=(i+.3)*150;player.x=hillsDetourCenter(i);player.speed=4320;player.pitch=0;for(let j=0;j<20;j++)player.pitch+=segments[(i+j)%1200].hillDelta/20;curveCamera.look=0;for(let j=0;j<60;j++)updateCurveCamera(1/60);
     for(const id of['introScreen','overlay','cntNum'])document.getElementById(id).style.display='none';
-    const art=drawPolishScene;let drawn;drawPolishScene=s=>{if(s.segIdx===index&&s.kind!=='hills_estate')drawn={...s};art(s);};try{render(1000);}finally{drawPolishScene=art;}
+    const art=drawPolishScene,shop=drawHillsShopLotSlice,texture=drawHillsShopTexture;let drawn,active=false,points=[];
+    drawPolishScene=s=>{if(s.segIdx===index&&s.kind!=='hills_estate')drawn={...s};art(s);};
+    drawHillsShopLotSlice=(road,lot)=>{active=lot.id===index;try{shop(road,lot);}finally{active=false;}};
+    drawHillsShopTexture=(image,u1,u2,...corners)=>{if(active)points.push(...corners);texture(image,u1,u2,...corners);};
+    try{render(1000);}finally{drawPolishScene=art;drawHillsShopLotSlice=shop;drawHillsShopTexture=texture;}
+    if(points.length)return{width:Math.min(W,Math.max(...points.map(p=>p[0])))-Math.max(0,Math.min(...points.map(p=>p[0]))),height:Math.min(H,Math.max(...points.map(p=>p[1])))-Math.max(0,Math.min(...points.map(p=>p[1])))};
     if(!drawn)return null;
     return{width:Math.min(W,drawn.x+160*drawn.sc)-Math.max(0,drawn.x-160*drawn.sc),height:Math.min(H,drawn.clipY,drawn.y)-Math.max(0,drawn.y-height*drawn.sc)};
    },{index,ahead,height});

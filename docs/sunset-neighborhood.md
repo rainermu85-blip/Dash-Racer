@@ -83,3 +83,20 @@ Die Erweiterung vom 5. November wurde zusätzlich in einer vollständigen
 Physikrunde mit 17 gespeicherten Ansichten kontrolliert, darunter sechs
 Ansichten vom Einkaufsboulevard bis hinter das Hotel. `hills-neighborhood`,
 `hills-stability`, `detour` und der Produktionsbuild bestehen.
+
+## Ladenfronten entlang der Straße (6. November)
+
+Die sechs Ladenensembles stehen jetzt längs zum Gehweg. Ihre Schaufenster
+werden als perspektivische Fassaden auf der Grundstücks-Innenkante gezeichnet,
+mit eigenen Dachflächen und geschlossenen Stirnwänden. Jedes Ladenpaar hat
+zwei unterschiedlich hohe Baukörper. Die Darstellung folgt den vorhandenen
+Straßensegmenten und deren Tiefensortierung, einschließlich der nahen
+Schnittkante und der Geländehöhe. Abgewandte Fassaden zeigen keine gespiegelte
+Schrift. Die Grafik und Platzierung des Hotels bleiben unverändert.
+
+Die Fassadentexturen bleiben zwischengespeichert; nur ihre Projektion verändert
+sich. Kleine überlappende Texturdreiecke vermeiden flimmernde Schnittfugen.
+`hills-neighborhood` prüft nun zusätzlich die Anschlüsse der Fassaden über
+drei Runden, ihren Bodenkontakt und die Leserichtung auf beiden Straßenseiten.
+Die Sichtbarkeitsprüfung erfasst die tatsächlich gezeichneten Fassaden statt
+der früheren frontal ausgerichteten Sprites.
