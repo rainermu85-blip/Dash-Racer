@@ -18,7 +18,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    drawParadiseSprite=s=>{if(s.item.kind==='plane'){const a=getParadiseArt('plane');planeContact={width:Math.min(W,s.x+(a.w-a.ox)*s.sc)-Math.max(0,s.x-a.ox*s.sc),groundDelta:s.y-segments[s.segIdx].proj_y2,height:paradisePlanePose().height};}renderSprite(s);};
    const times=[0,0],islands=[0,0,0,0,0],planeSamples=[];let lastLap=false;
    for(let f=0;f<12000&&!player.finished;f++){
-    keys.left=player.x>.025;keys.right=player.x<-.025;
+    const home=paradiseLaneBlend(player.z)/3;keys.left=player.x>home+.025;keys.right=player.x<home-.025;
     const i=Math.floor(player.z/150),onBridge=i%PARADISE_STRIDE>=350;times[onBridge?1:0]+=1/60;
     if(!onBridge)islands[Math.floor(i/PARADISE_STRIDE)]+=1/60;
     advanceRaceStep(1/60);lastLap||=lastLapElapsed!==null;
@@ -82,7 +82,8 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    selectLevel(7);startRace();state='playing';let frames=0;
    for(;frames<24000&&(!player.finished||opponents.some(c=>c.finishTime==null));frames++){
     const ahead=opponents.filter(c=>!racerFinished(c)&&c.z>player.z&&c.z-player.z<2400).sort((a,b)=>a.z-b.z)[0];
-    const target=ahead?(ahead.x>.05?-.6:.6):0;
+    const twoWay=paradiseLaneBlend(player.z),normal=ahead?(ahead.x>.05?-.6:.6):0;
+    const target=normal*(1-twoWay)+(ahead?(ahead.x>.65?1/3:1):1/3)*twoWay;
     keys.left=player.x>target+.04;keys.right=player.x<target-.04;advanceRaceStep(1/120);
    }
    clearTimeout(resultTimer);resultTimer=null;updateHUD(0);

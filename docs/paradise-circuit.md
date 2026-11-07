@@ -30,6 +30,47 @@ the old bar that obscured the music stage was removed. Scene dimensions use the
 road as their common scale. Human and equipment proportions stay distinct from
 large vessels and the 747.
 
+## Four-lane traffic trial
+
+Port Azure and the following suspension bridge now have two lanes each way.
+The full-width section is at physical segments 1550–2100, with smooth tapers at
+1480–1550 and 2100–2170. Full road width grows by one third, preserving each
+lane's width and the existing vehicle scale. White lane dividers, a continuous
+double yellow centre line, a `TWO WAY / KEEP RIGHT` warning, parapets, tower
+positions, road limits and offroad drag follow the same widening. Scenery moves
+outwards enough to retain its road-edge clearance. The centre line is drivable.
+
+Five opposing vehicles form a first sparse trial: 1980s sedans, small minibuses
+and a jeep. They travel at about 110–130 HUD km/h, keep their lane, and begin moving
+when the first racer reaches segment 1420. They never wrap or respawn; departed
+cars are retired only behind every racer, keeping disappearance out of view.
+This is a fixed first encounter pattern, not a general traffic generator.
+
+The racing AI prefers the two right lanes, can select a clear opposing lane to
+pass and scores predicted oncoming conflicts before committing. Opposing
+vehicles are hazards for both the player and rivals. Swept contact catches
+high-relative-speed encounters, with one impact per pair. A centred frontal
+hit removes 48% of current speed and cancels an active turbo; an approximately
+5% edge graze removes about 6.2%, retaining the turbo. Earned normal-speed
+headroom follows the existing severity model. Other levels keep their existing
+road widths, traffic and steering.
+
+`paradise-traffic` assessment mode drives each legal lane through the entire
+passage at full speed, measures first clear oncoming visibility, tests swept
+frontal/grazing impacts for player and AI, demonstrates passing two abreast and
+returning, checks AI lane selection, and verifies restart/other-level isolation.
+The 390×844 Chromium run saw each oncoming car clearly about 2.3 seconds before
+the meeting. Evidence files begin with `paradise-traffic`.
+
+The five coloured front views are baked once at race start, then drawn as
+cached images. Total Paradise art storage is about 12.64 MiB. The final cloud
+sample without artificial CPU throttling measured about 60 fps in all seven
+sampled sections, with 95th-percentile render work of 3.4–7.0 ms and no sampled
+frames over 50 ms. The 2×-throttled samples were substantially less stable,
+including harbour stalls, so this is not a performance guarantee on slower
+phones. `paradise-traffic-profile.json` retains both conditions and the earlier
+vector-front measurement.
+
 ## Jumbo and rendering
 
 The former side-on airplane was replaced with a cached, low-poly three-quarter
@@ -47,7 +88,7 @@ not an aircraft physics simulation.
 
 Static scenery, including the aircraft mesh, is rasterized once at race setup.
 New large buildings use a reduced raster resolution. The scenery cache is about
-12 MiB of logical RGBA pixels, under a 13 MiB budget; this excludes shared game
+12.64 MiB of logical RGBA pixels, under a 13 MiB budget; this excludes shared game
 assets and browser/GPU overhead. Static tiles crop their source image at the ground/crest rather than installing
 a separate canvas clipping mask for each tree and facade. There are no per-frame
 texture writes. Small
@@ -78,7 +119,7 @@ Evidence: `docs/evidence/paradise-rework.json`, `paradise-rework-loading.json`
 and `paradise-rework-profile.json`. Previous evidence files describe earlier
 layouts and are retained for comparison.
 
-The final 2×-throttled samples measured median frame intervals near 16.7 ms in
+Before the traffic trial, the 2×-throttled samples measured median frame intervals near 16.7 ms in
 six sections and 33.3 ms in the harbour; 95th-percentile intervals were about
 33.4 ms, with no sampled intervals over 50 ms. Render work at the 95th percentile
 ranged from 8.5 to 12.9 ms. The richer scenes have a measurable cost; these

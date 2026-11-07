@@ -1,0 +1,205 @@
+[
+  {
+    "name": "legal-lane-0.3333333333333333-retains-speed",
+    "pass": true,
+    "actual": {
+      "minimum": 4320,
+      "hits": 0,
+      "index": 2220.08,
+      "maxAdvance": 36
+    },
+    "errors": []
+  },
+  {
+    "name": "all-oncoming-cars-visible-before-meeting",
+    "pass": true,
+    "actual": {
+      "leadSeconds": [
+        2.3264832914709017,
+        2.3696577371598666,
+        2.3120181111800777,
+        2.3020599518401,
+        2.3442772214927508
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "legal-lane-1-retains-speed",
+    "pass": true,
+    "actual": {
+      "minimum": 4320,
+      "hits": 0,
+      "index": 2220.08,
+      "maxAdvance": 36
+    },
+    "errors": []
+  },
+  {
+    "name": "widening-aligns-road-limits-and-offroad-threshold",
+    "pass": true,
+    "actual": {
+      "geometry": [
+        {
+          "index": 1400,
+          "width": 1,
+          "limit": {
+            "left": 0.88,
+            "right": 0.88
+          },
+          "soft": 0.94
+        },
+        {
+          "index": 1500,
+          "width": 1.066083576287658,
+          "limit": {
+            "left": 0.950709426627794,
+            "right": 0.950709426627794
+          },
+          "soft": 1.0060835762876579
+        },
+        {
+          "index": 1600,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.7833333333333332,
+            "right": 1.7833333333333332
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 1950,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.2366666666666666,
+            "right": 1.2366666666666666
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 2140,
+          "width": 1.131195335276968,
+          "limit": {
+            "left": 1.5811953352769679,
+            "right": 1.5811953352769679
+          },
+          "soft": 1.0711953352769679
+        },
+        {
+          "index": 2200,
+          "width": 1,
+          "limit": {
+            "left": 1.45,
+            "right": 1.45
+          },
+          "soft": 0.94
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "swept-front-hit-has-single-strong-impact",
+    "pass": true,
+    "actual": {
+      "speed": 2246.4,
+      "afterRepeat": 2246.4,
+      "hits": 1,
+      "boost": false
+    },
+    "errors": []
+  },
+  {
+    "name": "grazing-impact-is-much-milder",
+    "pass": true,
+    "actual": {
+      "speed": 4052.16,
+      "afterRepeat": 4052.16,
+      "hits": 1,
+      "boost": true
+    },
+    "errors": []
+  },
+  {
+    "name": "same-impact-cost-for-rival-and-player",
+    "pass": true,
+    "actual": {
+      "front": {
+        "speed": 2246.4,
+        "afterRepeat": 2246.4,
+        "hits": 1,
+        "boost": false
+      },
+      "opponent": {
+        "speed": 2246.4,
+        "afterRepeat": 2246.4,
+        "hits": 1,
+        "boost": false
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "rivals-plan-away-from-oncoming-lane",
+    "pass": true,
+    "actual": {
+      "dangerous": -35.87551622418879,
+      "safe": -0.9733333333333333,
+      "target": 0.33
+    },
+    "errors": []
+  },
+  {
+    "name": "player-can-pass-two-abreast-and-return",
+    "pass": true,
+    "actual": {
+      "wentLeft": true,
+      "returned": true,
+      "used": true,
+      "index": 1725.3145833333333
+    },
+    "errors": []
+  },
+  {
+    "name": "restart-resets-traffic",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-1",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-2",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-3",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-4",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-5",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-6",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  }
+]

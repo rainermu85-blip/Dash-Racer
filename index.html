@@ -288,6 +288,7 @@ function buildParadiseScenery(){
   add(2935,'canoe',-2.1,.85);
   addParadiseLife(add);
   addParadisePlaces(add);
+  add(1840,'two_way_sign',1.8,1);
   for(const seg of segments)for(const scene of seg.paradiseScenes||[])getParadiseArt(scene.kind,scene.variant||0);
 }
 function addParadiseLife(add){
@@ -345,9 +346,10 @@ function collectParadiseSprites(seg,n,rx,p,clipY,getCleanSpriteFromPool){
     const pose=item.kind==='plane'?paradisePlanePose():null;
     if(item.kind==='plane'&&!pose)continue;
     const s=getCleanSpriteFromPool();s.type='paradise';s.item=item;
-    s.x=rx+(pose?pose.x:item.x+paradiseMotion(item,seg.index))*p.w;
+    const roadScale=paradiseRoadScale(seg.index),offset=Math.sign(item.x)*(roadScale-1)*1.1;
+    s.x=rx+(pose?pose.x:item.x+offset+paradiseMotion(item,seg.index))*p.w;
     s.y=p.y+(item.sea?95*p.scale*H/2:0);
-    s.sc=p.w/200*item.size;
+    s.sc=p.w/200*item.size;if(item.kind==='bridge_tower'||item.kind==='bridge_post')s.sc*=roadScale;
     if(pose)s.y-=pose.height*s.sc;
     s.depth=n;s.segIdx=seg.index;s.clipY=clipY;s.variant=item.variant||0;
   }
@@ -420,6 +422,7 @@ function paradiseShore(index,side){
 }
 function drawParadiseRoad(x1,y1,w1,x2,y2,w2,sc1,sc2,index){
   const address=paradiseAddress(index),p=address%700,island=Math.floor(address/700),bridge=p>=350;
+  const road1=paradiseRoadScale(index),road2=paradiseRoadScale(index+1);w1*=road1;w2*=road2;
   const quad=(l1,r1,l2,r2,color,dy1=0,dy2=0)=>scenePoly([[x1+l1*w1,Math.ceil(y1-dy1)],[x2+l2*w2,Math.floor(y2-dy2)-1],[x2+r2*w2,Math.floor(y2-dy2)-1],[x1+r1*w1,Math.ceil(y1-dy1)]],color);
   if(!bridge){
     for(const side of[-1,1]){
@@ -447,7 +450,15 @@ function drawParadiseRoad(x1,y1,w1,x2,y2,w2,sc1,sc2,index){
   quad(-1.10,-1,-1.10,-1,bridge?'#b4c4bc':'#d8bc98');quad(1,1.10,1,1.10,bridge?'#b4c4bc':'#d8bc98');
   quad(-1,1,-1,1,'#465368');
   quad(-.975,-.955,-.975,-.955,'#f9e6c2');quad(.955,.975,.955,.975,'#f9e6c2');
-  if(index%12<6)for(const lane of[-1/3,1/3])quad(lane-.008,lane+.008,lane-.008,lane+.008,'#efdfbc');
+  const twoWay=(road1-1)*3,nextTwoWay=(road2-1)*3;
+  if(index%12<6)for(const side of[-1,1]){
+    const a=side*(1/3+twoWay/6),b=side*(1/3+nextTwoWay/6);
+    quad(a-.008,a+.008,b-.008,b+.008,'#efdfbc');
+  }
+  if(twoWay>0||nextTwoWay>0)for(const side of[-1,1]){
+    const a=side*.014,b=side*.014;
+    quad(a-.004*twoWay,a+.004*twoWay,b-.004*nextTwoWay,b+.004*nextTwoWay,'#ffd074');
+  }
   if(index<3)for(let j=0;j<12;j++)quad(-1+j/6,-1+(j+1)/6,-1+j/6,-1+(j+1)/6,(j+index)%2?'#f7f1d2':'#333849');
   if(bridge){
     if(island===3){
@@ -474,7 +485,7 @@ function drawParadiseRoad(x1,y1,w1,x2,y2,w2,sc1,sc2,index){
 function getParadiseArt(kind,variant=0){
   if(!['palm','hut','harbour','boat','sign','bridge_post','regatta','island_villa','promenade'].includes(kind))variant=0;
   const key=kind+':'+variant;if(paradiseArt.has(key))return paradiseArt.get(key);
-  const sizes={island_villa:[650,360,325,359],fish_pier:[600,280,300,250],hangar:[650,330,325,329],clock_tower:[360,500,180,499],resort:[720,340,360,339],beach_stage:[520,290,260,260],promenade:[240,90,120,89],parasail:[400,500,200,490],market:[430,250,215,249],village:[600,340,300,339],musicians:[300,180,150,179],beach_people:[290,150,145,149],drying_nets:[330,200,165,199],canopy:[500,430,250,429],trail_hut:[340,270,170,269],luggage:[310,140,155,139],shuttle:[340,190,170,189],windsock:[170,270,85,269],cafe:[350,200,175,199],fisherman:[180,190,90,189],volleyball:[430,240,215,239],surf_rack:[220,200,110,199],regatta:[320,330,160,329],dolphins:[360,190,180,169],sea_stack:[370,470,185,469],birds:[320,240,160,239],ferry:[620,260,310,250],fishing_boat:[420,280,210,270],windsurfer:[240,260,120,250],buoys:[240,60,120,55],palm:[250,350,125,349],flowers:[180,90,90,89],bush:[270,170,135,169],
+  const sizes={two_way_sign:[270,260,135,259],island_villa:[650,360,325,359],fish_pier:[600,280,300,250],hangar:[650,330,325,329],clock_tower:[360,500,180,499],resort:[720,340,360,339],beach_stage:[520,290,260,260],promenade:[240,90,120,89],parasail:[400,500,200,490],market:[430,250,215,249],village:[600,340,300,339],musicians:[300,180,150,179],beach_people:[290,150,145,149],drying_nets:[330,200,165,199],canopy:[500,430,250,429],trail_hut:[340,270,170,269],luggage:[310,140,155,139],shuttle:[340,190,170,189],windsock:[170,270,85,269],cafe:[350,200,175,199],fisherman:[180,190,90,189],volleyball:[430,240,215,239],surf_rack:[220,200,110,199],regatta:[320,330,160,329],dolphins:[360,190,180,169],sea_stack:[370,470,185,469],birds:[320,240,160,239],ferry:[620,260,310,250],fishing_boat:[420,280,210,270],windsurfer:[240,260,120,250],buoys:[240,60,120,55],palm:[250,350,125,349],flowers:[180,90,90,89],bush:[270,170,135,169],
     hut:[360,270,180,269],beach_bar:[420,250,210,249],harbour:[340,330,170,329],
     rock:[280,220,140,219],waterfall:[640,500,320,499],rock_arch:[440,360,220,359],
     boat:[260,220,130,210],canoe:[240,100,120,99],airport:[520,220,260,219],tower:[240,400,120,399],
@@ -800,7 +811,12 @@ function paintParadisePlaceArt(kind,variant,g,d){
   const{poly,rect,line,oval,label}=d;
   const person=(x,y,c)=>{oval(x,y-35,5,6,'#aa745d');rect(x-6,y-28,12,18,c);line([[x-3,y-10],[x-6,y]],'#385264',4);line([[x+3,y-10],[x+6,y]],'#385264',4);};
   const palm=(x,y)=>{line([[x,y],[x+7,y-190]],'#8e7058',8);for(let j=0;j<5;j++){const dx=(j-2)*33;g.fillStyle=j%2?'#4f9e73':'#246c5e';g.beginPath();g.moveTo(x+7,y-190);g.quadraticCurveTo(x+dx*.5,y-240,x+dx,y-163);g.quadraticCurveTo(x+dx*.4,y-204,x+7,y-190);g.fill();}};
-  if(kind==='island_villa'){
+  if(kind==='two_way_sign'){
+    rect(-8,-145,16,145,'#98785e');rect(-125,-240,250,112,'#f4c66f');rect(-120,-235,240,102,'#335968');
+    label('TWO WAY',0,-207,23,'#ffe6a6');label('KEEP RIGHT',0,-143,17,'#eddfb5');
+    line([[-52,-167],[-52,-194]],'#f0ce94',9);poly([[-68,-178],[-52,-161],[-36,-178]],'#f0ce94');
+    line([[52,-167],[52,-194]],'#f0ce94',9);poly([[36,-184],[52,-201],[68,-184]],'#f0ce94');
+  }else if(kind==='island_villa'){
     const walls=['#efb194','#78bdb4','#e9c584'][variant%3];
     rect(-222,-226,396,226,walls);poly([[-245,-226],[-73,-313],[196,-226]],'#926b73');poly([[-73,-313],[115,-288],[196,-226]],'#b48481');
     rect(-211,-210,375,15,'#f9dab4');rect(-222,-112,443,16,'#fff0cd');
@@ -856,6 +872,113 @@ function paintParadisePlaceArt(kind,variant,g,d){
     person(8,-135,'#e9c078');line([[8,-135],[117,-13]],'#d5dcc0',2);poly([[75,-18],[173,-18],[147,-3],[91,-3]],'#f4d7ab');
   }else return false;
   return true;
+}
+
+// First traffic trial: Port Azure and its suspension crossing, with long tapers.
+const PARADISE_TWO_WAY={widenStart:1480,fullStart:1550,fullEnd:2100,widenEnd:2170,trigger:1420};
+let paradiseTraffic=[],paradiseTrafficActive=false;
+function paradiseRoadScale(index){
+  const r=PARADISE_TWO_WAY;
+  return 1+paradiseSmooth((index-r.widenStart)/(r.fullStart-r.widenStart))*(1-paradiseSmooth((index-r.fullEnd)/(r.widenEnd-r.fullEnd)))/3;
+}
+function paradiseLaneBlend(z){return currentLevel===LEVEL_PARADISE?(paradiseRoadScale(z/150)-1)*3:0;}
+function roadSoftLimit(z){return .94+(currentLevel===LEVEL_PARADISE?paradiseRoadScale(z/150)-1:0);}
+function initParadiseTraffic(){
+  paradiseTrafficActive=false;
+  paradiseTraffic=currentLevel===LEVEL_PARADISE?[
+    [1710,-1/3,1350,'#e7a69a',0],[1740,-1,1250,'#88beb3',1],
+    [1895,-1/3,1400,'#ead399',2],[2070,-1,1300,'#9caccb',0],[2130,-1/3,1200,'#dd91ad',1]
+  ].map(([index,lane,speed,color,style],id)=>({id,z:index*150,previousZ:index*150,lane,x:lane,speed,color,style,hits:new Set()})):[];
+  for(const car of paradiseTraffic)getParadiseTrafficArt(car.color,car.style);
+}
+function updateParadiseTraffic(dt){
+  if(currentLevel!==LEVEL_PARADISE)return;
+  if(!paradiseTrafficActive){
+    const leader=Math.max(...[player,...opponents].filter(c=>!racerFinished(c)).map(c=>c.z));
+    if(leader<PARADISE_TWO_WAY.trigger*150)return;
+    paradiseTrafficActive=true;
+  }
+  const rear=Math.min(...[player,...opponents].map(c=>c.z));
+  for(const car of paradiseTraffic){
+    car.previousZ=car.z;car.z-=car.speed*dt;
+    // Keep a continuous lane centre through the road's widening and narrowing.
+    const width=paradiseRoadScale(car.z/150);car.previousX=car.x;car.x=car.lane*width/(4/3);
+    if(car.z<rear-2000)car.departed=true;
+  }
+}
+function paradiseTrafficRisk(car,lane){
+  if(currentLevel!==LEVEL_PARADISE||!paradiseTrafficActive)return{blocked:false,score:0};
+  const z=racePosition(car),clearance=getCarCollisionHalfWidth(car)*2+.10;
+  let score=0,blocked=false;
+  for(const traffic of paradiseTraffic){
+    if(traffic.departed)continue;
+    const gap=traffic.z-z,time=gap/Math.max(1,car.speed+traffic.speed);
+    if(time<-.15||time>3.0)continue;
+    if(Math.abs(lane-traffic.x)<clearance){score-=15+(3-time)*12;if(time<1.6)blocked=true;}
+    // Do not cross an approaching car while changing into the passing lane.
+    const crosses=traffic.x>Math.min(car.x,lane)-clearance&&traffic.x<Math.max(car.x,lane)+clearance;
+    if(crosses&&time<Math.abs(lane-car.x)/2.0+.45){score-=50;blocked=true;}
+  }
+  return{blocked,score};
+}
+function checkParadiseTrafficContacts(previousPlayer,previousOpponents){
+  if(currentLevel!==LEVEL_PARADISE||!paradiseTrafficActive)return;
+  for(const [i,car]of [player,...opponents].entries()){
+    if(racerFinished(car))continue;
+    const before=i===0?previousPlayer:previousOpponents[i-1];
+    const nowX=i===0?getPlayerCollisionX():car.x,nowZ=racePosition(car);
+    const oldX=i===0?(before.collisionX??before.x):before.x;
+    for(const traffic of paradiseTraffic){
+      if(traffic.departed||traffic.hits.has(car))continue;
+      const width=getCarCollisionHalfWidth(car)+getCarCollisionHalfWidth(traffic);
+      const x0=(traffic.previousX??traffic.x)-oldX,z0=traffic.previousZ-before.z;
+      const x1=traffic.x-nowX,z1=traffic.z-nowZ;
+      const hit=sweepContact(x0,z0,x1,z1,width,-COLLISION_Z_RANGE,COLLISION_Z_RANGE);
+      if(!hit)continue;
+      traffic.hits.add(car);
+      const t=clamp(z0/Math.max(.001,z0-z1),hit.time,1);
+      const overlap=clamp(1-Math.abs(x0+(x1-x0)*t)/width,0,1);
+      const frontal=hit.axis==='z',loss=frontal?.04+.44*overlap:.035+.10*overlap;
+      scaleCarSpeed(car,1-loss);loseCleanSpeed(frontal?overlap:overlap*.35,car);
+      if(frontal&&overlap>.3)car.isBoosting=car.isChevronBoosting=false;
+      car.hitFlash=Math.max(car.hitFlash||0,frontal?.55:.2);
+      car.collisionCooldown=Math.max(car.collisionCooldown||0,.3);
+      car.x+=Math.sign(nowX-traffic.x||1)*.06*overlap;
+      applyRoadContact(0,0,car);
+    }
+  }
+}
+function getParadiseTrafficArt(color,style){
+  const key='traffic-front:'+style+':'+color;
+  if(paradiseArt.has(key))return paradiseArt.get(key);
+  const canvas=document.createElement('canvas');canvas.width=152;canvas.height=180;
+  const g=canvas.getContext('2d');g.scale(2,2);g.translate(38,89);
+  const poly=(points,color)=>{g.fillStyle=color;g.beginPath();points.forEach((p,i)=>i?g.lineTo(...p):g.moveTo(...p));g.closePath();g.fill();};
+  const oval=(x,y,rx,ry,color)=>{g.fillStyle=color;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
+  const line=(points,color,width)=>{g.strokeStyle=color;g.lineWidth=width;g.beginPath();points.forEach((p,i)=>i?g.lineTo(...p):g.moveTo(...p));g.stroke();};
+  oval(0,-1,33,4,'rgba(25,46,62,.22)');
+  const van=style===1,jeep=style===2,roof=van?-59:jeep?-49:-45;
+  g.fillStyle='#263b4d';g.fillRect(-30,-13,10,13);g.fillRect(20,-13,10,13);
+  poly([[-31,-10],[-29,van?-47:-27],[-20,roof],[20,roof],[29,van?-47:-27],[31,-10]],color);
+  poly([[-19,roof+5],[19,roof+5],[24,-29],[-24,-29]],'#345b6a');
+  line([[-17,roof+7],[16,roof+7]],'#9ad3d0',1.2);
+  g.fillStyle=van?'#e6d6b3':jeep?'#516a70':'#e8c9b5';g.fillRect(-29,-25,58,4);
+  g.fillStyle='#2d4755';g.fillRect(-15,-18,30,8);
+  if(jeep){for(let j=0;j<6;j++){g.fillStyle='#a4aaa0';g.fillRect(-12+j*5,-18,2,8);}}
+  for(const side of[-1,1]){
+    if(jeep)oval(side*23,-16,5,5,'#ffedb9');
+    else{g.fillStyle='#fff2bd';g.fillRect(side<0?-28:17,-20,11,6);}
+    oval(side*22,-3,10,3,'rgba(255,227,152,.20)');
+  }
+  g.fillStyle='#9da8a2';g.fillRect(-30,-8,60,4);
+  if(van){g.fillStyle='#b18f72';g.fillRect(-23,-64,46,5);g.fillStyle='#d6a4a1';g.fillRect(-15,-73,15,9);g.fillStyle='#d9c48a';g.fillRect(3,-69,13,5);}
+
+  const art={canvas,w:76,h:90,ox:38,oy:89};paradiseArt.set(key,art);return art;
+}
+function drawParadiseOncoming(x,y,scale,color,style){
+  if(scale<.025)return;
+  const a=getParadiseTrafficArt(color,style);
+  ctx.drawImage(a.canvas,x-a.ox*scale,y-a.oy*scale,a.w*scale,a.h*scale);
 }
 
 const C = document.getElementById('c');
@@ -1750,7 +1873,7 @@ function initRacecraft(car,index=0){
 }
 function roadPreview(car,profile){
     const horizon=Math.max(1800,car.speed*(profile.lookAhead||1.1));
-    let left=.78,right=.78,curve=0,demand=0;
+    let left=.78+(currentLevel===LEVEL_PARADISE?(paradiseRoadScale(car.z/150)-1)*1.4:0),right=left,curve=0,demand=0;
     const objects=[];
     for(let n=0;n<=Math.ceil(horizon/SEGMENT_LENGTH);n++){
         if(currentLevel===LEVEL_DREAM&&car.z+n*SEGMENT_LENGTH>=TRACK_LENGTH)break;
@@ -1771,9 +1894,13 @@ function roadPreview(car,profile){
 }
 function evaluateRaceLane(car,lane,snapshot,road){
     const z=racePosition(car),speed=car.speed,profile=car.profile||OPP_PROFILES[0];
-    const preferred=clamp(profile.lane+road.curve*.13,-road.left,road.right);
+    const twoWay=paradiseLaneBlend(car.z);
+    const homeLane=car.oppIdx%2===0?1/3:1;
+    const preferred=clamp((profile.lane+road.curve*.13)*(1-twoWay)+homeLane*twoWay,-road.left,road.right);
     let score=-Math.abs(lane-preferred)*.7-Math.abs(lane-car.x)*.38;
     let blocked=false,limit=Infinity,obstacle=false,collect=false;
+    if(twoWay>.1&&lane<.10)score-=twoWay*1.4;
+    const oncoming=paradiseTrafficRisk(car,lane);score+=oncoming.score;blocked||=oncoming.blocked;
     if(car.laneHold>0&&Math.abs(lane-car.targetX)>.16)score-=1.2;
     for(const other of snapshot){
         if(other.car===car)continue;
@@ -1820,6 +1947,7 @@ function planOpponent(car,snapshot){
     const nearest=snapshot.filter(o=>o.car!==car&&o.z>z&&o.z-z<Math.max(1800,car.speed*.75)&&Math.abs(o.x-car.x)<getCarCollisionRange(car,o.car)+.1)
         .sort((a,b)=>a.z-b.z)[0];
     const choices=[car.targetX,car.x,-.62,-.31,0,.31,.62,profile.lane+road.curve*.13];
+    if(currentLevel===LEVEL_PARADISE&&paradiseLaneBlend(car.z)>.1)choices.push(1/3,1,-1/3,-1);
     for(const o of snapshot)if(o.car!==car&&Math.abs(o.z-z)<2000){const clearance=getCarCollisionRange(car,o.car)+.1;choices.push(o.x-clearance,o.x+clearance);}
     for(const o of road.objects)if(o.pickup)choices.push(o.x);
     if(currentLevel===LEVEL_SPACE){
@@ -2005,6 +2133,7 @@ function checkOpponentPairContacts(before,dt){
 
 function initChapterTraffic() {
     chapterTime = 0;
+    initParadiseTraffic();
     crossingEvents = new Map();
     highwayPolice = null;
     highwayPoliceLaps = new Set();
@@ -11173,6 +11302,15 @@ function render(ts) {
     if (seg.barrier && seg.barrier.active) { const s = getCleanSpriteFromPool(); s.type = 'barrier'; s.detourBarrier=!!seg.barrier.permanent; s.roadHalf=p2.w; s.visualHalfWidth=seg.barrier.visualHalfWidth; s.x = rx2 + seg.barrier.x * p2.w; s.y = p2.y; s.sc = Math.min(1.25, p2.scale * 2800) * responsiveFactor; s.depth = n; s.blinkCount = seg.barrier.blinkCount; s.clipY = segmentClipY; s.segIdx = segIdx; }
     if (seg.lightning && seg.lightning.active) { const s = getCleanSpriteFromPool(); s.type = 'lightning'; s.x = rx2 + seg.lightning.x * p2.w; s.y = p2.y; s.sc = Math.min(1.25, p2.scale * 2800) * responsiveFactor; s.depth = n; s.clipY = segmentClipY; s.segIdx = segIdx; }
 
+    if(currentLevel===LEVEL_PARADISE&&paradiseTrafficActive)for(const car of paradiseTraffic){
+      if(car.departed||car.z<segWorldZ||car.z>=segWorldZ+SEGMENT_LENGTH)continue;
+      const p=projectVehicle(car.z,car.x,seg,segWorldZ,seg.curveOffset,curveOffset);
+      if(!p)continue;
+      const s=getCleanSpriteFromPool();s.type='paradise_oncoming';s.x=p.x;s.y=p.y;
+      s.sc=p.w*getCarCollisionHalfWidth(car)/(31*(1-CAR_CONTACT_INSET));
+      s.color=car.color;s.style=car.style;s.depth=n+(car.z-segWorldZ)/SEGMENT_LENGTH;s.segIdx=segIdx;s.clipY=segmentClipY;
+    }
+
     for (const opp of opponents) {
       const oppWorldZ = opp.z + (opp.lap - player.lap) * TRACK_LENGTH;
       if (oppWorldZ >= segWorldZ && oppWorldZ < segWorldZ + SEGMENT_LENGTH) {
@@ -11239,6 +11377,11 @@ function render(ts) {
   // Define the comprehensive helper to draw any sprite type
   function drawSprite(s) {
     if(s.type==='paradise'){drawParadiseSprite(s);return;}
+    if(s.type==='paradise_oncoming'){
+      ctx.save();ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();
+      ctx.globalAlpha*=1-paradiseSmooth((s.depth-160)/45);
+      drawParadiseOncoming(s.x,s.y,s.sc,s.color,s.style);ctx.restore();return;
+    }
     if(s.type==='polish_scene'){drawPolishScene(s);return;}
     if (['beverly_villa', 'beverly_palm', 'bougainvillea', 'beverly_sign', 'hills_lamp',
          'neon_tower', 'highway_industry', 'fantasy_sign', 'highway_lamp', 'oncoming_car', 'highway_crossing'].includes(s.type)) {
@@ -12363,7 +12506,11 @@ function getRoadLimits(z) {
   if (currentLevel === 2) left = 1.05;
   if (currentLevel === LEVEL_HIGHWAY) left = right = 0.88;
   if (currentLevel === LEVEL_SPACE) left = right = 0.98;
-  if (currentLevel===LEVEL_PARADISE&&segment.isBridge) left=right=.88;
+  if(currentLevel===LEVEL_PARADISE){
+    const extra=paradiseRoadScale(z/150)-1;
+    if(segment.isBridge)left=right=.88+extra*1.07;
+    else{left+=extra;right+=extra;}
+  }
   if (currentLevel === LEVEL_HILLS) {
     const center=hillsDetourCenter(segment.index);
     const pinch=.20*hillsDetourTurn(segment.index);
@@ -12510,7 +12657,7 @@ function advanceRaceStep(dt){
     const trafficSnapshot=raceSnapshot();
     updateRacePickups(dt);
     updateChapterTraffic(dt);
-    if(currentLevel===LEVEL_PARADISE)updateParadisePlane(dt);
+    if(currentLevel===LEVEL_PARADISE){updateParadisePlane(dt);updateParadiseTraffic(dt);}
     if (!player.finished) currentLapTime += dt * 1000;
     if(lastLapElapsed!==null){lastLapElapsed+=dt;if(lastLapElapsed>=1.5)lastLapElapsed=null;}
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
@@ -12537,7 +12684,7 @@ function advanceRaceStep(dt){
     let targetFov = player.isChevronBoosting ? -0.56 : (player.isBoosting ? -0.4 : 0);
     player.fovOffset += (targetFov - player.fovOffset) * dt * 3.0;
 
-    const softLimit = 0.94; 
+    const softLimit = roadSoftLimit(player.z);
     const offroad = Math.abs(player.x) >= softLimit;
     const steerInput = player.finished ? 0 : ((keys.right ? 1 : 0) - (keys.left ? 1 : 0));
     player.steerLean += (steerInput - player.steerLean) * Math.min(1, dt * 9.5);
@@ -12642,7 +12789,7 @@ function advanceRaceStep(dt){
       const oTotal = getRaceDistance(opp);
       if(opp.isChevronBoosting){opp.chevronBoostTimer-=dt;if(opp.chevronBoostTimer<=0)opp.isChevronBoosting=false;}
       if(opp.isBoosting){opp.boostTimer-=dt;if(opp.boostTimer<=0)opp.isBoosting=false;}
-      const oppOffroad=Math.abs(opp.x)>=.94;
+      const oppOffroad=Math.abs(opp.x)>=roadSoftLimit(opp.z);
       updateOpponentRacecraft(opp,dt,trafficSnapshot);
       advanceNormalAndTurboSpeed(opp,dt,getOpponentBaseSpeed(opp),oppOffroad,Math.min(opp.trafficLimit??Infinity,opp.obstacleLimit??Infinity));
       const oppSegIdx = currentLevel === LEVEL_DREAM ? ~~(opp.z / SEGMENT_LENGTH) : ~~(opp.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
@@ -12703,6 +12850,7 @@ function advanceRaceStep(dt){
 
     checkOpponentPairContacts(previousOpponents,dt);
     checkOpponentCollision(previousPlayer, previousOpponents, dt);
+    checkParadiseTrafficContacts(previousPlayer,previousOpponents);
     // Entry transitions and opponent pushes must respect the road's walls too.
     applyRoadContact(0, (player.x - previousPlayer.x) / dt);
 

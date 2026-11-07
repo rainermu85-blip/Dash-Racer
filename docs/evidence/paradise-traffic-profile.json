@@ -1,0 +1,166 @@
+{
+  "environment": "Cloud Chromium 390x844, 120 native RAF frames per section; not a physical mobile/Brave benchmark",
+  "vectorFronts2xCPU": {
+    "samples": [
+      {
+        "name": "jungle",
+        "medianFrame": 16.700000000000045,
+        "p95Frame": 33.40000000000009,
+        "p95Render": 12.300000011920929,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "airport",
+        "medianFrame": 16.700000000000273,
+        "p95Frame": 33.400000000000546,
+        "p95Render": 10.400000035762787,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "harbour",
+        "medianFrame": 33.30000000000018,
+        "p95Frame": 50,
+        "p95Render": 20.80000001192093,
+        "framesOver50ms": 2
+      },
+      {
+        "name": "bridge",
+        "medianFrame": 33.29999999999927,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 12.199999988079071,
+        "framesOver50ms": 1
+      },
+      {
+        "name": "regatta",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 8.699999988079071,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "ferry",
+        "medianFrame": 16.799999999999272,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 10.400000035762787,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "dolphins",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 9.699999988079071,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 12.11703872680664
+  },
+  "cachedFronts2xCPU": {
+    "samples": [
+      {
+        "name": "jungle",
+        "medianFrame": 16.700000000000045,
+        "p95Frame": 33.40000000000009,
+        "p95Render": 14.400000035762787,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "airport",
+        "medianFrame": 16.700000000000273,
+        "p95Frame": 66.60000000000036,
+        "p95Render": 22.19999998807907,
+        "framesOver50ms": 8
+      },
+      {
+        "name": "harbour",
+        "medianFrame": 33.29999999999927,
+        "p95Frame": 83.29999999999927,
+        "p95Render": 35,
+        "framesOver50ms": 11
+      },
+      {
+        "name": "bridge",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 15.399999976158142,
+        "framesOver50ms": 1
+      },
+      {
+        "name": "regatta",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 9.600000023841858,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "ferry",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 9.5,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "dolphins",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.39999999999782,
+        "p95Render": 8.699999988079071,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 12.63888931274414
+  },
+  "cachedFrontsNativeCPU": {
+    "cpuRate": 1,
+    "samples": [
+      {
+        "name": "jungle",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.799999999999955,
+        "p95Render": 5.800000011920929,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "airport",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.700000000000273,
+        "p95Render": 4.700000047683716,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "harbour",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.700000000000728,
+        "p95Render": 7,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "bridge",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.700000000000728,
+        "p95Render": 4.799999952316284,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "regatta",
+        "medianFrame": 16.69999999999891,
+        "p95Frame": 16.799999999999272,
+        "p95Render": 3.400000035762787,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "ferry",
+        "medianFrame": 16.69999999999891,
+        "p95Frame": 16.799999999999272,
+        "p95Render": 4.399999976158142,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "dolphins",
+        "medianFrame": 16.69999999999891,
+        "p95Frame": 16.799999999999272,
+        "p95Render": 3.5,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 12.63888931274414
+  }
+}
