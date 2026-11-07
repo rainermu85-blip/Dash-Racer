@@ -1,0 +1,111 @@
+{
+  "environment": "Cloud Chromium 390x844; 2x CPU throttle; 120 native RAF frames per section; not physical Brave/mobile",
+  "beforeStaticDrawOptimization": {
+    "samples": [
+      {
+        "name": "jungle",
+        "medianFrame": 33.200000000000045,
+        "p95Frame": 33.40000000000009,
+        "p95Render": 12.800000011920929,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "airport",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 33.40000000000009,
+        "p95Render": 9.299999952316284,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "harbour",
+        "medianFrame": 33.20000000000073,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 10.700000047683716,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "bridge",
+        "medianFrame": 33.20000000000073,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 11.599999964237213,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "regatta",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 9.5,
+        "framesOver50ms": 1
+      },
+      {
+        "name": "ferry",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 8.5,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "dolphins",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 9.100000023841858,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 12.00357437133789
+  },
+  "final": {
+    "samples": [
+      {
+        "name": "jungle",
+        "medianFrame": 16.700000000000273,
+        "p95Frame": 33.40000000000009,
+        "p95Render": 10.900000035762787,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "airport",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 33.40000000000009,
+        "p95Render": 10.199999988079071,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "harbour",
+        "medianFrame": 33.29999999999927,
+        "p95Frame": 33.400000000000546,
+        "p95Render": 12.899999976158142,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "bridge",
+        "medianFrame": 16.799999999999272,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 11.5,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "regatta",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.399999999999636,
+        "p95Render": 8.900000035762787,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "ferry",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 8.599999964237213,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "dolphins",
+        "medianFrame": 16.700000000000728,
+        "p95Frame": 33.400000000001455,
+        "p95Render": 8.5,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 12.00357437133789
+  }
+}

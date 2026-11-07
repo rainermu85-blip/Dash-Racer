@@ -1,0 +1,242 @@
+[
+  {
+    "hosting": "repository-root",
+    "id": 7,
+    "pass": true,
+    "actual": {
+      "level": 7,
+      "state": "playing",
+      "z": 42.569419190827865,
+      "frames": 287,
+      "segments": 2625,
+      "lap": "1/1"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 1,
+    "pass": true,
+    "actual": {
+      "level": 1,
+      "state": "playing",
+      "z": 35.31369711538011,
+      "frames": 582,
+      "segments": 1150,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 2,
+    "pass": true,
+    "actual": {
+      "level": 2,
+      "state": "playing",
+      "z": 34.97124870250726,
+      "frames": 774,
+      "segments": 1250,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 3,
+    "pass": true,
+    "actual": {
+      "level": 3,
+      "state": "playing",
+      "z": 36.39088169730203,
+      "frames": 1061,
+      "segments": 1200,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 4,
+    "pass": true,
+    "actual": {
+      "level": 4,
+      "state": "playing",
+      "z": 26.59859906635935,
+      "frames": 1248,
+      "segments": 1200,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 5,
+    "pass": true,
+    "actual": {
+      "level": 5,
+      "state": "playing",
+      "z": 35.36163491899372,
+      "frames": 1564,
+      "segments": 2875,
+      "lap": "1/1"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 6,
+    "pass": true,
+    "actual": {
+      "level": 6,
+      "state": "playing",
+      "z": 35.311485250515894,
+      "frames": 1854,
+      "segments": 1350,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "repository-root",
+    "id": 7,
+    "pass": true,
+    "actual": {
+      "level": 7,
+      "state": "playing",
+      "z": 35.3642475034537,
+      "frames": 2157,
+      "segments": 2625,
+      "lap": "1/1"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 7,
+    "pass": true,
+    "actual": {
+      "level": 7,
+      "state": "playing",
+      "z": 42.63948560004029,
+      "frames": 278,
+      "segments": 2625,
+      "lap": "1/1"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 1,
+    "pass": true,
+    "actual": {
+      "level": 1,
+      "state": "playing",
+      "z": 28.891972057570324,
+      "frames": 567,
+      "segments": 1150,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 2,
+    "pass": true,
+    "actual": {
+      "level": 2,
+      "state": "playing",
+      "z": 41.98463520036426,
+      "frames": 786,
+      "segments": 1250,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 3,
+    "pass": true,
+    "actual": {
+      "level": 3,
+      "state": "playing",
+      "z": 34.518181550081614,
+      "frames": 1082,
+      "segments": 1200,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 4,
+    "pass": true,
+    "actual": {
+      "level": 4,
+      "state": "playing",
+      "z": 5.492923609274404,
+      "frames": 1280,
+      "segments": 1200,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 5,
+    "pass": true,
+    "actual": {
+      "level": 5,
+      "state": "playing",
+      "z": 35.414547031590324,
+      "frames": 1590,
+      "segments": 2875,
+      "lap": "1/1"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 6,
+    "pass": true,
+    "actual": {
+      "level": 6,
+      "state": "playing",
+      "z": 35.20116606858325,
+      "frames": 1844,
+      "segments": 1350,
+      "lap": "1/3"
+    },
+    "errors": [],
+    "missing": []
+  },
+  {
+    "hosting": "production-build",
+    "id": 7,
+    "pass": true,
+    "actual": {
+      "level": 7,
+      "state": "playing",
+      "z": 35.180109241277684,
+      "frames": 2142,
+      "segments": 2625,
+      "lap": "1/1"
+    },
+    "errors": [],
+    "missing": []
+  }
+]
