@@ -15,11 +15,11 @@ feedback that the crossings dragged. Turbo and collisions change the time.
 | 525–874 | Emerald Isle | Dense forest corridor, waterfall with a clear sightline, trail hut and hikers |
 | 1050–1399 | Sunset Airport | Open hangar with island-hopper, luggage tractor, terminal, jumbo landing, shuttle and travellers |
 | 1575–1924 | Port Azure | Waterfront shops, hotel, clock tower, market, cafés, fishing dock and pedestrians |
-| 2100–2449 | Coral Cay | Rock arch, beach resort, overwater huts, volleyball, parasailing and a music stage with dancers |
+| 2100–2449 | Coral Cay | Drive-through rock arch, beach resort, overwater huts, volleyball, parasailing and a music stage with dancers |
 
 Each island is followed by a 175-segment bridge. Open lagoon rails, warm truss
 ribs, the airport causeway and suspension towers distinguish the crossings.
-Regatta boats, a ferry, limestone stacks, fishing boats, a windsurfer and dolphin
+Regatta boats, a paddle steamer, limestone stacks, fishing boats, a windsurfer and dolphin
 groups remain along them. Bridge props and cable anchors follow the compressed
 layout; player and rival collision boundaries stay aligned with the parapets.
 
@@ -101,7 +101,7 @@ not an aircraft physics simulation.
 
 Static scenery, including the aircraft mesh, is rasterized once at race setup.
 New large buildings use a reduced raster resolution. The scenery cache is about
-12.64 MiB of logical RGBA pixels, under a 13 MiB budget; this excludes shared game
+12.94 MiB of logical RGBA pixels, under a 13 MiB budget; this excludes shared game
 assets and browser/GPU overhead. Static tiles crop their source image at the ground/crest rather than installing
 a separate canvas clipping mask for each tree and facade. There are no per-frame
 texture writes. Small
@@ -151,3 +151,52 @@ escalation, no accidental acceleration below the cap, cleared recovery state,
 and a driven encounter followed by normal acceleration from 60 km/h. A complete
 six-racer regression is in `paradise-head-on-race.json`; an additional live-UI
 start/countdown/visible-tachometer check is in `paradise-head-on-ui.json`.
+
+## Island scenery polish
+
+The passenger ferry is now the **Island Belle**, a pastel paddle steamer with
+open galleries, railings, two capped funnels and a pilothouse. Its circular
+side wheel rotates on simulation time, with twelve paddles, localized splashes,
+ripples and a few small steam puffs. The hull and stationary galleries remain
+cached; there is no animated texture upload.
+
+Roadside and building palms reuse Ocean Drive's `drawMiamiPalm` model, including
+curved trunks and feathered leaves. An optional painting context lets Paradise
+bake the same model into its existing scenery cache. The normal drawing path
+preserves its original appearance: 72 pixel comparisons cover all eight shapes,
+coastal and hillside day/night palettes and all five Neon City palettes. Left
+properties at segments 115, 245 and 1640 have more clearance; their embedded
+palms previously approached or crossed the carriageway. Coral Cay's arch
+approach also has a clear vegetation corridor.
+
+The Coral Cay arch at segment **2150** spans all four lanes with a transparent
+aperture and shaded inner stone. There is no route teleport or change to the
+curves. Its supports constrain offroad movement only around the aperture;
+normal driving in all four lanes keeps full speed. Airport approach signage
+has a framed two-line destination, aircraft pictogram and arrow. The terminal's
+name is mounted on an opaque fascia instead of floating above the roof.
+
+The jumbo keeps its landing choreography, but its mesh now uses a stronger
+three-quarter projection. Tapered wings have a rising tip, thickness, swept
+flap panels and roots set lower into the fuselage; all four nacelles sit below
+their wing attachments. Landing gear still determines the ground anchor.
+
+The waterfall has moving ribbons that accelerate down its channel, an impact
+pool with foam, expanding rings and short spray arcs. Foreground vegetation
+leaves a window onto the pool. Its flow and the steamer wheel pause with race
+simulation. The complete cache stays below 13 MiB, with no per-frame writes.
+
+Validation for this pass: `paradise-polish-race.json` includes a full six-car
+race, visible touchdown, animated wheel and impact-pool pixels, pause behavior,
+all four arch lanes and physical supports for player/rivals. Traffic and level
+loading are recorded separately; the palette comparison is in
+`paradise-polish-palms.json`. Native RAF samples include the waterfall and arch
+in addition to the seven existing profile scenes.
+
+`paradise-polish-profile.json` contains both native and 2×-CPU runs. All nine
+sections have median frame intervals near 16.7 ms. Native 95th-percentile render
+work ranges from 3.0 to 10.7 ms; waterfall, arch and steamer are 5.8, 4.7 and
+3.2 ms respectively. The 2× run ranges from 6.9 to 14.7 ms, with 95th-percentile
+frame intervals at 16.8–33.4 ms. Each run contains one interval above 50 ms
+(native forest, throttled regatta). These remain short cloud Chromium samples,
+not physical phone/Brave measurements.

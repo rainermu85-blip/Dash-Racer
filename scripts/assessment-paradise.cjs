@@ -63,6 +63,42 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    raceElapsed=1000;render(4000);const first=sample();render(4000);const paused=sample();
    raceElapsed=2000;render(4000);const animated=sample();
    record('beach-animation-uses-simulation-time',first===paused&&first!==animated,{first,paused,animated});
+   // Verify the visible wheel and impact pool, not only the scene clock.
+   for(const kind of['ferry','waterfall']){
+    const sc=kind==='ferry'?.45:.7,x=W/2,y=H*.8;
+    const sprite={item:{kind},variant:0,x,y,sc,depth:30,clipY:H};
+    const region=kind==='ferry'?[-5,-105,124,126]:[-100,-55,200,55];
+    const imageAt=time=>{
+      raceElapsed=time;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.fillStyle='#278caa';ctx.fillRect(0,0,W,H);
+      drawParadiseSprite(sprite);
+      const data=ctx.getImageData(Math.floor(x+region[0]*sc),Math.floor(y+region[1]*sc),Math.ceil(region[2]*sc),Math.ceil(region[3]*sc)).data;
+      let hash=2166136261;for(let i=0;i<data.length;i++)hash=Math.imul(hash^data[i],16777619);
+      ctx.restore();return hash;
+    };
+    const first=imageAt(1000),paused=imageAt(1000),moving=imageAt(1500);
+    record(kind+'-detail-moves-and-freezes-with-simulation',first===paused&&first!==moving,{first,paused,moving});
+    shots.push({name:kind+'-detail',image:C.toDataURL()});
+   }
+   // Both carriageways pass through the new arch; the pillars stop offroad cars.
+   const archPasses=[];
+   for(const lane of[-1,-1/3,1/3,1]){
+    selectLevel(7);startRace();state='playing';opponents=[];paradiseTraffic=[];
+    player.z=(PARADISE_ARCH_SEGMENT-30)*150;player.x=lane;player.speed=4320;player.cleanSpeedBonus=.2;resetNormalPace(player);
+    let minimum=4320,steps=0;
+    while(player.z<(PARADISE_ARCH_SEGMENT+10)*150&&steps++<500){
+      const visibleX=getPlayerCollisionX();keys.left=visibleX>lane+.025;keys.right=visibleX<lane-.025;
+      advanceRaceStep(1/120);minimum=Math.min(minimum,player.speed);
+    }
+    archPasses.push({lane,minimum,passed:player.z>(PARADISE_ARCH_SEGMENT+10)*150});
+   }
+   record('all-four-lanes-drive-through-rock-aperture',archPasses.every(p=>p.passed&&p.minimum>4300),{archPasses});
+   selectLevel(7);startRace();state='playing';
+   const archContacts=[];
+   for(const car of[player,...opponents])for(const side of[-1,1]){
+    car.z=PARADISE_ARCH_SEGMENT*150;car.x=side*1.7;car.speed=3600;car.wallHitCooldown=0;car.wallContactSide=0;
+    applyRoadContact(1/60,side*2,car);archContacts.push({x:car.x,speed:car.speed});
+   }
+   record('arch-supports-bound-offroad-travel',archContacts.every(c=>Math.abs(c.x)<1.3&&c.speed<3600),{archContacts});
    // Sample unmarked central asphalt, away from car and lane markings.
    player.z=1180.3*150;player.x=0;player.pitch=0;curveCamera.look=0;opponents=[];render(4000);
    const colors=[];for(let y=505;y<600;y++)colors.push([...ctx.getImageData(W/2,y,1,1).data].slice(0,3));
