@@ -915,7 +915,7 @@ function initParadiseTraffic(){
     // Distribute physical cars for an ordinary clean lap. They then move only
     // with simulation time, never teleporting relative to the player or rivals.
     const z=index*150+speed*(index/28.8+2.2);
-    return{id,z,previousZ:z,lane,x:lane,speed,color,style,hits:new Set()};
+    return{id,z,previousZ:z,lane,x:lane,speed,color,style,hits:new Set(),frontalHits:new Set()};
   }):[];
   for(const car of paradiseTraffic)getParadiseTrafficArt(car.color,car.style);
 }
@@ -953,19 +953,31 @@ function checkParadiseTrafficContacts(previousPlayer,previousOpponents){
     const nowX=i===0?getPlayerCollisionX():car.x,nowZ=racePosition(car);
     const oldX=i===0?(before.collisionX??before.x):before.x;
     for(const traffic of paradiseTraffic){
-      if(traffic.departed||traffic.hits.has(car))continue;
+      if(traffic.departed||traffic.frontalHits?.has(car))continue;
       const z0=traffic.previousZ-before.z,z1=traffic.z-nowZ;
       if(Math.min(z0,z1)>COLLISION_Z_RANGE||Math.max(z0,z1)<-COLLISION_Z_RANGE)continue;
       const width=getCarCollisionHalfWidth(car)+getCarCollisionHalfWidth(traffic);
       const x0=(traffic.previousX??traffic.x)-oldX,x1=traffic.x-nowX;
       const hit=sweepContact(x0,z0,x1,z1,width,-COLLISION_Z_RANGE,COLLISION_Z_RANGE);
       if(!hit)continue;
-      traffic.hits.add(car);
       const t=clamp(z0/Math.max(.001,z0-z1),hit.time,1);
       const overlap=clamp(1-Math.abs(x0+(x1-x0)*t)/width,0,1);
-      const frontal=hit.axis==='z',loss=frontal?.04+.44*overlap:.035+.10*overlap;
-      scaleCarSpeed(car,1-loss);loseCleanSpeed(frontal?overlap:overlap*.35,car);
-      if(frontal&&overlap>.3)car.isBoosting=car.isChevronBoosting=false;
+      const frontal=hit.axis==='z',headOn=z0>=0&&overlap>=.2;
+      // An initial edge scrape must not shield a subsequent frontal impact.
+      if(traffic.hits.has(car)&&!headOn)continue;
+      traffic.hits.add(car);
+      if(headOn){
+        (traffic.frontalHits??=new Set()).add(car);
+        // Use the shared HUD scale, also for opponents with different top speeds.
+        car.speed=Math.min(car.speed,60/(335/3600));
+        car.normalSpeed=car.speed;
+        car.isBoosting=car.isChevronBoosting=car.turboRecovery=false;
+        car.boostTimer=car.chevronBoostTimer=0;
+        loseCleanSpeed(1,car);
+      }else{
+        const loss=frontal?.04+.44*overlap:.035+.10*overlap;
+        scaleCarSpeed(car,1-loss);loseCleanSpeed(frontal?overlap:overlap*.35,car);
+      }
       car.hitFlash=Math.max(car.hitFlash||0,frontal?.55:.2);
       car.collisionCooldown=Math.max(car.collisionCooldown||0,.3);
       car.x+=Math.sign(nowX-traffic.x||1)*.06*overlap;

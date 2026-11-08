@@ -1,0 +1,437 @@
+[
+  {
+    "name": "five-islands-and-five-halved-bridges",
+    "pass": true,
+    "actual": {
+      "land": 1750,
+      "bridge": 875
+    },
+    "errors": []
+  },
+  {
+    "name": "loop-closes-at-same-height-and-slope",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "jumbo-touchdown-visible-on-runway",
+    "pass": true,
+    "actual": {
+      "width": 181.97760931013923,
+      "groundDelta": 0,
+      "height": 0
+    },
+    "errors": []
+  },
+  {
+    "name": "normal-driving-finishes-in-90-to-100-seconds",
+    "pass": true,
+    "actual": {
+      "seconds": 93.38333333333762,
+      "times": [
+        62.999999999997705,
+        30.38333333333289
+      ],
+      "islands": [
+        14.383333333333628,
+        12.150000000000183,
+        12.16666666666685,
+        12.150000000000183,
+        12.150000000000183
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "one-lap-finish-without-last-lap-banner",
+    "pass": true,
+    "actual": {
+      "lap": 2,
+      "finish": 93370.21809811617,
+      "lastLap": false
+    },
+    "errors": []
+  },
+  {
+    "name": "jumbo-crosses-then-lands-before-driver-passes",
+    "pass": true,
+    "actual": {
+      "crossing": {
+        "segment": 1124.4177187743778,
+        "x": 0.9846337937180216,
+        "height": 88.98559559731768,
+        "landed": false
+      },
+      "landing": {
+        "segment": 1146.017718774378,
+        "x": 5.109633793718022,
+        "height": 0,
+        "landed": true
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "restart-resets-approach-event",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "rendering-does-not-advance-plane-while-paused",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "late-turbo-still-sees-crossing-and-touchdown",
+    "pass": true,
+    "actual": {
+      "fastCrossing": 1119.207666666667,
+      "fastLanding": 1144.9445000000003
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-lagoon",
+    "pass": true,
+    "actual": {
+      "width": 73.40881484193284,
+      "height": 69.28018867924527,
+      "index": 95,
+      "at": 48
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-waterfall",
+    "pass": true,
+    "actual": {
+      "width": 144.6383561643836,
+      "height": 158.62047945205478,
+      "index": 730,
+      "at": 665
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-airport",
+    "pass": true,
+    "actual": {
+      "width": 46.73817701453106,
+      "height": 77.70221928665785,
+      "index": 1275,
+      "at": 1200
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-harbour",
+    "pass": true,
+    "actual": {
+      "width": 94.38574938574936,
+      "height": 99.30626535626533,
+      "index": 1683,
+      "at": 1643
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-coral-arch",
+    "pass": true,
+    "actual": {
+      "width": 40.348892631469425,
+      "height": 94.45485172981876,
+      "index": 2150,
+      "at": 2090
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-bridge",
+    "pass": true,
+    "actual": {
+      "width": 330.80130293159607,
+      "height": 330.2677524429967,
+      "index": 1970,
+      "at": 1940
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-market",
+    "pass": true,
+    "actual": {
+      "width": 99.58128366247755,
+      "height": 57.66451077199281,
+      "index": 145,
+      "at": 90
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-village",
+    "pass": true,
+    "actual": {
+      "width": 49.14113789250797,
+      "height": 93.46083931777378,
+      "index": 225,
+      "at": 170
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-regatta",
+    "pass": true,
+    "actual": {
+      "width": 57.614652966757376,
+      "height": 94.34095208845207,
+      "index": 415,
+      "at": 375
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-ferry",
+    "pass": true,
+    "actual": {
+      "width": 139.7036326133479,
+      "height": 75.6776180698152,
+      "index": 1473,
+      "at": 1425
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-volleyball",
+    "pass": true,
+    "actual": {
+      "width": 95.7299011532125,
+      "height": 53.20801482701813,
+      "index": 2290,
+      "at": 2230
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-sea-stack",
+    "pass": true,
+    "actual": {
+      "width": 76.94186624355328,
+      "height": 225.94764705882352,
+      "index": 940,
+      "at": 905
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-fishing-dock",
+    "pass": true,
+    "actual": {
+      "width": 130.5471051407231,
+      "height": 60.71663920922572,
+      "index": 195,
+      "at": 135
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-hangar",
+    "pass": true,
+    "actual": {
+      "width": 193.53837522441654,
+      "height": 97.96019299820466,
+      "index": 1100,
+      "at": 1045
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-clock-tower",
+    "pass": true,
+    "actual": {
+      "width": 80.14596375617793,
+      "height": 111.09121087314662,
+      "index": 1785,
+      "at": 1725
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-resort",
+    "pass": true,
+    "actual": {
+      "width": 160.29192751235587,
+      "height": 75.47078253706752,
+      "index": 2175,
+      "at": 2115
+    },
+    "errors": []
+  },
+  {
+    "name": "visible-landmark-beach-stage",
+    "pass": true,
+    "actual": {
+      "width": 126.29060955518946,
+      "height": 63.14530477759473,
+      "index": 2370,
+      "at": 2310
+    },
+    "errors": []
+  },
+  {
+    "name": "beach-animation-uses-simulation-time",
+    "pass": true,
+    "actual": {
+      "first": 1438303364,
+      "paused": 1438303364,
+      "animated": 1831414471
+    },
+    "errors": []
+  },
+  {
+    "name": "no-horizontal-asphalt-seams",
+    "pass": true,
+    "actual": {
+      "largestRowJump": 1
+    },
+    "errors": []
+  },
+  {
+    "name": "scenery-cache-stays-immutable-and-under-thirteen-mib",
+    "pass": true,
+    "actual": {
+      "writes": 0,
+      "MiB": 12.63888931274414,
+      "tiles": 77
+    },
+    "errors": []
+  },
+  {
+    "name": "bridge-parapets-stop-player-and-opponents",
+    "pass": true,
+    "actual": {
+      "limits": {
+        "left": 1.2366666666666666,
+        "right": 1.2366666666666666
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "physical-contact-cannot-cross-parapet",
+    "pass": true,
+    "actual": {
+      "contacts": [
+        {
+          "x": 1.2366666666666666,
+          "speed": 3156.298654488213
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "six-racers-finish-single-lap-with-real-times",
+    "pass": true,
+    "actual": {
+      "seconds": 96.30833333332305,
+      "times": [
+        {
+          "name": "R3D",
+          "time": 92568.5445581757
+        },
+        {
+          "name": "ACE",
+          "time": 93377.94188381065
+        },
+        {
+          "name": "VPR",
+          "time": 93401.71620420681
+        },
+        {
+          "name": "FOX",
+          "time": 94833.4443503138
+        },
+        {
+          "name": "ICE",
+          "time": 95394.78414305681
+        },
+        {
+          "name": "LUX",
+          "time": 96302.41431144881
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "scoreboard-has-six-times-and-correct-level",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "continue-returns-to-level-selection",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-1",
+    "pass": true,
+    "actual": {
+      "laps": 3
+    },
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-2",
+    "pass": true,
+    "actual": {
+      "laps": 3
+    },
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-3",
+    "pass": true,
+    "actual": {
+      "laps": 3
+    },
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-4",
+    "pass": true,
+    "actual": {
+      "laps": 3
+    },
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-5",
+    "pass": true,
+    "actual": {
+      "laps": 1
+    },
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-6",
+    "pass": true,
+    "actual": {
+      "laps": 3
+    },
+    "errors": []
+  },
+  {
+    "name": "lap-count-level-7",
+    "pass": true,
+    "actual": {
+      "laps": 1
+    },
+    "errors": []
+  }
+]

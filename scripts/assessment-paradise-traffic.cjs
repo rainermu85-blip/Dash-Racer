@@ -46,22 +46,49 @@ module.exports=async function(browser,baseUrl,output){
    record('four-lane-road-and-limits-for-all-islands-and-bridges',geometry.every(g=>g.width===4/3&&g.limit.right>1.2&&g.soft>1.25),{geometry});
    record('start-grid-clear-on-own-carriageway',player.x>0&&opponents.every(c=>c.x>0&&Math.abs(racePosition(c)-racePosition(player))>COLLISION_Z_RANGE),{});
    // Deliberately cross the entire longitudinal contact box in one step.
-   const impact=(rival,edge)=>{
+   const impact=(rival,edge,options={})=>{
     start();paradiseTrafficActive=true;
     const car=rival?opponents[0]:player;opponents=rival?[car]:[];
-    car.z=1700*150;car.x=-1/3;car.speed=4320;car.normalSpeed=4320;car.normalBaseSpeed=3600;car.cleanSpeedBonus=.2;car.finished=false;car.isBoosting=true;car.boostTimer=1;
+    car.z=1700*150;car.x=-1/3;car.speed=options.speed??4320;car.normalSpeed=car.speed;car.normalBaseSpeed=3600;car.cleanSpeedBonus=.2;car.finished=false;
+    car.isBoosting=options.boost??true;car.boostTimer=car.isBoosting?1:0;
+    car.isChevronBoosting=!!options.chevron;car.chevronBoostTimer=options.chevron?1:0;car.turboRecovery=true;
     if(rival)player.z=1400*150;
     const x=rival?car.x:getPlayerCollisionX(),z=racePosition(car),traffic=paradiseTraffic[0];
     const width=getCarCollisionHalfWidth(car)+getCarCollisionHalfWidth(traffic);
-    traffic.x=traffic.previousX=x+width*edge;traffic.previousZ=z+145;traffic.z=z-145;paradiseTraffic=[traffic];
+    traffic.x=traffic.previousX=x+width*edge;traffic.previousZ=z+(options.escalate?115:145);traffic.z=z+(options.escalate?55:-145);paradiseTraffic=[traffic];
     const p0={x:player.x,collisionX:getPlayerCollisionX(),z:racePosition(player)},o0=rival?[{x:car.x,z:racePosition(car)}]:[];
-    checkParadiseTrafficContacts(p0,o0);const speed=car.speed;checkParadiseTrafficContacts(p0,o0);
-    return{speed,afterRepeat:car.speed,hits:traffic.hits.size,boost:car.isBoosting};
+    checkParadiseTrafficContacts(p0,o0);const firstSpeed=car.speed;
+    if(options.escalate){traffic.previousZ=z+55;traffic.z=z-5;traffic.previousX=traffic.x;traffic.x=x+width*.6;checkParadiseTrafficContacts(p0,o0);}
+    const speed=car.speed;checkParadiseTrafficContacts(p0,o0);updateHUD(0);
+    return{speed,firstSpeed,kmh:speed*335/3600,afterRepeat:car.speed,normalSpeed:car.normalSpeed,hits:traffic.hits.size,
+      boost:car.isBoosting,chevron:car.isChevronBoosting,turboRecovery:car.turboRecovery,cleanBonus:car.cleanSpeedBonus,
+      boostTimer:car.boostTimer,chevronTimer:car.chevronBoostTimer,hud:rival?null:document.getElementById('spdVal').textContent};
    };
    const front=impact(false,0),graze=impact(false,.95),opponent=impact(true,0);
-   record('swept-front-hit-has-single-strong-impact',front.hits===1&&front.speed>1500&&front.speed<2600&&front.afterRepeat===front.speed&&!front.boost,front);
+   record('frontal-hit-caps-speed-at-60-kmh',front.hits===1&&Math.abs(front.kmh-60)<1e-8&&front.hud==='60'&&front.afterRepeat===front.speed,front);
+   record('frontal-hit-clears-turbo-and-normal-speed-recovery',!front.boost&&!front.chevron&&!front.turboRecovery&&front.boostTimer===0&&front.chevronTimer===0&&front.normalSpeed===front.speed&&front.cleanBonus===0,front);
    record('grazing-impact-is-much-milder',graze.speed>3900&&graze.speed>front.speed&&graze.boost,graze);
    record('same-impact-cost-for-rival-and-player',Math.abs(front.speed-opponent.speed)<.01&&opponent.hits===1,{front,opponent});
+   const normal=impact(false,0,{speed:3600,boost:false}),turbo=impact(false,0,{speed:5940}),chevron=impact(false,0,{speed:8316,chevron:true});
+   record('same-60-kmh-cap-from-normal-and-turbo-speeds',[normal,turbo,chevron].every(r=>Math.abs(r.kmh-60)<1e-8&&!r.boost&&!r.chevron&&r.normalSpeed===r.speed),{normal,turbo,chevron});
+   const offset=impact(false,.6),escalated=impact(false,.95,{escalate:true}),slow=impact(false,0,{speed:40*3600/335,boost:false});
+   record('offset-frontal-impact-also-caps-speed',Math.abs(offset.kmh-60)<1e-8,offset);
+   record('initial-graze-cannot-shield-later-frontal-hit',escalated.firstSpeed>3900&&Math.abs(escalated.kmh-60)<1e-8&&escalated.hits===1,escalated);
+   record('head-on-does-not-accelerate-already-slower-car',slow.kmh<40.000001&&slow.kmh>39.99999,slow);
+   // A real encounter through the normal simulation and steering, not only
+   // a direct contact fixture. Observe the HUD at impact and the next step.
+   start();opponents=[];paradiseTraffic=paradiseTraffic.slice(0,1);
+   player.z=20*150;player.speed=4320;player.cleanSpeedBonus=.2;resetNormalPace(player);
+   let driven=null;
+   for(let f=0;f<1400&&!driven;f++){
+    const x=getPlayerCollisionX();keys.left=x>-1/3+.025;keys.right=x<-1/3-.025;advanceRaceStep(1/120);
+    if(paradiseTraffic[0].frontalHits.has(player)){
+      updateHUD(0);render(raceElapsed);shots.push({name:'head-on-60-kmh',image:C.toDataURL()});
+      const hud=document.getElementById('spdVal').textContent,speed=player.speed,normal=player.normalSpeed;
+      advanceRaceStep(1/120);driven={hud,kmh:speed*335/3600,normal,nextKmh:player.speed*335/3600};
+    }
+   }
+   record('driven-head-on-shows-60-and-recovers-from-that-speed',driven&&driven.hud==='60'&&Math.abs(driven.kmh-60)<1e-8&&driven.normal<650&&driven.nextKmh>60&&driven.nextKmh<65,driven);
    start();paradiseTrafficActive=true;const car=opponents[0];car.z=1700*150;car.x=-1/3;car.targetX=-1/3;car.speed=4300;car.laneHold=0;
    paradiseTraffic=paradiseTraffic.slice(0,1);const incoming=paradiseTraffic[0];incoming.z=racePosition(car)+8000;incoming.x=-1/3;incoming.lane=-1/3;
    const road=roadPreview(car,car.profile),snapshot=raceSnapshot();
@@ -81,7 +108,7 @@ module.exports=async function(browser,baseUrl,output){
    }
    render(raceElapsed);shots.push({name:'returned-from-overtake',image:C.toDataURL()});
    record('player-can-pass-two-abreast-and-return',wentLeft&&returned&&used,{wentLeft,returned,used,index:player.z/150});
-   start();record('restart-resets-traffic',!paradiseTrafficActive&&paradiseTraffic.length===23&&paradiseTraffic.every(c=>!c.hits.size&&!c.departed),{});
+   start();record('restart-resets-traffic',!paradiseTrafficActive&&paradiseTraffic.length===23&&paradiseTraffic.every(c=>!c.hits.size&&!c.frontalHits.size&&!c.departed),{});
    for(const level of[1,2,3,4,5,6]){selectLevel(level);startRace();record('no-paradise-traffic-level-'+level,paradiseTraffic.length===0&&roadSoftLimit(1600*150)===.94,{});}
    return{checks,shots};
   });

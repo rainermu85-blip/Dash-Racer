@@ -62,7 +62,14 @@ and follows fixed physical trajectories; there are no player-relative respawns
 or speed gifts. The encounter distribution was tuned for visibility through the
 new bends, including from the outer right lane. Departed vehicles are removed
 only behind all unfinished racers. Player and AI use the same swept contacts,
-impact costs and severity rules as the successful harbour trial.
+impact costs and severity rules. A frontal opposing-traffic collision with at
+least 20% body overlap now caps the racer at 60 HUD km/h (without speeding up
+an already slower car). It cancels boost/recovery, resets the normal-speed
+trajectory to the reduced speed and clears earned headroom. Pure edge scrapes
+keep their milder proportional penalty. A scrape can escalate to a frontal hit
+while the vehicles are still approaching; it cannot shield the racer via the
+per-pair contact latch. Each pair receives at most one hard frontal impact.
+Player and rivals use the same cap and speed conversion.
 
 The racing AI prefers the two right lanes and can select a clear opposing lane
 for a pass. Its lookahead scores predicted opposing traffic before committing.
@@ -137,3 +144,10 @@ near 16.7 ms and 95th-percentile intervals at 16.7–16.8 ms in all seven sample
 sections, with no intervals over 50 ms. 95th-percentile render work ranged from
 2.8 to 8.5 ms. See `paradise-full-profile.json`; this is still a short cloud
 sample rather than a guarantee for phones.
+
+The 60-km/h change is covered by `paradise-head-on.json`: normal/turbo/offset
+frontal hits, unchanged grazing cost, equal player/rival damage, scrape-to-front
+escalation, no accidental acceleration below the cap, cleared recovery state,
+and a driven encounter followed by normal acceleration from 60 km/h. A complete
+six-racer regression is in `paradise-head-on-race.json`; an additional live-UI
+start/countdown/visible-tachometer check is in `paradise-head-on-ui.json`.
