@@ -121,8 +121,13 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .panel-kicker{color:#d19be3;font-size:8px;letter-spacing:1px;line-height:1.7;margin-bottom:12px}
 .profile-label{display:block;margin-top:24px;color:#a9e9f4;font-size:11px;letter-spacing:1px}
 .driver-slots{display:flex;justify-content:center;gap:17px;margin:20px 0 17px}
-.driver-char{display:block;width:58px;height:68px;padding:0;border:0;border-bottom:3px solid #cf51bb;border-radius:0;background:rgba(12,6,29,.35);font:32px 'Gravity Pixel',monospace;color:#f4e7ff;text-align:center;text-transform:uppercase;caret-color:#59e7ff;box-shadow:0 8px 12px -10px #ff4fd8;touch-action:manipulation!important}
-.driver-char:focus{outline:none;border-bottom-color:#62eeff;color:#b9f5ff;box-shadow:0 8px 14px -9px #5be5ff;text-shadow:0 0 10px rgba(91,229,255,.5)}
+.driver-slot{position:relative;display:block}
+.driver-slot:focus-within::after{content:"";position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:24px;height:3px;background:#fff;pointer-events:none;animation:driver-caret .5s step-end infinite}
+@keyframes driver-caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.driver-slot:focus-within::after{animation:none}}
+.driver-char{display:block;width:58px;height:68px;padding:0;border:0;border-bottom:3px solid #cf51bb;border-radius:0;background:rgba(12,6,29,.35);font:32px 'Gravity Pixel',monospace;color:#f4e7ff;text-align:center;text-transform:uppercase;caret-color:transparent;box-shadow:0 8px 12px -10px #ff4fd8;touch-action:manipulation!important}
+.driver-char:focus{outline:none}
+.driver-char::selection{background:transparent;color:#f4e7ff}
 .profile-help{font-size:9px;line-height:2;color:#b7a5cb;margin-bottom:24px}
 .profile-actions{display:flex;flex-direction:column;gap:12px}
 .profile-actions .obtn,.result-panel .obtn{width:100%;touch-action:manipulation;font-size:11px}
@@ -12135,7 +12140,7 @@ function showDriverName(context='options'){
       <div class="otitle" id="driverHeading">${first?'DRIVER ID':'OPTIONS'}</div>
       <label class="profile-label" for="driverChar0">YOUR NAME</label>
       <div class="driver-slots" role="group" aria-label="Dreistelliger Fahrername">
-        ${[0,1,2].map(i=>`<input class="driver-char" id="driverChar${i}" type="text" inputmode="text" maxlength="1" pattern="[A-Za-z0-9]" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-label="Zeichen ${i+1} von 3" aria-describedby="driverHelp" value="${driverTag[i]||''}">`).join('')}
+        ${[0,1,2].map(i=>`<span class="driver-slot"><input class="driver-char" id="driverChar${i}" type="text" inputmode="text" maxlength="1" pattern="[A-Za-z0-9]" autocomplete="off" autocapitalize="characters" spellcheck="false" required aria-label="Zeichen ${i+1} von 3" aria-describedby="driverHelp" value="${driverTag[i]||''}"></span>`).join('')}
       </div>
       <div class="profile-help" id="driverHelp">3 CHARACTERS<br>A–Z / 0–9</div>
       <div class="profile-actions"><button class="obtn menu-start" id="saveDriverBtn" type="submit">${first?'CONTINUE':'SAVE'}</button>
