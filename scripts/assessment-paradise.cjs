@@ -18,7 +18,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    drawParadiseSprite=s=>{if(s.item.kind==='plane'){const a=getParadiseArt('plane');planeContact={width:Math.min(W,s.x+(a.w-a.ox)*s.sc)-Math.max(0,s.x-a.ox*s.sc),groundDelta:s.y-segments[s.segIdx].proj_y2,height:paradisePlanePose().height};}renderSprite(s);};
    const times=[0,0],islands=[0,0,0,0,0],planeSamples=[];let lastLap=false;
    for(let f=0;f<12000&&!player.finished;f++){
-    const home=paradiseLaneBlend(player.z)/3;keys.left=player.x>home+.025;keys.right=player.x<home-.025;
+    const home=paradiseLaneBlend(player.z)/3;const visibleX=getPlayerCollisionX();keys.left=visibleX>home+.04;keys.right=visibleX<home-.04;
     const i=Math.floor(player.z/150),onBridge=i%PARADISE_STRIDE>=350;times[onBridge?1:0]+=1/60;
     if(!onBridge)islands[Math.floor(i/PARADISE_STRIDE)]+=1/60;
     advanceRaceStep(1/60);lastLap||=lastLapElapsed!==null;
@@ -64,7 +64,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    raceElapsed=2000;render(4000);const animated=sample();
    record('beach-animation-uses-simulation-time',first===paused&&first!==animated,{first,paused,animated});
    // Sample unmarked central asphalt, away from car and lane markings.
-   player.z=400.3*150;player.x=0;player.pitch=0;curveCamera.look=0;opponents=[];render(4000);
+   player.z=1180.3*150;player.x=0;player.pitch=0;curveCamera.look=0;opponents=[];render(4000);
    const colors=[];for(let y=505;y<600;y++)colors.push([...ctx.getImageData(W/2,y,1,1).data].slice(0,3));
    const jumps=colors.slice(1).map((c,i)=>Math.max(...c.map((v,k)=>Math.abs(v-colors[i][k]))));
    record('no-horizontal-asphalt-seams',Math.max(...jumps)<5,{largestRowJump:Math.max(...jumps)});
@@ -73,10 +73,10 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    try{for(let f=0;f<50;f++){player.z=(f*50+.3)*150;player.pitch=segments[Math.floor(player.z/150)].hillDelta;render(5000+f*16);}}finally{for(const name of Object.keys(original))proto[name]=original[name];}
    const bytes=[...paradiseArt.values()].reduce((n,a)=>n+a.canvas.width*a.canvas.height*4,0);
    record('scenery-cache-stays-immutable-and-under-thirteen-mib',writes===0&&bytes<13*1048576,{writes,MiB:bytes/1048576,tiles:paradiseArt.size});
-   const limits=getRoadLimits(400*150);record('bridge-parapets-stop-player-and-opponents',limits.left<1&&limits.right<1,{limits});
+   const limits=getRoadLimits(400*150);record('bridge-parapets-stop-player-and-opponents',limits.left>1.2&&limits.left<1.3&&limits.right===limits.left,{limits});
    const contacts=[];
-   for(const car of[player,...opponents]){car.z=400*150;car.x=1.3;car.speed=3600;car.wallHitCooldown=0;car.wallContactSide=0;applyRoadContact(1/60,2,car);contacts.push({x:car.x,speed:car.speed});}
-   record('physical-contact-cannot-cross-parapet',contacts.every(c=>c.x===.88&&c.speed<3600),{contacts});
+   for(const car of[player,...opponents]){car.z=400*150;car.x=1.5;car.speed=3600;car.wallHitCooldown=0;car.wallContactSide=0;applyRoadContact(1/60,2,car);contacts.push({x:car.x,speed:car.speed});}
+   record('physical-contact-cannot-cross-parapet',contacts.every(c=>Math.abs(c.x-limits.right)<1e-8&&c.speed<3600),{contacts});
    // Full field: same AI, contact model, finish timestamps and menu return.
    let seed=1989;Math.random=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
    selectLevel(7);startRace();state='playing';let frames=0;
@@ -84,7 +84,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
     const ahead=opponents.filter(c=>!racerFinished(c)&&c.z>player.z&&c.z-player.z<2400).sort((a,b)=>a.z-b.z)[0];
     const twoWay=paradiseLaneBlend(player.z),normal=ahead?(ahead.x>.05?-.6:.6):0;
     const target=normal*(1-twoWay)+(ahead?(ahead.x>.65?1/3:1):1/3)*twoWay;
-    keys.left=player.x>target+.04;keys.right=player.x<target-.04;advanceRaceStep(1/120);
+    const visibleX=getPlayerCollisionX();keys.left=visibleX>target+.045;keys.right=visibleX<target-.045;advanceRaceStep(1/120);
    }
    clearTimeout(resultTimer);resultTimer=null;updateHUD(0);
    record('six-racers-finish-single-lap-with-real-times',[player,...opponents].every(c=>c.finishTime>0&&c.lap>=2),{seconds:raceElapsed/1000,times:getRaceStandings().map(c=>({name:c.driverTag,time:c.finishTime}))});

@@ -23,53 +23,59 @@ Regatta boats, a ferry, limestone stacks, fishing boats, a windsurfer and dolphi
 groups remain along them. Bridge props and cable anchors follow the compressed
 layout; player and rival collision boundaries stay aligned with the parapets.
 
-Island sightlines are gentler so larger scenes can be seen on approach.
+Landmark sightlines are kept open through the more varied island bends.
 Architecture and pedestrians sit near the road in groups rather than being
 scattered across open fields. Waterfall trees were moved out of the sightline;
 the old bar that obscured the music stage was removed. Scene dimensions use the
 road as their common scale. Human and equipment proportions stay distinct from
 large vessels and the 747.
 
-## Four-lane traffic trial
+## Route character and full-course traffic
 
-Port Azure and the following suspension bridge now have two lanes each way.
-The full-width section is at physical segments 1550–2100, with smooth tapers at
-1480–1550 and 2100–2170. Full road width grows by one third, preserving each
-lane's width and the existing vehicle scale. White lane dividers, a continuous
-double yellow centre line, a `TWO WAY / KEEP RIGHT` warning, parapets, tower
-positions, road limits and offroad drag follow the same widening. Scenery moves
-outwards enough to retain its road-edge clearance. The centre line is drivable.
+All five islands and all five bridges now have four lanes: two each way, with
+white dividers and a drivable double-yellow centre line. The full road is one
+third wider than the original three-lane version. Vehicle size is preserved;
+parapets, bridge towers, road limits, offroad drag and roadside clearance use
+the same width. Player and rivals start on their own carriageway with clear
+longitudinal spacing. A `TWO WAY / KEEP RIGHT` sign introduces the layout.
 
-Five opposing vehicles form a first sparse trial: 1980s sedans, small minibuses
-and a jeep. They travel at about 110–130 HUD km/h, keep their lane, and begin moving
-when the first racer reaches segment 1420. They never wrap or respawn; departed
-cars are retired only behind every racer, keeping disappearance out of view.
-This is a fixed first encounter pattern, not a general traffic generator.
+The islands have different bend sequences and low crests:
 
-The racing AI prefers the two right lanes, can select a clear opposing lane to
-pass and scores predicted oncoming conflicts before committing. Opposing
-vehicles are hazards for both the player and rivals. Swept contact catches
-high-relative-speed encounters, with one impact per pair. A centred frontal
-hit removes 48% of current speed and cancels an active turbo; an approximately
-5% edge graze removes about 6.2%, retaining the turbo. Earned normal-speed
-headroom follows the existing severity model. Other levels keep their existing
-road widths, traffic and steering.
+- Lagoon Key: a long left coastal bend into a broader right bend and gentle rise.
+- Emerald Isle: a turning approach, a clear waterfall window and an S-shaped exit.
+- Sunset Airport: a clear, flat landing approach followed by a rising right exit.
+- Port Azure: a waterfront straight followed by two opposing bends.
+- Coral Cay: left/right/left resort sweeps, followed by a gently turning bridge
+  and 85 flat, straight segments before the finish (about three seconds).
 
-`paradise-traffic` assessment mode drives each legal lane through the entire
-passage at full speed, measures first clear oncoming visibility, tests swept
-frontal/grazing impacts for player and AI, demonstrates passing two abreast and
-returning, checks AI lane selection, and verifies restart/other-level isolation.
-The 390×844 Chromium run saw each oncoming car clearly about 2.3 seconds before
-the meeting. Evidence files begin with `paradise-traffic`.
+All crossings now bend. The second bridge changes direction; the suspension
+bridge follows a shallow arc. Heights return to zero at the island joins; the
+last bridge settles before the finish. Static scenery remains attached to its
+road plane. Water objects use the common sea level rather than following a
+bridge crest, and shoreline widths preserve the water clearance of boats and
+stilt huts when the road widens.
 
-The five coloured front views are baked once at race start, then drawn as
-cached images. Total Paradise art storage is about 12.64 MiB. The final cloud
-sample without artificial CPU throttling measured about 60 fps in all seven
-sampled sections, with 95th-percentile render work of 3.4–7.0 ms and no sampled
-frames over 50 ms. The 2×-throttled samples were substantially less stable,
-including harbour stalls, so this is not a performance guarantee on slower
-phones. `paradise-traffic-profile.json` retains both conditions and the earlier
-vector-front measurement.
+There are 23 oncoming vehicles across the full lap, with sparse singles and
+occasional small groups. The same five cached front/colour combinations are
+reused, retaining the art budget. Traffic starts moving with race simulation
+and follows fixed physical trajectories; there are no player-relative respawns
+or speed gifts. The encounter distribution was tuned for visibility through the
+new bends, including from the outer right lane. Departed vehicles are removed
+only behind all unfinished racers. Player and AI use the same swept contacts,
+impact costs and severity rules as the successful harbour trial.
+
+The racing AI prefers the two right lanes and can select a clear opposing lane
+for a pass. Its lookahead scores predicted opposing traffic before committing.
+Far-away opposing cars are rejected by longitudinal bounds before doing the
+more expensive contact calculation.
+
+`paradise-traffic` now drives a whole lap in each right lane, checks traffic on
+every island and bridge, measures clear oncoming visibility, tests frontal and
+grazing impacts for player and AI, demonstrates passing two abreast and
+returning, and checks the start grid, restart and other-level isolation. The
+`paradise` suite also checks full-race results, Jumbo timing, landmark views,
+road seams and immutable art caching. New evidence files begin with
+`paradise-full` (older `paradise-traffic` files describe the harbour-only trial).
 
 ## Jumbo and rendering
 
@@ -125,3 +131,9 @@ six sections and 33.3 ms in the harbour; 95th-percentile intervals were about
 ranged from 8.5 to 12.9 ms. The richer scenes have a measurable cost; these
 results do not establish steady 60 fps on phones. Both the initial and optimized
 profiles are retained in the evidence file.
+
+The full-course version's native-CPU Chromium sample kept median frame intervals
+near 16.7 ms and 95th-percentile intervals at 16.7–16.8 ms in all seven sampled
+sections, with no intervals over 50 ms. 95th-percentile render work ranged from
+2.8 to 8.5 ms. See `paradise-full-profile.json`; this is still a short cloud
+sample rather than a guarantee for phones.
