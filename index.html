@@ -235,6 +235,9 @@ function paradiseIndex(authored){const island=Math.floor(authored/700),p=authore
 function paradiseAddress(index){const island=Math.floor(index/PARADISE_STRIDE),p=index%PARADISE_STRIDE;return island*700+(p<350?p:350+(p-350)*2);}
 const PARADISE_PLANE_SEGMENT = paradiseIndex(1590);
 const PARADISE_ARCH_SEGMENT = paradiseIndex(2850);
+const PARADISE_GATE_SEGMENT = paradiseIndex(1472);
+const PARADISE_DIVER_SEGMENT = paradiseIndex(1215);
+let paradiseDiveStart=null;
 const paradiseArt = new Map();
 let paradisePlane = { elapsed: null, start: null };
 function paradiseSmooth(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
@@ -274,7 +277,7 @@ function buildParadiseRoute(){
   });
 }
 function buildParadiseScenery(){
-  paradisePlane={elapsed:null,start:null};
+  paradisePlane={elapsed:null,start:null};paradiseDiveStart=null;
   const add=(index,kind,x,size=1,extra={})=>{
     // Keep the waterfall's pool visible through the foreground vegetation.
     if(index>825&&index<925&&x<0&&['palm','bush','flowers','canopy'].includes(kind))return;
@@ -305,6 +308,7 @@ function buildParadiseScenery(){
   [[95,-2.1,0],[170,2.4,1]].forEach(([i,x,v])=>add(i,'hut',x,1,{variant:v}));
   add(200,'canoe',2.2,.8);add(285,'beach_bar',2.2,1.15);
   add(765,'rock',2.0,1.1);add(845,'rock',-1.9,.85);add(970,'rock',2.2,1.5);
+  add(1472,'airport_gate',0,1);
   add(1535,'airport',5.2,1.45);add(1625,'tower',3.1,1.2);
   add(1590,'plane',0,1);
   for(let j=0;j<6;j++)add(2150+j*29,'harbour',(j%2?-1:1)*(2.15+(j%2)*.4),1,{variant:j%3});
@@ -320,7 +324,7 @@ function addParadiseLife(add){
   // Grouped, inhabited places, with open sightlines between them.
   add(145,'market',2.15,1.05);add(225,'village',2.8,1.25);
   add(280,'musicians',-1.75,1);add(305,'beach_people',2.0,1);
-  add(89,'beach_people',1.8,.85);add(190,'drying_nets',-2.1,1);
+  add(42,'beach_activity',2.05,1.05,{variant:0});add(190,'drying_nets',-2.1,1);
   for(const i of[740,782,825,865,940,992,1020]){
     const side=[740,825,865,940,1020].includes(i)?1:-1;add(i,'canopy',side*3.1,1.25);add(i+9,'bush',-side*2.6,1.55);
   }
@@ -335,7 +339,9 @@ function addParadiseLife(add){
   // Mid-crossing spectacles, followed by the next island coming into view.
   for(const [i,x,v]of[[430,-2.8,0],[480,3.0,1],[540,-2.9,0]])add(i,'regatta',x,.95,{variant:v,sea:true,motion:'sail'});
   add(575,'dolphins',2.9,1,{sea:true});
-  add(1180,'sea_stack',-3.4,1.4,{sea:true});add(1240,'sea_stack',3.6,1.1,{sea:true});add(1200,'birds',-2.3,1.5);
+  add(1180,'sea_stack',-3.4,1.4,{sea:true});add(1215,'diving_rock',-3.2,1.2,{sea:true});
+  add(1135,'longtail',-4.2,.9,{variant:0,sea:true,motion:'sail'});
+  add(3290,'longtail',-3.8,.9,{variant:0,sea:true,motion:'sail'});add(3095,'longtail',7.2,.85,{variant:1,sea:true,motion:'sail'});add(1240,'sea_stack',3.6,1.1,{sea:true});add(1200,'birds',-2.3,1.5);
   add(1895,'ferry',-3.8,1.2,{sea:true,motion:'ferry'});add(1980,'boat',3.4,.8,{variant:2,sea:true,motion:'sail'});
   add(2580,'fishing_boat',-3.4,1.2,{sea:true,motion:'sail'});add(2665,'regatta',3.5,.9,{variant:1,sea:true,motion:'sail'});
   add(3250,'windsurfer',-3.1,1,{sea:true,motion:'surf'});add(3335,'dolphins',3.0,1,{sea:true});
@@ -351,6 +357,7 @@ function paradiseMotion(item,index){
   return 0;
 }
 function updateParadisePlane(dt){
+  if(paradiseDiveStart===null&&player.z/150>=PARADISE_DIVER_SEGMENT-112&&player.z/150<PARADISE_DIVER_SEGMENT)paradiseDiveStart=raceElapsed;
   if(paradisePlane.elapsed===null&&player.z/150>=PARADISE_PLANE_SEGMENT-205&&player.z/150<PARADISE_PLANE_SEGMENT){
     paradisePlane.elapsed=0;paradisePlane.start=raceElapsed;
   }else if(paradisePlane.elapsed!==null){
@@ -506,27 +513,185 @@ function drawParadiseRoad(x1,y1,w1,x2,y2,w2,sc1,sc2,index){
       quad(side*1.04,side*1.10,side*1.04,side*1.10,'#e7e0c3',sc1*155*H/2,sc2*155*H/2);
     }
   }
+  if(island===2&&p>72&&p<318)drawParadiseAirportPerimeter(x1,y1,w1,x2,y2,w2,sc1,sc2,index);
 }
+function drawParadiseAirportPerimeter(x1,y1,w1,x2,y2,w2,sc1,sc2,index){
+  for(const side of[-1,1]){
+    const width=paradiseRoadScale(index),nextWidth=paradiseRoadScale(index+1);
+    const outer=(paradiseShore(index,side)+width-1-.32)/width;
+    const nextOuter=(paradiseShore(index+1,side)+nextWidth-1-.32)/nextWidth;
+    const ax=x1+side*outer*w1,bx=x2+side*nextOuter*w2;
+    if(Math.min(ax,bx)>W+4||Math.max(ax,bx)<-4)continue;
+    const h1=sc1*475*H/2,h2=sc2*475*H/2;
+    if(h2<.7)continue;
+    // One path per side/slice avoids four separate translucent draw calls.
+    ctx.beginPath();
+    for(const f of[.12,.5,1]){ctx.moveTo(ax,y1-h1*f);ctx.lineTo(bx,y2-h2*f);}
+    if(index%8===0){
+      ctx.moveTo(bx,y2);ctx.lineTo(bx,y2-h2-2);
+      if(h2>3){ctx.moveTo(ax,y1-h1*.2);ctx.lineTo(bx,y2-h2*.85);}
+    }
+    ctx.strokeStyle='rgba(133,167,155,.78)';ctx.lineWidth=Math.max(.7,w2*.0035);ctx.stroke();
+  }
+}
+
+// Cached island details; small actions are drawn separately on simulation time.
+function paintParadiseIslandArt(kind,variant,g,d){
+  const {poly,rect,line,oval,label}=d;
+  const person=(x,y,shirt,pose='stand')=>{
+    const kneel=pose==='kneel',bend=pose==='bend',headX=x+(bend?11:0),headY=y-(kneel?23:bend?25:35);
+    oval(headX,headY,5,6,'#a96d53');
+    poly([[x-6,y-(kneel?18:28)],[x+6,y-(kneel?18:28)],[x+(bend?14:8),y-12],[x-6,y-12]],shirt);
+    if(kneel){line([[x-3,y-12],[x-13,y-4],[x-2,y-2]],'#425767',4);line([[x+5,y-12],[x+14,y-4],[x+20,y-3]],'#425767',4);}
+    else{line([[x-3,y-12],[x-7,y]],'#425767',4);line([[x+5,y-12],[x+9,y]],'#425767',4);}
+  };
+  if(kind==='airport_gate'){
+    // Open perimeter gates flank the four-lane road; nothing blocks the aperture.
+    for(const side of[-1,1]){
+      const fenceEnd=Math.round((paradiseShore(PARADISE_GATE_SEGMENT,side)+1/3-.32)*200);
+      rect(side<0?-fenceEnd:340,-91,fenceEnd-340,78,'rgba(73,127,132,.13)');
+      line([[side*340,-91],[side*fenceEnd,-91]],'#a6c4ba',4);line([[side*340,-13],[side*fenceEnd,-13]],'#7e9d99',3);
+      g.save();g.beginPath();g.rect(side<0?-fenceEnd:340,-90,fenceEnd-340,77);g.clip();g.beginPath();
+      for(let x=330;x<fenceEnd+100;x+=24){g.moveTo(side*x,-91);g.lineTo(side*(x-76),-13);g.moveTo(side*x,-13);g.lineTo(side*(x-76),-91);}
+      g.strokeStyle='rgba(115,151,148,.66)';g.lineWidth=1.5;g.stroke();g.restore();
+      for(let x=356;x<=fenceEnd;x+=88){line([[side*x,0],[side*x,-99]],'#8daca4',5);oval(side*x,-99,4,3,'#e6d9b4');}
+      const x=side*318;rect(x-20,-216,40,216,'#e1c9a4');rect(x-24,-228,48,13,'#f4dfba');rect(x-22,-18,44,18,'#aa8d7a');
+      rect(x-13,-195,26,59,'#315d64');rect(x-14,-97,28,61,'#c5ac87');
+      // Folded-back gate leaves, visible beside the hinges rather than across lanes.
+      poly([[side*340,-101],[side*430,-82],[side*430,-7],[side*340,-13]],'#4b7474');
+      for(let j=0;j<6;j++)line([[side*(346+j*15),-96+j*3],[side*(346+j*15),-14+j]],'#a9c6b5',3);
+      oval(x,-204,8,5,'#f9dda2');
+    }
+    rect(-344,-239,688,14,'#e5cba1');rect(-343,-225,686,5,'#315e65');
+    poly([[-363,-239],[-322,-254],[322,-254],[363,-239]],'#578c81');
+    rect(-184,-238,368,32,'#345e67');label('SUNSET AIRPORT',0,-215,25,'#f6e7c7');
+    for(const x of[-274,274]){rect(x-5,-269,10,15,'#6d8b80');oval(x,-270,7,4,'#ffe4a9');}
+  }else if(kind==='beach_activity'){
+    oval(0,-2,155,7,'rgba(139,116,82,.16)');
+    if(variant===0){
+      // Two people rig an outrigger canoe, with a paddle and lashings.
+      line([[-116,-17],[97,-17]],'#8d6b55',5);line([[-81,-8],[-72,-44]],'#bc946a',3);line([[67,-8],[58,-44]],'#bc946a',3);
+      poly([[-134,-48],[113,-48],[143,-59],[123,-32],[-101,-29]],'#de8c80');
+      poly([[-131,-48],[118,-48],[94,-40],[-114,-40]],'#efc87d');
+      oval(-18,-45,82,7,'#556e65');line([[-84,-43],[84,-43]],'#e3c49a',3);
+      person(-125,-1,'#e6ba70');person(117,0,'#64b9b2','kneel');
+      line([[-130,-26],[-148,-58],[-139,-98]],'#b28c5c',3);poly([[-143,-101],[-146,-74],[-136,-75],[-132,-98]],'#e7ba76');
+      rect(63,-15,19,15,'#b69463');oval(72,-16,10,3,'#e9c98c');
+    }else if(variant===1){
+      // A low sandcastle and children kneeling with a bucket and spade.
+      oval(1,-5,66,11,'#e4c28d');rect(-34,-31,62,25,'#d5b17c');
+      for(const x of[-35,18]){rect(x,-46,15,37,'#e8c98e');for(let j=0;j<3;j++)rect(x-1+j*6,-50,4,8,'#e8c98e');}
+      poly([[-8,-7],[-8,-21],[-3,-25],[3,-21],[3,-7]],'#aa8b65');
+      for(let j=0;j<5;j++)rect(-19+j*9,-37,5,8,'#dfbc85');
+      person(-72,0,'#e48fa7','kneel');person(67,0,'#73b6c3','kneel');
+      poly([[84,-19],[105,-19],[101,0],[88,0]],'#e797a6');line([[86,-18],[90,-28],[102,-27],[105,-18]],'#f3c58f',2);
+      line([[-104,-2],[-93,-34]],'#8d7958',3);poly([[-108,-2],[-104,-14],[-94,-10],[-97,1]],'#83b6b6');
+      for(const x of[-130,128])oval(x,-2,5,3,'#f4e0b4');
+    }else if(variant===2){
+      // A freshly painted boat rests on trestles, not in the roadway.
+      for(const x of[-92,79]){line([[x-15,0],[x-4,-27],[x+14,0]],'#94745a',5);line([[x-17,-22],[x+16,-22]],'#b89c70',4);}
+      poly([[-143,-54],[131,-54],[111,-23],[-107,-23]],'#f0cb9e');
+      poly([[-143,-54],[14,-54],[9,-30],[-107,-30]],'#64bfb4');
+      line([[-143,-56],[131,-56]],'#aa765b',4);oval(-10,-52,92,6,'#76594d');
+      person(-123,0,'#d98f9d','bend');person(124,0,'#ebbc77');
+      for(const [x,c]of[[62,'#64bfb4'],[93,'#e8ac99']]){rect(x,-14,15,14,c);oval(x+7,-14,8,3,'#d9d3ad');}
+      line([[104,-17],[115,-35]],'#a18c68',3);rect(109,-38,11,6,'#64bfb4');
+    }else{
+      // Coconut stall: fruit, a chopping block and a customer with a drink.
+      for(const x of[-72,71])rect(x-3,-113,6,113,'#a4815d');
+      poly([[-101,-103],[0,-148],[104,-103]],'#bf9870');
+      for(let j=0;j<10;j++)line([[-96+j*21,-103],[j*11-45,-131]],'#dfbc85',3);
+      rect(-80,-50,160,48,'#b88e62');rect(-89,-56,178,9,'#e5c18c');
+      for(const [x,y]of[[-49,-62],[-23,-64],[4,-61],[-36,-78],[-10,-80]])oval(x,y,12,10,'#84a65b');
+      oval(40,-62,13,4,'#856549');oval(41,-71,10,9,'#a9bb74');
+      person(24,-46,'#73b8a6');person(116,0,'#de91aa');
+      rect(94,-33,11,13,'#eacb97');line([[99,-34],[102,-45]],'#ca8f99',2);
+      rect(-68,-101,137,26,'#f0dbb3');label('COCONUTS',0,-82,17,'#376466');
+    }
+  }else if(kind==='hut'&&variant===2){
+    for(const x of[-107,104]){rect(x-4,-68,8,68,'#775b48');line([[x-15,-16],[x+14,-57]],'#a68a65',3);}
+    rect(-127,-76,254,12,'#b49367');rect(-112,-170,224,94,'#b68c60');
+    for(let x=-105;x<112;x+=21)line([[x,-166],[x,-78]],'#c9a97a',2);
+    rect(-26,-144,52,68,'#557574');rect(-16,-133,32,57,'#365960');
+    for(const x of[-78,77]){rect(x-23,-147,46,44,'#3e686a');line([[x,-145],[x,-105]],'#d9bc8c',3);}
+    poly([[-157,-166],[-133,-177],[-12,-249],[12,-249],[133,-177],[157,-166],[133,-160],[-133,-160]],'#9c6862');
+    poly([[-137,-176],[0,-238],[137,-176],[118,-169],[-118,-169]],'#b98270');
+    line([[-154,-167],[-133,-177],[0,-249],[133,-177],[154,-167]],'#ebc393',4);
+    poly([[-104,-167],[0,-224],[104,-167]],'#d6ad79');poly([[-82,-167],[0,-211],[82,-167]],'#577d75');
+    line([[0,-209],[0,-172]],'#d7bd8a',3);rect(-132,-99,5,35,'#c8aa79');rect(126,-99,5,35,'#c8aa79');
+    line([[-129,-97],[129,-97]],'#dac398',3);for(let x=-113;x<128;x+=22)line([[x,-95],[x,-77]],'#c1a87e',2);
+  }else if(kind==='longtail'){
+    oval(3,0,236,8,'#7bcbbf');
+    // Characteristic long, narrow hull, high prow and exposed drive shaft.
+    poly([[-205,-35],[-156,-26],[163,-37],[211,-98],[223,-96],[198,-27],[160,-8],[-158,-8],[-199,-22]],'#945d43');
+    poly([[-200,-34],[-159,-27],[165,-38],[208,-93],[201,-59],[168,-29],[-154,-19]],variant?'#d69e66':'#e5b374');
+    line([[-186,-34],[154,-41],[211,-94]],'#f3d3a0',4);
+    poly([[-148,-29],[144,-37],[120,-18],[-131,-17]],'#624e43');
+    for(let j=0;j<7;j++)line([[-110+j*36,-28],[-100+j*36,-16]],'#bd9264',3);
+    if(variant){
+      for(const x of[-113,0])line([[x,-27],[x,-109]],'#ad9973',3);
+      poly([[-143,-107],[-119,-119],[3,-119],[26,-107]],'#cf8e99');
+      poly([[-143,-107],[26,-107],[24,-100],[-141,-100]],'#ecc5aa');
+    }else{
+      for(const x of[-94,91])line([[x,-28],[x,-114]],'#ab9671',3);
+      poly([[-123,-112],[-99,-126],[88,-126],[125,-112]],'#489c99');
+      poly([[-123,-112],[125,-112],[122,-103],[-121,-103]],'#92d0bc');
+      for(let j=0;j<5;j++)line([[-101+j*48,-125],[-118+j*48,-109]],'#e9d6a4',2);
+    }
+    for(const [x,c]of[[-58,'#d58ba3'],[5,'#e8ba76'],[69,'#85bfb7']]){
+      oval(x,-60,5,6,'#9b6a50');poly([[x-6,-53],[x+5,-53],[x+9,-31],[x-8,-31]],c);line([[x-2,-30],[x+16,-23]],'#456073',4);
+    }
+    rect(-180,-64,35,25,'#4c6268');rect(-184,-70,40,9,'#758782');oval(-164,-59,11,9,'#d7b887');
+    line([[-161,-51],[-235,-4],[-261,7]],'#7b8c87',4);line([[-266,0],[-254,14]],'#d1d6b6',3);
+    person(-133,-19,'#e7b16c');line([[-135,-44],[-162,-54]],'#a96d53',3);
+    // Small fabric ribbons tied to the raised bow.
+    for(const [dx,dy,c]of[[0,0,'#ee859e'],[5,-5,'#77c2bd'],[-4,-3,'#e9c86e']])poly([[204+dx,-75+dy],[209+dx,-68+dy],[199+dx,-42+dy],[193+dx,-38+dy]],c);
+  }else if(kind==='diving_rock'){
+    g.save();g.scale(-1,1);
+    oval(-46,-2,128,10,'#8fd9c5');
+    poly([[-160,0],[-151,-57],[-126,-86],[-119,-140],[-77,-187],[-28,-170],[-14,-127],[37,-120],[44,-95],[20,-79],[32,-28],[29,0]],'#7e958a');
+    poly([[-160,0],[-151,-57],[-126,-86],[-119,-140],[-77,-187],[-91,-114],[-76,-65],[-100,0]],'#b2bba2');
+    poly([[-77,-187],[-28,-170],[-14,-127],[37,-120],[44,-95],[17,-98],[-32,-120],[-48,-159]],'#94a68d');
+    line([[-21,-122],[35,-122]],'#d5c6a0',4);
+    oval(-91,-130,27,10,'#578764');oval(-75,-166,22,8,'#69966b');
+    line([[-137,-14],[-121,-72],[-115,-99]],'#a7b494',3);g.restore();
+  }else return false;
+  return true;
+}
+
+function drawParadiseCoconutPalm(g,x,y,scale,variant){
+  g.save();g.translate(x,y);
+  // The existing feathered fronds remain; three gentle silhouettes add island character.
+  if(variant%3===1)g.transform(.94,0,-.10,1.06,0,0);
+  if(variant%3===2)g.transform(1.04,0,.045,.91,0,0);
+  drawMiamiPalm(0,0,scale,[0,1,6][variant%3],0,0,true,null,g);
+  const m=getMiamiPalmModel([0,1,6][variant%3]);
+  g.translate(m.lean*scale,-m.height*scale);g.scale(scale,scale);
+  for(const [dx,dy,r]of[[-8,9,5],[4,12,5.5],[9,3,4]]){g.fillStyle=variant%3===2?'#a38b51':'#879455';g.beginPath();g.ellipse(dx,dy,r,r*1.2,-.25,0,Math.PI*2);g.fill();}
+  g.restore();
+}
+
 function getParadiseArt(kind,variant=0){
-  if(!['palm','hut','harbour','boat','sign','bridge_post','regatta','island_villa','promenade'].includes(kind))variant=0;
+  if(!['palm','hut','harbour','boat','sign','bridge_post','regatta','island_villa','promenade','beach_activity','longtail'].includes(kind))variant=0;
   const key=kind+':'+variant;if(paradiseArt.has(key))return paradiseArt.get(key);
-  const sizes={two_way_sign:[270,260,135,259],island_villa:[650,360,325,359],fish_pier:[600,280,300,250],hangar:[650,330,325,329],clock_tower:[360,500,180,499],resort:[720,340,360,339],beach_stage:[520,290,260,260],promenade:[240,90,120,89],parasail:[400,500,200,490],market:[430,250,215,249],village:[600,340,300,339],musicians:[300,180,150,179],beach_people:[290,150,145,149],drying_nets:[330,200,165,199],canopy:[500,430,250,429],trail_hut:[340,270,170,269],luggage:[310,140,155,139],shuttle:[340,190,170,189],windsock:[170,270,85,269],cafe:[350,200,175,199],fisherman:[180,190,90,189],volleyball:[430,240,215,239],surf_rack:[220,200,110,199],regatta:[320,330,160,329],dolphins:[360,190,180,169],sea_stack:[370,470,185,469],birds:[320,240,160,239],ferry:[720,320,360,295],fishing_boat:[420,280,210,270],windsurfer:[240,260,120,250],buoys:[240,60,120,55],palm:[360,350,180,344],flowers:[180,90,90,89],bush:[270,170,135,169],
+  const sizes={airport_gate:[2200,340,1100,339],beach_activity:[340,180,170,179],longtail:[560,230,280,215],diving_rock:[400,270,200,249],two_way_sign:[270,260,135,259],island_villa:[650,360,325,359],fish_pier:[600,280,300,250],hangar:[650,330,325,329],clock_tower:[360,500,180,499],resort:[720,340,360,339],beach_stage:[520,290,260,260],promenade:[240,90,120,89],parasail:[400,500,200,490],market:[430,250,215,249],village:[600,340,300,339],musicians:[300,180,150,179],beach_people:[290,150,145,149],drying_nets:[330,200,165,199],canopy:[500,430,250,429],trail_hut:[340,270,170,269],luggage:[310,140,155,139],shuttle:[340,190,170,189],windsock:[170,270,85,269],cafe:[350,200,175,199],fisherman:[180,190,90,189],volleyball:[430,240,215,239],surf_rack:[220,200,110,199],regatta:[320,330,160,329],dolphins:[360,190,180,169],sea_stack:[370,470,185,469],birds:[320,240,160,239],ferry:[720,320,360,295],fishing_boat:[420,280,210,270],windsurfer:[240,260,120,250],buoys:[240,60,120,55],palm:[360,350,180,344],flowers:[180,90,90,89],bush:[270,170,135,169],
     hut:[360,270,180,269],beach_bar:[420,250,210,249],harbour:[340,330,170,329],
     rock:[280,220,140,219],waterfall:[640,500,320,499],rock_arch:[1080,650,540,649],
     boat:[260,220,130,210],canoe:[240,100,120,99],airport:[520,220,260,219],tower:[240,400,120,399],
     lighthouse:[220,400,110,399],sign:[260,180,130,179],bridge_post:[460,65,230,64],
     bridge_tower:[620,620,310,619],plane:[1660,730,830,729]};
-  const [w,h,ox,oy]=sizes[kind]||[1,1,0,0],canvas=document.createElement('canvas');const raster=kind==='rock_arch'?.4:kind==='palm'?.55:['island_villa','fish_pier','hangar','clock_tower','resort','beach_stage'].includes(kind)?.5:.65;canvas.width=Math.ceil(w*raster);canvas.height=Math.ceil(h*raster);
+  const [w,h,ox,oy]=(kind==='sign'&&variant===2?[340,230,170,229]:sizes[kind])||[1,1,0,0],canvas=document.createElement('canvas');const raster=kind==='airport_gate'?.32:['beach_activity','longtail','diving_rock'].includes(kind)?.5:kind==='rock_arch'?.4:kind==='palm'?.55:['island_villa','fish_pier','hangar','clock_tower','resort','beach_stage'].includes(kind)?.5:.65;canvas.width=Math.ceil(w*raster);canvas.height=Math.ceil(h*raster);
   const g=canvas.getContext('2d');g.scale(raster,raster);g.translate(ox,oy);
   const poly=(pts,c)=>{g.fillStyle=c;g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
   const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
   const line=(pts,c,l=2)=>{g.strokeStyle=c;g.lineWidth=l;g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();};
   const oval=(x,y,rx,ry,c)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
   const label=(text,x,y,size,c)=>{g.font=`${size}px 'Gravity Pixel', monospace`;g.textAlign='center';g.fillStyle=c;g.fillText(text,x,y);};
-  if(paintParadisePlaceArt(kind,variant,g,{poly,rect,line,oval,label})){}
+  if(paintParadiseIslandArt(kind,variant,g,{poly,rect,line,oval,label})){}
+  else if(paintParadisePlaceArt(kind,variant,g,{poly,rect,line,oval,label})){}
   else if(paintParadiseLifeArt(kind,variant,g,{poly,rect,line,oval,label})){}
   else if(kind==='palm'){
-    drawMiamiPalm(0,0,1.12,variant,0,0,true,null,g);
+    drawParadiseCoconutPalm(g,0,0,1.08,variant);
   }else if(kind==='bush'||kind==='flowers'){
     for(let j=0;j<17;j++){
       const x=Math.sin(j*4.1)*(kind==='bush'?98:65),y=-6-(j*23% (kind==='bush'?110:45));
@@ -599,11 +764,14 @@ function getParadiseArt(kind,variant=0){
   }else if(kind==='sign'){
     rect(-97,-121,7,121,'#89796b');rect(90,-121,7,121,'#89796b');
     if(variant===2){
-      rect(-126,-174,252,101,'#eed1a5');rect(-121,-169,242,91,'#254f64');
-      rect(-121,-169,242,7,'#ed93b1');rect(-121,-86,242,8,'#66d6c4');
-      poly([[-104,-130],[-90,-130],[-76,-151],[-69,-151],[-77,-130],[-62,-130],[-55,-137],[-50,-137],[-54,-124],[-77,-121],[-69,-102],[-76,-102],[-90,-122],[-104,-123]],'#a4ead3');
-      label('SUNSET',29,-139,21,'#fff0ca');label('AIRPORT',29,-115,21,'#fff0ca');
-      line([[-24,-97],[95,-97]],'#e8bf8d',2);poly([[87,-103],[100,-97],[87,-91]],'#e8bf8d');
+      rect(-151,-198,302,151,'#e5dac0');rect(-147,-194,294,140,'#f7ecd0');
+      rect(-151,-201,302,9,'#568c86');rect(-155,-53,310,12,'#b49a7c');
+      rect(-129,-172,80,83,'#315e70');
+      // A symmetrical plan-view aircraft, with clear wings and tail.
+      poly([[-92,-164],[-88,-164],[-86,-139],[-57,-120],[-57,-113],[-86,-124],[-86,-107],[-76,-101],[-76,-96],[-90,-100],[-104,-96],[-104,-101],[-94,-107],[-94,-124],[-122,-113],[-122,-120],[-94,-139]],'#f5eddb');
+      label('SUNSET',48,-147,26,'#31596a');label('AIRPORT',48,-116,28,'#31596a');
+      line([[-22,-96],[121,-96]],'#93aea0',2);label('TERMINAL',29,-76,13,'#5b7a7c');
+      line([[89,-80],[120,-80]],'#315e70',4);poly([[113,-87],[124,-80],[113,-73]],'#315e70');
     }else{
       rect(-122,-162,244,73,'#245968');rect(-117,-157,234,3,'#f9bfab');
       label(PARADISE_ISLANDS[variant],0,-128,18,'#ffe6b4');label(`${variant+1} / 5  •  PARADISE`,0,-105,11,'#7fe9ca');
@@ -649,7 +817,7 @@ function paintParadiseLifeArt(kind,variant,g,d){
     for(let j=0;j<3;j++){
       const x=-200+j*200,top=-142-(j%2)*35;
       rect(x-82,top,164,-top,['#e4a6a0','#9ac4b3','#deb478'][j]);
-      poly([[x-94,top],[x-40,top-67],[x+70,top-67],[x+96,top]],['#886a65','#9a7284','#78938a'][j]);
+      poly([[x-96,top],[x-55,top-65],[x+55,top-65],[x+96,top]],['#886a65','#9a7284','#78938a'][j]);
       for(const side of[-1,1]){rect(x+side*48-20,top+23,38,46,'#3f7481');rect(x+side*48-24,top+20,6,52,'#e0c9a1');}
       rect(x-15,-53,30,53,'#6f7e76');rect(x-88,-5,176,5,'#e4c89e');
     }
@@ -664,7 +832,9 @@ function paintParadiseLifeArt(kind,variant,g,d){
     rect(-125,-52,24,34,'#4c555e');rect(105,-52,24,34,'#4c555e');
   }else if(kind==='beach_people'){
     parasol(-66,-64,'#efa77e');poly([[-119,-1],[-98,-26],[-40,-26],[-25,-1]],'#e6a1b3');
-    person(48,0,'#d5cf94');person(85,0,'#7fc6bb','#744c46',10);
+    oval(44,-26,5,6,'#a97659');poly([[38,-20],[50,-20],[54,-8],[36,-8]],'#d5cf94');line([[40,-8],[26,-3],[34,0]],'#566678',4);line([[49,-8],[60,-2],[68,-1]],'#566678',4);
+    line([[38,-18],[27,-14]],'#a97659',3);line([[50,-18],[58,-14]],'#a97659',3);poly([[26,-17],[42,-15],[57,-18],[57,-10],[42,-8],[26,-10]],'#f2dfb8');
+    line([[80,-5],[103,-5]],'#c7ad7d',3);oval(92,-28,5,6,'#8b614d');poly([[85,-21],[95,-21],[105,-11],[92,-11]],'#7fc6bb');line([[94,-11],[110,-3],[121,-1]],'#cfb899',6);
     oval(-65,-23,5,5,'#ae7a61');line([[-60,-19],[-34,-9]],'#e9d7ae',8);
     rect(112,-16,15,16,'#edb661');oval(119,-17,8,3,'#f4dbb0');
   }else if(kind==='drying_nets'||kind==='fisherman'){
@@ -768,12 +938,66 @@ function paintParadiseLifeArt(kind,variant,g,d){
   }else return false;
   return true;
 }
-const PARADISE_ANIMATED=new Set(['waterfall','birds','dolphins','volleyball','musicians','promenade','beach_stage','regatta','ferry','fishing_boat','windsurfer']);
+const PARADISE_ANIMATED=new Set(['beach_activity','longtail','diving_rock','waterfall','birds','dolphins','volleyball','musicians','promenade','beach_stage','regatta','ferry','fishing_boat','windsurfer']);
 function drawParadiseLife(s){
   const k=s.item.kind,t=raceElapsed/1000,near=1-paradiseSmooth((s.depth-140)/60);
   if(near<=0||s.sc<.03)return;
   ctx.save();ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
-  if(k==='waterfall'){
+  if(k==='beach_activity'){
+    ctx.lineCap='round';const arm=(p)=>sceneLine(p,'#a96d53',3),v=s.variant%4;
+    if(v===0){
+      const hand=-42+Math.sin(t*1.8)*3;
+      arm([[-120,-24],[-109,-22],[-99,hand]]);arm([[113,-17],[100,-20],[94,-30+Math.sin(t*1.8)*2]]);
+      sceneLine([[95,-30],[86,-27],[77,-31]],'#d6c093',1.7);
+    }else if(v===1){
+      const scoop=Math.sin(t*1.9)*4;
+      arm([[-67,-16],[-55,-17],[-45,-10+scoop]]);sceneLine([[-44,-10+scoop],[-36,-17+scoop]],'#947957',2);
+      scenePoly([[-39,-17+scoop],[-32,-21+scoop],[-31,-16+scoop]],'#7db8b2');
+      arm([[62,-16],[51,-15],[42,-9]]);sceneEllipse(39,-7,4,2,'#e9cf99');
+    }else if(v===2){
+      const stroke=Math.sin(t*2.0)*4;
+      arm([[-119,-22],[-111,-32],[-104,-41+stroke]]);sceneLine([[-104,-41+stroke],[-96,-44+stroke]],'#aa9270',2);
+      sceneLine([[-99,-44+stroke],[-93,-44+stroke]],'#70c9bc',4);
+      arm([[120,-25],[108,-19],[96,-26]]);
+    }else{
+      const lift=(1+Math.sin(t*2.2))*.5;
+      arm([[27,-70],[37,-79-lift*7],[42,-69-lift*14]]);
+      sceneLine([[42,-70-lift*14],[49,-74-lift*14]],'#859b97',4);
+      arm([[112,-24],[103,-22],[99,-33]]);arm([[17,-69],[21,-63],[32,-65]]);
+    }
+  }else if(k==='diving_rock'){
+    ctx.scale(-1,1);
+    const elapsed=paradiseDiveStart===null?-1:(raceElapsed-paradiseDiveStart)/1000;
+    const phase=clamp((elapsed-.55)/1.25,0,1);
+    if(elapsed<1.8){
+      ctx.save();ctx.translate(26+phase*105,-141-80*phase+197*phase*phase);ctx.rotate(Math.PI*phase);
+      sceneEllipse(0,-22,5,6,'#ad7958');scenePoly([[-6,-16],[6,-16],[8,5],[-7,5]],'#b67e5c');
+      scenePoly([[-7,3],[8,3],[8,12],[-8,12]],'#ed8a93');
+      sceneLine([[-4,11],[-6,23]],'#ad7958',4);sceneLine([[4,11],[8,22]],'#ad7958',4);
+      if(phase>.03){sceneLine([[-6,-12],[-10,-24],[-4,-37]],'#ad7958',3);sceneLine([[6,-12],[10,-24],[4,-37]],'#ad7958',3);}
+      else{sceneLine([[-6,-12],[-12,-1]],'#ad7958',3);sceneLine([[6,-12],[13,-3]],'#ad7958',3);}
+      ctx.restore();
+    }else if(elapsed<4.4){
+      const age=elapsed-1.8;
+      for(let j=0;j<3;j++){
+        const p=clamp((age-j*.16)/1.9,0,1);
+        ctx.strokeStyle=`rgba(221,255,232,${.8*(1-p)})`;ctx.lineWidth=2;
+        ctx.beginPath();ctx.ellipse(131,-1,7+p*59,2+p*8,0,0,Math.PI*2);ctx.stroke();
+      }
+      if(age<.9)for(let j=0;j<10;j++){
+        const p=age/.9,dx=Math.sin(j*2.4)*(8+p*46),height=Math.sin(p*Math.PI)*(24+j%4*12);
+        sceneEllipse(131+dx,-3-height,2.8-p,3-p,'#ddfce0');
+      }
+      if(age>.75){sceneEllipse(141,-4,4,5,'#ad7958');sceneLine([[141,0],[153,0],[159,-3]],'#ad7958',2);}
+    }
+  }else if(k==='longtail'){
+    const spin=t*10;
+    sceneLine([[-261-Math.cos(spin)*7,7-Math.sin(spin)*5],[-261+Math.cos(spin)*7,7+Math.sin(spin)*5]],'#bed5bc',2);
+    for(let j=0;j<3;j++){
+      const p=(t*.55+j/3)%1;
+      sceneEllipse(-233-p*20,6,9+p*21,2+p*2,`rgba(211,248,221,${.45*(1-p)})`);
+    }
+  }else if(k==='waterfall'){
     // Falling ribbons follow the actual channel, accelerating into the pool.
     ctx.lineCap='round';
     const channel=y=>y<-210?-8:(y<-88?-8+(y+210)*.13:8-(y+88)*.31);
@@ -852,7 +1076,8 @@ function addParadisePlaces(add){
   // Each island has a readable streetscape and a principal scene, visible ahead.
   add(65,'island_villa',2.15,1.1,{variant:0});add(115,'island_villa',-2.7,.95,{variant:2});
   add(195,'fish_pier',-2.5,1.2);add(245,'island_villa',-3.0,1.05,{variant:1});
-  for(const [i,x,v]of[[110,-1.55,0],[200,1.6,1],[265,-1.6,2],[318,1.65,1]])add(i,'promenade',x,1,{variant:v});
+  for(const [i,x,v]of[[135,1.95,1],[235,-2.05,2],[265,-2.2,3]])add(i,'beach_activity',x,1.05,{variant:v});
+  add(318,'promenade',1.85,1,{variant:1});
   for(const [i,x]of[[710,-2.9],[780,2.8],[875,3.4],[990,2.9],[1030,-2.9]]){add(i,'canopy',x,1.7);add(i+14,'rock',x<0?-1.8:1.8,.9);}
   add(800,'trail_hut',-1.9,1.1);add(925,'promenade',1.75,1,{variant:3});
   add(1450,'hangar',-3.1,1.35);add(1645,'promenade',-1.65,1,{variant:4});
@@ -925,21 +1150,67 @@ function paintParadiseJumbo(g){
 function paintParadisePlaceArt(kind,variant,g,d){
   const{poly,rect,line,oval,label}=d;
   const person=(x,y,c)=>{oval(x,y-35,5,6,'#aa745d');rect(x-6,y-28,12,18,c);line([[x-3,y-10],[x-6,y]],'#385264',4);line([[x+3,y-10],[x+6,y]],'#385264',4);};
-  const palm=(x,y)=>drawMiamiPalm(x,y,.72,Math.abs(Math.round(x)),0,0,true,null,g);
+  const palm=(x,y)=>drawParadiseCoconutPalm(g,x,y,.67,Math.abs(Math.round(x))%3);
   if(kind==='two_way_sign'){
     rect(-8,-145,16,145,'#98785e');rect(-125,-240,250,112,'#f4c66f');rect(-120,-235,240,102,'#335968');
     label('TWO WAY',0,-207,23,'#ffe6a6');label('KEEP RIGHT',0,-143,17,'#eddfb5');
     line([[-52,-167],[-52,-194]],'#f0ce94',9);poly([[-68,-178],[-52,-161],[-36,-178]],'#f0ce94');
     line([[52,-167],[52,-194]],'#f0ce94',9);poly([[36,-184],[52,-201],[68,-184]],'#f0ce94');
   }else if(kind==='island_villa'){
-    const walls=['#efb194','#78bdb4','#e9c584'][variant%3];
-    rect(-222,-226,396,226,walls);poly([[-245,-226],[-73,-313],[196,-226]],'#926b73');poly([[-73,-313],[115,-288],[196,-226]],'#b48481');
-    rect(-211,-210,375,15,'#f9dab4');rect(-222,-112,443,16,'#fff0cd');
-    for(const x of[-171,-66,39]){rect(x,-190,64,71,'#376779');rect(x-8,-194,6,79,'#c66e8d');rect(x+66,-194,6,79,'#c66e8d');}
-    for(const x of[-215,-107,1,109,212])rect(x,-110,7,110,'#f3dbb6');
-    line([[-218,-37],[215,-37]],'#f5deb7',5);for(let j=0;j<18;j++)rect(-214+j*25,-36,3,26,'#e9ceb0');
-    rect(-152,-84,237,62,'#365f6c');rect(-174,-103,295,17,'#e888a4');rect(-157,-93,260,30,'#e9c29d');rect(-154,-90,254,24,'#315b61');label(['PALM HOUSE','AZURE HOTEL','ISLAND POST'][variant%3],-27,-72,17,'#ffe3b4');
-    person(164,-2,'#db9eaf');person(-183,0,'#f1d09a');palm(257,0);
+    const style=variant%3;
+    if(style===0){
+      // Symmetric hipped roof and a deep veranda, with a level ridge and eaves.
+      rect(-214,-216,397,216,'#e9ab99');rect(-219,-215,408,10,'#f6ddba');
+      poly([[-243,-216],[-157,-293],[144,-293],[221,-216]],'#a26d70');
+      poly([[-243,-216],[-157,-293],[-105,-293],[-172,-216]],'#bb8581');
+      line([[-157,-293],[144,-293]],'#d8a18e',5);line([[-243,-216],[221,-216]],'#f3d5af',5);
+      for(const x of[-174,-69,36]){
+        rect(x,-187,63,62,'#3b6f77');rect(x-7,-188,6,65,'#6d9b8b');rect(x+65,-188,6,65,'#6d9b8b');
+        line([[x+31,-183],[x+31,-129]],'#c7d7b7',3);
+      }
+      rect(-218,-111,444,13,'#f9e3bf');rect(-204,-98,388,98,'#d99889');
+      for(const x of[-201,-99,3,105,211])rect(x,-99,7,99,'#fae7c7');
+      rect(-75,-92,60,92,'#466c69');rect(-60,-82,31,61,'#314c58');
+      line([[-205,-35],[215,-35]],'#f6e6c4',5);for(let j=0;j<21;j++)rect(-204+j*21,-35,3,27,'#efd6b2');
+      for(const x of[-150,111]){rect(x-26,-103,57,17,'#c8788a');for(let j=0;j<6;j++){oval(x-21+j*10,-107-j%2*4,7,6,'#609569');if(j%2===0)oval(x-19+j*10,-112,3,4,'#ed8db0');}}
+      rect(-113,-67,136,25,'#f0d8ab');label('PALM HOUSE',-45,-49,16,'#345d61');
+    }else if(style===1){
+      // Low timber guesthouse with three distinct gables and a shaded porch.
+      rect(-220,-163,435,163,'#89bdb0');rect(-210,-157,415,7,'#cde0bd');
+      for(let y=-148;y<-15;y+=15)line([[-215,y],[210,y]],'#76a99f',2);
+      poly([[-244,-164],[-171,-235],[167,-235],[239,-164]],'#658e8c');
+      for(let x=-154;x<156;x+=27)line([[x,-232],[x*1.34,-166]],'#8ab0a3',3);
+      line([[-171,-235],[167,-235]],'#c0cdb0',5);
+      for(const x of[-149,122]){
+        poly([[x-57,-162],[x,-217],[x+57,-162]],'#f0d8b6');poly([[x-42,-162],[x,-202],[x+42,-162]],'#b2d0b8');
+        rect(x-31,-137,62,63,'#3e707b');rect(x-39,-142,7,72,'#edc7ad');rect(x+33,-142,7,72,'#edc7ad');
+      }
+      rect(-35,-142,70,142,'#c2a075');rect(-23,-132,46,105,'#4d7a7b');
+      poly([[-235,-70],[-212,-91],[204,-91],[231,-70]],'#dbc2a0');
+      for(const x of[-224,-106,100,219])rect(x,-70,6,70,'#f0dfbe');
+      rect(-231,-8,468,8,'#c2a07b');line([[-225,-35],[-104,-35]],'#e6d8b6',4);line([[104,-35],[223,-35]],'#e6d8b6',4);
+      rect(-111,-177,218,27,'#ebd6ad');label('LAGOON GUESTHOUSE',-2,-158,14,'#365e63');
+      for(const x of[-73,60]){oval(x,-9,16,7,'#759a63');rect(x-12,-10,24,10,'#b27d72');}
+    }else{
+      // Compact island post/store, with an upright central gable and porch awning.
+      rect(-200,-205,360,205,'#f1d3a2');rect(-202,-206,365,10,'#f8e5bc');
+      poly([[-224,-206],[-142,-276],[111,-276],[190,-206]],'#bc8083');
+      line([[-142,-276],[111,-276]],'#d9a28e',4);line([[-223,-206],[190,-206]],'#efd6b2',4);
+      poly([[-92,-205],[-21,-266],[50,-205]],'#fff0c7');poly([[-75,-205],[-21,-250],[33,-205]],'#91b4a2');
+      oval(-21,-218,10,11,'#3d6f74');
+      rect(-173,-181,94,52,'#477d82');rect(40,-181,92,52,'#477d82');
+      for(const x of[-126,86])line([[x,-177],[x,-132]],'#d8dabb',3);
+      rect(-60,-123,77,123,'#548a86');rect(-49,-110,54,74,'#37646e');
+      poly([[-217,-100],[-195,-126],[167,-126],[194,-100]],'#e394a0');
+      for(let x=-201;x<180;x+=36)poly([[x,-100],[x+18,-126],[x+34,-126],[x+18,-100]],'#efd6b3');
+      for(const x of[-208,-78,57,184])rect(x,-99,6,99,'#f4dfbb');
+      rect(-101,-157,171,29,'#f1dbb5');label('ISLAND POST',-16,-136,17,'#39676a');
+      rect(100,-60,31,60,'#a17962');rect(103,-57,25,11,'#d4b190');
+      for(let j=0;j<3;j++){rect(-167+j*28,-29,24,29,'#bf9b6e');line([[-160+j*28,-27],[-150+j*28,-27]],'#e2c396',2);}
+    }
+    // Quiet garden details replace the old generic standing pair.
+    for(const x of[-230,192]){rect(x-12,-16,24,16,'#b78372');oval(x,-20,19,12,'#598b65');oval(x+6,-27,10,9,'#79a576');}
+    palm(224,0);
   }else if(kind==='fish_pier'){
     poly([[-283,0],[258,0],[214,-43],[-261,-43]],'#b8946c');
     for(const x of[-250,-125,10,135,233])rect(x,-3,8,25,'#806c59');
@@ -12636,7 +12907,7 @@ function getRoadLimits(z) {
   if (currentLevel === LEVEL_SPACE) left = right = 0.98;
   if(currentLevel===LEVEL_PARADISE){
     const extra=paradiseRoadScale(z/150)-1;
-    if(segment.isBridge||Math.abs(segment.index-PARADISE_ARCH_SEGMENT)<4)left=right=.88+extra*1.07;
+    if(segment.isBridge||Math.abs(segment.index-PARADISE_ARCH_SEGMENT)<4||Math.abs(segment.index-PARADISE_GATE_SEGMENT)<4)left=right=.88+extra*1.07;
     else{left+=extra;right+=extra;}
   }
   if (currentLevel === LEVEL_HILLS) {

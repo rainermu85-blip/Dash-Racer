@@ -101,7 +101,7 @@ not an aircraft physics simulation.
 
 Static scenery, including the aircraft mesh, is rasterized once at race setup.
 New large buildings use a reduced raster resolution. The scenery cache is about
-12.94 MiB of logical RGBA pixels, under a 13 MiB budget; this excludes shared game
+13.86 MiB of logical RGBA pixels, under a 14 MiB budget; this excludes shared game
 assets and browser/GPU overhead. Static tiles crop their source image at the ground/crest rather than installing
 a separate canvas clipping mask for each tree and facade. There are no per-frame
 texture writes. Small
@@ -184,7 +184,7 @@ their wing attachments. Landing gear still determines the ground anchor.
 The waterfall has moving ribbons that accelerate down its channel, an impact
 pool with foam, expanding rings and short spray arcs. Foreground vegetation
 leaves a window onto the pool. Its flow and the steamer wheel pause with race
-simulation. The complete cache stays below 13 MiB, with no per-frame writes.
+simulation. The cache in that pass stayed below 13 MiB, with no per-frame writes.
 
 Validation for this pass: `paradise-polish-race.json` includes a full six-car
 race, visible touchdown, animated wheel and impact-pool pixels, pause behavior,
@@ -200,3 +200,8 @@ work ranges from 3.0 to 10.7 ms; waterfall, arch and steamer are 5.8, 4.7 and
 frame intervals at 16.8–33.4 ms. Each run contains one interval above 50 ms
 (native forest, throttled regatta). These remain short cloud Chromium samples,
 not physical phone/Brave measurements.
+
+The subsequent airport, activities and Thai-cove pass is described in
+[Paradise island life](paradise-island-life.md), including online pictogram
+references and the 14 MiB cache budget. New level concepts are indexed in
+[level-concepts/README.md](level-concepts/README.md).

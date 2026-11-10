@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "status": "concepts",
+  "levels": [
+    {
+      "key": "macondo",
+      "workingTitle": "Macondo — One Hundred Summers",
+      "inspiration": "Hundert Jahre Einsamkeit / One Hundred Years of Solitude",
+      "layout": "point-to-point",
+      "targetSecondsWithoutTurbo": [120, 130],
+      "proposedSegments": 3550,
+      "document": "macondo.md",
+      "scenes": ["Gründung am Fluss", "Melquíades und das Eis", "Buendía-Haus und Goldfische", "Bananenbahn", "Langer Regen", "Wind und Manuskripte"]
+    },
+    {
+      "key": "orbital-passage",
+      "workingTitle": "Orbital Passage",
+      "inspiration": "Fahrt durch das Innere einer Raumstation",
+      "layout": "point-to-point",
+      "targetSecondsWithoutTurbo": [120, 130],
+      "proposedSegments": 3500,
+      "document": "orbital-passage.md",
+      "scenes": ["Ankunftsdock", "Wartungsgänge", "Glasbrücke", "Aktive Startdocks", "Reaktorgalerie", "Panorama-Ausfahrt"]
+    },
+    {
+      "key": "coast-to-coast",
+      "workingTitle": "Coast to Coast",
+      "inspiration": "Eine Reise durch die USA in zwei Minuten",
+      "layout": "point-to-point",
+      "targetSecondsWithoutTurbo": [115, 125],
+      "proposedSegments": 3400,
+      "document": "coast-to-coast.md",
+      "scenes": ["New York", "Great Plains", "Rocky Mountains", "Route 66 / Arizona", "Pazifikküste und Los Angeles"]
+    }
+  ]
+}

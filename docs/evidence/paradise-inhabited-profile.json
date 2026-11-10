@@ -1,0 +1,226 @@
+{
+  "beforeWireBatching": {
+    "native": {
+      "cpuRate": 1,
+      "samples": [
+        {
+          "name": "lagoon",
+          "medianFrame": 16.700000000000045,
+          "p95Frame": 16.700000000000045,
+          "p95Render": 8.5,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "airport-gate",
+          "medianFrame": 16.699999999999818,
+          "p95Frame": 33.40000000000009,
+          "p95Render": 12.300000000745058,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "thai-cove",
+          "medianFrame": 16.699999999999818,
+          "p95Frame": 16.700000000000728,
+          "p95Render": 7.400000000372529,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "jungle",
+          "medianFrame": 16.699999999999818,
+          "p95Frame": 16.799999999999272,
+          "p95Render": 4.299999998882413,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "waterfall",
+          "medianFrame": 16.69999999999891,
+          "p95Frame": 16.700000000000728,
+          "p95Render": 5.399999998509884,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "arch",
+          "medianFrame": 16.69999999999891,
+          "p95Frame": 16.799999999999272,
+          "p95Render": 4.099999999627471,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "airport",
+          "medianFrame": 16.69999999999891,
+          "p95Frame": 16.799999999999272,
+          "p95Render": 5.100000001490116,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "harbour",
+          "medianFrame": 16.69999999999891,
+          "p95Frame": 16.799999999999272,
+          "p95Render": 5.199999999254942,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "bridge",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 16.700000000000728,
+          "p95Render": 5.400000000372529,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "regatta",
+          "medianFrame": 16.69999999999709,
+          "p95Frame": 16.799999999999272,
+          "p95Render": 3.400000000372529,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "ferry",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 16.700000000000728,
+          "p95Render": 5.5,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "dolphins",
+          "medianFrame": 16.69999999999709,
+          "p95Frame": 16.700000000000728,
+          "p95Render": 9.199999999254942,
+          "framesOver50ms": 0
+        }
+      ],
+      "sceneryMiB": 13.863693237304688
+    },
+    "cpuThrottled": {
+      "cpuRate": 2,
+      "samples": [
+        {
+          "name": "lagoon",
+          "medianFrame": 16.800000000000182,
+          "p95Frame": 50,
+          "p95Render": 26.5,
+          "framesOver50ms": 4
+        },
+        {
+          "name": "airport-gate",
+          "medianFrame": 33.30000000000018,
+          "p95Frame": 33.400000000000546,
+          "p95Render": 14.5,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "thai-cove",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 33.399999999999636,
+          "p95Render": 12.5,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "jungle",
+          "medianFrame": 16.80000000000109,
+          "p95Frame": 33.399999999999636,
+          "p95Render": 12,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "waterfall",
+          "medianFrame": 33.29999999999927,
+          "p95Frame": 33.400000000001455,
+          "p95Render": 13.5,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "arch",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 33.400000000001455,
+          "p95Render": 10.800000000745058,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "airport",
+          "medianFrame": 33.29999999999927,
+          "p95Frame": 33.400000000001455,
+          "p95Render": 12.300000000745058,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "harbour",
+          "medianFrame": 16.799999999999272,
+          "p95Frame": 33.400000000001455,
+          "p95Render": 10.900000000372529,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "bridge",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 33.400000000001455,
+          "p95Render": 9.599999999627471,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "regatta",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 33.30000000000291,
+          "p95Render": 9.399999998509884,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "ferry",
+          "medianFrame": 16.700000000000728,
+          "p95Frame": 33.400000000001455,
+          "p95Render": 14.299999998882413,
+          "framesOver50ms": 1
+        },
+        {
+          "name": "dolphins",
+          "medianFrame": 33.299999999995634,
+          "p95Frame": 50,
+          "p95Render": 15.700000001117587,
+          "framesOver50ms": 2
+        }
+      ],
+      "sceneryMiB": 13.863693237304688
+    }
+  },
+  "airportAfterWireBatching": {
+    "native": {
+      "cpuRate": 1,
+      "samples": [
+        {
+          "name": "airport-gate",
+          "medianFrame": 16.699999999999818,
+          "p95Frame": 16.799999999999955,
+          "p95Render": 9.800000000745058,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "airport",
+          "medianFrame": 16.699999999999818,
+          "p95Frame": 16.799999999999727,
+          "p95Render": 6.799999998882413,
+          "framesOver50ms": 0
+        }
+      ],
+      "sceneryMiB": 13.863693237304688
+    },
+    "cpuThrottled": {
+      "cpuRate": 2,
+      "samples": [
+        {
+          "name": "airport-gate",
+          "medianFrame": 16.700000000000045,
+          "p95Frame": 33.40000000000009,
+          "p95Render": 12.400000000372529,
+          "framesOver50ms": 0
+        },
+        {
+          "name": "airport",
+          "medianFrame": 16.699999999999818,
+          "p95Frame": 33.30000000000018,
+          "p95Render": 8.399999998509884,
+          "framesOver50ms": 0
+        }
+      ],
+      "sceneryMiB": 13.863693237304688
+    }
+  }
+}

@@ -1,0 +1,498 @@
+[
+  {
+    "name": "legal-lane-0.3333333333333333-retains-speed-for-complete-lap",
+    "pass": true,
+    "actual": {
+      "minimum": 4320,
+      "hits": 0,
+      "seconds": 93.38333333332476
+    },
+    "errors": []
+  },
+  {
+    "name": "oncoming-sightlines-lane-0.3333333333333333",
+    "pass": true,
+    "actual": {
+      "count": 23,
+      "leadSeconds": [
+        3.222937787943585,
+        3.0293841293989705,
+        2.4334482849167687,
+        2.3711589450786628,
+        3.156997134914857,
+        2.198639043376551,
+        3.1217909640538206,
+        2.2995060191141605,
+        2.3139068659479807,
+        3.08260863623498,
+        2.4026665269222782,
+        3.125719585220558,
+        2.390063086914979,
+        2.2798242805800233,
+        3.152631461643598,
+        2.3221195262106393,
+        3.069368807019913,
+        1.8780562000855123,
+        2.3588398590313253,
+        2.3633254995858515,
+        2.332992634797905,
+        3.1460654972327093,
+        2.3242159913531735
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "traffic-meets-driver-on-every-island-and-bridge",
+    "pass": true,
+    "actual": {
+      "land": [
+        3,
+        4,
+        3,
+        4,
+        2
+      ],
+      "bridges": [
+        1,
+        1,
+        2,
+        1,
+        2
+      ],
+      "met": 23
+    },
+    "errors": []
+  },
+  {
+    "name": "legal-lane-1-retains-speed-for-complete-lap",
+    "pass": true,
+    "actual": {
+      "minimum": 4320,
+      "hits": 0,
+      "seconds": 93.38333333332476
+    },
+    "errors": []
+  },
+  {
+    "name": "oncoming-sightlines-lane-1",
+    "pass": true,
+    "actual": {
+      "count": 23,
+      "leadSeconds": [
+        3.222937787943585,
+        2.9250948513689976,
+        2.4334482849167687,
+        2.3711589450786628,
+        3.156997134914857,
+        2.0985892245491597,
+        3.1217909640538206,
+        2.2995060191141605,
+        2.414137110747696,
+        3.08260863623498,
+        2.4026665269222782,
+        3.125719585220558,
+        2.390063086914979,
+        2.3796907883091323,
+        3.152631461643598,
+        2.3221195262106393,
+        3.069368807019913,
+        1.9780631203418397,
+        2.3588398590313253,
+        2.263263844748935,
+        2.332992634797905,
+        3.1460654972327093,
+        2.3242159913531735
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "four-lane-road-and-limits-for-all-islands-and-bridges",
+    "pass": true,
+    "actual": {
+      "geometry": [
+        {
+          "index": 175,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.7833333333333332,
+            "right": 1.7833333333333332
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 435,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.2366666666666666,
+            "right": 1.2366666666666666
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 700,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.7833333333333332,
+            "right": 1.7833333333333332
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 960,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.2366666666666666,
+            "right": 1.2366666666666666
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 1225,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.7833333333333332,
+            "right": 1.7833333333333332
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 1485,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.2366666666666666,
+            "right": 1.2366666666666666
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 1750,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.7833333333333332,
+            "right": 1.7833333333333332
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 2010,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.2366666666666666,
+            "right": 1.2366666666666666
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 2275,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.7833333333333332,
+            "right": 1.7833333333333332
+          },
+          "soft": 1.2733333333333332
+        },
+        {
+          "index": 2535,
+          "width": 1.3333333333333333,
+          "limit": {
+            "left": 1.2366666666666666,
+            "right": 1.2366666666666666
+          },
+          "soft": 1.2733333333333332
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "start-grid-clear-on-own-carriageway",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "frontal-hit-caps-speed-at-60-kmh",
+    "pass": true,
+    "actual": {
+      "speed": 644.776119402985,
+      "firstSpeed": 644.776119402985,
+      "kmh": 60,
+      "afterRepeat": 644.776119402985,
+      "normalSpeed": 644.776119402985,
+      "hits": 1,
+      "boost": false,
+      "chevron": false,
+      "turboRecovery": false,
+      "cleanBonus": 0,
+      "boostTimer": 0,
+      "chevronTimer": 0,
+      "hud": "60"
+    },
+    "errors": []
+  },
+  {
+    "name": "frontal-hit-clears-turbo-and-normal-speed-recovery",
+    "pass": true,
+    "actual": {
+      "speed": 644.776119402985,
+      "firstSpeed": 644.776119402985,
+      "kmh": 60,
+      "afterRepeat": 644.776119402985,
+      "normalSpeed": 644.776119402985,
+      "hits": 1,
+      "boost": false,
+      "chevron": false,
+      "turboRecovery": false,
+      "cleanBonus": 0,
+      "boostTimer": 0,
+      "chevronTimer": 0,
+      "hud": "60"
+    },
+    "errors": []
+  },
+  {
+    "name": "grazing-impact-is-much-milder",
+    "pass": true,
+    "actual": {
+      "speed": 4052.16,
+      "firstSpeed": 4052.16,
+      "kmh": 377.07599999999996,
+      "afterRepeat": 4052.16,
+      "normalSpeed": 4052.16,
+      "hits": 1,
+      "boost": true,
+      "chevron": false,
+      "turboRecovery": true,
+      "cleanBonus": 0.13,
+      "boostTimer": 1,
+      "chevronTimer": 0,
+      "hud": "377"
+    },
+    "errors": []
+  },
+  {
+    "name": "same-impact-cost-for-rival-and-player",
+    "pass": true,
+    "actual": {
+      "front": {
+        "speed": 644.776119402985,
+        "firstSpeed": 644.776119402985,
+        "kmh": 60,
+        "afterRepeat": 644.776119402985,
+        "normalSpeed": 644.776119402985,
+        "hits": 1,
+        "boost": false,
+        "chevron": false,
+        "turboRecovery": false,
+        "cleanBonus": 0,
+        "boostTimer": 0,
+        "chevronTimer": 0,
+        "hud": "60"
+      },
+      "opponent": {
+        "speed": 644.776119402985,
+        "firstSpeed": 644.776119402985,
+        "kmh": 60,
+        "afterRepeat": 644.776119402985,
+        "normalSpeed": 644.776119402985,
+        "hits": 1,
+        "boost": false,
+        "chevron": false,
+        "turboRecovery": false,
+        "cleanBonus": 0,
+        "boostTimer": 0,
+        "chevronTimer": 0,
+        "hud": null
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "same-60-kmh-cap-from-normal-and-turbo-speeds",
+    "pass": true,
+    "actual": {
+      "normal": {
+        "speed": 644.776119402985,
+        "firstSpeed": 644.776119402985,
+        "kmh": 60,
+        "afterRepeat": 644.776119402985,
+        "normalSpeed": 644.776119402985,
+        "hits": 1,
+        "boost": false,
+        "chevron": false,
+        "turboRecovery": false,
+        "cleanBonus": 0,
+        "boostTimer": 0,
+        "chevronTimer": 0,
+        "hud": "60"
+      },
+      "turbo": {
+        "speed": 644.776119402985,
+        "firstSpeed": 644.776119402985,
+        "kmh": 60,
+        "afterRepeat": 644.776119402985,
+        "normalSpeed": 644.776119402985,
+        "hits": 1,
+        "boost": false,
+        "chevron": false,
+        "turboRecovery": false,
+        "cleanBonus": 0,
+        "boostTimer": 0,
+        "chevronTimer": 0,
+        "hud": "60"
+      },
+      "chevron": {
+        "speed": 644.776119402985,
+        "firstSpeed": 644.776119402985,
+        "kmh": 60,
+        "afterRepeat": 644.776119402985,
+        "normalSpeed": 644.776119402985,
+        "hits": 1,
+        "boost": false,
+        "chevron": false,
+        "turboRecovery": false,
+        "cleanBonus": 0,
+        "boostTimer": 0,
+        "chevronTimer": 0,
+        "hud": "60"
+      }
+    },
+    "errors": []
+  },
+  {
+    "name": "offset-frontal-impact-also-caps-speed",
+    "pass": true,
+    "actual": {
+      "speed": 644.776119402985,
+      "firstSpeed": 644.776119402985,
+      "kmh": 60,
+      "afterRepeat": 644.776119402985,
+      "normalSpeed": 644.776119402985,
+      "hits": 1,
+      "boost": false,
+      "chevron": false,
+      "turboRecovery": false,
+      "cleanBonus": 0,
+      "boostTimer": 0,
+      "chevronTimer": 0,
+      "hud": "60"
+    },
+    "errors": []
+  },
+  {
+    "name": "initial-graze-cannot-shield-later-frontal-hit",
+    "pass": true,
+    "actual": {
+      "speed": 644.776119402985,
+      "firstSpeed": 4052.16,
+      "kmh": 60,
+      "afterRepeat": 644.776119402985,
+      "normalSpeed": 644.776119402985,
+      "hits": 1,
+      "boost": false,
+      "chevron": false,
+      "turboRecovery": false,
+      "cleanBonus": 0,
+      "boostTimer": 0,
+      "chevronTimer": 0,
+      "hud": "60"
+    },
+    "errors": []
+  },
+  {
+    "name": "head-on-does-not-accelerate-already-slower-car",
+    "pass": true,
+    "actual": {
+      "speed": 429.85074626865674,
+      "firstSpeed": 429.85074626865674,
+      "kmh": 40,
+      "afterRepeat": 429.85074626865674,
+      "normalSpeed": 429.85074626865674,
+      "hits": 1,
+      "boost": false,
+      "chevron": false,
+      "turboRecovery": false,
+      "cleanBonus": 0,
+      "boostTimer": 0,
+      "chevronTimer": 0,
+      "hud": "40"
+    },
+    "errors": []
+  },
+  {
+    "name": "driven-head-on-shows-60-and-recovers-from-that-speed",
+    "pass": true,
+    "actual": {
+      "hud": "60",
+      "kmh": 60,
+      "normal": 644.776119402985,
+      "nextKmh": 61.666666666666664
+    },
+    "errors": []
+  },
+  {
+    "name": "rivals-plan-away-from-oncoming-lane",
+    "pass": true,
+    "actual": {
+      "dangerous": -35.87551622418879,
+      "safe": -0.9733333333333333,
+      "target": 0.33
+    },
+    "errors": []
+  },
+  {
+    "name": "player-can-pass-two-abreast-and-return",
+    "pass": true,
+    "actual": {
+      "wentLeft": true,
+      "returned": true,
+      "used": true,
+      "index": 1726.2573333333335
+    },
+    "errors": []
+  },
+  {
+    "name": "restart-resets-traffic",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-1",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-2",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-3",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-4",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-5",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "no-paradise-traffic-level-6",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  }
+]
