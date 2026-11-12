@@ -7,7 +7,7 @@ const cdp=await p.context().newCDPSession(p);const cpuRate=Number(process.env.CP
 const sections=(process.env.PROFILE_SECTIONS||'').split(',').filter(Boolean);
 const results=await p.evaluate(async sections=>{
  selectLevel(7);startRace();state='playing';player.speed=4320;const samples=[];
- for(let [name,index]of[['lagoon',100],['airport-gate',1430],['thai-cove',1115],['jungle',790],['waterfall',840],['arch',2810],['airport',1490],['harbour',2140],['bridge',2490],['regatta',400],['ferry',1800],['dolphins',3250]].filter(([name])=>!sections.length||sections.includes(name))){
+ for(let [name,index]of[['lagoon',100],['airport-gate',1430],['thai-cove',1115],['jungle',790],['waterfall',840],['arch',2810],['airport',1490],['harbour',2140],['harbour-quay',2220],['harbour-exit',2340],['bridge',2490],['regatta',400],['ferry',1800],['dolphins',3250]].filter(([name])=>!sections.length||sections.includes(name))){
   index=paradiseIndex(index);initParadiseTraffic();paradiseTrafficActive=true;
   const elapsed=index/28.8+2.2;
   for(const car of paradiseTraffic){car.z-=car.speed*elapsed;car.departed=car.z<index*150-2000;}

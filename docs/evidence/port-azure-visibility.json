@@ -1,0 +1,33 @@
+{
+  "errors": [],
+  "best": {
+    "fish_market": {
+      "kind": "fish_market",
+      "index": 1605,
+      "z": 1556.2,
+      "lead": 48.799999999999955,
+      "changed": 3100
+    },
+    "boat_shed": {
+      "kind": "boat_shed",
+      "index": 1695,
+      "z": 1648.36,
+      "lead": 46.6400000000001,
+      "changed": 5650
+    },
+    "quay_crane": {
+      "kind": "quay_crane",
+      "index": 1750,
+      "z": 1705.96,
+      "lead": 44.039999999999964,
+      "changed": 1054
+    },
+    "fishing_boat": {
+      "kind": "fishing_boat",
+      "index": 1780,
+      "z": 1729,
+      "lead": 51,
+      "changed": 690
+    }
+  }
+}

@@ -60,7 +60,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    record('late-turbo-still-sees-crossing-and-touchdown',fastCrossing>PARADISE_PLANE_SEGMENT-207&&fastLanding<PARADISE_PLANE_SEGMENT,{fastCrossing,fastLanding});
    player.isBoosting=false;player.boostTimer=0;keys.boost=false;
    // Actual screen bounds at a useful approach, not just scene metadata.
-   const views=[['lagoon',95,48],['waterfall',905,840],['airport',1625,1550],['airport-gate',1472,1430],['airport-sign',1440,1397],['harbour',2208,2168],['coral-arch',2850,2780],['bridge',2540,2480],['market',145,90],['village',225,170],['regatta',480,400],['ferry',1895,1800],['volleyball',2990,2930],['sea-stack',1180,1110],['fishing-dock',195,135],['hangar',1450,1390],['clock-tower',2310,2250],['resort',2875,2815],['beach-stage',3070,3010]];
+   const views=[['lagoon',95,48],['waterfall',905,840],['airport',1625,1550],['airport-gate',1472,1430],['airport-sign',1440,1397],['harbour',2218,2168],['fish-market',2130,2080],['boat-shed',2220,2160],['quay-crane',2275,2210],['port-fishing-boat',2305,2235],['coral-arch',2850,2780],['bridge',2540,2480],['market',145,90],['village',225,170],['regatta',480,400],['ferry',1895,1800],['volleyball',2990,2930],['sea-stack',1180,1110],['fishing-dock',195,135],['hangar',1450,1390],['clock-tower',2310,2250],['resort',2875,2815],['beach-stage',3070,3010]];
    const draw=drawParadiseSprite;let capture=null;
    drawParadiseSprite=s=>{if(capture&&s.segIdx===capture.index){const a=getParadiseArt(s.item.kind,s.variant);capture.bounds=[s.x-a.ox*s.sc,s.y-a.oy*s.sc,s.x+(a.w-a.ox)*s.sc,Math.min(s.y,s.clipY)];}draw(s);};
    try{for(const [name,authored,approach]of views){
@@ -77,11 +77,11 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    raceElapsed=2000;render(4000);const animated=sample();
    record('beach-animation-uses-simulation-time',first===paused&&first!==animated,{first,paused,animated});
    // Verify the visible wheel and impact pool, not only the scene clock.
-   for(const kind of['ferry','waterfall','diving_rock']){
-    const sc=kind==='ferry'?.45:.7,x=W/2,y=H*.8;
+   for(const kind of['ferry','waterfall','diving_rock','quay_crane','boat_shed','fish_market']){
+    const sc=kind==='ferry'?.45:kind==='boat_shed'?.5:.7,x=W/2,y=H*.8;
     const sprite={item:{kind},variant:0,x,y,sc,depth:30,clipY:H};
     if(kind==='diving_rock')paradiseDiveStart=0;
-    const region=kind==='ferry'?[-5,-105,124,126]:kind==='diving_rock'?[-180,-200,220,220]:[-100,-55,200,55];
+    const region=kind==='ferry'?[-5,-105,124,126]:kind==='diving_rock'?[-180,-200,220,220]:kind==='quay_crane'?[-180,-230,150,230]:kind==='boat_shed'?[-100,-80,200,80]:kind==='fish_market'?[-130,-60,260,60]:[-100,-55,200,55];
     const imageAt=time=>{
       raceElapsed=time;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.fillStyle='#278caa';ctx.fillRect(0,0,W,H);
       drawParadiseSprite(sprite);

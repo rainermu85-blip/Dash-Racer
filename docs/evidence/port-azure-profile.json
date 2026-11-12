@@ -1,0 +1,56 @@
+{
+  "native": {
+    "cpuRate": 1,
+    "samples": [
+      {
+        "name": "harbour",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.799999999999955,
+        "p95Render": 11.400000005960464,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "harbour-quay",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.700000000000728,
+        "p95Render": 9.199999988079071,
+        "framesOver50ms": 0
+      },
+      {
+        "name": "harbour-exit",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 16.799999999999272,
+        "p95Render": 9,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 13.870830535888672
+  },
+  "cpuThrottled": {
+    "cpuRate": 2,
+    "samples": [
+      {
+        "name": "harbour",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 33.39999999999998,
+        "p95Render": 14,
+        "framesOver50ms": 1
+      },
+      {
+        "name": "harbour-quay",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 33.400000000000546,
+        "p95Render": 13,
+        "framesOver50ms": 1
+      },
+      {
+        "name": "harbour-exit",
+        "medianFrame": 16.699999999999818,
+        "p95Frame": 33.30000000000018,
+        "p95Render": 13.099999994039536,
+        "framesOver50ms": 0
+      }
+    ],
+    "sceneryMiB": 13.870830535888672
+  }
+}

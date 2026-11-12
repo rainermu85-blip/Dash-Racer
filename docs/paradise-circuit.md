@@ -14,7 +14,7 @@ feedback that the crossings dragged. Turbo and collisions change the time.
 | 0–349 | Lagoon Key | Verandah houses, fish dock, market, village, musicians and pedestrians |
 | 525–874 | Emerald Isle | Dense forest corridor, waterfall with a clear sightline, trail hut and hikers |
 | 1050–1399 | Sunset Airport | Open hangar with island-hopper, luggage tractor, terminal, jumbo landing, shuttle and travellers |
-| 1575–1924 | Port Azure | Waterfront shops, hotel, clock tower, market, cafés, fishing dock and pedestrians |
+| 1575–1924 | Port Azure | Narrow quayside houses, fish market, boat works, working crane, fishing boats, clock tower and lighthouse |
 | 2100–2449 | Coral Cay | Drive-through rock arch, beach resort, overwater huts, volleyball, parasailing and a music stage with dancers |
 
 Each island is followed by a 175-segment bridge. Open lagoon rails, warm truss
@@ -101,7 +101,7 @@ not an aircraft physics simulation.
 
 Static scenery, including the aircraft mesh, is rasterized once at race setup.
 New large buildings use a reduced raster resolution. The scenery cache is about
-13.86 MiB of logical RGBA pixels, under a 14 MiB budget; this excludes shared game
+13.87 MiB of logical RGBA pixels, under a 14 MiB budget; this excludes shared game
 assets and browser/GPU overhead. Static tiles crop their source image at the ground/crest rather than installing
 a separate canvas clipping mask for each tree and facade. There are no per-frame
 texture writes. Small
@@ -205,3 +205,7 @@ The subsequent airport, activities and Thai-cove pass is described in
 [Paradise island life](paradise-island-life.md), including online pictogram
 references and the 14 MiB cache budget. New level concepts are indexed in
 [level-concepts/README.md](level-concepts/README.md).
+
+Port Azure now has a distinct small working-harbour identity; see
+[Port Azure](port-azure.md) for the waterfront layout, cached artwork and
+visibility/performance checks.
