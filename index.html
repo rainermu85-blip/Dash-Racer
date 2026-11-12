@@ -222,6 +222,299 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   </div>
 </div>
 <script>
+// Orbital Passage: a single continuous station interior, one-way, with a runout.
+const ORBITAL_LENGTH=3080,ORBITAL_SHUTTLE_INDEX=1700;
+const ORBITAL_SECTIONS=[
+ {start:0,end:390,key:'arrival',name:'01 / ARRIVAL DOCK',room:4.2,height:5200,wall:'#263344',trim:'#68d6db',floor:'#202c3a'},
+ {start:390,end:875,key:'service',name:'02 / SERVICE SPINE',room:1.16,height:1800,wall:'#343349',trim:'#efad78',floor:'#252b3c'},
+ {start:875,end:1360,key:'glass',name:'03 / EARTH OBSERVATION',room:1.35,height:2700,wall:'#203549',trim:'#72e5ec',floor:'#1b3045'},
+ {start:1360,end:1940,key:'launch',name:'04 / ACTIVE LAUNCH DECK',room:4.7,height:5800,wall:'#303146',trim:'#f1ae77',floor:'#30313d'},
+ {start:1940,end:2530,key:'reactor',name:'05 / HELIOS REACTOR',room:3.8,height:7600,wall:'#253b43',trim:'#79e1c8',floor:'#24323b'},
+ {start:2530,end:ORBITAL_LENGTH,key:'panorama',name:'06 / PANORAMA TERMINAL',room:4.1,height:5700,wall:'#2b2d46',trim:'#dca0e8',floor:'#262a40'}
+];
+let orbitalProfiles=[],orbitalLaunchStart=null,orbitalFlybyStart=null;
+const orbitalArt=new Map();
+function makeOrbitalProfile(index){
+ const section=ORBITAL_SECTIONS.find(s=>index<s.end)||ORBITAL_SECTIONS.at(-1),j=ORBITAL_SECTIONS.indexOf(section);
+ let room=section.room,height=section.height;
+ if(j>0&&index<section.start+55){const t=paradiseSmooth((index-section.start)/55),previous=ORBITAL_SECTIONS[j-1];room=previous.room+(room-previous.room)*t;height=previous.height+(height-previous.height)*t;}
+ return{...section,room,height};
+}
+function orbitalProfile(index){return orbitalProfiles[index]||makeOrbitalProfile(index);}
+function buildOrbitalRoute(){
+ orbitalProfiles=Array.from({length:ORBITAL_LENGTH+220},(_,i)=>makeOrbitalProfile(i));
+ const bend=(i,a,b,k)=>i<=a||i>=b?0:k*Math.sin(Math.PI*(i-a)/(b-a))**2;
+ const altitude=i=>bend(i,830,1430,180)+bend(i,1940,2530,130);
+ const turns=[[180,350,.18],[420,620,-.24],[650,850,.22],[925,1160,-.18],[1160,1335,.16],
+  [1420,1570,-.19],[1810,1930,.18],[2010,2210,-.25],[2250,2470,.24],[2580,2780,-.19],[2780,2950,.17]];
+ return Array.from({length:ORBITAL_LENGTH},(_,i)=>({curve:turns.reduce((n,[a,b,k])=>n+bend(i,a,b,k),0),hill:altitude(i+1)-altitude(i)}));
+}
+function buildOrbitalScenery(){
+ orbitalLaunchStart=orbitalFlybyStart=null;
+ const add=(index,kind,x,size=1,extra={})=>{segments[index].orbitalItems??=[];segments[index].orbitalItems.push({kind,x,size,...extra});getOrbitalArt(kind);};
+ // Installations sit in the hall, clear of the lane; wall equipment is
+ // projected onto the service corridor itself rather than hidden behind it.
+ for(const section of ORBITAL_SECTIONS)add(section.start+65,'directory',0,section.key==='service'?.6:.9,{caption:section.name,lift:section.key==='service'?90:190});
+ add(100,'freighter',-3.5,1.2);add(230,'cargo',-1.9,1.15);add(310,'loader',1.65,1.15);
+ add(55,'crew',1.6,.9);add(185,'robot',-1.6,1);add(350,'crew',-1.55,.9);
+
+ add(565,'robot',1.7,.6);add(590,'cargo',2.0,.55);add(750,'robot',-1.7,.6);
+ add(945,'observation',-1.65,1);add(1010,'antenna',-3.45,1.7);add(1110,'satellite',3.6,1.6);
+ add(1215,'satellite',-3.1,1.3);add(1290,'observation',1.65,1);add(1320,'crew',-1.55,.8);
+ add(1415,'cargo',-1.8,1.1);add(1490,'loader',1.65,1.15);add(1550,'workbay',-1.9,1.6);
+ add(ORBITAL_SHUTTLE_INDEX,'cradle',3.5,1.55);add(ORBITAL_SHUTTLE_INDEX,'shuttle',3.5,1.55);
+ add(1745,'crew',-1.55,1);add(1810,'cargo',-2.0,1.2);add(1885,'robot',1.65,1.1);
+ add(2000,'pipes',1.7,1.35);add(2070,'reactor',-2.2,1.05);add(2160,'crew',1.6,1);
+ add(2240,'reactor',2.2,.9);add(2330,'workbay',-1.9,1.35);add(2420,'pipes',1.8,1.45);add(2480,'robot',-1.6,1);
+ add(2590,'observation',1.8,1.35);add(2660,'greenhouse',-1.9,1.25);add(2770,'courier',-4.3,1.65);
+ add(2860,'crew',1.7,1);add(2910,'greenhouse',1.9,1.2);add(3005,'directory',0,.9,{caption:'PANORAMA TERMINAL',lift:190});
+ for(const seg of segments)for(const item of seg.orbitalItems||[]){
+  if(item.kind==='directory')continue;
+  const art=getOrbitalArt(item.kind),clearance=1.2+Math.max(art.ox,art.w-art.ox)/200*item.size;
+  item.x=Math.sign(item.x)*Math.max(Math.abs(item.x),clearance);
+ }
+ // Different small working groups connect the larger tableaux.
+ for(const [i,x]of[[95,-1.7],[270,1.7],[1450,1.7],[1610,-1.65],[1780,-1.7],[2040,1.6],[2290,-1.6],[2640,1.6],[2950,-1.6]])add(i,'crew',x,.85);
+
+}
+function updateOrbitalEvents(){
+ if(orbitalLaunchStart===null&&player.z/150>=ORBITAL_SHUTTLE_INDEX-145)orbitalLaunchStart=raceElapsed;
+ if(orbitalFlybyStart===null&&player.z/150>=2770-145)orbitalFlybyStart=raceElapsed;
+}
+function orbitalLaunchPhase(){return orbitalLaunchStart===null?-1:(raceElapsed-orbitalLaunchStart)/1000;}
+function orbitalShuttlePose(){
+ const t=orbitalLaunchPhase(),flight=Math.max(0,t-1.35);
+ return{x:3.5+flight*1.35,height:22+flight*flight*42,exhaust:t>1.1&&t<5.8,visible:t<6.5};
+}
+function drawOrbitalBackdrop(horizon){
+ ctx.fillStyle='#030713';ctx.fillRect(0,0,W,H);
+ const glow=ctx.createRadialGradient(W*.65,H*.35,10,W*.65,H*.35,W*.8);
+ glow.addColorStop(0,'#172343');glow.addColorStop(.7,'#080d21');glow.addColorStop(1,'#030713');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<100;i++){
+  const period=W+80,x=((i*137-bgOffset*.024)%period+period)%period-40,y=(i*79%997)/997*H;
+  ctx.fillStyle=i%7?'#91a7bd':'#d7d9e8';ctx.fillRect(x,y,i%13===0?2:1,i%13===0?2:1);
+ }
+ const x=W*.67-bgOffset*.06,y=H*.34,r=Math.min(W*.26,H*.19);
+ const earth=getOrbitalArt('earth');ctx.drawImage(earth.canvas,x-r,y-r,r*2,r*2);
+ // Distant grounded station modules move with the existing curvature parallax.
+ for(let j=0;j<3;j++){
+  const px=((j*W*.63-bgOffset*.13)%(W*2)+W*2)%(W*2)-W*.4,py=horizon-H*.08+j*H*.055,s=.45+j*.13;
+  ctx.fillStyle='#243346';ctx.fillRect(px,py,180*s,24*s);ctx.fillStyle='#3e586b';ctx.fillRect(px+40*s,py-14*s,70*s,52*s);
+  for(const side of[-1,1]){ctx.fillStyle='#122c4a';ctx.fillRect(px+(side<0?-100:180)*s,py-19*s,100*s,65*s);ctx.strokeStyle='#476b83';ctx.lineWidth=1;ctx.strokeRect(px+(side<0?-100:180)*s,py-19*s,100*s,65*s);}
+  ctx.fillStyle='#8dc6d1';ctx.fillRect(px+60*s,py-17*s,30*s,3*s);
+ }
+}
+function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1){
+ const a=orbitalProfile(index),b=orbitalProfile(endIndex),h1=s1*a.height*H/2,h2=s2*b.height*H/2;
+ const point=(near,lane,height=0)=>near?[x1+lane*w1,y1-height*h1]:[x2+lane*w2,y2-height*h2];
+ // Submit scalar coordinates directly: shell panels allocate no temporary
+ // point arrays on each frame, avoiding garbage-collection spikes.
+ const quad=(ax,ay,bx,by,cx,cy,dx,dy,color,seam=false)=>{
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.lineTo(cx,cy);ctx.lineTo(dx,dy);ctx.closePath();ctx.fill();
+  if(seam){ctx.strokeStyle=color;ctx.lineWidth=1.4;ctx.stroke();}
+ };
+ const band=(l1,r1,l2,r2,color,height=0,seam=false)=>quad(x1+l1*w1,y1-height*h1,x2+l2*w2,y2-height*h2,x2+r2*w2,y2-height*h2,x1+r1*w1,y1-height*h1,color,seam);
+ const wall=(side,lo,hi,color)=>quad(x1+side*a.room*w1,y1-lo*h1,x2+side*b.room*w2,y2-lo*h2,x2+side*b.room*w2,y2-hi*h2,x1+side*a.room*w1,y1-hi*h1,color,!color.startsWith('rgba'));
+ const roof=(lo,hi,color)=>band(a.room*lo,a.room*hi,b.room*lo,b.room*hi,color,1,true);
+ if(visible){
+  if(a.key!=='glass')band(-a.room,a.room,-b.room,b.room,a.floor);
+  band(-1.12,1.12,-1.12,1.12,'#151f31');band(-1,1,-1,1,a.key==='glass'?'#263d54':'#2b3445',0,true);
+  for(const side of[-1,1]){
+   band(side*.985,side*1.025,side*.985,side*1.025,a.trim);
+   if(index%12<6)band(side/3-.009,side/3+.009,side/3-.009,side/3+.009,'#9aabba');
+   if(a.key!=='service'){
+    const rail=side*1.13,low=.035,high=.06;
+    scenePoly([point(true,rail,low),point(false,rail,low),point(false,rail,high),point(true,rail,high)],'#829ba9');
+    if(index%10===0)sceneLine([point(false,rail,0),point(false,rail,.065)],'#b9dce2',Math.max(.7,w2*.007));
+   }
+   // Floor joints stay outside the driving lanes.
+   if(index%24===0&&a.key!=='glass')sceneLine([point(false,side*1.3),point(false,side*b.room)],'#485361',Math.max(.5,w2*.004));
+  }
+  if(index<2||(endIndex>ORBITAL_LENGTH-3&&index<ORBITAL_LENGTH))for(let k=0;k<12;k++)band(-1+k/6,-1+(k+1)/6,-1+k/6,-1+(k+1)/6,(k+index)%2?'#e6e5ce':'#303c51');
+ }
+ for(const side of[-1,1]){
+  const windowed=a.key==='glass'||a.key==='panorama'||(a.key==='launch'&&side===1)||(a.key==='reactor'&&side===-1)||(a.key==='service'&&((side===1&&index>=520&&index<625)||(side===-1&&index>=705&&index<790)));
+  if(windowed){
+   wall(side,0,.16,a.wall);wall(side,.84,1,a.wall);wall(side,.16,.84,'rgba(105,167,192,.035)');
+   if(a.key==='launch'&&side===1&&index>=1640&&index<=1780){
+    const open=paradiseSmooth((orbitalLaunchPhase()-.1)/1.25);
+    wall(side,.16,.16+.34*(1-open),'#475268');wall(side,.84-.34*(1-open),.84,'#475268');
+   }
+   if(index%20<2)wall(side,.15,.86,'#506c7e');
+  }else{
+   wall(side,0,1,a.wall);
+   if(a.key==='service'){
+    const panel=index%64;
+    if(panel<25){wall(side,.20,.80,'#172539');wall(side,.21,.23,'#64778a');wall(side,.77,.80,'#7a8b9d');}
+    if(panel>=3&&panel<11){wall(side,.35,.67,side>0?'#427a85':'#82728e');wall(side,.53,.56,'#a0e0d8');}
+    if(panel>=14&&panel<22){wall(side,.38,.43,'#adb38f');wall(side,.47,.52,'#d0a079');wall(side,.57,.62,'#55748b');}
+    if(panel>=34&&panel<44){wall(side,.03,.82,'#51687e');wall(side,.10,.72,'#2a3b50');wall(side,.69,.72,'#dfae71');}
+    if(panel>=48){wall(side,.20,.25,'#8b9ca5');wall(side,.31,.35,'#647984');}
+   }
+  }
+  wall(side,.1,.12,'#647a89');wall(side,.72,.728,a.trim);
+  if(a.key!=='service'&&index%72<16){wall(side,.25,.40,'#425a70');wall(side,.42,.45,a.trim);}
+  if(index%24<2){wall(side,.02,.98,'#536477');}
+ }
+ if(a.key==='glass'){
+  if(index%24<2){roof(-1,1,'#49677e');}
+ }else{
+  roof(-1,1,'#111a2b');
+  for(const lane of[-.65,.65])band(lane-.025,lane+.025,lane-.025,lane+.025,a.trim,.992);
+  if(index%24<2)roof(-1,1,'#354557');
+ }
+}
+function collectOrbitalSprites(seg,n,rx,p,clipY,getSprite){
+ for(const item of seg.orbitalItems||[]){
+  let x=item.x,y=item.lift||0;
+  if(item.kind==='shuttle'){const pose=orbitalShuttlePose();if(!pose.visible)continue;x=pose.x;y=pose.height;}
+  if(item.kind==='courier'){
+   const age=orbitalFlybyStart===null?0:Math.max(0,(raceElapsed-orbitalFlybyStart)/1000);
+   x-=age*.65;y=100+Math.sin(age*.3)*10;
+  }
+  const sprite=getSprite();sprite.type='orbital';sprite.item=item;sprite.variant=0;sprite.depth=n;sprite.segIdx=seg.index;
+  sprite.x=rx+x*p.w;sprite.sc=p.w/200*item.size;sprite.y=p.y-y*sprite.sc;sprite.clipY=clipY;
+ }
+}
+function drawOrbitalSprite(s){
+ const art=getOrbitalArt(s.item.kind),x=s.x-art.ox*s.sc,y=s.y-art.oy*s.sc;
+ if(s.sc<.02||x>W||x+art.w*s.sc<0)return;
+ const visible=Math.min(1,(Math.min(H,s.clipY)-y)/(art.h*s.sc));if(visible<=0)return;
+ ctx.save();ctx.globalAlpha*=1-paradiseSmooth((s.depth-115)/35);
+ ctx.drawImage(art.canvas,0,0,art.canvas.width,art.canvas.height*visible,x,y,art.w*s.sc,art.h*s.sc*visible);
+ ctx.beginPath();ctx.rect(0,0,W,Math.min(H,s.clipY));ctx.clip();ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
+ const t=raceElapsed/1000;
+ if(s.item.kind==='shuttle'&&orbitalShuttlePose().exhaust){
+  const strength=clamp((orbitalLaunchPhase()-1.1)*1.4,0,1);
+  for(const y of[-43,-77]){scenePoly([[-204,y-13],[-204-115*strength,y],[-204,y+13]],'#337cf7');scenePoly([[-205,y-6],[-205-75*strength,y],[-205,y+6]],'#9bf3f4');}
+ }else if(s.item.kind==='reactor'){
+  const pulse=.55+.12*Math.sin(t*.8);
+  for(let j=0;j<4;j++){const y=-92-j*87;sceneEllipse(0,y,49,12,`rgba(99,233,217,${pulse})`);sceneLine([[-43,y],[43,y]],'#b7f3e3',3);}
+ }else if(s.item.kind==='loader'){
+  const height=8+Math.sin(t*.65)*6;scenePoly([[-35,-18-height],[37,-18-height],[37,-67-height],[-35,-67-height]],'#b99769');sceneLine([[-31,-63-height],[33,-22-height]],'#e2c48d',3);
+ }else if(s.item.kind==='robot'){
+  const reach=Math.sin(t*.55)*12;sceneLine([[-5,-65],[19,-91],[48+reach,-70]],'#b8b2a3',9);sceneEllipse(48+reach,-70,7,7,'#83d5cd');
+ }else if(s.item.kind==='directory'){
+  const roof=orbitalProfile(s.segIdx).height*200/ROAD_WIDTH/s.item.size-(s.item.lift||0);
+  for(const x of[-114,114])sceneLine([[x,-164],[x,-roof]],'#7494a7',3);
+  ctx.font="17px 'Gravity Pixel',monospace";ctx.textAlign='center';ctx.fillStyle='#d8edf1';ctx.fillText(s.item.caption,0,-117,292);
+ }else if(s.item.kind==='observation'){
+  for(let j=0;j<3;j++){sceneEllipse(-60+j*60,-42,5,6,'#a8c3c9');sceneLine([[-60+j*60,-35],[-60+j*60,-13]],'#a0adb7',9);sceneLine([[-65+j*60,-14],[-70+j*60,0]],'#637b90',4);}
+ }
+ ctx.restore();
+}
+function getOrbitalArt(kind){
+ if(orbitalArt.has(kind))return orbitalArt.get(kind);
+ const dims={earth:[420,420,210,210],directory:[340,190,170,189],freighter:[720,300,360,289],courier:[720,300,360,289],shuttle:[560,240,280,219],cradle:[600,140,300,139],cargo:[360,230,180,229],cabinet:[200,250,100,249],loader:[240,160,120,159],robot:[220,190,110,189],workbay:[460,300,230,299],pipes:[260,340,130,339],antenna:[460,400,230,399],satellite:[520,280,260,279],reactor:[340,600,170,599],observation:[400,220,200,219],crew:[260,200,130,199],greenhouse:[460,340,230,339]};
+ const [w,h,ox,oy]=dims[kind]||[1,1,0,0],r=.6,canvas=document.createElement('canvas');canvas.width=Math.ceil(w*r);canvas.height=Math.ceil(h*r);
+ const g=canvas.getContext('2d');g.scale(r,r);g.translate(ox,oy);
+ const poly=(p,c)=>{g.fillStyle=c;g.beginPath();p.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
+ const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+ const line=(p,c,l=2)=>{g.strokeStyle=c;g.lineWidth=l;g.beginPath();p.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();};
+ const oval=(x,y,rx,ry,c)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();};
+ const text=(s,x,y,size=18)=>{g.font=`${size}px 'Gravity Pixel',monospace`;g.textAlign='center';g.fillStyle='#b9dce3';g.fillText(s,x,y);};
+ const box=(x,y,w,h,c)=>{rect(x,y-h,w,h,c);line([[x,y-h],[x+w,y-h],[x+w,y]],'#8098a5',3);line([[x+5,y-5],[x+w-5,y-h+5]],'#4a5d70',3);};
+ if(kind==='earth'){
+  g.save();g.beginPath();g.arc(0,0,202,0,Math.PI*2);g.clip();
+  const ocean=g.createRadialGradient(97,-70,10,-20,0,255);ocean.addColorStop(0,'#448cbd');ocean.addColorStop(.6,'#205e98');ocean.addColorStop(1,'#0d264b');g.fillStyle=ocean;g.fillRect(-210,-210,420,420);
+  // Readable continent silhouettes, with smaller bays and coastal shelves.
+  poly([[-191,-92],[-146,-146],[-87,-165],[-45,-138],[-65,-117],[-38,-88],[-61,-64],[-70,-31],[-102,-13],[-117,24],[-143,3],[-153,-26],[-177,-41]],'#70b3ae');
+  poly([[-106,10],[-74,21],[-46,48],[-26,56],[-40,91],[-58,107],[-66,147],[-91,178],[-104,146],[-104,101],[-127,67],[-130,35]],'#74aaa0');
+  poly([[11,-133],[46,-157],[82,-148],[95,-128],[143,-135],[178,-103],[196,-53],[165,-37],[156,-3],[124,1],[102,-20],[74,-4],[64,-38],[40,-51],[7,-51],[-8,-84]],'#8abbb0');
+  poly([[16,-45],[56,-39],[86,-9],[95,33],[65,86],[42,90],[27,57],[11,26],[-4,7]],'#b9c0a4');
+  poly([[123,89],[166,77],[187,103],[171,126],[137,128],[117,111]],'#b6b7a2');
+  poly([[-76,-185],[-23,-200],[12,-180],[-6,-148],[-55,-154]],'#d0e3dc');
+  g.lineCap='round';
+  for(const [a,b,c,d,e,f]of[[-175,-113,-78,-159,15,-111],[-123,-58,-37,-83,86,-55],[-195,33,-68,7,7,50],[40,121,121,72,185,91],[-95,153,-9,177,75,155],[60,-151,136,-169,181,-129]]){
+   g.strokeStyle='rgba(211,232,232,.61)';g.lineWidth=7;g.beginPath();g.moveTo(a,b);g.quadraticCurveTo(c,d,e,f);g.stroke();
+  }
+  const shade=g.createLinearGradient(-202,0,180,0);shade.addColorStop(0,'rgba(0,3,19,.90)');shade.addColorStop(.34,'rgba(0,5,25,.45)');shade.addColorStop(.72,'rgba(0,5,25,0)');g.fillStyle=shade;g.fillRect(-210,-210,420,420);g.restore();
+  g.strokeStyle='#8dc2d4';g.lineWidth=3;g.beginPath();g.arc(0,0,203,0,Math.PI*2);g.stroke();
+ }else if(kind==='freighter'||kind==='courier'){
+  if(kind==='courier')g.scale(-1,1);
+  poly([[-321,-92],[-268,-153],[174,-153],[323,-80],[222,-41],[-239,-41]],'#7c90a2');
+  poly([[-268,-153],[-204,-204],[95,-204],[174,-153]],'#a1afba');
+  poly([[-321,-92],[323,-80],[222,-41],[-239,-41]],'#40556b');
+  poly([[140,-151],[222,-127],[250,-94],[154,-101]],'#72b8c6');
+  for(let j=0;j<6;j++){rect(-217+j*51,-144,38,48,j%2?'#8c7998':'#b09478');rect(-213+j*51,-137,30,5,'#c8c7b3');}
+  for(const x of[-230,105]){rect(x,-42,8,42,'#6b8296');oval(x+5,-3,26,4,'#293d53');}
+  for(const y of[-83,-111]){rect(-326,y,29,17,'#2c485d');rect(-330,y+4,9,9,'#75e0e9');}
+  text('ORION / CARGO',-50,-169,20);
+ }else if(kind==='shuttle'){
+  poly([[-223,-89],[-158,-139],[114,-139],[237,-70],[145,-26],[-174,-26]],'#b1bec6');
+  poly([[-158,-139],[-101,-178],[80,-178],[114,-139]],'#d5d7ce');
+  poly([[75,-137],[137,-110],[155,-81],[66,-93]],'#366c86');
+  poly([[-166,-45],[-235,-7],[-92,-16],[9,-51]],'#6d8b9e');poly([[-188,-111],[-245,-186],[-208,-187],[-131,-113]],'#7f9dae');
+  poly([[-219,-87],[237,-70],[145,-26],[-174,-26]],'#60788d');
+  line([[-161,-96],[99,-94]],'#e1aaad',7);rect(-232,-89,32,20,'#355a79');rect(-232,-56,32,20,'#355a79');
+  for(const x of[-103,116]){rect(x,-28,6,28,'#667b8a');oval(x+3,0,16,3,'#3d5066');}text('KESTREL',-30,-117,15);
+ }else if(kind==='cradle'){
+  poly([[-280,0],[280,0],[220,-40],[-229,-40]],'#3b4b5f');for(const x of[-177,153]){rect(x,-80,17,80,'#9aa5a6');rect(x-25,-87,65,10,'#d9b77d');}
+  for(let j=0;j<8;j++)rect(-220+j*60,-16,22,5,'#d7ac73');
+ }else if(kind==='cargo'){
+  for(const [x,y,c]of[[-158,0,'#8f8198'],[-53,0,'#b49b7a'],[52,0,'#6d9394'],[-108,-85,'#718c9f'],[0,-85,'#ac8a91']])box(x,y,96,80,c);
+  for(const x of[-143,-38,67]){rect(x,-71,25,7,'#e3c69d');rect(x+9,-61,7,28,'#44566b');}
+ }else if(kind==='directory'){
+  rect(-162,-164,324,93,'#54778a');rect(-157,-159,314,83,'#122e46');
+  rect(-157,-158,314,7,'#77cbd4');line([[-68,-92],[68,-92]],'#ddae7d',3);poly([[59,-98],[72,-92],[59,-86]],'#ddae7d');
+ }else if(kind==='cabinet'){
+  box(-62,0,125,215,'#657f8f');rect(-50,-199,98,59,'#203c56');for(let j=0;j<3;j++){rect(-39+j*28,-185,18,25,['#78c7ce','#d9ab83','#bc97d4'][j]);}
+  for(let j=0;j<6;j++)rect(-44,-115+j*15,89,5,'#394f65');rect(40,-112,6,35,'#b1b9ae');
+ }else if(kind==='loader'){
+  rect(-82,-27,154,27,'#657584');for(const x of[-62,53]){oval(x,-9,16,10,'#263d55');oval(x,-9,7,6,'#91b1bc');}
+  rect(-69,-121,12,96,'#8d9ca3');rect(-59,-33,119,9,'#cbb58d');line([[-48,-112],[-48,-31]],'#d6b986',5);
+ }else if(kind==='robot'){
+  oval(0,-4,55,9,'#3a566c');rect(-26,-67,52,64,'#889aa4');oval(0,-64,29,12,'#b5b9b1');rect(-19,-43,37,16,'#304f66');
+ }else if(kind==='workbay'){
+  rect(-211,-250,420,250,'#465b70');rect(-194,-230,385,212,'#142c42');rect(-207,-249,415,10,'#a7bbbf');
+  for(const x of[-199,181])rect(x,-235,13,235,'#657f91');for(let j=0;j<5;j++){box(-161+j*63,-15,54,48,j%2?'#a98e79':'#6d899a');line([[-166+j*73,-187],[-149+j*73,-93]],'#839caa',6);}
+  text('SERVICE / ROBOTICS',0,-203,19);
+ }else if(kind==='pipes'){
+  for(const [x,c]of[[-80,'#8aa4ae'],[-24,'#af9da8'],[38,'#7d9c9d']]){
+   rect(x,-299,25,299,c);for(let j=0;j<5;j++)rect(x-4,-280+j*61,33,9,'#465f72');
+  }
+  oval(-13,-169,39,39,'#435f73');oval(-13,-169,28,28,'#8ca3a5');line([[-13,-193],[-13,-145]],'#4c6c7d',5);line([[-37,-169],[11,-169]],'#4c6c7d',5);
+ }else if(kind==='antenna'){
+  rect(-9,-237,18,237,'#7898ad');oval(0,-234,86,21,'#48677c');
+  poly([[-151,-321],[-106,-245],[0,-216],[107,-245],[151,-321],[76,-283],[0,-270],[-76,-283]],'#b2c6ce');
+  line([[-149,-321],[0,-367],[150,-321]],'#7cb8c8',4);line([[0,-367],[0,-270]],'#c7d9d7',4);
+ }else if(kind==='satellite'){
+  box(-46,-69,94,99,'#93aab8');for(const side of[-1,1]){
+   rect(side<0?-235:57,-161,178,137,'#173b61');for(let j=0;j<5;j++)line([[side<0?-226+j*34:65+j*34,-157],[side<0?-226+j*34:65+j*34,-27]],'#5289a4',2);
+   for(let j=0;j<4;j++)line([[side<0?-232:60,-140+j*30],[side<0?-62:229,-140+j*30]],'#5289a4',2);
+  }line([[0,-170],[0,-246]],'#95cbd3',4);
+ }else if(kind==='reactor'){
+  for(const side of[-1,1]){rect(side*101-10,-538,20,538,'#6f929b');rect(side*88-9,-498,18,434,'#405e74');}
+  oval(0,-525,129,41,'#98b7ba');rect(-128,-525,256,31,'#4b6e7d');oval(0,-494,128,30,'#345568');
+  rect(-63,-466,126,387,'#193c4a');for(let j=0;j<5;j++)oval(0,-439+j*77,64,14,'#548787');
+  oval(0,-66,129,30,'#6d999f');rect(-130,-66,260,45,'#4e707e');oval(0,-21,130,24,'#37596e');
+  text('HELIOS',0,-516,19);
+ }else if(kind==='crew'){
+  box(-110,0,70,62,'#3d6278');rect(-103,-52,55,27,'#5ca3b2');line([[-98,-40],[-57,-40]],'#a6dfda',3);
+  for(const [x,c]of[[2,'#d1b28c'],[73,'#8daab4']]){
+   oval(x,-112,14,16,'#c7d6d5');rect(x-11,-119,22,10,'#345773');
+   poly([[x-18,-94],[x+15,-94],[x+19,-44],[x-17,-44]],c);rect(x-9,-87,17,14,'#536f83');
+   line([[x-10,-44],[x-14,-4]],'#71899a',10);line([[x+11,-44],[x+17,-4]],'#71899a',10);
+   line([[x-16,-83],[x-30,-61],[x-43,-71]],c,8);line([[x+15,-84],[x+27,-62]],c,8);
+   rect(x-22,-5,15,5,'#cad2cb');rect(x+10,-5,16,5,'#cad2cb');
+  }
+  line([[-42,-69],[-22,-73]],'#9ad6ce',4);
+ }else if(kind==='greenhouse'){
+  box(-214,0,428,50,'#526b81');rect(-203,-287,11,237,'#96b5c0');rect(192,-287,11,237,'#96b5c0');rect(-204,-294,407,12,'#b6dbd4');
+  rect(-191,-281,379,225,'rgba(95,176,174,.13)');
+  for(let j=0;j<7;j++){
+   const x=-159+j*52,y=-53;line([[x,y],[x-9,y-80-j%3*24]],'#6eaaa0',5);
+   for(let k=0;k<3;k++){const h=32+k*25;poly([[x-6,y-h],[x-45,y-h-15],[x-31,y-h-32],[x-7,y-h-12]],'#6da590');poly([[x-7,y-h-8],[x+30,y-h-36],[x+32,y-h-15],[x-7,y-h+3]],'#8eb6a0');}
+   oval(x-9,y-88-j%3*24,9,6,j%2?'#e9a2cf':'#ba9bdf');
+  }
+  text('BIOSPHERE / 06',0,-307,19);
+ }else if(kind==='observation'){
+  rect(-174,-102,347,102,'#5f788b');rect(-165,-91,330,61,'#18344d');
+  for(let j=0;j<5;j++){rect(-150+j*64,-78,47,30,j%2?'#72b4ba':'#aa8fba');line([[-146+j*64,-45],[-110+j*64,-45]],'#a7c6c8',2);}text('OBSERVATION',0,-118,20);
+ }
+ const art={canvas,w,h,ox,oy};orbitalArt.set(kind,art);return art;
+}
+
 // Keep the game self-contained in both repository-root and Vite deployments.
 /* Paradise Circuit: isolated scenery/route code; no changes to other worlds.
  * Static art is baked once at race start. Moving objects use the same road
@@ -1610,7 +1903,7 @@ resize(); window.addEventListener('resize', resize);
 let SEGMENT_COUNT = 1150; const SEGMENT_LENGTH = 150; let TRACK_LENGTH = SEGMENT_COUNT * SEGMENT_LENGTH;
 let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
-const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7;
+const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150 },
   { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1250 },
@@ -1618,9 +1911,11 @@ const LEVELS = [
   { id: LEVEL_HIGHWAY, name: 'MIDNIGHT HIGHWAY', tag: 'VIOLET / AFTER HOURS', color: '#b88cff', segments: 1200 },
   { id: LEVEL_DREAM, name: 'DREAM ODYSSEY', tag: 'SURREAL WORLDS', color: '#00ffd2', segments: 2875 },
   { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350 },
-  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: PARADISE_LENGTH }
+  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: PARADISE_LENGTH },
+  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH }
 ];
-function raceLapCount(){return currentLevel===LEVEL_DREAM||currentLevel===LEVEL_PARADISE?1:3;}
+function isPointToPoint(){return currentLevel===LEVEL_DREAM||currentLevel===LEVEL_ORBITAL;}
+function raceLapCount(){return isPointToPoint()||currentLevel===LEVEL_PARADISE?1:3;}
 const HIGHWAY_CROSSINGS = [
   { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
@@ -2013,6 +2308,8 @@ function buildSegments() {
             ...makeSection(100, -0.4, -8),
             ...makeSection(110, 0, 0)
         ];
+    } else if (currentLevel === LEVEL_ORBITAL) {
+        trackDef=buildOrbitalRoute();
     } else if (currentLevel === LEVEL_PARADISE) {
         trackDef=buildParadiseRoute();
     } else if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
@@ -2234,7 +2531,7 @@ function buildSegments() {
                     }
                 }
             }
-        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE) {
+        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL) {
             // Space Wave keeps the track edges free of floating crystal spires.
         } else {
             // Level 1: Standard tree distribution
@@ -2257,8 +2554,8 @@ function buildSegments() {
 
     if(currentLevel===2)for(const index of OCEAN_SCREEN_SPOTS)segments[index].coastalScreen=true;
 
-    if (currentLevel === LEVEL_DREAM) {
-        // Append 200 extra flat straight underwater segments beyond the finish line
+    if (isPointToPoint()) {
+        // Append 200 flat runout segments beyond the finish line
         const lastWorldY = worldY;
         for (let i = 0; i < 200; i++) {
             const idx = SEGMENT_COUNT + i;
@@ -2283,12 +2580,14 @@ function buildSegments() {
 
     addPolishScenery();
     if(currentLevel===LEVEL_PARADISE)buildParadiseScenery();
+    if(currentLevel===LEVEL_ORBITAL)buildOrbitalScenery();
     const laneOffsets = [-0.65, 0.65];
     
     // Adaptive Baustellen und Blitz-Items für die verschiedenen Strecken
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
+    if(currentLevel===LEVEL_ORBITAL){siteIndices=[];freeBolts=[145,475,805,1135,1465,1795,2125,2455,2785];}
     if(currentLevel===LEVEL_PARADISE){siteIndices=[];freeBolts=[150,550,950,1320,1760,2170,2550,2910,3270].map(paradiseIndex);}
     if (currentLevel === LEVEL_DREAM) {
         siteIndices = [350, 850, 1350, 1850, 2350];
@@ -2340,7 +2639,7 @@ function buildSegments() {
 
 function getSeg(z) {
     const idx = ~~(z / SEGMENT_LENGTH);
-    if (currentLevel === LEVEL_DREAM && idx >= SEGMENT_COUNT) {
+    if (isPointToPoint() && idx >= SEGMENT_COUNT) {
         return segments[Math.min(idx, segments.length - 1)] || segments[segments.length - 1];
     }
     return segments[(idx % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
@@ -2391,7 +2690,7 @@ function initOpponents() {
 // Independent drivers: pace, cornering, reaction time and willingness to commit.
 // Limits are relative to the same 335 km/h baseline; there is no leader slowdown.
 function racePosition(car){return getRaceDistance(car)+(car===player?getPlayerContactDistance():0);}
-function racerFinished(car){return car.finishTime!=null||!!car.finished||(currentLevel===LEVEL_DREAM?car.z>=TRACK_LENGTH:car.lap>raceLapCount());}
+function racerFinished(car){return car.finishTime!=null||!!car.finished||(isPointToPoint()?car.z>=TRACK_LENGTH:car.lap>raceLapCount());}
 function raceSnapshot(){return [player,...opponents].filter(c=>!racerFinished(c)).map(car=>({car,x:car===player?getPlayerCollisionX():car.x,z:racePosition(car),speed:car.speed,target:car.targetX??car.x}));}
 const respawningPickups=new Set();
 function collectRacePickup(object){object.active=false;object.respawn=1.5;respawningPickups.add(object);}
@@ -2411,7 +2710,7 @@ function roadPreview(car,profile){
     let left=.78+(currentLevel===LEVEL_PARADISE?(paradiseRoadScale(car.z/150)-1)*1.4:0),right=left,curve=0,demand=0;
     const objects=[];
     for(let n=0;n<=Math.ceil(horizon/SEGMENT_LENGTH);n++){
-        if(currentLevel===LEVEL_DREAM&&car.z+n*SEGMENT_LENGTH>=TRACK_LENGTH)break;
+        if(isPointToPoint()&&car.z+n*SEGMENT_LENGTH>=TRACK_LENGTH)break;
         const seg=getSeg(car.z+n*SEGMENT_LENGTH),limits=getRoadLimits(car.z+n*SEGMENT_LENGTH);
         left=Math.min(left,limits.left-.10);right=Math.min(right,limits.right-.10);
         if(n<16){curve+=seg.curve/16;demand=Math.max(demand,Math.abs(seg.curve));}
@@ -5840,6 +6139,7 @@ function drawOceanBeachSpot(x,y,scale,kind,seed) {
 }
 
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
+    if(currentLevel===LEVEL_ORBITAL){drawOrbitalRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx,isVisible);return;}
     if(currentLevel===LEVEL_PARADISE){if(isVisible)drawParadiseRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);return;}
     if (currentLevel === LEVEL_HILLS || currentLevel === LEVEL_HIGHWAY) {
         if (isVisible) drawChapterRoad(x1, y1, w1, x2, y2, w2, isAlt, isStart, segIdx);
@@ -10931,7 +11231,7 @@ function drawCruisingSpeedStream(time) {
 function render(ts) {
   const dt = smoothedDt;
   const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
-  const startSegIdx = currentLevel === LEVEL_DREAM ? ~~(player.z / SEGMENT_LENGTH) : ~~(player.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
+  const startSegIdx = isPointToPoint() ? ~~(player.z / SEGMENT_LENGTH) : ~~(player.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
   const percent = (player.z % SEGMENT_LENGTH) / SEGMENT_LENGTH;
   const baseSeg = segments[startSegIdx] || segments[segments.length - 1];
   const playerY = baseSeg.worldY + baseSeg.hillDelta * percent;
@@ -10949,6 +11249,8 @@ function render(ts) {
   }
   if (currentLevel === 2) oceanRockPalette = OCEAN_ROCK_DAY.map((color, i) => interpolateColor(color, OCEAN_ROCK_NIGHT[i], progressRatio));
 
+  if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
+  else {
   const sunBuffer = sunR * 2, sunLoopW = W + sunBuffer * 2;
   let sunX = (W / 2) - (bgOffset * 0.15);
   sunX = ((sunX + sunBuffer) % sunLoopW); if (sunX < 0) sunX += sunLoopW; sunX -= sunBuffer;
@@ -11586,6 +11888,8 @@ function render(ts) {
   }
   ctx.restore(); 
 
+  }
+
   const camZ = player.z, camX = player.x * ROAD_WIDTH * 0.82, camY = CAMERA_HEIGHT + playerY; 
   let curveOffset = 0, curveDX = 0, maxY = H, spriteCount = 0;
 
@@ -11654,7 +11958,7 @@ function render(ts) {
   // A distant return bend cannot be represented as an isolated road ribbon
   // above this hilly panorama. Fade its terrain and scenery together, before
   // that remote section, with a world-distance fade rather than a hard cutoff.
-  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:DRAW_DISTANCE;
+  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:currentLevel===LEVEL_ORBITAL?150:DRAW_DISTANCE;
   const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
   const projectVehicle = (worldZ, laneX, seg, segmentZ, curveStart, curveEnd) => {
     if (worldZ - camZ < 64) return null;
@@ -11664,14 +11968,15 @@ function render(ts) {
     return p;
   };
   for (let n = 0; n < currentDrawDistance; n++) {
-    const segIdx = currentLevel === LEVEL_DREAM ? (startSegIdx + n) : (startSegIdx + n) % SEGMENT_COUNT;
+    const segIdx = isPointToPoint() ? (startSegIdx + n) : (startSegIdx + n) % SEGMENT_COUNT;
+    if(isPointToPoint()&&segIdx>=segments.length)break;
     const seg = segments[segIdx] || segments[segments.length - 1];
-    const lapOffset = (currentLevel !== LEVEL_DREAM && segIdx < startSegIdx) ? TRACK_LENGTH : 0; const segWorldZ = seg.worldZ + lapOffset;
+    const lapOffset = (!isPointToPoint() && segIdx < startSegIdx) ? TRACK_LENGTH : 0; const segWorldZ = seg.worldZ + lapOffset;
     
     // Die Projektion muss gemacht werden
-    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE, nearZ=camZ+64;
+    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL, nearZ=camZ+64;
     if(clippedRoad && segWorldZ+SEGMENT_LENGTH<=nearZ){
-      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE)&&n===0?1-percent:1;
+      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL)&&n===0?1-percent:1;
       curveDX+=seg.curve*5*step;curveOffset+=curveDX*step;curveDX*=Math.pow(.85,step);
       continue;
     }
@@ -11692,7 +11997,7 @@ function render(ts) {
     seg.curveOffset = curveOffset;
     
     // Immer Kurven-Mathematik fortführen
-    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE)&&n===0?1-percent:1;
+    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL)&&n===0?1-percent:1;
     curveDX+=seg.curve*5*curveStep;curveOffset+=curveDX*curveStep;curveDX*=Math.pow(.85,curveStep);
     seg.curveOffsetEnd=curveOffset;
 
@@ -11740,6 +12045,7 @@ function render(ts) {
       visibility:currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
     });
 
+    if(currentLevel===LEVEL_ORBITAL)collectOrbitalSprites(seg,n,rx2,p2,segmentClipY,getCleanSpriteFromPool);
     if(currentLevel===LEVEL_PARADISE)collectParadiseSprites(seg,n,rx2,p2,segmentClipY,getCleanSpriteFromPool);
     if (seg.isPillar) {
         const s = getCleanSpriteFromPool(); s.type = 'pillar'; s.x = rx2; s.y = p2.y; s.sc = p2.scale; s.w = p2.w; s.depth = n; s.segIdx = segIdx; s.clipY = segmentClipY; s.worldZ = segWorldZ;
@@ -11912,6 +12218,7 @@ function render(ts) {
 
   // Define the comprehensive helper to draw any sprite type
   function drawSprite(s) {
+    if(s.type==='orbital'){drawOrbitalSprite(s);return;}
     if(s.type==='paradise'){drawParadiseSprite(s);return;}
     if(s.type==='paradise_oncoming'){
       ctx.save();ctx.beginPath();ctx.rect(0,0,W,s.clipY);ctx.clip();
@@ -12215,13 +12522,25 @@ function render(ts) {
   // the road at each water-depth slice. A passed entrance is already offscreen.
   const pierAnchor=currentLevel===2?segmentsToDraw.find(s=>s.segIdx>=OCEAN_PIER_INDEX&&s.segIdx<OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH):null;
   if(pierAnchor)pierAnchor.lookOffset=lookOffset;
+  // Four world-anchored slices share one continuous station shell panel.
+  // Physics and sprite positions retain full resolution. Anchoring groups to
+  // world indices keeps their geometry stable as the camera crosses a slice.
+  if(currentLevel===LEVEL_ORBITAL){
+    for(let i=0;i<segmentsToDraw.length;){
+      const near=segmentsToDraw[i],end=Math.min(segmentsToDraw.length-1,i+3-near.segIdx%4);
+      near.orbitalEnd=segmentsToDraw[end];i=end+1;
+    }
+  }
   // Interleave Road Segments and Sprites back-to-front (Perfect painter's algorithm depth occlusion)
   for (let i = segmentsToDraw.length - 1; i >= 0; i--) {
     const roadSeg = segmentsToDraw[i];
     if(roadSeg.visibility<1){ctx.save();ctx.globalAlpha*=roadSeg.visibility;}
     
     // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
-    drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
+    if(currentLevel===LEVEL_ORBITAL){
+      const end=roadSeg.orbitalEnd;
+      if(end)drawOrbitalRoad(roadSeg.rx1,roadSeg.y1,roadSeg.w1,end.rx2,end.y2,end.w2,roadSeg.p1Scale,end.p2Scale,roadSeg.segIdx,roadSeg.isVisible||end.isVisible,end.segIdx+1);
+    }else drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
     
     if(roadSeg.isVisible)drawDreamSurfaces(roadSeg.rx1,roadSeg.y1,roadSeg.w1,roadSeg.rx2,roadSeg.y2,roadSeg.w2,roadSeg.segIdx);
     if(pierAnchor && roadSeg.segIdx>=OCEAN_PIER_INDEX && roadSeg.segIdx<OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH){
@@ -12965,7 +13284,7 @@ function showResult(){
 }
 
 function getRaceDistance(car) {
-  return currentLevel === LEVEL_DREAM ? car.z : (car.lap - 1) * TRACK_LENGTH + car.z;
+  return isPointToPoint() ? car.z : (car.lap - 1) * TRACK_LENGTH + car.z;
 }
 
 // Convert the painted bodies at the player's contact plane into road units.
@@ -12988,7 +13307,7 @@ function getPlayerCollisionX(){
   // Match the renderer's continuous road bend at the car's contact plane.
   for(let n=0;n<=Math.ceil(distance/SEGMENT_LENGTH)+1;n++){
     const z=first+n*SEGMENT_LENGTH,seg=getSeg(z),before=offset;
-    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
+    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
     delta+=seg.curve*5*step;offset+=delta*step;delta*=Math.pow(.85,step);
     if(z+SEGMENT_LENGTH>=worldZ){
       const bend=before+(offset-before)*clamp((worldZ-z)/SEGMENT_LENGTH,0,1);
@@ -13042,6 +13361,7 @@ function getRoadLimits(z) {
   if (currentLevel === 2) left = 1.05;
   if (currentLevel === LEVEL_HIGHWAY) left = right = 0.88;
   if (currentLevel === LEVEL_SPACE) left = right = 0.98;
+  if(currentLevel===LEVEL_ORBITAL)left=right=orbitalProfile(segment.index).key==='glass'?.86:.92;
   if(currentLevel===LEVEL_PARADISE){
     const extra=paradiseRoadScale(z/150)-1;
     if(segment.isBridge||Math.abs(segment.index-PARADISE_ARCH_SEGMENT)<4||Math.abs(segment.index-PARADISE_GATE_SEGMENT)<4)left=right=.88+extra*1.07;
@@ -13095,7 +13415,7 @@ function getTrackContacts(from, to, fields) {
   const first = Math.floor(Math.min(from.z, to.z) / SEGMENT_LENGTH);
   const last = Math.floor(Math.max(from.z, to.z) / SEGMENT_LENGTH);
   for (let index = first; index <= last; index++) {
-    if (currentLevel === LEVEL_DREAM && (index < 0 || index >= SEGMENT_COUNT)) continue;
+    if (isPointToPoint() && (index < 0 || index >= SEGMENT_COUNT)) continue;
     const segment = segments[(index % SEGMENT_COUNT + SEGMENT_COUNT) % SEGMENT_COUNT];
     for (const type of fields) {
       const object = segment[type];
@@ -13194,6 +13514,7 @@ function advanceRaceStep(dt){
     updateRacePickups(dt);
     updateChapterTraffic(dt);
     if(currentLevel===LEVEL_PARADISE){updateParadisePlane(dt);updateParadiseTraffic(dt);}
+    if(currentLevel===LEVEL_ORBITAL)updateOrbitalEvents();
     if (!player.finished) currentLapTime += dt * 1000;
     if(lastLapElapsed!==null){lastLapElapsed+=dt;if(lastLapElapsed>=1.5)lastLapElapsed=null;}
     player.collisionCooldown = Math.max(0, player.collisionCooldown - dt); player.hitFlash = Math.max(0, player.hitFlash - dt * 2.6);
@@ -13328,7 +13649,7 @@ function advanceRaceStep(dt){
       const oppOffroad=Math.abs(opp.x)>=roadSoftLimit(opp.z);
       updateOpponentRacecraft(opp,dt,trafficSnapshot);
       advanceNormalAndTurboSpeed(opp,dt,getOpponentBaseSpeed(opp),oppOffroad,Math.min(opp.trafficLimit??Infinity,opp.obstacleLimit??Infinity));
-      const oppSegIdx = currentLevel === LEVEL_DREAM ? ~~(opp.z / SEGMENT_LENGTH) : ~~(opp.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
+      const oppSegIdx = isPointToPoint() ? ~~(opp.z / SEGMENT_LENGTH) : ~~(opp.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
       const steerSpd=opp.maneuver==='avoid'?3.6:opp.maneuver==='pass'?3.0:2.3;
       updatePolishHandling(opp,dt);
       if(opp.dreamEffectTimer>0)opp.targetX+=Math.sin((5-opp.dreamEffectTimer)*3.8+opp.oppIdx)*.11;
@@ -13394,7 +13715,7 @@ function advanceRaceStep(dt){
     opponents.forEach((car,i)=>recordRaceFinish(car,previousOpponents[i].z,stepStart,dt));
     for (const opp of opponents) {
       if (opp.z >= TRACK_LENGTH) {
-        if (currentLevel === LEVEL_DREAM) { if (opp.lap === 1) opp.lap++; }
+        if (isPointToPoint()) { if (opp.lap === 1) opp.lap++; }
         else { opp.z -= TRACK_LENGTH; opp.lap++; }
       }
     }
@@ -13405,7 +13726,7 @@ function advanceRaceStep(dt){
       const distance=getRaceDistance(player),boundary=player.lap*TRACK_LENGTH;
       const fraction=previousPlayerRaceZ>=boundary?0:clamp((boundary-previousPlayerRaceZ)/Math.max(.000001,distance-previousPlayerRaceZ),0,1);
       const lapEnd=stepStart+dt*1000*fraction,lapTime=lapEnd-playerLapStart;
-      if (currentLevel !== LEVEL_DREAM) player.z -= TRACK_LENGTH;
+      if (!isPointToPoint()) player.z -= TRACK_LENGTH;
       lapTimes[player.lap - 1] = lapTime;
       if (lapTime < bestLapTime) bestLapTime = lapTime;
       playerLapStart=lapEnd;currentLapTime=raceElapsed-lapEnd;player.lap++;

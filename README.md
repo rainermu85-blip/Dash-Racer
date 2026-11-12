@@ -1,6 +1,6 @@
 # Dash Racer
 
-Ein Arcade-Rennspiel im Retro-Neonstil mit sieben Strecken, fünf Gegnern und
+Ein Arcade-Rennspiel im Retro-Neonstil mit acht Strecken, fünf Gegnern und
 Boosts. Es läuft vollständig im Browser mit Canvas 2D. Vite dient zum
 Entwickeln und Erstellen der statischen Ausgabe. Es gibt aktuell keinen
 Anwendungsserver und keine Gemini-Integration.
@@ -40,12 +40,15 @@ Der erste Themenblock **NEON AFTERGLOW** umfasst vier Synthwave-Strecken:
 Die bisherigen Sonderwelten sind weiterhin als Level 5 **Dream Odyssey**
 (Tundra, Arktis, Dalí und Unterwasser) und Level 6 **Space Wave** spielbar.
 Level 7 **Paradise Circuit** ergänzt eine Runde über fünf tropische Inseln.
-Alle sieben Strecken sind frei auswählbar. Medaillen,
+Level 8 **Orbital Passage** führt als lineares Rennen durch eine Raumstation:
+sechs Bereiche, ein sichtbarer Shuttle-Start und etwa 1:45 Minuten mit Turbos.
+[Strecke und Prüfung](docs/orbital-passage.md).
+Alle acht Strecken sind frei auswählbar. Medaillen,
 gespeicherter Fortschritt und Freischaltschwellen sind noch nicht implementiert.
 
-Weitere Entwürfe für **Macondo / Hundert Jahre Einsamkeit**, **Orbital Passage**
-und die zweiminütige USA-Reise **Coast to Coast** stehen in den
-[neuen Levelkonzepten](docs/level-concepts/README.md). Diese sind bislang Konzepte.
+Weitere Entwürfe für **Macondo / Hundert Jahre Einsamkeit** und die USA-Reise
+**Coast to Coast** stehen in den [Levelkonzepten](docs/level-concepts/README.md).
+Orbital Passage ist aus diesem Katalog bereits spielbar.
 
 Der Highway hat eine getrennte Gegenfahrbahn und Leitplanken auf der Rennstrecke.
 Autos fahren über zwei Hochstraßen, und Schnellzüge werden bei der Annäherung

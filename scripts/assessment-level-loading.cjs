@@ -23,14 +23,14 @@ fs.mkdirSync(output,{recursive:true});
    try{
     await page.goto(origin+prefix);await page.locator('#introBox.show').tap();
     await page.evaluate(()=>{window.__frames=0;const original=render;render=function(...args){__frames++;return original(...args);};});
-    for(const id of[7,1,2,3,4,5,6,7]){
+    for(const id of[8,7,1,2,3,4,5,6,8]){
      const before=await page.evaluate(()=>__frames);
      await page.locator('#lvl'+id+'Btn').tap();
      await page.waitForTimeout(250); // Menu preview must not kill the frame loop.
      await page.locator('#startBtn').tap();await page.waitForFunction(()=>state==='playing',{},{timeout:12000});
      await page.waitForTimeout(150);
      const actual=await page.evaluate(()=>({level:currentLevel,state,z:player.z,frames:__frames,segments:SEGMENT_COUNT,lap:document.getElementById('lapVal').textContent}));
-     if(id===7||id===1)await page.screenshot({path:path.join(output,`${hosting}-level-${id}.png`)});
+     if(id===8||id===7||id===1)await page.screenshot({path:path.join(output,`${hosting}-level-${id}.png`)});
      await page.locator('#pauseButton').click();
      await page.locator('#exitRaceBtn').tap();
      const menu=await page.locator('#startBtn').isVisible();

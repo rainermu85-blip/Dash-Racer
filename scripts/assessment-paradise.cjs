@@ -142,7 +142,7 @@ module.exports=async function assessParadise(browser,baseUrl,output){
    record('six-racers-finish-single-lap-with-real-times',[player,...opponents].every(c=>c.finishTime>0&&c.lap>=2),{seconds:raceElapsed/1000,times:getRaceStandings().map(c=>({name:c.driverTag,time:c.finishTime}))});
    state='result';renderScoreboard();record('scoreboard-has-six-times-and-correct-level',document.querySelectorAll('.results-table tbody tr').length===6&&document.querySelector('.result-course').textContent==='PARADISE CIRCUIT',{});
    document.getElementById('continueBtn').click();record('continue-returns-to-level-selection',state==='intro'&&!!document.getElementById('lvl7Btn')&&!!document.getElementById('startBtn'),{});
-   for(const level of LEVELS){selectLevel(level.id);record('lap-count-level-'+level.id,raceLapCount()===(level.id===5||level.id===7?1:3),{laps:raceLapCount()});}
+   for(const level of LEVELS){selectLevel(level.id);record('lap-count-level-'+level.id,raceLapCount()===(level.id===5||level.id===7||level.id===8?1:3),{laps:raceLapCount()});}
    return{checks,shots};
   });
   for(const shot of result.shots)fs.writeFileSync(path.join(output,`paradise-${shot.name}.png`),Buffer.from(shot.image.split(',')[1],'base64'));
