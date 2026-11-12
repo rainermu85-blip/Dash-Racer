@@ -43,7 +43,7 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
    document.getElementById('continueBtn').click();record('continue-returns-to-level-selection',state==='intro'&&!!document.getElementById('lvl8Btn'),{});
    setup();opponents=[];
    record('restart-resets-station-events',orbitalLaunchStart===null&&orbitalFlybyStart===null&&player.z===0,{});
-   player.z=1555*150;updateOrbitalEvents();const start=orbitalLaunchStart,pose=JSON.stringify(orbitalShuttlePose());render(1000);render(9000);
+   player.z=ORBITAL_LAUNCH_TRIGGER*150;updateOrbitalEvents();const start=orbitalLaunchStart,pose=JSON.stringify(orbitalShuttlePose());render(1000);render(9000);
    record('render-clock-does-not-animate-paused-launch',orbitalLaunchStart===start&&pose===JSON.stringify(orbitalShuttlePose()),{});
    for(const index of[500,1000,1800,2150,2700])for(const role of['player','ai'])for(const side of[-1,1]){
     const car=role==='player'?player:{...player};car.z=index*150;car.x=side*1.4;car.speed=4000;car.normalSpeed=4000;car.wallHitCooldown=0;car.wallContactSide=0;
@@ -56,7 +56,7 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
    const sceneSamples=[];
    for(const index of[0,45,175,260,450,650,905,980,1060,1140,1260,1410,1510,1600,1645,1705,1830,1990,2040,2200,2350,2440,2550,2620,2720,2850,2910,3015,3060]){
     player.z=(index+.2)*150;player.x=0;player.pitch=segments[index].hillDelta;player.fovOffset=0;player.curveAheadSmooth=0;curveCamera.look=0;
-    raceElapsed=index/28.8*1000;orbitalLaunchStart=index>=1555?raceElapsed-(index-1555)/28.8*1000:null;orbitalFlybyStart=index>=2625?raceElapsed-(index-2625)/28.8*1000:null;
+    raceElapsed=index/28.8*1000;orbitalLaunchStart=index>=ORBITAL_LAUNCH_TRIGGER?raceElapsed-(index-ORBITAL_LAUNCH_TRIGGER)/28.8*1000:null;orbitalFlybyStart=index>=2625?raceElapsed-(index-2625)/28.8*1000:null;
     for(let i=0;i<60;i++)updateCurveCamera(1/60);
     suppress=false;render(raceElapsed);const data=ctx.getImageData(0,0,W,H).data;
     shots.push({name:String(index),image:C.toDataURL()});suppress=true;render(raceElapsed);const baseline=ctx.getImageData(0,0,W,H).data;

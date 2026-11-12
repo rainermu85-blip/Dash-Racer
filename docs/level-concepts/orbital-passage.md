@@ -7,12 +7,12 @@ kein Last-Lap-Hinweis, Boden-Ziellinie ohne Finishtor.
 
 | Abschnitt | Ungefähre Zeit | Inhalt |
 | --- | --- | --- |
-| Arrival Dock | 0–16 s | Angedockter Frachter, Container, Ladetechnik und Techniker |
+| Arrival Dock | 0–16 s | Landender Frachter, markierter Liegeplatz, Kran, Container und Techniker |
 | Service Spine | 16–32 s | Enger, warmer Wartungsgang, Wandkonsolen, Leitungen, Türen und wechselnde Kurven |
-| Earth Observation | 32–48 s | Glasbrücke mit Erde, Sternen, Antenne und Satelliten |
+| Earth Observation | 32–48 s | Glasbrücke mit Erde, Sternen, Antenne, Satelliten und Außeneinsatz |
 | Active Launch Deck | 48–68 s | Große Halle, Robotik und Fracht; ein Shuttle startet durch ein seitliches Hangartor |
 | Helios Reactor | 68–88 s | Hohe Reaktorgalerie mit zwei Kernen, langsam pulsierenden Ringen und Wartungsbetrieb |
-| Panorama Terminal | 88–105 s | Beobachtungskonsolen, Techniker, Biosphärenbeete und ein vorbeifliegender Transporter; gerader Zielanlauf |
+| Panorama Terminal | 88–105 s | Beobachtungskonsolen, Techniker, Biosphärenbeete und ein Transporter über dem Glasdach; gerader Zielanlauf |
 
 Zeiten variieren mit Fahrweise und Turbonutzung. Die erste automatisierte Fahrt
 mit echter Beschleunigung, Lenkung und eingesammelten Ladungen dauerte

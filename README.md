@@ -41,7 +41,8 @@ Die bisherigen Sonderwelten sind weiterhin als Level 5 **Dream Odyssey**
 (Tundra, Arktis, Dalí und Unterwasser) und Level 6 **Space Wave** spielbar.
 Level 7 **Paradise Circuit** ergänzt eine Runde über fünf tropische Inseln.
 Level 8 **Orbital Passage** führt als lineares Rennen durch eine Raumstation:
-sechs Bereiche, ein sichtbarer Shuttle-Start und etwa 1:45 Minuten mit Turbos.
+sechs Bereiche, eine Frachterlandung, ein Shuttle-Start und etwa 1:45 Minuten
+mit Turbos.
 [Strecke und Prüfung](docs/orbital-passage.md).
 Alle acht Strecken sind frei auswählbar. Medaillen,
 gespeicherter Fortschritt und Freischaltschwellen sind noch nicht implementiert.

@@ -1,0 +1,854 @@
+[
+  {
+    "name": "one-way-route-with-continuous-runout",
+    "pass": true,
+    "actual": {
+      "segments": 3080,
+      "runout": 200
+    },
+    "errors": []
+  },
+  {
+    "name": "six-content-districts",
+    "pass": true,
+    "actual": {
+      "districts": [
+        {
+          "name": "01 / ARRIVAL DOCK",
+          "installations": 10
+        },
+        {
+          "name": "02 / SERVICE SPINE",
+          "installations": 4
+        },
+        {
+          "name": "03 / EARTH OBSERVATION",
+          "installations": 8
+        },
+        {
+          "name": "04 / ACTIVE LAUNCH DECK",
+          "installations": 12
+        },
+        {
+          "name": "05 / HELIOS REACTOR",
+          "installations": 10
+        },
+        {
+          "name": "06 / PANORAMA TERMINAL",
+          "installations": 9
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "clean-race-without-turbo-about-109-seconds",
+    "pass": true,
+    "actual": {
+      "seconds": 109.18333333334222,
+      "turbos": 0,
+      "wallFrames": 0
+    },
+    "errors": []
+  },
+  {
+    "name": "linear-finish-no-wrap-or-last-lap-false",
+    "pass": true,
+    "actual": {
+      "z": 462062.6578161567,
+      "finish": 109168.82920923187,
+      "lastLap": false
+    },
+    "errors": []
+  },
+  {
+    "name": "shuttle-visible-before-passing-false",
+    "pass": true,
+    "actual": {
+      "visibleSamples": 20,
+      "samples": [
+        {
+          "index": 1554.977718774378,
+          "age": -1,
+          "width": 73.02570477942186,
+          "height": 28.558266690523908
+        },
+        {
+          "index": 1560.737718774378,
+          "age": -1,
+          "width": 76.02457272776834,
+          "height": 29.731038263180835
+        },
+        {
+          "index": 1566.497718774378,
+          "age": -1,
+          "width": 79.2802910317381,
+          "height": 31.004256671340443
+        },
+        {
+          "index": 1572.257718774378,
+          "age": -1,
+          "width": 82.82733456705125,
+          "height": 32.391404053900374
+        },
+        {
+          "index": 1578.017718774378,
+          "age": -1,
+          "width": 86.70663687264891,
+          "height": 33.90848834841091
+        },
+        {
+          "index": 1583.777718774378,
+          "age": -1,
+          "width": 90.96717696080145,
+          "height": 35.5746638471706
+        },
+        {
+          "index": 1589.537718774378,
+          "age": -1,
+          "width": 95.66805813363158,
+          "height": 37.41304416297379
+        },
+        {
+          "index": 1595.297718774378,
+          "age": -1,
+          "width": 100.8812664812688,
+          "height": 39.45178099892479
+        },
+        {
+          "index": 1601.057718774378,
+          "age": 0.01666666666666424,
+          "width": 106.69538326753982,
+          "height": 41.72551595641289
+        },
+        {
+          "index": 1606.817718774378,
+          "age": 0.21666666666663514,
+          "width": 113.22065956817207,
+          "height": 44.27736508112446
+        },
+        {
+          "index": 1612.577718774378,
+          "age": 0.416666666666606,
+          "width": 120.59607434002817,
+          "height": 47.161679072260995
+        },
+        {
+          "index": 1618.337718774378,
+          "age": 0.6166666666665769,
+          "width": 128.99934337518334,
+          "height": 50.4479574985092
+        },
+        {
+          "index": 1624.0977187743779,
+          "age": 0.8166666666665479,
+          "width": 138.66142629390822,
+          "height": 54.22652206851052
+        },
+        {
+          "index": 1629.8577187743779,
+          "age": 1.0166666666665187,
+          "width": 148.74836505732333,
+          "height": 58.616945902742714
+        },
+        {
+          "index": 1635.6177187743779,
+          "age": 1.2166666666664896,
+          "width": 144.6774443319715,
+          "height": 63.78093838007294
+        },
+        {
+          "index": 1641.3777187743779,
+          "age": 1.4166666666664605,
+          "width": 136.10910026928798,
+          "height": 69.94269867366165
+        },
+        {
+          "index": 1647.1377187743778,
+          "age": 1.6166666666664313,
+          "width": 117.49609181763333,
+          "height": 77.42232885628835
+        },
+        {
+          "index": 1652.8977187743778,
+          "age": 1.8166666666664022,
+          "width": 94.42481216027636,
+          "height": 86.69325328751222
+        },
+        {
+          "index": 1658.6577187743778,
+          "age": 2.016666666666373,
+          "width": 65.07619230793773,
+          "height": 98.48650401661803
+        },
+        {
+          "index": 1664.4177187743778,
+          "age": 2.216666666666344,
+          "width": 26.48528340831126,
+          "height": 113.99352665517335
+        },
+        {
+          "index": 1670.1777187743778,
+          "age": 2.416666666666315,
+          "width": -26.529321420839892,
+          "height": 135.29638573712782
+        },
+        {
+          "index": 1675.9377187743778,
+          "age": 2.616666666666286,
+          "width": -103.91242584083562,
+          "height": 166.39120806515848
+        },
+        {
+          "index": 1681.697718774378,
+          "age": 2.816666666666257,
+          "width": -227.47941376313463,
+          "height": 216.04406242224366
+        },
+        {
+          "index": 1687.457718774378,
+          "age": 3.016666666666228,
+          "width": -456.16105178937505,
+          "height": 307.93506503985907
+        },
+        {
+          "index": 1693.217718774378,
+          "age": 3.2166666666661987,
+          "width": -1023.3568870126917,
+          "height": 222.6529069020387
+        },
+        {
+          "index": 1698.977718774378,
+          "age": 3.4166666666661696,
+          "width": -4821.604880037728,
+          "height": -656.2449702699453
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "clean-race-with-collected-turbos-about-105-seconds",
+    "pass": true,
+    "actual": {
+      "seconds": 105.2166666666744,
+      "turbos": 9,
+      "wallFrames": 0
+    },
+    "errors": []
+  },
+  {
+    "name": "linear-finish-no-wrap-or-last-lap-true",
+    "pass": true,
+    "actual": {
+      "z": 462044.32781615667,
+      "finish": 105206.40559811961,
+      "lastLap": false
+    },
+    "errors": []
+  },
+  {
+    "name": "shuttle-visible-before-passing-true",
+    "pass": true,
+    "actual": {
+      "visibleSamples": 21,
+      "samples": [
+        {
+          "index": 1550.4615187743786,
+          "age": -1,
+          "width": 70.52634849456726,
+          "height": 27.580839857696844
+        },
+        {
+          "index": 1556.2215187743786,
+          "age": -1,
+          "width": 73.47970398349696,
+          "height": 28.73581280783185
+        },
+        {
+          "index": 1561.9815187743786,
+          "age": -1,
+          "width": 76.60720241980036,
+          "height": 29.95888808917192
+        },
+        {
+          "index": 1567.7415187743786,
+          "age": -1,
+          "width": 79.9652747129123,
+          "height": 31.27213421808534
+        },
+        {
+          "index": 1573.5015187743786,
+          "age": -1,
+          "width": 83.60428791267941,
+          "height": 32.695248308708585
+        },
+        {
+          "index": 1579.2615187743786,
+          "age": -1,
+          "width": 87.5749386910669,
+          "height": 34.24805638097081
+        },
+        {
+          "index": 1585.0215187743786,
+          "age": -1,
+          "width": 91.93277522497362,
+          "height": 35.95228173976648
+        },
+        {
+          "index": 1590.7815187743786,
+          "age": -1,
+          "width": 96.74198948837193,
+          "height": 37.83302803205976
+        },
+        {
+          "index": 1596.5415187743786,
+          "age": -1,
+          "width": 102.07923982861249,
+          "height": 39.920274147260955
+        },
+        {
+          "index": 1602.3015187743786,
+          "age": 0.049999999999992724,
+          "width": 108.03811182171273,
+          "height": 42.250618730276926
+        },
+        {
+          "index": 1608.0615187743786,
+          "age": 0.2499999999999636,
+          "width": 114.73483611283424,
+          "height": 44.86951626555481
+        },
+        {
+          "index": 1613.8215187743785,
+          "age": 0.4499999999999345,
+          "width": 122.3160414940144,
+          "height": 47.83430908426635
+        },
+        {
+          "index": 1619.5815187743785,
+          "age": 0.6499999999999054,
+          "width": 130.96966503017586,
+          "height": 51.218494002872376
+        },
+        {
+          "index": 1625.3415187743785,
+          "age": 0.8499999999998763,
+          "width": 140.94076793668512,
+          "height": 55.11790746095363
+        },
+        {
+          "index": 1631.1015187743785,
+          "age": 1.0499999999998473,
+          "width": 148.23299635979632,
+          "height": 59.659950971426895
+        },
+        {
+          "index": 1636.8615187743785,
+          "age": 1.2499999999998181,
+          "width": 144.036381514489,
+          "height": 65.01777706758833
+        },
+        {
+          "index": 1642.6215187743785,
+          "age": 1.449999999999789,
+          "width": 133.32803440625548,
+          "height": 71.43286708822455
+        },
+        {
+          "index": 1648.3815187743785,
+          "age": 1.6499999999997599,
+          "width": 113.9704657992512,
+          "height": 79.25243439624461
+        },
+        {
+          "index": 1654.1415187743785,
+          "age": 1.8499999999997307,
+          "width": 89.8533202769309,
+          "height": 88.99441169829078
+        },
+        {
+          "index": 1659.9015187743785,
+          "age": 2.049999999999702,
+          "width": 58.975746984384614,
+          "height": 101.46708525968904
+        },
+        {
+          "index": 1665.6615187743785,
+          "age": 2.2499999999996727,
+          "width": 18.032190735593645,
+          "height": 118.00572700182931
+        },
+        {
+          "index": 1671.4215187743785,
+          "age": 2.4499999999996436,
+          "width": -38.85786352186494,
+          "height": 140.98571099621063
+        },
+        {
+          "index": 1677.1815187743784,
+          "age": 2.6499999999996144,
+          "width": -123.26332051619988,
+          "height": 175.0801483354327
+        },
+        {
+          "index": 1682.9415187743784,
+          "age": 2.8499999999995853,
+          "width": -261.5133762618127,
+          "height": 230.92436096853487
+        },
+        {
+          "index": 1688.7015187743784,
+          "age": 3.049999999999556,
+          "width": -529.2624325514703,
+          "height": 334.51227745445976
+        },
+        {
+          "index": 1694.4615187743786,
+          "age": 3.249999999999527,
+          "width": -1268.7524329596188,
+          "height": 169.37426376133465
+        },
+        {
+          "index": 1700.2215187743786,
+          "age": 3.449999999999498,
+          "width": -12951.248640646238,
+          "height": -2521.6694919000875
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "all-six-drivers-cross-with-real-times",
+    "pass": true,
+    "actual": {
+      "seconds": 116.9166666666778,
+      "times": [
+        {
+          "tag": "ACE",
+          "time": 108448.99067865493
+        },
+        {
+          "tag": "ICE",
+          "time": 109069.66179771794
+        },
+        {
+          "tag": "R3D",
+          "time": 111981.69923248736
+        },
+        {
+          "tag": "LUX",
+          "time": 112272.67259280596
+        },
+        {
+          "tag": "FOX",
+          "time": 112394.11118492066
+        },
+        {
+          "tag": "VPR",
+          "time": 116910.49983233926
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "scoreboard-and-continue",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "continue-returns-to-level-selection",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "restart-resets-station-events",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "render-clock-does-not-animate-paused-launch",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-500--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-500-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-500--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-500-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-1000--1",
+    "pass": true,
+    "actual": {
+      "x": -0.86,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-1000-1",
+    "pass": true,
+    "actual": {
+      "x": 0.86,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-1000--1",
+    "pass": true,
+    "actual": {
+      "x": -0.86,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-1000-1",
+    "pass": true,
+    "actual": {
+      "x": 0.86,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-1800--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-1800-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-1800--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-1800-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-2150--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-2150-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-2150--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-2150-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-2700--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-player-2700-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-2700--1",
+    "pass": true,
+    "actual": {
+      "x": -0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "solid-road-boundary-ai-2700-1",
+    "pass": true,
+    "actual": {
+      "x": 0.92,
+      "speed": 3506.998504986903
+    },
+    "errors": []
+  },
+  {
+    "name": "floor-finish-line-visible-with-batched-shell",
+    "pass": true,
+    "actual": {
+      "pixels": 1754
+    },
+    "errors": []
+  },
+  {
+    "name": "finish-runout-stays-in-terminal",
+    "pass": true,
+    "actual": {},
+    "errors": []
+  },
+  {
+    "name": "landmarks-survive-wall-and-crest-occlusion",
+    "pass": true,
+    "actual": {
+      "visibleDistricts": [
+        "arrival",
+        "service",
+        "glass",
+        "launch",
+        "reactor",
+        "panorama"
+      ],
+      "samples": [
+        {
+          "index": 0,
+          "section": "arrival",
+          "changed": 2018
+        },
+        {
+          "index": 45,
+          "section": "arrival",
+          "changed": 11520
+        },
+        {
+          "index": 175,
+          "section": "arrival",
+          "changed": 2105
+        },
+        {
+          "index": 260,
+          "section": "arrival",
+          "changed": 440
+        },
+        {
+          "index": 450,
+          "section": "service",
+          "changed": 40768
+        },
+        {
+          "index": 650,
+          "section": "service",
+          "changed": 0
+        },
+        {
+          "index": 905,
+          "section": "glass",
+          "changed": 4207
+        },
+        {
+          "index": 980,
+          "section": "glass",
+          "changed": 25
+        },
+        {
+          "index": 1060,
+          "section": "glass",
+          "changed": 3032
+        },
+        {
+          "index": 1140,
+          "section": "glass",
+          "changed": 1211
+        },
+        {
+          "index": 1260,
+          "section": "glass",
+          "changed": 1879
+        },
+        {
+          "index": 1410,
+          "section": "launch",
+          "changed": 15988
+        },
+        {
+          "index": 1510,
+          "section": "launch",
+          "changed": 8710
+        },
+        {
+          "index": 1600,
+          "section": "launch",
+          "changed": 2523
+        },
+        {
+          "index": 1645,
+          "section": "launch",
+          "changed": 7312
+        },
+        {
+          "index": 1705,
+          "section": "launch",
+          "changed": 1930
+        },
+        {
+          "index": 1830,
+          "section": "launch",
+          "changed": 0
+        },
+        {
+          "index": 1990,
+          "section": "reactor",
+          "changed": 11786
+        },
+        {
+          "index": 2040,
+          "section": "reactor",
+          "changed": 10587
+        },
+        {
+          "index": 2200,
+          "section": "reactor",
+          "changed": 7206
+        },
+        {
+          "index": 2350,
+          "section": "reactor",
+          "changed": 0
+        },
+        {
+          "index": 2440,
+          "section": "reactor",
+          "changed": 788
+        },
+        {
+          "index": 2550,
+          "section": "panorama",
+          "changed": 6496
+        },
+        {
+          "index": 2620,
+          "section": "panorama",
+          "changed": 4776
+        },
+        {
+          "index": 2720,
+          "section": "panorama",
+          "changed": 10051
+        },
+        {
+          "index": 2850,
+          "section": "panorama",
+          "changed": 105
+        },
+        {
+          "index": 2910,
+          "section": "panorama",
+          "changed": 1033
+        },
+        {
+          "index": 3015,
+          "section": "panorama",
+          "changed": 0
+        },
+        {
+          "index": 3060,
+          "section": "panorama",
+          "changed": 0
+        }
+      ]
+    },
+    "errors": []
+  },
+  {
+    "name": "opponents-stable-at-segment-boundaries",
+    "pass": true,
+    "actual": {
+      "maximum": 0.00040079204031830503
+    },
+    "errors": []
+  },
+  {
+    "name": "bounded-static-art-cache",
+    "pass": true,
+    "actual": {
+      "MiB": 3.811431884765625,
+      "tiles": 20,
+      "writes": 0
+    },
+    "errors": []
+  }
+]
