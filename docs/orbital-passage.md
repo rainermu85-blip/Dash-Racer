@@ -10,18 +10,20 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
 1. **Arrival Dock:** abgestellter Frachttransporter, Container, Ladetechnik
    und kleine Technikergruppen. Ein Frachter ist bereits beim Countdown im
    Anflug, sinkt während der ersten 5,2 Rennsekunden auf eine markierte
-   Landefläche und bleibt dort stehen. Ein Ladekran rahmt den Liegeplatz.
+   Landefläche. Zwei Einweiser laufen an den Rand des Pads, signalisieren den
+   Sinkflug mit Leuchtstäben und treten nach dem Aufsetzen zurück.
 2. **Service Spine:** enger Wartungsgang mit Wandkonsolen, Türen, Leitungen
-   und zwei verglasten Robotik-Arbeitsbuchten; warme bernsteinfarbene Beleuchtung.
+   und zwei verglasten Robotik-Arbeitsbuchten. Kurze Wechselkurven, Rampen
+   und Senken führen durch den bernsteinfarben beleuchteten Gang.
 3. **Earth Observation:** Glasbrücke mit Blick auf Erde, Sterne, Satelliten
    und eine große Antenne. Ein Astronaut arbeitet mit Sicherungsleine außerhalb
    der Verglasung. Die Fahrbahn windet sich durch die Außenverbindung.
-4. **Active Launch Deck:** große Halle mit Fracht und Robotik. Ein Shuttle
-   startet seitlich durch ein sich öffnendes Hangartor, mit lokalem Abgaslicht.
+4. **Active Launch Deck:** große Halle mit Fracht und Robotik. Ein Abfangjäger zündet seine
+   Triebwerke, hebt die Nase und steigt vom linken Startbock quer über die Fahrbahn zur geöffneten Hangarbucht.
 5. **Helios Reactor:** hohe Halle mit einem einzelnen Fusionskern. Die Anfahrt gibt den Blick auf
    den kupfergefassten, türkis leuchtenden Ring mit schwebendem Plasmakern frei.
 6. **Panorama Terminal:** Beobachtungskonsolen, kleine Biosphärenbeete,
-   Techniker und ein nach links fliegender Transporter über dem Glasdach.
+   Techniker und ein großes Delta-Shuttle, das von rechts nach links über das Glasdach gleitet.
    Bei Segment 2864 tritt die Straße auf eine offene Außenbrücke. An Backbord
    begleiten beleuchtete Decks und Hangarbuchten den geraden Zielanlauf.
 
@@ -37,14 +39,14 @@ Segmente verwenden volle Auflösung, danach werden ausschließlich die
 Hüllenflächen in Vierer- beziehungsweise Achtergruppen gezeichnet. Die
 Sichtweite beträgt 220 Segmente; Stationsobjekte blenden über die letzten
 75 Segmente ein. Das Shuttle ist dadurch bereits vor seinem Start sichtbar.
-Die Annäherung löst den Start jetzt bei Segment 1600 aus, statt unmittelbar
+Die Annäherung löst den Start jetzt bei Segment 1596 aus, statt unmittelbar
 beim früheren Eintritt in die Sichtweite. Das Schiff bleibt Teil der Szene;
 sein Abflug beendet sich durch die Bewegung aus dem Sichtfeld.
 
 Hangartor, Shuttle, Landefrachter, Transporter und Außeneinsatz folgen der
 Rennzeit und frieren beim Pausieren ein. Der Frachter startet beim Neustart
-wieder im Anflug. Der Kurvenverlauf, das gemeinsame Fahrzeug- und
-Kollisionsmodell, die Kamera und die geplante Fahrzeit bleiben erhalten.
+wieder im Anflug. Die kürzeren Bögen orientieren sich an Neon City. In den Hallen verbinden
+Rampen die Decks, vor der Landung und am Reaktor öffnet sich die Sicht.
 Der erste Kurvenabschnitt wird weiterhin kontinuierlich über Segmentgrenzen
 integriert, ebenso die Kollisionsposition des Spielerwagens.
 

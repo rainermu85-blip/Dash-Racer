@@ -64,13 +64,14 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
    const random=Math.random;Math.random=()=>.5;
    try{
     for(const turbo of[false,true]){
-     setup();opponents=[];const landing=[],shuttle=[],courier=[],eva=[];
+     setup();opponents=[];const landing=[],shuttle=[],courier=[],eva=[],guides=[];
      for(let f=0;f<10000&&!player.finished;f++){
       const next=segments.find(s=>s.lightning?.active&&s.worldZ>=player.z&&s.worldZ<player.z+7500);
       const target=next?next.lightning.x:0,x=getPlayerCollisionX();keys.left=x>target+.025;keys.right=x<target-.025;
       keys.boost=turbo&&player.boosts>0&&!player.isBoosting;advanceRaceStep(1/60);const index=player.z/150;
       if(f%6===0){
        if(hasLanding&&index<190){
+        if(f%18===0)guides.push({time:raceElapsed/1000,pixels:visibleCraft('marshaller')});
         const pose=orbitalLandingPose(),count=visibleCraft('landing');landing.push({index,time:raceElapsed/1000,pixels:count,...pose});
         if(!turbo&&count>100&&raceElapsed>2200&&raceElapsed<2400){hide=null;render(raceElapsed);shots.push({name:'landing-descent',image:C.toDataURL()});}
         if(!turbo&&count>100&&raceElapsed>5900&&raceElapsed<6100){hide=null;render(raceElapsed);shots.push({name:'landed-freighter',image:C.toDataURL()});}
@@ -89,6 +90,7 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
      stop();
      const onset=shuttle.find(s=>s.pixels>5),small=shuttle.filter(s=>s.pixels>5&&s.pixels<500),before=shuttle.filter(s=>s.age<0&&s.pixels>5),air=shuttle.filter(s=>s.age>1.35&&s.pixels>100);
      record('shuttle-enters-view-gradually-before-start-'+turbo,!!onset&&onset.pixels<150&&small.length>=5&&before.length>=5&&air.length>=5,{onset,smallFrames:small.length,beforeStart:before.length,airFrames:air.length,samples:shuttle});
+     if(guides.length)record('visible-landing-guides-'+turbo,guides.filter(s=>s.time<5.2&&s.pixels>20).length>=4&&guides.some(s=>s.time>5.2&&s.pixels>50),{samples:guides});
      if(hasLanding)record('visible-descent-and-touchdown-'+turbo,landing.filter(s=>!s.landed&&s.height>10&&s.pixels>100).length>=20&&landing.filter(s=>s.landed&&s.pixels>100).length>=10,{samples:landing});
      record('courier-flies-over-transparent-roof-'+turbo,courier.filter(s=>s.pixels>100).length>=10,{samples:courier});
      record('spacewalker-visible-through-glass-'+turbo,eva.filter(s=>s.pixels>20).length>=3,{samples:eva});
