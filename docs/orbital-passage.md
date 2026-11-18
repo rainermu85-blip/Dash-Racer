@@ -18,11 +18,12 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    der Verglasung. Die Fahrbahn windet sich durch die Außenverbindung.
 4. **Active Launch Deck:** große Halle mit Fracht und Robotik. Ein Shuttle
    startet seitlich durch ein sich öffnendes Hangartor, mit lokalem Abgaslicht.
-5. **Helios Reactor:** hohe Galerie mit zwei Reaktorkernen, langsamen
-   Leuchtringen, Rohrgruppen und Wartungspersonal.
+5. **Helios Reactor:** hohe Halle mit einem einzelnen Fusionskern. Die Anfahrt gibt den Blick auf
+   den kupfergefassten, türkis leuchtenden Ring mit schwebendem Plasmakern frei.
 6. **Panorama Terminal:** Beobachtungskonsolen, kleine Biosphärenbeete,
    Techniker und ein nach links fliegender Transporter über dem Glasdach.
-   Der Zielanlauf ist gerade.
+   Bei Segment 2864 tritt die Straße auf eine offene Außenbrücke. An Backbord
+   begleiten beleuchtete Decks und Hangarbuchten den geraden Zielanlauf.
 
 Die Fahrbahn wird als zusammenhängendes Band durch **jeden** projizierten
 Streckenpunkt gezeichnet, vollständig vor Fahrzeugen und Sammelobjekten.
