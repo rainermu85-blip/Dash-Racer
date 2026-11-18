@@ -224,7 +224,32 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 <script>
 // Orbital Passage: a single continuous station interior, one-way, with a runout.
 const ORBITAL_LENGTH=3080,ORBITAL_SHUTTLE_INDEX=1700,ORBITAL_LANDING_INDEX=180,ORBITAL_DRAW_DISTANCE=220,ORBITAL_LAUNCH_TRIGGER=1596;
-const ORBITAL_OUTER_BRIDGE=2864;
+const ORBITAL_OUTER_BRIDGE=2864, ORBITAL_IMPACT=2464, ORBITAL_PAD=2936, ORBITAL_GAP=2952, ORBITAL_POD=3032;
+let orbitalImpactTime=null, orbitalAlarmBeat=-1, orbitalAudio=null, orbitalTone=null;
+function stopOrbitalTone(){
+ if(orbitalTone){orbitalTone.stop();orbitalTone=null;}
+}
+function soundOrbitalAlarm(age){
+ const beat=Math.floor(age/1.6);
+ if(beat===orbitalAlarmBeat||document.hidden||!navigator.userActivation?.hasBeenActive)return;
+ orbitalAlarmBeat=beat;
+ if(!window.AudioContext)return;
+ orbitalAudio??=new AudioContext();
+ if(orbitalAudio.state!=='running')return;
+ stopOrbitalTone();
+ const tone=orbitalAudio.createOscillator(),gain=orbitalAudio.createGain();
+ const now=orbitalAudio.currentTime,end=now+(beat===0?.64:.46);
+ tone.type=beat===0?'sawtooth':'triangle';
+ tone.frequency.setValueAtTime(beat===0?115:490,now);
+ tone.frequency.exponentialRampToValueAtTime(beat===0?32:710,end);
+ gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(beat===0?.085:.055,now+.025);
+ gain.gain.exponentialRampToValueAtTime(.0001,end);
+ tone.connect(gain);gain.connect(orbitalAudio.destination);
+ tone.onended=()=>{tone.disconnect();gain.disconnect();if(orbitalTone===tone)orbitalTone=null;};
+ orbitalTone=tone;tone.start(now);tone.stop(end);
+}
+function evacuationAge(){return orbitalImpactTime===null?-1:(raceElapsed-orbitalImpactTime)/1000;}
+function evacuationMessage(){return Math.floor(evacuationAge()/1.6)%2?'PROCEED TO THE EMERGENCY POD':'! Evacuation !';}
 const ORBITAL_SECTIONS=[
  {start:0,end:390,key:'arrival',name:'01 / ARRIVAL DOCK',room:5.8,height:6200,wall:'#35314e',trim:'#f18bd0',floor:'#23263f',road:'#292a42'},
  {start:390,end:875,key:'service',name:'02 / SERVICE SPINE',room:1.16,height:1800,wall:'#303145',trim:'#ffba70',floor:'#272437',road:'#302d3d'},
@@ -240,7 +265,8 @@ function makeOrbitalProfile(index){
  let room=section.room,height=section.height;
  if(j>0&&index<section.start+55){const t=paradiseSmooth((index-section.start)/55),previous=ORBITAL_SECTIONS[j-1];room=previous.room+(room-previous.room)*t;height=previous.height+(height-previous.height)*t;}
  // The exterior roadway keeps only the narrow shoulders outside its rails.
- return{...section,room,height,exterior:index>=ORBITAL_OUTER_BRIDGE};
+ const pod=index>=ORBITAL_POD, gap=index>=ORBITAL_GAP&&!pod;
+ return{...section,room:pod?1.42:room,height:pod?2400:height,gap,pod,exterior:index>=ORBITAL_OUTER_BRIDGE&&!pod};
 }
 function orbitalProfile(index){return orbitalProfiles[index]||makeOrbitalProfile(index);}
 function buildOrbitalRoute(){
@@ -254,13 +280,19 @@ function buildOrbitalRoute(){
   [972,1050,.76],[1062,1150,-.16],[1170,1280,-.68],[1292,1390,.83],
   [1400,1480,-.73],[1490,1570,.19],[1574,1640,.06],
   [1708,1798,.86],[1803,1890,-.91],[1902,1990,.65],[1998,2055,-.33],
-  [2060,2290,-.085,115],[2300,2384,.92],[2390,2480,-.84],[2490,2580,.68],
-  [2590,2660,-.48],[2668,2775,-.14],[2788,2882,.78],[2894,2986,-.70]
+  [2060,2290,-.085,115],[2300,2384,.92],[2390,2432,-.43],[2530,2580,.46],
+  [2590,2660,-.48],[2668,2775,-.14],[2788,2850,.68],[2852,2890,-.38]
  ];
  const rises=[[210,412,1250],[430,642,-1400],[680,912,1740],
   [936,1130,1150],[1180,1405,-1650],[1430,1572,870],[1715,1940,-1820],
-  [1960,2090,520],[2300,2520,1600],[2800,2990,1100]];
- const altitude=i=>rises.reduce((y,[a,b,h])=>y+bend(i,a,b,h),0);
+  [1960,2090,520],[2290,2410,950],[2780,2870,520]];
+ const rampRise=i=>{
+  if(i<2888)return 0;
+  if(i<ORBITAL_GAP)return .13*(i-2888)**2;
+  const t=clamp((i-ORBITAL_GAP)/(ORBITAL_POD-ORBITAL_GAP),0,1);
+  return .13*64**2+16.64*80*t*(1-t);
+ };
+ const altitude=i=>rampRise(i)+rises.reduce((y,[a,b,h])=>y+bend(i,a,b,h),0);
  return Array.from({length:ORBITAL_LENGTH},(_,i)=>{
   const corner=corners.find(([a,b])=>i>a&&i<b);
   let curve=0;
@@ -272,7 +304,7 @@ function buildOrbitalRoute(){
  });
 }
 function buildOrbitalScenery(){
- orbitalLaunchStart=orbitalFlybyStart=null;
+ orbitalLaunchStart=orbitalFlybyStart=orbitalImpactTime=null;orbitalAlarmBeat=-1;stopOrbitalTone();
  const add=(index,kind,x,size=1,extra={})=>{segments[index].orbitalItems??=[];segments[index].orbitalItems.push({kind,x,size,...extra});getOrbitalArt(kind);};
  // Installations sit in the hall, clear of the lane; wall equipment is
  // projected onto the service corridor itself rather than hidden behind it.
@@ -289,6 +321,11 @@ function buildOrbitalScenery(){
  add(2000,'pipes',1.7,1.35);add(2224,'reactor',3.8,2.8);add(2160,'crew',1.6,1);
  add(2330,'workbay',-1.9,1.35);add(2420,'pipes',1.8,1.45);add(2480,'robot',-1.6,1);
  add(2590,'observation',1.8,1.35);add(2660,'greenhouse',-1.9,1.25);add(2770,'courier',5.0,2.32);
+ add(2532,'gantry',4.38,.74);
+ add(2528,'freighter',2.9,1.55,{motion:'wreck'});
+ for(const [index,x] of [[2584,-2.4],[2672,2.5],[2796,-2.6],[2853,2.5]])add(index,'cargo',x,.84,{motion:'fire'});
+ for(const [index,x] of [[2545,-2],[2605,1.8],[2690,-1.7],[2770,1.7],[2820,-1.9]])add(index,'marshaller',x,.95,{motion:'flee',delay:index%3});
+ for(const [index,x] of [[2538,-2.2],[2612,2.3],[2704,-2.3],[2784,2.3],[2850,-2.2]])add(index,'directory',x,1.05,{wallPanel:true,lift:25});
  add(2810,'greenhouse',1.9,1.2);add(2840,'crew',1.7,1);
  for(const seg of segments)for(const item of seg.orbitalItems||[]){
   if(item.kind==='directory')continue;
@@ -300,7 +337,9 @@ function buildOrbitalScenery(){
 
 }
 function updateOrbitalEvents(){
+ if(orbitalImpactTime===null&&player.z>=ORBITAL_IMPACT*SEGMENT_LENGTH)orbitalImpactTime=raceElapsed;
  if(orbitalLaunchStart===null&&player.z/150>=ORBITAL_LAUNCH_TRIGGER)orbitalLaunchStart=raceElapsed;
+ if(orbitalImpactTime!==null&&player.z<ORBITAL_OUTER_BRIDGE*SEGMENT_LENGTH)soundOrbitalAlarm(evacuationAge());
  if(orbitalFlybyStart===null&&player.z/150>=2770-145)orbitalFlybyStart=raceElapsed;
 }
 function orbitalLaunchPhase(){return orbitalLaunchStart===null?-1:(raceElapsed-orbitalLaunchStart)/1000;}
@@ -329,12 +368,13 @@ function drawOrbitalBackdrop(horizon){
  // Docking modules and solar wings are one cached silhouette, with local
  // windows and joints instead of blank rectangular blocks at the horizon.
  const exterior=getOrbitalArt('exterior');
+ ctx.save();ctx.globalAlpha*=1-paradiseSmooth(clamp((player.z/SEGMENT_LENGTH-2810)/86,0,1));
  for(let j=0;j<2;j++){
   const px=((j*W*.95-bgOffset*.13)%(W*2)+W*2)%(W*2)-W*(.34+.87*outward);
   const py=horizon-H*.10+j*H*.08,scale=.22+j*.07;
   ctx.drawImage(exterior.canvas,px-exterior.ox*scale,py-exterior.oy*scale,exterior.w*scale,exterior.h*scale);
  }
-
+ ctx.restore();
 }
 // One continuous ribbon follows EVERY projected road slice. Drawing the
 // deck first prevents a four-slice panel from painting over a car or a bolt
@@ -355,8 +395,9 @@ function drawOrbitalDeck(roads){
  for(let i=0;i<roads.length;){
   if(!roads[i].isVisible){i++;continue;}
   const first=i,profile=orbitalProfile(roads[i].segIdx);
-  while(i+1<roads.length&&roads[i+1].isVisible&&orbitalProfile(roads[i+1].segIdx).key===profile.key&&orbitalProfile(roads[i+1].segIdx).exterior===profile.exterior)i++;
+  while(i+1<roads.length&&roads[i+1].isVisible&&orbitalProfile(roads[i+1].segIdx).key===profile.key&&orbitalProfile(roads[i+1].segIdx).exterior===profile.exterior&&orbitalProfile(roads[i+1].segIdx).gap===profile.gap)i++;
   const last=i++;
+  if(profile.gap)continue;
   if(profile.exterior)ribbon(first,last,-1.18,1.18,'#394353');
   else if(profile.key!=='glass')ribbon(first,last,k=>-orbitalProfile(k).room,k=>orbitalProfile(k).room,profile.floor);
   ribbon(first,last,-1.12,1.12,'#151f31');
@@ -369,14 +410,22 @@ function drawOrbitalDeck(roads){
   let last=first;while(last+1<roads.length&&roads[last+1].segIdx<to&&roads[last+1].isVisible)last++;
   ribbon(first,last,left,right,color);
  };
+ // Three continuous, full-width silver arrowheads. All racing lines launch.
+ strip(ORBITAL_PAD,ORBITAL_GAP,-1,1,'#384755');
+ for(let start=ORBITAL_PAD;start<ORBITAL_GAP-3;start+=5){
+  for(const side of[-1,1]){
+   const slope=i=>side*(1-clamp((i-start)/3,0,1));
+   strip(start,start+4,slope,i=>side*Math.min(1,Math.abs(slope(i))+.31),'#e1ebf1');
+  }
+ }
  strip(153,208,-5.6,-1.55,'#34465f');
  for(const edge of[-5.6,-1.55])strip(153,208,edge-.025,edge+.025,'#77d9e6');
  strip(165,195,-3.98,-3.88,'#c1d9df');strip(165,195,-3.13,-3.03,'#c1d9df');strip(178,181,-3.98,-3.03,'#c1d9df');
  for(const side of[-1,1])strip(1940,2530,side*1.49-.014,side*1.49+.014,side>0?'#c38dc0':'#58a99f');
  for(let i=0;i<roads.length;){
-  if(!roads[i].isVisible||roads[i].segIdx%12>=6){i++;continue;}
+  if(!roads[i].isVisible||orbitalProfile(roads[i].segIdx).gap||roads[i].segIdx%12>=6){i++;continue;}
   const first=i;
-  while(i+1<roads.length&&roads[i+1].isVisible&&roads[i+1].segIdx%12<6)i++;
+  while(i+1<roads.length&&roads[i+1].isVisible&&!orbitalProfile(roads[i+1].segIdx).gap&&roads[i+1].segIdx%12<6)i++;
   const last=i++;
   for(const side of[-1,1])ribbon(first,last,side/3-.009,side/3+.009,'#9aabba');
  }
@@ -398,6 +447,23 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
  const band=(l1,r1,l2,r2,color,height=0,seam=false)=>quad(x1+l1*w1,y1-height*h1,x2+l2*w2,y2-height*h2,x2+r2*w2,y2-height*h2,x1+r1*w1,y1-height*h1,color,seam);
  const wall=(side,lo,hi,color)=>quad(x1+side*a.room*w1,y1-lo*h1,x2+side*b.room*w2,y2-lo*h2,x2+side*b.room*w2,y2-hi*h2,x1+side*a.room*w1,y1-hi*h1,color,!color.startsWith('rgba'));
  const roof=(lo,hi,color)=>band(a.room*lo,a.room*hi,b.room*lo,b.room*hi,color,1,true);
+ if(a.gap)return;
+ if(a.pod){
+  // A solid pressure hull continues behind its open, bevelled docking collar.
+  for(const side of[-1,1]){
+   wall(side,0,1,'#374555');wall(side,.18,.22,'#82c4ce');
+   if(index%24<6)wall(side,.42,.65,'#697886');
+  }
+  roof(-1,1,'#253441');
+  for(const side of[-1,1])roof(side*.62,side*.66,'#bee5de');
+  if(index%12<3)roof(-1,1,'#475766');
+  if(index===ORBITAL_POD){ctx.save();drawOrbitalPodMouth(x1,y1,w1,h1);ctx.restore();}
+  if(index===3152){
+   quad(x1-1.42*w1,y1,x1-1.42*w1,y1-h1,x1+1.42*w1,y1-h1,x1+1.42*w1,y1,'#485865');
+   sceneLine([[x1-w1,y1-h1*.65],[x1+w1,y1-h1*.65]],'#96d4cf',Math.max(1,h1*.035));
+  }
+  return;
+ }
  // Structural railings remain in the wall depth pass. The deck itself is
  // painted in a separate, exact ribbon pass before any vehicles or pickups.
  if(visible)for(const side of[-1,1]){
@@ -407,6 +473,13 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
    if(index%10===0)sceneLine([point(false,rail,0),point(false,rail,.065)],'#b9dce2',Math.max(.7,w2*.007));
   }
   if(index%24===0&&a.key!=='glass'&&!a.exterior)sceneLine([point(false,side*1.3),point(false,side*b.room)],'#485361',Math.max(.5,w2*.004));
+ }
+ if(evacuationAge()>=0&&index>=ORBITAL_IMPACT&&index%16<4){
+  const lit=Math.cos(evacuationAge()*5-index*.025)>.05;
+  for(const side of[-1,1]){
+   const at=side*(a.exterior?1.13:1.35);
+   band(at-.045,at+.045,at-.045,at+.045,lit?'#ff4543':'#671e2d',.08);
+  }
  }
  if(a.exterior){
   // An armoured station flank seen across open space to port. Continuous
@@ -449,6 +522,9 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
     if(panel>=48){wall(side,.20,.25,'#8b9ca5');wall(side,.31,.35,'#647984');}
    }
   }
+  if(evacuationAge()>=0&&index>=ORBITAL_IMPACT&&index%48<24){
+   wall(side,.44,.49,Math.cos(evacuationAge()*5)>.05?'#ff453e':'#7d2332');
+  }
   wall(side,.1,.12,'#647a89');wall(side,.72,.728,a.trim);
   if(a.key!=='service'&&index%72<16){wall(side,.25,.40,a.key==='launch'?'#72527b':a.key==='arrival'?'#715986':'#425a70');wall(side,.42,.45,a.trim);}
   if(a.key==='reactor'){wall(side,.35,.37,'#378b86');wall(side,.42,.44,'#7a618e');}
@@ -466,9 +542,39 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
   if(index%(a.key==='reactor'?96:24)<2)roof(-1,1,'#354557');
  }
 }
+function drawOrbitalPodMouth(x,y,w,h){
+ // Each vertex pair describes the pressure shell and the actual drive-through aperture.
+ const aperture=[[-1.42,0],[-1.42,.76],[-1.10,1],[1.10,1],[1.42,.76],[1.42,0]];
+ const shell=[[-3.55,-.54],[-3.9,.83],[-2.56,1.85],[2.56,1.85],[3.9,.83],[3.55,-.54]];
+ const at=([lane,height])=>[x+lane*w,y-height*h];
+ const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+ for(let i=0;i<5;i++){
+  const a=aperture[i],b=aperture[i+1],c=shell[i],d=shell[i+1];
+  const ca=mix(a,c,.16),cb=mix(b,d,.16);
+  scenePoly([ca,cb,d,c].map(at),['#586478','#89949d','#a0acb3','#657183','#48566a'][i]);
+  const n=i===2?14:6;
+  for(let j=0;j<n;j++)scenePoly([mix(a,b,j/n),mix(a,b,(j+1)/n),mix(ca,cb,(j+1)/n),mix(ca,cb,j/n)].map(at),j%2?'#232833':'#ffd158');
+  sceneLine([at(a),at(b)],'#abc8cc',Math.max(.7,w*.012));
+ }
+ scenePoly([[-3.55,-.54],[-2.52,-.78],[2.52,-.78],[3.55,-.54],[1.42,0],[-1.42,0]].map(at),'#3d4d61');
+ for(const side of[-1,1]){
+  scenePoly([[side*3.4,-.17],[side*4.36,-.21],[side*4.67,.12],[side*4.52,.95],[side*4.06,1.18],[side*3.40,.91]].map(at),'#617180');
+  scenePoly([[side*3.76,.06],[side*4.26,.07],[side*4.31,.66],[side*3.86,.72]].map(at),'#223344');
+  for(const h of[.20,.37,.54])sceneLine([at([side*3.85,h]),at([side*4.23,h+.02])],'#9ac5d3',Math.max(1,w*.035));
+  scenePoly([[side*1.72,.47],[side*3.05,.47],[side*3.18,.72],[side*1.77,.72]].map(at),'#213649');
+  sceneLine([at([side*1.88,.65]),at([side*2.92,.65])],'#8ce6ef',Math.max(1,w*.035));
+ }
+ ctx.fillStyle='#253744';ctx.font='bold '+Math.max(1,h*.22)+'px monospace';ctx.textAlign='center';
+ ctx.fillText('ESCAPE POD  /  07',x,y-h*1.38,4*w);
+}
 function collectOrbitalSprites(seg,n,rx,p,clipY,getSprite){
  for(const item of seg.orbitalItems||[]){
   let x=item.x,y=item.lift||0;
+  if(item.motion==='wreck'){
+   const descent=paradiseSmooth(clamp((player.z/SEGMENT_LENGTH-(ORBITAL_IMPACT-92))/92,0,1));
+   x=-3+5.75*descent;y=240-190*descent;
+  }
+  if(item.motion==='flee'&&evacuationAge()>=0)x+=Math.sign(x)*(.44+.42*Math.sin(evacuationAge()*1.7+item.delay));
   if(item.motion==='landing'){const pose=orbitalLandingPose();x=pose.x;y=pose.height;}
   if(item.kind==='eva')y+=Math.sin(raceElapsed*.00045)*5;
   if(item.kind==='marshaller'){
@@ -491,6 +597,9 @@ function drawOrbitalSprite(s){
  if(s.sc<.02||x>W||x+art.w*s.sc<0)return;
  const visible=Math.min(1,(Math.min(H,s.clipY)-y)/(art.h*s.sc));if(visible<=0)return;
  ctx.save();ctx.globalAlpha*=orbitalSpriteOpacity(s.depth);
+ if(s.item.motion==='wreck'){
+  ctx.translate(s.x,s.y);ctx.rotate(.36);ctx.translate(-s.x,-s.y);
+ }
  if(s.item.kind==='shuttle'){
   // Pitch around the engine deck as thrust builds; flame shares this transform.
   const pitch=paradiseSmooth(clamp((orbitalLaunchPhase()-1.15)/1.8,0,1))*.37;
@@ -500,7 +609,9 @@ function drawOrbitalSprite(s){
  ctx.drawImage(art.canvas,0,0,art.canvas.width,art.canvas.height*visible,x,y,art.w*s.sc,art.h*s.sc*visible);
  ctx.beginPath();ctx.rect(0,0,W,Math.min(H,s.clipY));ctx.clip();ctx.translate(s.x,s.y);ctx.scale(s.sc,s.sc);
  const t=raceElapsed/1000;
- if(s.item.motion==='landing'&&orbitalLandingPose().exhaust){
+ if((s.item.motion==='wreck'||s.item.motion==='fire')&&evacuationAge()>=0){
+  drawOrbitalFire(evacuationAge(),s.segIdx,s.item.motion==='wreck');
+ }else if(s.item.motion==='landing'&&orbitalLandingPose().exhaust){
   const pose=orbitalLandingPose(),power=clamp(pose.height/55,0,1);
   for(const x of[-226,109]){
    const plume=Math.min(26+pose.height,36+power*(45+5*Math.cos(t*11)));
@@ -510,12 +621,16 @@ function drawOrbitalSprite(s){
  }else if(s.item.kind==='marshaller'){
   ctx.translate(0,22);
   const seconds=Math.max(0,t-s.item.delay);
-  const walking=seconds<2.3||seconds>6&&seconds<8;
+  const walking=(s.item.motion==='flee'&&evacuationAge()>=0)||seconds<2.3||seconds>6&&seconds<8;
   const stride=walking?Math.sin(seconds*8)*9:3;
   for(const side of[-1,1]){
    const foot=side*(9+stride);
    sceneLine([[side*6,-62],[side*9+stride*.4,-42],[foot,-23]],'#354761',8);
    sceneLine([[foot,-23],[foot+4,-22]],'#c3cdd1',5);
+   if(s.item.motion==='flee'){
+    sceneLine([[side*12,-88],[side*(18+stride*.8),-67],[side*(24+stride),-78]],'#deb78a',7);
+    continue;
+   }
    const signal=walking?.24:orbitalLandingPose().landed?.13:.65+.34*Math.cos(t*3);
    const handX=side*(37-10*signal),handY=-78-28*signal;
    sceneLine([[side*12,-88],[side*25,-78],[handX,handY]],'#e4b082',6);
@@ -542,10 +657,54 @@ function drawOrbitalSprite(s){
   const reach=Math.sin(t*.55)*12;sceneLine([[-5,-65],[19,-91],[48+reach,-70]],'#b8b2a3',9);sceneEllipse(48+reach,-70,7,7,'#83d5cd');
  }else if(s.item.kind==='directory'){
   const roof=orbitalProfile(s.segIdx).height*200/ROAD_WIDTH/s.item.size-(s.item.lift||0);
-  for(const x of[-114,114])sceneLine([[x,-164],[x,-roof]],'#7494a7',3);
-  ctx.font="17px 'Gravity Pixel',monospace";ctx.textAlign='center';ctx.fillStyle='#d8edf1';ctx.fillText(s.item.caption,0,-117,292);
+  if(s.item.wallPanel){
+   const side=Math.sign(s.item.x),edge=side*155;
+   const wall=(side*orbitalProfile(s.segIdx).room-s.item.x)*200/s.item.size;
+   sceneLine([[edge,-134],[wall,-134],[edge,-89]],'#687b8e',9);
+  }else for(const x of[-114,114])sceneLine([[x,-164],[x,-roof]],'#7494a7',3);
+  ctx.font="17px 'Gravity Pixel',monospace";ctx.textAlign='center';ctx.fillStyle='#d8edf1';if(evacuationAge()>=0)drawEvacuationPanel(0,-124,310,60);
+  else ctx.fillText(s.item.caption||'DOCK CONTROL',0,-117,292);
  }else if(s.item.kind==='observation'){
+  if(evacuationAge()>=0)drawEvacuationPanel(0,-85,322,95);
   for(let j=0;j<3;j++){sceneEllipse(-60+j*60,-42,5,6,'#a8c3c9');sceneLine([[-60+j*60,-35],[-60+j*60,-13]],'#a0adb7',9);sceneLine([[-65+j*60,-14],[-70+j*60,0]],'#637b90',4);}
+ }
+ ctx.restore();
+}
+function drawEvacuationPanel(x,y,w,h){
+ const lit=Math.cos(evacuationAge()*5)>-.35;
+ ctx.fillStyle=lit?'#951e32':'#431924';ctx.fillRect(x-w/2,y-h/2,w,h);
+ ctx.textAlign='center';ctx.font="bold "+h*.52+"px monospace";ctx.fillStyle=lit?'#fff1d9':'#ff9884';
+ const message=evacuationMessage();
+ if(message==='PROCEED TO THE EMERGENCY POD'){
+  ctx.font='bold '+h*.42+'px monospace';
+  ctx.fillText('PROCEED TO THE',x,y-h*.05,w*.95);ctx.fillText('EMERGENCY POD',x,y+h*.38,w*.95);
+ }else ctx.fillText(message,x,y+h*.17,w*.95);
+}
+function drawOrbitalFire(age,index,impact){
+ const scale=impact?1.6:.88,burst=impact?age:(age+index%5)%3.6;
+ ctx.save();ctx.scale(scale,scale);
+ // Embers, billowing smoke and flame tongues stay anchored to their damaged bay.
+ for(let i=0;i<9;i++){
+  const phase=(age*.56+i*.237)%1,dx=Math.sin(i*31)*92;
+  sceneEllipse(70+dx+phase*40,-86-phase*240,18+phase*39,25+phase*32,'rgba(62,48,65,.65)');
+  const flame=55+28*Math.sin(age*8+i*4);
+  scenePoly([[dx-32,-46],[dx+Math.sin(i+age*4)*23,-74-flame],[dx+32,-46]],i%2?'#ff903a':'#ed5531');
+  sceneEllipse(dx+phase*75,-56-phase*183,3,7,'#ffd87b');
+ }
+ if(burst<1.15){
+  const fade=1-burst/1.15;ctx.globalAlpha*=fade;
+  if(impact){
+   ctx.strokeStyle='#ffd39a';ctx.lineWidth=6*fade;
+   ctx.beginPath();ctx.ellipse(100,-110,20+burst*204,14+burst*150,0,0,Math.PI*2);ctx.stroke();
+   for(let k=0;k<15;k++){
+    const a=k*2.4,r=30+burst*(140+20*(k%5));
+    sceneLine([[65+Math.cos(a)*r,-110+Math.sin(a)*r],[65+Math.cos(a)*(r+24),-110+Math.sin(a)*(r+24)]],'#ffe7aa',4);
+   }
+  }
+  for(let i=0;i<10;i++){
+   const angle=i*2.4,r=burst*142;
+   sceneEllipse(50+Math.cos(angle)*r,-100+Math.sin(angle)*r,18+fade*55,20+fade*45,i%3?'#ff943e':'#fff3a6');
+  }
  }
  ctx.restore();
 }
@@ -3324,7 +3483,7 @@ document.addEventListener('keyup',e=>{
   if(inputSources.has(keyboardSource(e))){e.preventDefault();setInput(keyboardSource(e),null);}
 });
 window.addEventListener('blur',resetInputs);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)resetInputs();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stopOrbitalTone();resetInputs();}});
 function updateControlUI(){
   const racing=(state==='countdown'||state==='playing')&&!player.finished;
   wrap.classList.toggle('racing',racing);
@@ -3438,6 +3597,13 @@ function getPlayerRoadProjection(footprint){
   }
   const at=(index,t)=>{const p=projected.get(index);return p?{x:p.x1+(p.x2-p.x1)*t,y:p.p1.y+(p.p2.y-p.p1.y)*t,w:p.p1.w+(p.p2.w-p.p1.w)*t}:null;};
   return{projected,at};
+}
+function launchOrbitalCar(car,previous,next){
+ const pad=ORBITAL_PAD*SEGMENT_LENGTH;
+ if(car.finished||previous>=(ORBITAL_GAP*SEGMENT_LENGTH)||next<pad||car.lastChevronPanelIdx===ORBITAL_PAD)return;
+ car.lastChevronPanelIdx=ORBITAL_PAD;car.lastChevronPanelLap=1;car.isChevronBoosting=true;car.chevronBoostTimer=2;
+ if(car===player)spawnPopupText('CATAPULT','#d8e3ec');
+ else car.randomTurboReadyAt=Math.max(car.randomTurboReadyAt||0,car.raceAge+2+OPP_RANDOM_TURBO.cooldown);
 }
 function getPlayerChevronContact(){
   if(currentLevel!==LEVEL_SPACE||player.finished)return null;
@@ -7170,7 +7336,7 @@ function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=
 
   // Four jets follow the four mouths. Turbo colors and duration stay as before.
   if(isBoosting||isChevronBoosting){
-    const flameColor=isChevronBoosting?'#ff00ff':'#21d4fd';
+    const flameColor=isChevronBoosting?(currentLevel===LEVEL_ORBITAL?'#c3d3e5':'#ff00ff'):'#21d4fd';
     const height=bh*(isChevronBoosting?1.6+Math.random()*.85:.6+Math.random()*.5);
     for(const port of ports){
       const halfWidth=port.radius*.95;
@@ -7227,14 +7393,14 @@ function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=
       smokeParticles.push({isChevronPlasma:true,x:port.x+(Math.random()-.5)*bw*.025,y:port.y+port.radius,
         vx:(Math.random()-.5)*28*sc,vy:(60+Math.random()*70)*sc,size:3.2*sc+Math.random()*4.5*sc,
         alpha:.9+Math.random()*.1,maxLife:.55+Math.random()*.45,life:0,
-        color:'rgba(255, 0, 180, 0.95)',glowColor:'rgba(255, 0, 180, 0.33)'});
+        color:currentLevel===LEVEL_ORBITAL?'#cedcea':'rgba(255, 0, 180, 0.95)',glowColor:currentLevel===LEVEL_ORBITAL?'rgba(180,209,232,.33)':'rgba(255, 0, 180, 0.33)'});
     }
     const sparkleCount=Math.random()<.7?2:1;
     for(let k=0;k<sparkleCount;k++){
       const port=screenPorts[Math.floor(Math.random()*screenPorts.length)];
       smokeParticles.push({isSparkle:true,x:port.x,y:port.y+port.radius,
         vx:(Math.random()-.5)*90*sc,vy:(90+Math.random()*110)*sc,size:4.5*sc+Math.random()*5*sc,
-        alpha:1,maxLife:.35+Math.random()*.25,life:0,color:Math.random()>.45?'#ffffff':'#ff00ff'});
+        alpha:1,maxLife:.35+Math.random()*.25,life:0,color:Math.random()>.45?'#ffffff':currentLevel===LEVEL_ORBITAL?'#acbfd1':'#ff00ff'});
     }
   }
 }
@@ -11459,6 +11625,11 @@ function drawCruisingSpeedStream(time) {
 }
 
 function render(ts) {
+ const impactAge=currentLevel===LEVEL_ORBITAL?evacuationAge():-1;
+ if(impactAge>=0&&impactAge<1){
+  const amp=(1-impactAge)*7;
+  C.style.transform='translate('+Math.sin(impactAge*89)*amp+'px,'+Math.cos(impactAge*111)*amp+'px) scale(1.025)';
+ }else if(C.style.transform)C.style.transform='';
   const dt = smoothedDt;
   const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
   const startSegIdx = isPointToPoint() ? ~~(player.z / SEGMENT_LENGTH) : ~~(player.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
@@ -12836,7 +13007,7 @@ function render(ts) {
           let angle = Math.random() * Math.PI * 2;
           let dist = W * 0.32 + Math.random() * W * 0.45; 
           let len = 160 + Math.random() * 200;
-          ctx.strokeStyle = ['#ff00ff', '#ffffff', '#ff007f', '#a300ff'][~~(Math.random()*4)];
+          ctx.strokeStyle = (currentLevel===LEVEL_ORBITAL?['#8294a7','#eef6ff','#a7b6c7','#526778']:['#ff00ff','#ffffff','#ff007f','#a300ff'])[~~(Math.random()*4)];
           ctx.lineWidth = Math.random() * 4.5 + 1.5;
           ctx.globalAlpha = Math.random() * 0.75 + 0.25; 
           ctx.beginPath();
@@ -12849,7 +13020,7 @@ function render(ts) {
           let angle = Math.random() * Math.PI * 2;
           let dist = W * 0.3 + Math.random() * W * 0.45;
           let r = Math.random() * 3.5 + 1;
-          ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#ff00ff';
+          ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : currentLevel===LEVEL_ORBITAL?'#ccd8e3':'#ff00ff';
           ctx.globalAlpha = Math.random() * 0.8;
           ctx.beginPath();
           ctx.arc(Math.cos(angle)*dist, Math.sin(angle)*dist, r, 0, Math.PI*2);
@@ -13309,7 +13480,7 @@ function togglePause() {
   if(driverNameContext)return;
   if ((state === 'playing' || state === 'countdown') && !paused) {
     paused = true;
-    resetInputs();
+    stopOrbitalTone();resetInputs();
     document.getElementById('pauseOverlay').classList.remove('hide');
   } else if (paused) {
     paused = false;
@@ -13320,6 +13491,7 @@ function togglePause() {
 }
 
 function exitRace() {
+  stopOrbitalTone();
   raceRunId++;clearTimeout(fieldCompletionTimer);fieldCompletionTimer=null;driverNameContext=null;
   resetInputs();
   lastLapElapsed=null;
@@ -13810,6 +13982,7 @@ function advanceRaceStep(dt){
     checkPolishContacts(player,previousPlayer,nextContact);
 
     // Use the same projected paint as rendering, against the visible car footprint.
+    if(currentLevel===LEVEL_ORBITAL)launchOrbitalCar(player,previousPlayer.z,nextContact.z);
     const chevronContact=getPlayerChevronContact();
     if(chevronContact&&(player.lastChevronPanelIdx!==chevronContact.index||player.lastChevronPanelLap!==chevronContact.lap)){
       spawnPopupText(player.isChevronBoosting&&player.chevronBoostTimer>0?'CHAINED!':'CHEVRON TURBO!','#ff00ff');
@@ -13914,6 +14087,7 @@ function advanceRaceStep(dt){
       }
 
       const nextOpponent = { x: opp.x, z: getRaceDistance(opp) + opp.speed * dt };
+      if(currentLevel===LEVEL_ORBITAL)launchOrbitalCar(opp,previousOpponents[oppIndex].z,nextOpponent.z);
       let opponentTravel = opp.speed * dt;
       for (const contact of getTrackContacts(previousOpponents[oppIndex], nextOpponent, currentLevel===LEVEL_SPACE?['barrier']:['pylon','barrier'])) {
         const object = contact.object;

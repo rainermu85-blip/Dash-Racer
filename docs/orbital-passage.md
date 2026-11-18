@@ -24,8 +24,12 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    den kupfergefassten, türkis leuchtenden Ring mit schwebendem Plasmakern frei.
 6. **Panorama Terminal:** Beobachtungskonsolen, kleine Biosphärenbeete,
    Techniker und ein großes Delta-Shuttle, das von rechts nach links über das Glasdach gleitet.
-   Bei Segment 2864 tritt die Straße auf eine offene Außenbrücke. An Backbord
-   begleiten beleuchtete Decks und Hangarbuchten den geraden Zielanlauf.
+   Bei 80 Prozent rammt ein landender Frachter den Dockkran. Der Einschlag erschüttert
+   das Bild eine Sekunde lang. Brände, Folgeexplosionen, fliehendes Personal, rote
+   Wandleuchten und wechselnde Evakuierungsanzeigen begleiten die Ausfahrt.
+   Nach Segment 2864 folgt die Außenrampe. Ihr silbernes Chevron katapultiert alle
+   Fahrer über den offenen Abschnitt zum schwarz-gelb markierten Eingang des Pods.
+   Landedeck, Ziellinie und Auslauf befinden sich im Pod.
 
 Die Fahrbahn wird als zusammenhängendes Band durch **jeden** projizierten
 Streckenpunkt gezeichnet, vollständig vor Fahrzeugen und Sammelobjekten.
@@ -77,8 +81,8 @@ Playwright wird wie in den bestehenden Browserprüfungen separat benötigt.
 
 Der Mechaniklauf prüft echte Beschleunigung, Lenkung, eingesammelte
 Ladungen und Zieleinläufe sowie Wandkontakt, Neustart, Scoreboard/Continue
-und kontinuierliche Gegnerprojektion. Die saubere Fahrt bleibt bei
-**109,18 s ohne Turbo** und **105,22 s mit eingesammelten Ladungen**.
+und kontinuierliche Gegnerprojektion. Die saubere Fahrt mit dem Evakuierungskatapult dauert
+**107,30 s ohne eingesammelte Turbos** und **103,33 s mit neun eingesammelten Ladungen**.
 Mit Gegnerkontakt variiert die Fahrzeit. Alle Gegnerzeiten entstehen aus
 wirklichen Zieleinläufen im gemeinsamen Modell.
 
@@ -106,8 +110,8 @@ es gibt keine zusätzliche JavaScript-Datei, die beim einfachen Pages-Hosting
 fehlen könnte. Der Paradise-Lauf deckt zusätzlich den bestehenden Rundkurs
 und die Rundenzahl aller acht Strecken ab.
 
-Die Stationsgrafiken verwenden **20** einmal erzeugte Canvas-Kacheln mit
-insgesamt etwa **3,81 MiB** RGBA-Speicher. Die Grafiken werden beim normalen
+Die Stationsgrafiken verwenden **21** einmal erzeugte Canvas-Kacheln mit
+insgesamt etwa **3,83 MiB** RGBA-Speicher. Die Grafiken werden beim normalen
 Rendern nicht neu gezeichnet. Das sind automatisierte Chromium-Prüfungen;
 die zusätzliche Render-Messung ist keine zugesicherte Geräte-Bildrate.
 

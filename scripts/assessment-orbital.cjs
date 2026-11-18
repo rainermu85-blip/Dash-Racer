@@ -34,15 +34,37 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
     record('shuttle-visible-before-passing-'+turbo,visibleLaunch>=4&&launch.some(s=>s.age>1.35&&s.width>12&&s.height>8),{visibleSamples:visibleLaunch,samples:launch});
    }
    // Drive the shared field to actual crossings, including AI after the player.
-   setup();let frames=0;
-   for(;frames<18000&&[player,...opponents].some(c=>c.finishTime==null);frames++){steer(true);advanceRaceStep(1/60);}
+   setup();let frames=0,impactIndex=null;
+   const shake=new Set(),messages=new Set(),stages=new Set();
+   const wantShot=new Set(['impact','alarm','ramp','flight','pod','finish']);
+
+   for(;frames<18000&&[player,...opponents].some(c=>c.finishTime==null);frames++){steer(true);advanceRaceStep(1/60);
+    if(orbitalImpactTime===null||player.finished)continue;
+    const age=evacuationAge(),index=player.z/SEGMENT_LENGTH;
+    impactIndex??=index;
+    messages.add(evacuationMessage());
+    if(frames%8!==0)continue;
+    const profile=orbitalProfile(Math.floor(index));
+    const stage=age<1?'impact':index<ORBITAL_OUTER_BRIDGE?'alarm':profile.gap?'flight':profile.pod?(index>3060?'finish':'pod'):'ramp';
+    stages.add(stage);
+    if(age<1.3||wantShot.has(stage)){
+     render(raceElapsed);
+     if(age<1.3)shake.add((age<1?'during':'after')+'-'+Boolean(C.style.transform));
+     if(wantShot.has(stage)&&(stage!=='impact'||age>.25)&&(stage!=='ramp'||index>2910)&&(stage!=='flight'||index>2985)){
+      shots.push({name:'evacuation-'+stage,image:C.toDataURL()});wantShot.delete(stage);
+     }
+    }
+   }
+   record('impact-at-80-percent-and-one-second-shake',Math.abs(impactIndex-ORBITAL_IMPACT)<2&&shake.has('during-true')&&shake.has('after-false')&&shake.size===2,{impactIndex,shake:[...shake]});
+   record('evacuation-messages-and-flight-into-pod',messages.has('! Evacuation !')&&messages.has('PROCEED TO THE EMERGENCY POD')&&stages.size===6,{messages:[...messages],stages:[...stages]});
+   record('catapult-carries-the-entire-field',[player,...opponents].every(c=>c.lastChevronPanelIdx===ORBITAL_PAD),{panels:[player,...opponents].map(c=>c.lastChevronPanelIdx)});
    stop();updateHUD(0);const field=getRaceStandings();
    record('all-six-drivers-cross-with-real-times',field.length===6&&field.every(c=>c.finishTime>0&&c.z>=TRACK_LENGTH),{seconds:raceElapsed/1000,times:field.map(c=>({tag:c.driverTag,time:c.finishTime}))});
    state='result';renderScoreboard();
    record('scoreboard-and-continue',document.querySelectorAll('.results-table tbody tr').length===6&&document.querySelector('.result-course').textContent==='ORBITAL PASSAGE',{});
    document.getElementById('continueBtn').click();record('continue-returns-to-level-selection',state==='intro'&&!!document.getElementById('lvl8Btn'),{});
    setup();opponents=[];
-   record('restart-resets-station-events',orbitalLaunchStart===null&&orbitalFlybyStart===null&&player.z===0,{});
+   record('restart-resets-station-events',orbitalLaunchStart===null&&orbitalFlybyStart===null&&orbitalImpactTime===null&&player.z===0,{});
    player.z=ORBITAL_LAUNCH_TRIGGER*150;updateOrbitalEvents();const start=orbitalLaunchStart,pose=JSON.stringify(orbitalShuttlePose());render(1000);render(9000);
    record('render-clock-does-not-animate-paused-launch',orbitalLaunchStart===start&&pose===JSON.stringify(orbitalShuttlePose()),{});
    for(const index of[500,1000,1800,2150,2700])for(const role of['player','ai'])for(const side of[-1,1]){
@@ -68,7 +90,7 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
    for(let i=0;i<finishPixels.length;i+=4)if(finishPixels[i]===230&&finishPixels[i+1]===229&&finishPixels[i+2]===206)checkerPixels++;
    record('floor-finish-line-visible-with-batched-shell',checkerPixels>10,{pixels:checkerPixels});
    player.z=(ORBITAL_LENGTH+20)*150;render(0);shots.push({name:'runout',image:C.toDataURL()});
-   record('finish-runout-stays-in-terminal',getSeg(player.z).index===ORBITAL_LENGTH+20&&orbitalProfile(getSeg(player.z).index).key==='panorama',{});
+   record('finish-runout-stays-in-terminal',getSeg(player.z).index===ORBITAL_LENGTH+20&&orbitalProfile(getSeg(player.z).index).pod,{});
    drawOrbitalSprite=paint;
    record('landmarks-survive-wall-and-crest-occlusion',ORBITAL_SECTIONS.every(s=>painted.has(s.key)),{visibleDistricts:[...painted],samples:sceneSamples});
    // Actual continuous camera movement across slice boundaries, not just a
