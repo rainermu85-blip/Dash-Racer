@@ -19,17 +19,20 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    und eine große Antenne. Ein Astronaut arbeitet mit Sicherungsleine außerhalb
    der Verglasung. Die Fahrbahn windet sich durch die Außenverbindung.
 4. **Active Launch Deck:** große Halle mit Fracht und Robotik. Ein Abfangjäger zündet seine
-   Triebwerke, hebt die Nase und steigt vom linken Startbock quer über die Fahrbahn zur geöffneten Hangarbucht.
+   Triebwerke und beschleunigt über eine geneigte Startschiene durch die seitliche
+   Hangaröffnung.
 5. **Helios Reactor:** hohe Halle mit einem einzelnen Fusionskern. Die Anfahrt gibt den Blick auf
-   den kupfergefassten, türkis leuchtenden Ring mit schwebendem Plasmakern frei.
+   den kupfergefassten Ring frei. Der Kern pulsiert und speist Lichtbögen in
+   die umlaufenden Spulen.
 6. **Panorama Terminal:** Beobachtungskonsolen, kleine Biosphärenbeete,
    Techniker und ein großes Delta-Shuttle, das von rechts nach links über das Glasdach gleitet.
-   Bei 80 Prozent rammt ein landender Frachter den Dockkran. Der Einschlag erschüttert
+   Bei 80 Prozent rammt ein landendes Forschungsschiff den Dockkran. Der Einschlag erschüttert
    das Bild eine Sekunde lang. Brände, Folgeexplosionen, fliehendes Personal, rote
    Wandleuchten und wechselnde Evakuierungsanzeigen begleiten die Ausfahrt.
    Nach Segment 2864 folgt die Außenrampe. Ihr silbernes Chevron katapultiert alle
    Fahrer über den offenen Abschnitt zum schwarz-gelb markierten Eingang des Pods.
-   Landedeck, Ziellinie und Auslauf befinden sich im Pod.
+   Der Pod steht erhöht im freien Raum. Im Pod warten Evakuierte in Raumanzügen
+   und zwei Mondrover neben dem Landedeck. Die Ziellinie liegt dahinter.
 
 Die Fahrbahn wird als zusammenhängendes Band durch **jeden** projizierten
 Streckenpunkt gezeichnet, vollständig vor Fahrzeugen und Sammelobjekten.

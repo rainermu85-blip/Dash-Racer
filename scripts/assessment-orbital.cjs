@@ -73,6 +73,16 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
     record(`solid-road-boundary-${role}-${index}-${side}`,car.x<=limits.right&&car.x>=-limits.left&&car.speed<4000&&car.wallContactSide===side,{x:car.x,speed:car.speed});
    }
    setup();opponents=[];player.speed=4320;
+   const clearances=[];
+   for(const index of [ORBITAL_OUTER_BRIDGE+8,ORBITAL_OUTER_BRIDGE+28,ORBITAL_PAD-8]){
+    player.z=index*SEGMENT_LENGTH;player.pitch=segments[index].hillDelta;
+    for(let i=0;i<60;i++)updateCurveCamera(1/60);
+    render(raceElapsed);
+    const lip=segments[ORBITAL_GAP-1],pod=segments[ORBITAL_POD];
+    const bottom=pod.proj_y1+.78*pod.proj_w1*orbitalProfile(ORBITAL_POD).height*H/(ROAD_WIDTH*W);
+    clearances.push(lip.proj_y2-bottom);
+   }
+   record('open-space-between-ramp-and-pod-before-lift-off',clearances.every(pixels=>pixels>H*.012),{clearances});
    const painted=new Set(),paint=drawOrbitalSprite;let suppress=false;
    drawOrbitalSprite=s=>{if(!suppress)paint(s);};
    const sceneSamples=[];
