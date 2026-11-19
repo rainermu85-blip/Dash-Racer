@@ -44,14 +44,11 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    Escape Pod. Das silberne Chevron katapultiert anschließend alle
    Fahrer über den offenen Abschnitt zum schwarz-gelb markierten Eingang des Pods.
    Der Pod steht erhöht im freien Raum. Sein Landedeck weitet sich hinter
-   der Einfahrt innerhalb der Außenhülle. Die Fähre steht in einer Seitenbucht
-   und entlädt Passagiere, während die Rennwagen auf der Mittelspur ins Ziel kommen.
-   Die Zieldurchfahrt hält die Rennzeit fest. In der anschließenden Szene
-   öffnen die Schutzlamellen vor dem linken Fenster. Die Einflugschleuse
-   schließt nach der Ankunft des Feldes. Ein kurzer Impuls der Steuerdüse
-   dreht den Pod links herum, während er weiter von der Station wegdriftet.
-   Durch die Drehung wandert die Station ins Fenster und die Entfernung lässt
-   sie etwas kleiner werden. Danach erscheint das Ergebnis.
+   der Einfahrt innerhalb der Außenhülle. Die Fähre parkt hinter der Ziellinie.
+   Wenn der Rennwagen auf der Mittelspur ausrollt, steigen die Passagiere
+   vor ihm aus und werden auf dem beleuchteten Rettungsdeck empfangen.
+   Die Fahrperspektive führt bis zur Ergebnisliste durch die Szene.
+   An der Ziellinie wird die Rennzeit festgeschrieben.
 
 Die Fahrbahn wird als zusammenhängendes Band durch **jeden** projizierten
 Streckenpunkt gezeichnet, vollständig vor Fahrzeugen und Sammelobjekten.

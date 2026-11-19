@@ -225,25 +225,15 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 // Orbital Passage: a single continuous station interior, one-way, with a runout.
 const ORBITAL_LENGTH=3080,ORBITAL_SHUTTLE_INDEX=1700,ORBITAL_LANDING_INDEX=180,ORBITAL_DRAW_DISTANCE=220,ORBITAL_LAUNCH_TRIGGER=1596;
 const ORBITAL_OUTER_BRIDGE=2864, ORBITAL_IMPACT=2464, ORBITAL_PAD=2928, ORBITAL_GAP=2944, ORBITAL_POD=3024;
-let orbitalImpactTime=null, orbitalDepartureAt=null;
-const ORBITAL_LANDING_LIGHT_END=ORBITAL_POD+92;
-const ORBITAL_POD_ROOM=2.92;
-function orbitalPodOutro(){
- if(player.finishTime===null||!player.finished)return null;
- const age=Math.max(0,(raceElapsed-player.finishTime)/1000);
- const departure=orbitalDepartureAt===null?-1:(raceElapsed-orbitalDepartureAt)/1000;
- const yaw=1.42*paradiseSmooth((departure-1.35)/2.75);
- return {age,departure,yaw,shutter:paradiseSmooth((age-2.65)/.88),
-  jet:paradiseSmooth((departure-1.08)/.23)*(1-paradiseSmooth((departure-1.77)/.45))};
+let orbitalImpactTime=null;
+const ORBITAL_POD_ROOM=2.92, ORBITAL_POD_STOP=3101, ORBITAL_FERRY_BERTH=3138, ORBITAL_POD_BULKHEAD=3160;
+function orbitalPodArrivalAge(){
+ return player.finished&&player.finishTime!==null?Math.max(0,(raceElapsed-player.finishTime)/1000):0;
 }
-function advanceOrbitalPodOutro(){
- const outro=orbitalPodOutro();
- if(!outro||state!=='playing')return;
- if(orbitalDepartureAt===null&&opponents.every(car=>car.finishTime!==null))
-  orbitalDepartureAt=Math.max(player.finishTime+2450,raceElapsed+240);
- // Give the field its real race times. The existing classifier is the
- // fallback if a car never reaches the pod during the visible hold.
- if(outro.departure>=4.75||orbitalDepartureAt===null&&outro.age>=16)showResult();
+function advanceOrbitalPodArrival(){
+ if(state!=='playing')return;
+ const age=orbitalPodArrivalAge();
+ if(age>=4.9&&(opponents.every(car=>car.finishTime!==null)||age>=7.2))showResult();
 }
 function evacuationAge(){return orbitalImpactTime===null?-1:(raceElapsed-orbitalImpactTime)/1000;}
 const EVACUATE_STATION='EVACUATE STATION';
@@ -265,6 +255,15 @@ const ORBITAL_SECTIONS=[
 let orbitalProfiles=[],orbitalLaunchStart=null,orbitalFlybyStart=null;
 const orbitalArt=new Map();
 const ORBITAL_GROW_START=1184, ORBITAL_GROW_END=1360;
+const orbitalShellSeams=new Set([
+ ...ORBITAL_SECTIONS.map(section=>section.start),ORBITAL_GROW_START,ORBITAL_GROW_END,
+ ORBITAL_SHUTTLE_INDEX,ORBITAL_SHUTTLE_INDEX+1,ORBITAL_OUTER_BRIDGE,ORBITAL_GAP,
+ ORBITAL_POD,ORBITAL_POD_BULKHEAD,500,640,688,800,1664,1736,1744,3112,3130
+]);
+function orbitalShellSeam(index){
+ return orbitalShellSeams.has(index)||index%24===2||index%20===0||index%20===2||
+  index>=ORBITAL_POD&&(index%12===0||index%12===3);
+}
 const orbitalRobotBays=[[500,640],[688,800]];
 const orbitalCrops=['leafBed','tomatoBed','grainBed'];
 const orbitalFarmFloors=[0,1850,3700,5550];
@@ -303,8 +302,12 @@ function orbitalFerryPose(index){
   const flight=(index-releaseView)/(arrivalView-releaseView);
   return {index:ORBITAL_GAP+(ORBITAL_POD-ORBITAL_GAP)*flight,x:0,lift:160*Math.sin(Math.PI*flight),thrust:1};
  }
- const park=paradiseSmooth((index-arrivalView)/46);
- return {index:ORBITAL_POD+42*park,x:1.95*park,lift:0,thrust:.18*(1-park)};
+ // Leave the middle lane clear while the ferry coasts to its recovery berth.
+ const docking=clamp((index-arrivalView)/(ORBITAL_LENGTH-14-arrivalView),0,1);
+ const distance=docking*(2-docking);
+ const aside=paradiseSmooth((docking-.22)/.66);
+ return {index:ORBITAL_POD+(ORBITAL_FERRY_BERTH-ORBITAL_POD)*distance,
+  x:1.75*aside,lift:0,thrust:.18*(1-docking)};
 }
 function orbitalMovingActors(index){
  const actors=new Map();
@@ -335,10 +338,14 @@ function orbitalMovingActors(index){
  if(evacuationAge()<0)return actors;
  put(orbitalFerry,orbitalFerryPose(index));
  if(index>=ORBITAL_POD){
-  const unload=orbitalPodOutro()?.age||0;
+  const unload=orbitalPodArrivalAge();
   for(let i=0;i<3;i++){
-   const step=paradiseSmooth((unload-.12-i*.34)/1.1);
-   if(step>0)put(orbitalPodPassengers[i],{index:ORBITAL_POD+47+i*5+step*5,x:2.1+step*.43,lift:0});
+   const elapsed=unload-.52-i*.62;
+   if(elapsed<=0)continue;
+   const ramp=paradiseSmooth(elapsed/.75);
+   const toCrew=paradiseSmooth((elapsed-.52)/1.3);
+   put(orbitalPodPassengers[i],{index:ORBITAL_FERRY_BERTH-1-ramp*(3.5+i*2)-toCrew*(4.5+i*2),
+    x:1.75-.47*toCrew+i*.18*toCrew,lift:155*(1-ramp)});
   }
  }
  for(const runner of orbitalEvacuees){
@@ -356,7 +363,18 @@ function orbitalMovingActors(index){
 function makeOrbitalProfile(index){
  const section=ORBITAL_SECTIONS.find(s=>index<s.end)||ORBITAL_SECTIONS.at(-1),j=ORBITAL_SECTIONS.indexOf(section);
  let room=section.room,height=section.height;
- if(j>0&&index<section.start+55){const t=paradiseSmooth((index-section.start)/55),previous=ORBITAL_SECTIONS[j-1];room=previous.room+(room-previous.room)*t;height=previous.height+(height-previous.height)*t;}
+ let {wall,trim,floor,road}=section;
+ if(j>0&&index<section.start+55){
+  const previous=ORBITAL_SECTIONS[j-1],distance=index-section.start;
+  const t=paradiseSmooth(distance/55);
+  room=previous.room+(room-previous.room)*t;height=previous.height+(height-previous.height)*t;
+  // Material joins use short, fixed panels. The blend is baked into profiles.
+  const material=paradiseSmooth(Math.floor(distance/4)*4/40);
+  wall=interpolateColor(previous.wall,wall,material);
+  trim=interpolateColor(previous.trim,trim,material);
+  floor=interpolateColor(previous.floor,floor,material);
+  road=interpolateColor(previous.road,road,material);
+ }
  // Open the side aisles gradually at each end so the prop bases sit inside their rooms.
  const farm=index>=ORBITAL_GROW_START&&index<ORBITAL_GROW_END;
  const robotBay=section.key==='service'&&orbitalRobotBays.find(([start,end])=>index>=start&&index<end);
@@ -377,7 +395,7 @@ function makeOrbitalProfile(index){
  if(section.key==='arrival')height+=950*expansion(214,366);
  // The exterior roadway keeps only the narrow shoulders outside its rails.
  const pod=index>=ORBITAL_POD, gap=index>=ORBITAL_GAP&&!pod;
- return{...section,farm,robotBay:!!robotBay,room:pod?1.42+(ORBITAL_POD_ROOM-1.42)*paradiseSmooth((index-ORBITAL_POD)/22):room,height:pod?2400:height,gap,pod,exterior:index>=ORBITAL_OUTER_BRIDGE&&!pod};
+ return{...section,wall,trim,floor,road,farm,robotBay:!!robotBay,room:pod?1.42+(ORBITAL_POD_ROOM-1.42)*paradiseSmooth((index-ORBITAL_POD)/22):room,height:pod?2400:height,gap,pod,exterior:index>=ORBITAL_OUTER_BRIDGE&&!pod};
 }
 function orbitalProfile(index){return orbitalProfiles[index]||makeOrbitalProfile(index);}
 function buildOrbitalRoute(){
@@ -421,7 +439,7 @@ function buildOrbitalRoute(){
  });
 }
 function buildOrbitalScenery(){
- orbitalLaunchStart=orbitalFlybyStart=orbitalImpactTime=orbitalDepartureAt=null;
+ orbitalLaunchStart=orbitalFlybyStart=orbitalImpactTime=null;
  const add=(index,kind,x,size=1,extra={})=>{segments[index].orbitalItems??=[];segments[index].orbitalItems.push({kind,x,size,...extra});getOrbitalArt(kind);};
  // Installations sit in the hall, clear of the lane; wall equipment is
  // projected onto the service corridor itself rather than hidden behind it.
@@ -440,7 +458,7 @@ function buildOrbitalScenery(){
  add(1128,'exteriorArm',2.89,1.20,{mount:true});
  add(1144,'antenna',3.64,1.35,{mount:true});
  add(1160,'eva',-2.35,.8,{lift:65});
- add(1207,'directory',0,.76,{caption:'VERTICAL FARM',lift:205});
+ add(1209,'directory',-1.44,.62,{caption:'VERTICAL FARM',wallPanel:true,lift:147});
  // Two staggered rows of growing stacks flank the road. Each level
  // keeps its own service aisle and dedicated lighting.
  for(const side of [-1,1]){
@@ -475,8 +493,9 @@ function buildOrbitalScenery(){
  for(const index of [2560,2752])add(index,'directory',0,1.38,{caption:'ESCAPE POD ROUTE',lift:98});
  add(2810,'tomatoBed',2.46,1.2);
  add(3048,'moonrover',-2.03,.83);add(3064,'refugees',-2.02,.96);
- add(3077,'moonrover',-2.19,.85);add(3086,'refugees',-2.04,1.02);
- add(3105,'refugees',2.12,1);add(3118,'moonrover',2.15,.82);
+ add(3125,'moonrover',-1.91,.94);add(3132,'crew',1.31,.98);
+ add(3140,'refugees',-1.56,1.04);add(3149,'cargo',-2.02,.85);
+ add(3158,'observation',1.85,1.12);
  for(const seg of segments)for(const item of seg.orbitalItems||[]){
   if(item.kind==='directory'||item.mount||orbitalProfile(seg.index).pod)continue;
   const art=getOrbitalArt(item.kind),clearance=1.2+Math.max(art.ox,art.w-art.ox)/200*item.size;
@@ -564,14 +583,19 @@ function drawOrbitalDeck(roads){
  for(let i=0;i<roads.length;){
   if(!roads[i].isVisible){i++;continue;}
   const first=i,profile=orbitalProfile(roads[i].segIdx);
-  while(i+1<roads.length&&roads[i+1].isVisible&&orbitalProfile(roads[i+1].segIdx).key===profile.key&&orbitalProfile(roads[i+1].segIdx).exterior===profile.exterior&&orbitalProfile(roads[i+1].segIdx).gap===profile.gap&&orbitalProfile(roads[i+1].segIdx).farm===profile.farm)i++;
+  while(i+1<roads.length&&roads[i+1].isVisible){
+   const next=orbitalProfile(roads[i+1].segIdx);
+   if(next.key!==profile.key||next.road!==profile.road||next.exterior!==profile.exterior||
+    next.gap!==profile.gap||next.pod!==profile.pod||next.farm!==profile.farm)break;
+   i++;
+  }
   const last=i++;
   if(profile.gap)continue;
   if(profile.exterior)ribbon(first,last,-1.18,1.18,'#394353');
   else if(profile.key!=='glass'||profile.farm)
    ribbon(first,last,k=>-orbitalProfile(k).room,k=>orbitalProfile(k).room,profile.farm?'#2e4140':profile.floor);
   ribbon(first,last,-1.12,1.12,'#151f31');
-  ribbon(first,last,-1,1,profile.road);
+  ribbon(first,last,-1,1,profile.pod?'#303848':profile.road);
   for(const side of[-1,1])ribbon(first,last,side*.985,side*1.025,profile.farm?'#a8d6a6':profile.trim);
  }
  const strip=(from,to,left,right,color)=>{
@@ -580,6 +604,13 @@ function drawOrbitalDeck(roads){
   let last=first;while(last+1<roads.length&&roads[last+1].segIdx<to&&roads[last+1].isVisible)last++;
   ribbon(first,last,left,right,color);
  };
+ // The stationary finish view looks straight down the lit recovery deck.
+ for(const side of [-1,1]){
+  strip(3110,ORBITAL_POD_BULKHEAD,side*1.04,side*2.68,'#405a62');
+  strip(3110,ORBITAL_POD_BULKHEAD,side*1.05,side*1.085,'#b6d4c1');
+  for(let index=3112;index<3164;index+=8)
+   strip(index,index+3,side*1.10,side*1.37,side>0?'#e5b977':'#a3d9ca');
+ }
  // Three continuous, full-width silver arrowheads. All racing lines launch.
  strip(ORBITAL_PAD,ORBITAL_GAP,-1,1,'#384755');
  for(let start=ORBITAL_PAD;start<ORBITAL_GAP-3;start+=5){
@@ -629,24 +660,31 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
   for(const side of[-1,1]){
    wall(side,0,1,'#374555');wall(side,.18,.22,'#82c4ce');
    if(index%24<6)wall(side,.42,.65,'#697886');
-   if(side===-1&&index>=3072&&index<3112){
-    wall(side,.35,.85,'#252d40');wall(side,.37,.83,'#566571');
-    wall(side,.40,.80,'#354354');wall(side,.66,.687,'#606f79');
+   if(index>=3112&&index<ORBITAL_POD_BULKHEAD){
+    wall(side,.13,.29,'#516c76');wall(side,.29,.312,'#98c3b5');
+    if(index%16<6){
+     wall(side,.34,.82,'#253d52');wall(side,.63,.70,side>0?'#a27d58':'#568d93');
+    }
    }
   }
   roof(-1,1,'#253441');
   for(const side of[-1,1]){
    roof(side*.62,side*.66,'#bee5de');
-   if(index>=ORBITAL_POD+12&&index<ORBITAL_LANDING_LIGHT_END&&index%12<5){
+   if(index>=ORBITAL_POD+12&&index<ORBITAL_POD_BULKHEAD&&index%12<5){
     band(side*1.02,side*1.06,side*1.02,side*1.06,'#f0e7c7');
     band(side*1.27,side*1.43,side*1.27,side*1.43,'#55777c');
    }
   }
-  if(index%12<3)roof(-1,1,'#475766');
+  if(index%12<3)roof(-1,1,index>3108?'#637a7c':'#475766');
+  if(index>=3112&&index<ORBITAL_POD_BULKHEAD){
+   for(const lane of [-1.3,1.3])band(lane-.10,lane+.10,lane-.10,lane+.10,'#d6e9d9',.984);
+  }
   if(index===ORBITAL_POD){ctx.save();drawOrbitalPodMouth(x1,y1,w1,h1);ctx.restore();}
-  if(index===3152){
-   quad(x1-a.room*w1,y1,x1-a.room*w1,y1-h1,x1+a.room*w1,y1-h1,x1+a.room*w1,y1,'#485865');
-   sceneLine([[x1-w1,y1-h1*.65],[x1+w1,y1-h1*.65]],'#96d4cf',Math.max(1,h1*.035));
+  if(index===3130){
+   ctx.save();drawOrbitalRecoveryFrame(x1,y1,w1,h1);ctx.restore();
+  }
+  if(index===ORBITAL_POD_BULKHEAD){
+   ctx.save();drawOrbitalRecoveryBulkhead(x1,y1,w1,h1,a.room);ctx.restore();
   }
   return;
  }
@@ -899,7 +937,7 @@ function drawOrbitalLaunchRail(){
  const anchor=segments[ORBITAL_SHUTTLE_INDEX];
  const far=segments[ORBITAL_SHUTTLE_INDEX+5];
  const near=segments[ORBITAL_SHUTTLE_INDEX-5];
- const front=near.visibleInFrame?near:anchor;
+ const front=near.visibleInFrame&&near.worldZ+SEGMENT_LENGTH>player.z+64?near:anchor;
  const back=far.visibleInFrame?far:anchor;
  const x=front.proj_rx1,y=front.proj_y1,w=front.proj_w1;
  const worldScale=H*1.52/(W*200);
@@ -924,166 +962,31 @@ function drawOrbitalLaunchRail(){
   sceneLine([at(front,lane+.11,-19),[x+(lane+.08)*w,floor]],'#9c9999',Math.max(.7,w*.032));
  }
 }
-function drawOrbitalPodOutro(outro){
- const {age,departure,yaw,shutter,jet}=outro;
- const width=Math.min(W*.82,H*.72),unit=width/640;
- const left=(W-width)/2,top=H*.19,deckEnd=(H-top)/unit;
- ctx.save();
- const wash=ctx.createLinearGradient(0,0,0,H);
- wash.addColorStop(0,'#0e1b29');wash.addColorStop(.65,'#263540');wash.addColorStop(1,'#16252f');
- ctx.fillStyle=wash;ctx.fillRect(0,0,W,H);
- ctx.translate(left,top);ctx.scale(unit,unit);
- const margin=left/unit;
- scenePoly([[-margin,-top/unit],[72,-54],[571,-54],[640+margin,-top/unit]],'#283c4c');
- sceneLine([[-margin,-top/unit*.92],[80,-63],[562,-63],[640+margin,-top/unit*.92]],'#52949e',5);
- scenePoly([[-margin,30],[-28,64],[-28,407],[-margin,468]],'#253a49');
- scenePoly([[640+margin,30],[668,64],[668,407],[640+margin,468]],'#253a49');
- const frame=[[-40,384],[-40,46],[35,-25],[605,-25],[680,46],[680,384],[608,424],[32,424]];
- const glass=[[31,324],[31,70],[69,24],[571,24],[609,70],[609,324],[569,371],[71,371]];
- scenePoly(frame,'#526575');
- scenePoly([[-25,373],[-25,51],[42,-13],[598,-13],[665,51],[665,376],[600,409],[40,409]],'#29394b');
- ctx.save();
- ctx.beginPath();
- glass.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
- ctx.closePath();ctx.clip();
- ctx.fillStyle='#091326';ctx.fillRect(24,20,590,355);
- const focal=340;
- for(let i=0;i<88;i++){
-  const span=1260;
-  const x=(((i*107+yaw*290)%span)+span)%span-300;
-  const y=27+(i*113%342);
-  ctx.fillStyle=i%9===0?'#d4e3e7':'#607085';
-  ctx.fillRect(x,y,i%9===0?2.1:1.2,i%9===0?2.1:1.2);
- }
- // The local port normal rotates aft while translation remains along the
- // original flight path. Distance and view angle are independent.
- const bearing=Math.PI/2-yaw,aboutAbeam=bearing<1.15;
- if(aboutAbeam){
-  const range=1+.155*Math.max(0,departure-1.12);
-  const foreshorten=Math.cos(bearing);
-  ctx.save();ctx.translate(324-focal*Math.tan(bearing),239+20/range);
-  ctx.scale(.83/(range*foreshorten),.83/(range*foreshorten));
-  drawOrbitalDepartingStation(departure);ctx.restore();
- }
- // The port steering nozzle projects just beyond the window coaming.
- scenePoly([[562,368],[548,339],[584,327],[607,356]],'#586e83');
- sceneEllipse(551,341,12,8,'#263c50');
- if(jet>0){
-  scenePoly([[553,350],[557,332],[549-180*jet,295],[545-174*jet,333]],'rgba(102,180,237,.26)');
-  scenePoly([[550,348],[556,334],[543-128*jet,315],[544-88*jet,333]],'#90cfff');
-  scenePoly([[549,344],[554,336],[541-72*jet,322]],'#f2fff6');
- }
- scenePoly([[0,355],[640,355],[640,385],[0,385]],'#182c39');
- sceneLine([[31,324],[71,371],[569,371],[609,324]],'#7496a5',3);
- // A pressure-rated shutter moves over sealed glazing.
- const shutterBottom=374-357*shutter;
- for(let slat=23;slat<shutterBottom;slat+=31){
-  const height=Math.min(30,shutterBottom-slat);
-  if(height<=0)continue;
-  ctx.fillStyle='#3d5161';ctx.fillRect(25,slat,590,height);
-  ctx.fillStyle='#566a76';ctx.fillRect(25,slat,590,Math.min(2,height));
- }
- if(shutter<1)sceneLine([[25,shutterBottom],[615,shutterBottom]],'#b3bdbe',7);
- ctx.restore();
- sceneLine([...glass,glass[0]],'#91a5ad',5);
- sceneLine([[40,400],[600,400]],'#86bbc6',4);
- for(const x of [5,635])for(const y of [67,307])sceneEllipse(x,y,4,4,'#b8c5c5');
- // The camera faces across the landing deck. The near rail, docked ferry
- // and figures sit below the window and stay fixed relative to the cabin.
- scenePoly([[-220,520],[29,431],[610,431],[860,520],[860,deckEnd],[-220,deckEnd]],'#435360');
- scenePoly([[73,486],[541,486],[870,deckEnd],[-185,deckEnd]],'#354b59');
+function drawOrbitalRecoveryFrame(x,y,w,h){
+ const at=([lane,height])=>[x+lane*w,y-height*h];
+ const panel=(points,color)=>scenePoly(points.map(at),color);
  for(const side of [-1,1]){
-  const offset=side*320;
-  sceneLine([[320+offset*.65,530],[320+offset*1.2,deckEnd]],'#6d8b8f',6);
+  panel([[side*2.57,0],[side*2.80,0],[side*2.80,.78],[side*2.57,.71]],'#6c898d');
+  panel([[side*2.59,.36],[side*2.65,.36],[side*2.65,.65],[side*2.59,.63]],'#efd3a2');
  }
- sceneLine([[-175,571],[50,464],[594,464],[808,568]],'#72878e',7);
- sceneLine([[-30,692],[191,531],[446,531],[683,697]],'#bfbba3',5);
- for(const x of [22,107,548,618]){
-  sceneLine([[x,466],[x,509]],'#677e86',6);
-  sceneLine([[x-25,466],[x+31,466]],'#b8c5c8',4);
- }
- // The rear passage is visible to the left of this oblique interior view.
- scenePoly([[10,503],[10,452],[39,423],[158,423],[188,449],[188,503]],'#687687');
- scenePoly([[24,503],[24,456],[46,436],[151,436],[175,453],[175,503]],'#0b1927');
- ctx.save();
- ctx.beginPath();ctx.moveTo(24,503);ctx.lineTo(24,456);ctx.lineTo(46,436);
- ctx.lineTo(151,436);ctx.lineTo(175,453);ctx.lineTo(175,503);ctx.closePath();ctx.clip();
- const seal=paradiseSmooth(departure/.84);
- ctx.fillStyle='#8395a3';ctx.fillRect(24,436,151*seal*.5,67);ctx.fillRect(175-151*seal*.5,436,151*seal*.5,67);
- if(seal>0){
-  const edge=24+151*seal*.5;
-  sceneLine([[edge,436],[edge,503]],'#d5b974',4);
-  sceneLine([[175-151*seal*.5,436],[175-151*seal*.5,503]],'#d5b974',4);
- }
- ctx.restore();
- for(const x of [14,181])sceneLine([[x,458],[x,493]],seal>.98?'#aeebbf':'#f4b373',4);
- const ferry=getOrbitalArt('evacFerry');
- ctx.drawImage(ferry.canvas,428,405,170,119);
- ctx.save();ctx.translate(513,500);ctx.scale(.61,.61);
- drawOrbitalFerryHatch(age);
- ctx.restore();
- // A helper draws arriving evacuees away from the hatch and toward the handrail.
- ctx.save();ctx.translate(273,574);
- sceneLine([[-8,-26],[-8,-1]],'#869ca9',7);sceneLine([[8,-26],[8,-1]],'#869ca9',7);
- scenePoly([[-13,-57],[13,-57],[15,-26],[-15,-26]],'#9f865e');
- sceneEllipse(0,-67,11,10,'#d7d6c5');sceneEllipse(-4,-68,6,4,'#395e71');
- sceneLine([[11,-52],[23,-46],[33,-52+Math.sin(age*5)*5]],'#c49b70',6);
- ctx.restore();
- for(let i=0;i<3;i++){
-  const exit=age-2.18-i*.37;
-  if(exit<0)continue;
-  const walk=paradiseSmooth(exit/(1.85+i*.19));
-  const move=walk<1?Math.sin(age*11+i)*3:0;
-  ctx.save();ctx.translate(496-walk*(116+i*38),517+walk*(39+i*15));
-  const suit=['#d2a876','#a2bfcc','#c6b5d8'][i];
-  sceneLine([[-4,-20],[-7+move,-2]],'#9eb1bf',5);sceneLine([[4,-20],[7-move,-2]],'#b1c0ca',5);
-  scenePoly([[-8,-49],[8,-49],[11,-17],[-10,-17]],suit);
-  sceneEllipse(0,-58,9,10,'#e0e4d9');sceneEllipse(-3,-60,7,5,'#3a6077');
-  sceneLine([[-7,-45],[-15,-29+move]],suit,5);sceneLine([[7,-43],[15,-30-move]],suit,5);
-  ctx.restore();
- }
- // Parked racers remain in the same cabin while the pod is in flight.
- const nearCarY=Math.min(deckEnd-16,625+(deckEnd-625)*.45);
- const farCarY=Math.min(nearCarY-30,572+(deckEnd-625)*.22);
- const parked=opponents.find(car=>car.finishTime!==null);
- const cars=[[202,nearCarY,1.80,'#ffe066',true]];
- if(parked)cars.unshift([467,farCarY,1.15,parked.color,false]);
- for(const [x,y,size,color,own] of cars){
-  sceneEllipse(x,y-5,size*86,size*13,'#283844');
-  drawCarSprite(x,y,size,color,own,0,0,0,false,true);
- }
- const status=departure<0?'RECEIVING':departure<.9?'SEALING':'DEPARTURE';
- ctx.textAlign='left';ctx.font='bold 13px monospace';ctx.fillStyle='#b1cbd1';ctx.fillText('ESCAPE POD 07',45,-43);
- ctx.textAlign='right';ctx.fillStyle=departure<0?'#e8bc80':'#acdfc7';ctx.fillText(status,594,-43);
- ctx.restore();
+ panel([[-2.80,.72],[-2.80,.88],[2.80,.88],[2.80,.72]],'#668389');
+ panel([[-1.13,.76],[-1.13,.843],[1.13,.843],[1.13,.76]],'#203b46');
+ ctx.font='bold '+Math.max(1,h*.077)+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.fillStyle='#dcf0e4';ctx.fillText('RECOVERY BAY',x,y-h*.80,w*2.04);
 }
-function drawOrbitalDepartingStation(time){
+function drawOrbitalRecoveryBulkhead(x,y,w,h,room){
+ const at=(lane,height)=>[x+lane*w,y-height*h];
+ const panel=(points,color)=>scenePoly(points.map(([lane,height])=>at(lane,height)),color);
+ panel([[-room,0],[-room,1],[room,1],[room,0]],'#4d616c');
+ panel([[-1.28,0],[-1.28,.70],[-.93,.87],[.93,.87],[1.28,.70],[1.28,0]],'#7e9699');
+ panel([[-1.08,0],[-1.08,.65],[-.86,.76],[.86,.76],[1.08,.65],[1.08,0]],'#263e4c');
  for(const side of [-1,1]){
-  const root=side*124,tip=side*260;
-  scenePoly([[side*54,-30],[root,-48],[root,-22],[side*53,3]],'#798998');
-  sceneLine([[side*66,-14],[tip+side*4,-26]],'#a1aab0',7);
-  scenePoly([[root,-83],[tip,-107],[tip,-42],[root,-19]],'#273c61');
-  scenePoly([[root,4],[tip,-16],[tip,49],[root,71]],'#213757');
-  for(let i=0;i<8;i++){
-   const x=root+(tip-root)*i/8,y=(x-root)/(tip-root)*-24;
-   sceneLine([[x,-83+y],[x,-19+y]],'#63839e',1.5);
-   sceneLine([[x,4+y],[x,71+y]],'#597a94',1.5);
-  }
-  for(const y of[-59,-40,26,46])sceneLine([[root,y],[tip,y-22]],'#67869b',1.4);
+  panel([[side*1.51,.23],[side*2.67,.23],[side*2.67,.74],[side*1.51,.74]],'#2f4654');
+  for(const bar of [.35,.47,.59])sceneLine([at(side*1.65,bar),at(side*2.45,bar)],'#819ea4',Math.max(.75,w*.025));
+  sceneLine([at(side*1.12,.17),at(side*1.12,.51)],side>0?'#f6cf97':'#a8e0cb',Math.max(.9,w*.055));
  }
- scenePoly([[-99,14],[-77,-80],[101,-112],[147,-66],[125,5],[27,67],[-77,67]],'#707f8a');
- scenePoly([[-77,-80],[101,-112],[147,-66],[9,-36],[-99,14]],'#a0a9ad');
- scenePoly([[5,-39],[147,-66],[125,5],[27,67],[6,51]],'#405066');
- scenePoly([[-72,-80],[-52,-128],[53,-150],[74,-111],[8,-87]],'#788d98');
- sceneLine([[-59,-103],[55,-126]],'#b8c5c8',6);
- for(let i=0;i<8;i++)sceneLine([[-75+i*19,-22-i*4],[-67+i*19,-23-i*4]],'#b3d7cd',4);
- for(let i=0;i<5;i++)sceneLine([[-59+i*22,39-i*4],[-48+i*22,36-i*4]],i===3?'#ed995b':'#8fbcc6',4);
- scenePoly([[-19,-52],[4,-54],[29,-67],[44,-61],[32,-45],[53,-47],[18,-25],[-4,-35]],'#422c38');
- for(let i=0;i<7;i++){
-  const blink=Math.sin(time*6+i*.8);
-  const x=3+i*9,y=-36-i*4;
-  sceneEllipse(x,y,blink>0?6.2:3,blink>0?4.4:2.8,blink>0?'#fa8563':'#a0444e');
- }
+ sceneLine([at(-.89,.16),at(.89,.16)],'#83a6aa',Math.max(.7,w*.026));
+
 }
 function drawOrbitalPodMouth(x,y,w,h){
  // Each vertex pair describes the pressure shell and the actual drive-through aperture.
@@ -1178,7 +1081,7 @@ function drawOrbitalSprite(s){
   }
  }else if(s.item.kind==='evacFerry'){
   drawOrbitalFerryThrust(s.item.thrust,t);
-  const unload=orbitalPodOutro()?.age||0;
+  const unload=orbitalPodArrivalAge();
   if(unload>0)drawOrbitalFerryHatch(unload);
  }else if(s.item.motion==='craneCargo'){
   sceneLine([[-98,-159],[-98,-210],[30,-247],[98,-210],[98,-159]],'#a6a5af',6);
@@ -1242,7 +1145,7 @@ function drawOrbitalSprite(s){
   ctx.font="17px 'Gravity Pixel',monospace";ctx.textAlign='center';ctx.fillStyle='#d8edf1';if(evacuationAge()>=0)drawEvacuationPanel(0,-124,310,60);
   else ctx.fillText(s.item.caption||'DOCK CONTROL',0,-117,292);
  }else if(s.item.kind==='observation'){
-  if(evacuationAge()>=0)drawEvacuationPanel(0,-85,322,95);
+  if(evacuationAge()>=0&&!orbitalProfile(s.segIdx).pod)drawEvacuationPanel(0,-85,322,95);
   for(let j=0;j<3;j++){sceneEllipse(-60+j*60,-42,5,6,'#a8c3c9');sceneLine([[-60+j*60,-35],[-60+j*60,-13]],'#a0adb7',9);sceneLine([[-65+j*60,-14],[-70+j*60,0]],'#637b90',4);}
  }
  ctx.restore();
@@ -12470,11 +12373,6 @@ function render(ts) {
   const amp=(1-impactAge)*7;
   C.style.transform='translate('+Math.sin(impactAge*89)*amp+'px,'+Math.cos(impactAge*111)*amp+'px) scale(1.025)';
  }else if(C.style.transform)C.style.transform='';
- const outro=currentLevel===LEVEL_ORBITAL&&state!=='intro'&&state!=='countdown'?orbitalPodOutro():null;
- if(outro&&outro.age>=2.25){
-  drawOrbitalPodOutro(outro);
-  return;
- }
   const dt = smoothedDt;
   const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
   const startSegIdx = isPointToPoint() ? ~~(player.z / SEGMENT_LENGTH) : ~~(player.z / SEGMENT_LENGTH) % SEGMENT_COUNT;
@@ -13790,10 +13688,9 @@ function render(ts) {
     for(let i=0;i<segmentsToDraw.length;){
       const near=segmentsToDraw[i],stride=i<24?1:i<112?4:8;
       let end=Math.min(segmentsToDraw.length-1,i+stride-1-near.segIdx%stride);
-      // Keep one exact cross-section at the launch rail anchor.
-      if(near.segIdx===ORBITAL_SHUTTLE_INDEX)end=i;
-      else if(near.segIdx<ORBITAL_SHUTTLE_INDEX)
-       while(segmentsToDraw[end].segIdx>=ORBITAL_SHUTTLE_INDEX)end--;
+      for(let j=i+1;j<=end;j++){
+        if(orbitalShellSeam(segmentsToDraw[j].segIdx)){end=j-1;break;}
+      }
       near.orbitalEnd=segmentsToDraw[end];i=end+1;
     }
   }
@@ -14834,6 +14731,13 @@ function advanceRaceStep(dt){
     bgOffset += curveAhead * player.speed * dt * 0.15; 
     
     player.x -= curveAhead * 0.5 * dt * (0.35 + currentSpeedRatio * 1.65); player.pitch += (pitchAhead - player.pitch) * Math.min(1, dt * 5.0);
+    if(currentLevel===LEVEL_ORBITAL&&player.finished){
+      // Keep the berth in the normal driver's sightline on the runout.
+      player.x*=Math.exp(-2.1*dt);
+      const remaining=Math.max(0,ORBITAL_POD_STOP*SEGMENT_LENGTH-player.z);
+      if(remaining<player.speed*dt+1)player.normalSpeed=player.speed=0;
+      else if(remaining<player.speed**2/5900)scaleCarSpeed(player,Math.sqrt(5900*remaining)/player.speed);
+    }
 
     const over = Math.max(0, Math.abs(player.x) - softLimit);
     if (over > 0) { scaleCarSpeed(player,Math.exp(-(3.6+over*3.2)*dt)); player.steerLean += (player.x > 0 ? -0.25 : 0.25) * Math.min(1, over) * dt; }
@@ -15009,13 +14913,15 @@ function advanceRaceStep(dt){
       if (player.lap > maxLaps) {
         player.finished = true;currentLapTime=0;
         const finalPlace = updateHUD(ts);
-        if(currentLevel!==LEVEL_ORBITAL){
+        if(currentLevel===LEVEL_ORBITAL){
+          activePopups=activePopups.filter(popup=>popup.text!=='CATAPULT');
+        }else{
           spawnConfetti(finalPlace);
           resultTimer = setTimeout(() => { resultTimer = null; showResult(); }, 1500);
         }
       }
     }
-    if(currentLevel===LEVEL_ORBITAL&&player.finished)advanceOrbitalPodOutro();
+    if(currentLevel===LEVEL_ORBITAL&&player.finished)advanceOrbitalPodArrival();
 }
 
 function loop(ts) {

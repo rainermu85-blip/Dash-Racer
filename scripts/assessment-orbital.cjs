@@ -37,9 +37,24 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
    setup();let frames=0,impactIndex=null;
    const shake=new Set(),messages=new Set(),stages=new Set();
    const wantShot=new Set(['impact','alarm','ramp','flight','pod','finish']);
+   let stopped=false,ferryVisible=false,peopleVisible=false;
+   const paintArrival=drawOrbitalSprite;
+   const sampleArrival=()=>{
+    if(stopped||state!=='playing'||!player.finished||player.speed!==0||orbitalPodArrivalAge()<=2.2)return;
+    drawOrbitalSprite=sample=>{
+     if(sample.x>0&&sample.x<W&&sample.y>0&&sample.y<H&&sample.segIdx*SEGMENT_LENGTH>player.z){
+      if(sample.item.kind==='evacFerry')ferryVisible=true;
+      if(orbitalPodPassengers.includes(sample.item))peopleVisible=true;
+     }
+     paintArrival(sample);
+    };
+    stopped=true;render(raceElapsed);drawOrbitalSprite=paintArrival;
+    shots.push({name:'recovery-bay-stopped',image:C.toDataURL()});
+   };
 
    for(;frames<18000&&[player,...opponents].some(c=>c.finishTime==null);frames++){steer(true);advanceRaceStep(1/60);
-    if(orbitalImpactTime===null||player.finished)continue;
+    if(player.finished){sampleArrival();continue;}
+    if(orbitalImpactTime===null)continue;
     const age=evacuationAge(),index=player.z/SEGMENT_LENGTH;
     impactIndex??=index;
     messages.add(evacuationMessage());
@@ -60,20 +75,14 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
    record('catapult-carries-the-entire-field',[player,...opponents].every(c=>c.lastChevronPanelIdx===ORBITAL_PAD),{panels:[player,...opponents].map(c=>c.lastChevronPanelIdx)});
    stop();updateHUD(0);const field=getRaceStandings();
    record('all-six-drivers-cross-with-real-times',field.length===6&&field.every(c=>c.finishTime>0&&c.z>=TRACK_LENGTH),{seconds:raceElapsed/1000,times:field.map(c=>({tag:c.driverTag,time:c.finishTime}))});
-   const finishTime=player.finishTime,finalField=Math.max(...field.map(car=>car.finishTime));
-   const scene={opened:false,jetBeforeTurn:false,aftView:false,sealAfterField:false};
+   const finishTime=player.finishTime;
    for(let i=0;i<1000&&state==='playing';i++){
-    advanceRaceStep(1/60);
-    const shot=orbitalPodOutro();
-    if(!shot)continue;
-    if(shot.shutter>.98)scene.opened=true;
-    if(shot.jet>.3&&shot.yaw<.03)scene.jetBeforeTurn=true;
-    if(shot.yaw>1.36&&shot.shutter>.98)scene.aftView=true;
-    if(orbitalDepartureAt>=finalField)scene.sealAfterField=true;
+    advanceRaceStep(1/60);sampleArrival();
    }
-   record('pod-seals-after-arrivals-fires-steering-jet-and-turns-before-results',
-    Object.values(scene).every(Boolean)&&state==='result'&&player.finishTime===finishTime,
-    {scene,waitSeconds:(raceElapsed-finishTime)/1000,finishTime});
+   drawOrbitalSprite=paintArrival;
+   record('pod-arrival-keeps-ferry-and-passengers-ahead-of-stopped-player',
+    stopped&&ferryVisible&&peopleVisible&&state==='result'&&player.finishTime===finishTime,
+    {stopped,ferryVisible,peopleVisible,waitSeconds:(raceElapsed-finishTime)/1000,finishTime});
    stop();state='result';renderScoreboard();
    record('scoreboard-and-continue',document.querySelectorAll('.results-table tbody tr').length===6&&document.querySelector('.result-course').textContent==='ORBITAL PASSAGE',{});
    document.getElementById('continueBtn').click();record('continue-returns-to-level-selection',state==='intro'&&!!document.getElementById('lvl8Btn'),{});
@@ -87,6 +96,19 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
     record(`solid-road-boundary-${role}-${index}-${side}`,car.x<=limits.right&&car.x>=-limits.left&&car.speed<4000&&car.wallContactSide===side,{x:car.x,speed:car.speed});
    }
    setup();opponents=[];player.speed=4320;
+   const joins=[390,875,1184,1360,1940,2530,2864,2944,3024];
+   const shell=drawOrbitalRoad,crossed=[];
+   drawOrbitalRoad=(...args)=>{
+    const start=args[8],end=args[10];
+    if(joins.some(join=>start<join&&end>join))crossed.push([start,end]);
+    shell(...args);
+   };
+   for(const index of joins){
+    player.z=(index-58.2)*SEGMENT_LENGTH;
+    render(raceElapsed);
+   }
+   drawOrbitalRoad=shell;
+   record('shell-panels-stop-at-room-joins',crossed.length===0,{joins,crossed});
    const clearances=[];
    for(const index of [ORBITAL_OUTER_BRIDGE+8,ORBITAL_OUTER_BRIDGE+28,ORBITAL_PAD-8]){
     player.z=index*SEGMENT_LENGTH;player.pitch=segments[index].hillDelta;
