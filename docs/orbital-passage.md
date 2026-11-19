@@ -27,9 +27,13 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
 6. **Panorama Terminal:** Beobachtungskonsolen, kleine Biosphärenbeete,
    Techniker und ein großes Delta-Shuttle, das von rechts nach links über das Glasdach gleitet.
    Bei 80 Prozent rammt ein landendes Forschungsschiff den Dockkran. Der Einschlag erschüttert
-   das Bild eine Sekunde lang. Brände, Folgeexplosionen, fliehendes Personal, rote
-   Wandleuchten und wechselnde Evakuierungsanzeigen begleiten die Ausfahrt.
-   Nach Segment 2864 folgt die Außenrampe. Ihr silbernes Chevron katapultiert alle
+   das Bild eine Sekunde lang. Brände, Folgeexplosionen und fliehendes Personal
+   häufen sich zur Ausfahrt hin. Blinkende rote Pfeile weisen den Weg und
+   die Anzeigen wechseln zwischen `EVACUATE STATION` und
+   `PROCEED TO THE NEAREST ESCAPE POD`.
+   Unter dem grün beleuchteten Tor `EMERGENCY EXIT / ESCAPE POD RAMP` geht es
+   hinaus auf die Rampe. Vor den Rennwagen startet dort eine Rettungsfähre zum
+   Escape Pod. Das silberne Chevron katapultiert anschließend alle
    Fahrer über den offenen Abschnitt zum schwarz-gelb markierten Eingang des Pods.
    Der Pod steht erhöht im freien Raum. Im Pod warten Evakuierte in Raumanzügen
    und zwei Mondrover neben dem Landedeck. Die Ziellinie liegt dahinter.

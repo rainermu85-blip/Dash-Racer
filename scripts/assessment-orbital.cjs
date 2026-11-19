@@ -56,7 +56,7 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
     }
    }
    record('impact-at-80-percent-and-one-second-shake',Math.abs(impactIndex-ORBITAL_IMPACT)<2&&shake.has('during-true')&&shake.has('after-false')&&shake.size===2,{impactIndex,shake:[...shake]});
-   record('evacuation-messages-and-flight-into-pod',messages.has('! Evacuation !')&&messages.has('PROCEED TO THE EMERGENCY POD')&&stages.size===6,{messages:[...messages],stages:[...stages]});
+   record('evacuation-messages-and-flight-into-pod',messages.has('EVACUATE STATION')&&messages.has('PROCEED TO THE NEAREST ESCAPE POD')&&stages.size===6,{messages:[...messages],stages:[...stages]});
    record('catapult-carries-the-entire-field',[player,...opponents].every(c=>c.lastChevronPanelIdx===ORBITAL_PAD),{panels:[player,...opponents].map(c=>c.lastChevronPanelIdx)});
    stop();updateHUD(0);const field=getRaceStandings();
    record('all-six-drivers-cross-with-real-times',field.length===6&&field.every(c=>c.finishTime>0&&c.z>=TRACK_LENGTH),{seconds:raceElapsed/1000,times:field.map(c=>({tag:c.driverTag,time:c.finishTime}))});

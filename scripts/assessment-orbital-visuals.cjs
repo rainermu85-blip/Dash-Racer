@@ -64,7 +64,7 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
    const random=Math.random;Math.random=()=>.5;
    try{
     for(const turbo of[false,true]){
-     setup();opponents=[];const landing=[],shuttle=[],courier=[],eva=[],guides=[];
+     setup();opponents=[];const landing=[],shuttle=[],courier=[],eva=[],guides=[],ferry=[];
      for(let f=0;f<10000&&!player.finished;f++){
       const next=segments.find(s=>s.lightning?.active&&s.worldZ>=player.z&&s.worldZ<player.z+7500);
       const target=next?next.lightning.x:0,x=getPlayerCollisionX();keys.left=x>target+.025;keys.right=x<target-.025;
@@ -84,6 +84,15 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
         const count=visibleCraft('courier');courier.push({index,pixels:count});
         if(!turbo&&count>100&&index>2680&&index<2684){hide=null;render(raceElapsed);shots.push({name:'courier-above-glass-roof',image:C.toDataURL()});}
        }
+       if(index>2820&&index<3060&&f%12===0&&typeof orbitalFerryPose==='function'){
+        const pose=orbitalFerryPose(index);
+        const stage=pose.index<ORBITAL_GAP?'ramp':pose.index<ORBITAL_POD?'flight':'pod';
+        const count=visibleCraft('evacFerry');
+        if(!turbo&&count>70&&!ferry.some(sample=>sample.stage===stage&&sample.pixels>70)){
+         render(raceElapsed);shots.push({name:'rescue-ferry-'+stage,image:C.toDataURL()});
+        }
+        ferry.push({index,stage,pixels:count,position:pose.index});
+       }
        if(index>1050&&index<1180&&f%18===0)eva.push({index,pixels:visibleCraft('eva')});
       }
      }
@@ -93,6 +102,11 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
      if(guides.length)record('visible-landing-guides-'+turbo,guides.filter(s=>s.time<5.2&&s.pixels>20).length>=4&&guides.some(s=>s.time>5.2&&s.pixels>50),{samples:guides});
      if(hasLanding)record('visible-descent-and-touchdown-'+turbo,landing.filter(s=>!s.landed&&s.height>10&&s.pixels>100).length>=20&&landing.filter(s=>s.landed&&s.pixels>100).length>=10,{samples:landing});
      record('courier-flies-over-transparent-roof-'+turbo,courier.filter(s=>s.pixels>100).length>=10,{samples:courier});
+     if(ferry.length){
+      const counts=Object.fromEntries(['ramp','flight','pod'].map(stage=>[stage,ferry.filter(sample=>sample.stage===stage&&sample.pixels>70).length]));
+      const earlyFlight=ferry.some(sample=>sample.stage==='flight'&&sample.index<ORBITAL_PAD&&sample.pixels>70);
+      record('rescue-ferry-visible-on-ramp-in-flight-and-at-pod-'+turbo,Object.values(counts).every(count=>count>=3)&&earlyFlight,{counts,earlyFlight,samples:ferry});
+     }
      record('spacewalker-visible-through-glass-'+turbo,eva.filter(s=>s.pixels>20).length>=3,{samples:eva});
     }
     if(hasLanding){
