@@ -11,12 +11,15 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    und kleine Technikergruppen. Ein Frachter ist bereits beim Countdown im
    Anflug, sinkt während der ersten 5,2 Rennsekunden auf eine markierte
    Landefläche. Zwei Einweiser laufen an den Rand des Pads, signalisieren den
-   Sinkflug mit Leuchtstäben und treten nach dem Aufsetzen zurück.
+   Sinkflug mit Leuchtstäben und treten nach dem Aufsetzen zurück. Die
+   Frachtrampe senkt sich, ein Schlepper fährt am Liegeplatz vorbei und ein
+   Querkran versetzt Fracht über der Fahrbahn.
 2. **Service Spine:** enger Wartungsgang mit Wandkonsolen, Türen, Leitungen
    und zwei verglasten Robotik-Arbeitsbuchten. Techniker kontrollieren die Anlagen.
    Greifarme setzen Bauteile ein,
-   während die Werkzeugseite am offenen Chassis arbeitet. Kurze Wechselkurven, Rampen
-   und Senken führen durch den bernsteinfarben beleuchteten Gang.
+   während die Werkzeugseite am offenen Chassis arbeitet. Das Modul H-14
+   hängt an der Förderschiene und wandert durch den niedrigen Rohrdurchlass
+   und die höhere Wartungshalle zur zweiten Arbeitsbucht.
 3. **Earth Observation:** Glasbrücke mit Blick auf die Erde. Außen tragen fest
    angeschlossene Plattformen die Parabolantennen, Solarflügel und beweglichen
    Wartungsarme. Dahinter liegt die Farm mit vier beleuchteten Anbauebenen auf
@@ -27,7 +30,8 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    Seitenbucht. Zwei Torflügel fahren auseinander und geben den Ausflug frei.
 5. **Helios Reactor:** hohe Halle mit einem einzelnen Fusionskern. Die Anfahrt gibt den Blick auf
    den kupfergefassten Ring frei. Der Kern pulsiert und speist Lichtbögen in
-   die umlaufenden Spulen.
+   die umlaufenden Spulen. Zwei Kühlleitungen steigen aus Bodennähe in die
+   Kurve. Umhüllte Stromschienen führen Impulse vom Ring zum Verteiler.
 6. **Panorama Terminal:** Beobachtungskonsolen, einzelne Hochbeete,
    Techniker und ein großes Delta-Shuttle, das von rechts nach links über das Glasdach gleitet.
    Bei 80 Prozent rammt ein landendes Forschungsschiff den Dockkran. Der Einschlag erschüttert
@@ -39,8 +43,15 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    hinaus auf die Rampe. Vor den Rennwagen startet dort eine Rettungsfähre zum
    Escape Pod. Das silberne Chevron katapultiert anschließend alle
    Fahrer über den offenen Abschnitt zum schwarz-gelb markierten Eingang des Pods.
-   Der Pod steht erhöht im freien Raum. Im Pod warten Evakuierte in Raumanzügen
-   und zwei Mondrover neben dem Landedeck. Die Ziellinie liegt dahinter.
+   Der Pod steht erhöht im freien Raum. Sein Landedeck weitet sich hinter
+   der Einfahrt innerhalb der Außenhülle. Die Fähre steht in einer Seitenbucht
+   und entlädt Passagiere, während die Rennwagen auf der Mittelspur ins Ziel kommen.
+   Die Zieldurchfahrt hält die Rennzeit fest. In der anschließenden Szene
+   öffnen die Schutzlamellen vor dem linken Fenster. Die Einflugschleuse
+   schließt nach der Ankunft des Feldes. Ein kurzer Impuls der Steuerdüse
+   dreht den Pod links herum, während er weiter von der Station wegdriftet.
+   Durch die Drehung wandert die Station ins Fenster und die Entfernung lässt
+   sie etwas kleiner werden. Danach erscheint das Ergebnis.
 
 Die Fahrbahn wird als zusammenhängendes Band durch **jeden** projizierten
 Streckenpunkt gezeichnet, vollständig vor Fahrzeugen und Sammelobjekten.

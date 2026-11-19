@@ -60,7 +60,21 @@ module.exports=async function assessOrbital(browser,baseUrl,output){
    record('catapult-carries-the-entire-field',[player,...opponents].every(c=>c.lastChevronPanelIdx===ORBITAL_PAD),{panels:[player,...opponents].map(c=>c.lastChevronPanelIdx)});
    stop();updateHUD(0);const field=getRaceStandings();
    record('all-six-drivers-cross-with-real-times',field.length===6&&field.every(c=>c.finishTime>0&&c.z>=TRACK_LENGTH),{seconds:raceElapsed/1000,times:field.map(c=>({tag:c.driverTag,time:c.finishTime}))});
-   state='result';renderScoreboard();
+   const finishTime=player.finishTime,finalField=Math.max(...field.map(car=>car.finishTime));
+   const scene={opened:false,jetBeforeTurn:false,aftView:false,sealAfterField:false};
+   for(let i=0;i<1000&&state==='playing';i++){
+    advanceRaceStep(1/60);
+    const shot=orbitalPodOutro();
+    if(!shot)continue;
+    if(shot.shutter>.98)scene.opened=true;
+    if(shot.jet>.3&&shot.yaw<.03)scene.jetBeforeTurn=true;
+    if(shot.yaw>1.36&&shot.shutter>.98)scene.aftView=true;
+    if(orbitalDepartureAt>=finalField)scene.sealAfterField=true;
+   }
+   record('pod-seals-after-arrivals-fires-steering-jet-and-turns-before-results',
+    Object.values(scene).every(Boolean)&&state==='result'&&player.finishTime===finishTime,
+    {scene,waitSeconds:(raceElapsed-finishTime)/1000,finishTime});
+   stop();state='result';renderScoreboard();
    record('scoreboard-and-continue',document.querySelectorAll('.results-table tbody tr').length===6&&document.querySelector('.result-course').textContent==='ORBITAL PASSAGE',{});
    document.getElementById('continueBtn').click();record('continue-returns-to-level-selection',state==='intro'&&!!document.getElementById('lvl8Btn'),{});
    setup();opponents=[];
