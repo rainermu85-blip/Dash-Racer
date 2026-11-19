@@ -65,7 +65,7 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
    try{
     for(const turbo of[false,true]){
      setup();opponents=[];const landing=[],shuttle=[],courier=[],eva=[],guides=[],ferry=[];
-     const bays=[[],[]],crops={leafBed:[],tomatoBed:[],grainBed:[]};
+     const bays=[[],[]],crops={leafBed:[],tomatoBed:[],grainBed:[]},attachments={antenna:[],exteriorArm:[],technician:[]};
      for(let f=0;f<10000&&!player.finished;f++){
       const next=segments.find(s=>s.lightning?.active&&s.worldZ>=player.z&&s.worldZ<player.z+7500);
       const target=next?next.lightning.x:0,x=getPlayerCollisionX();keys.left=x>target+.025;keys.right=x<target-.025;
@@ -99,6 +99,10 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
         if(index>650&&index<744)bays[1].push(visibleCraft('workbay'));
         if(index>1184&&index<1340)for(const crop of Object.keys(crops))crops[crop].push(visibleCraft(crop));
        }
+       if(typeof orbitalMovingActors==='function'&&f%12===0){
+        if(index>960&&index<1144)for(const kind of ['antenna','exteriorArm'])attachments[kind].push(visibleCraft(kind));
+        if(index>1190&&index<1337)attachments.technician.push(visibleCraft('technician'));
+       }
        if(index>1050&&index<1180&&f%18===0)eva.push({index,pixels:visibleCraft('eva')});
       }
      }
@@ -118,6 +122,10 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
       const workcells=bays.map(visible);
       const beds=Object.fromEntries(Object.entries(crops).map(([kind,values])=>[kind,visible(values)]));
       record('visible-robotics-workcells-and-three-crops-'+turbo,[...workcells,...Object.values(beds)].every(count=>count>=3),{workcells,beds});
+     }
+     if(attachments.antenna.length){
+      const visible=Object.fromEntries(Object.entries(attachments).map(([kind,frames])=>[kind,frames.filter(pixels=>pixels>60).length]));
+      record('visible-mounted-dishes-robotic-arms-and-farm-technicians-'+turbo,Object.values(visible).every(count=>count>=3),{visible});
      }
      record('spacewalker-visible-through-glass-'+turbo,eva.filter(s=>s.pixels>20).length>=3,{samples:eva});
     }

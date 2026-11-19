@@ -13,15 +13,18 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    Landefläche. Zwei Einweiser laufen an den Rand des Pads, signalisieren den
    Sinkflug mit Leuchtstäben und treten nach dem Aufsetzen zurück.
 2. **Service Spine:** enger Wartungsgang mit Wandkonsolen, Türen, Leitungen
-   und zwei verglasten Robotik-Arbeitsbuchten. Greifarme setzen Bauteile ein,
+   und zwei verglasten Robotik-Arbeitsbuchten. Techniker kontrollieren die Anlagen.
+   Greifarme setzen Bauteile ein,
    während die Werkzeugseite am offenen Chassis arbeitet. Kurze Wechselkurven, Rampen
    und Senken führen durch den bernsteinfarben beleuchteten Gang.
-3. **Earth Observation:** Glasbrücke mit Blick auf Erde, Sterne, Satelliten
-   und eine große Antenne. Ein Astronaut arbeitet mit Sicherungsleine außerhalb
-   der Verglasung. Die Fahrbahn windet sich durch die Außenverbindung.
+3. **Earth Observation:** Glasbrücke mit Blick auf die Erde. Außen tragen fest
+   angeschlossene Plattformen die Parabolantennen, Solarflügel und beweglichen
+   Wartungsarme. Dahinter liegt die Farm mit vier beleuchteten Anbauebenen auf
+   jeder Seite der Strecke. Techniker laufen über die Stege, um die Beete mit
+   Blattgemüse, Tomaten und Getreide zu prüfen.
 4. **Active Launch Deck:** große Halle mit Fracht und Robotik. Ein Abfangjäger zündet seine
-   Triebwerke und beschleunigt über eine geneigte Startschiene durch die seitliche
-   Hangaröffnung.
+   Triebwerke und beschleunigt über eine geneigte Startplattform in einer
+   Seitenbucht. Zwei Torflügel fahren auseinander und geben den Ausflug frei.
 5. **Helios Reactor:** hohe Halle mit einem einzelnen Fusionskern. Die Anfahrt gibt den Blick auf
    den kupfergefassten Ring frei. Der Kern pulsiert und speist Lichtbögen in
    die umlaufenden Spulen.
