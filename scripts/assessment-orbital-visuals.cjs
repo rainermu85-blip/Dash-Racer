@@ -65,6 +65,7 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
    try{
     for(const turbo of[false,true]){
      setup();opponents=[];const landing=[],shuttle=[],courier=[],eva=[],guides=[],ferry=[];
+     const bays=[[],[]],crops={leafBed:[],tomatoBed:[],grainBed:[]};
      for(let f=0;f<10000&&!player.finished;f++){
       const next=segments.find(s=>s.lightning?.active&&s.worldZ>=player.z&&s.worldZ<player.z+7500);
       const target=next?next.lightning.x:0,x=getPlayerCollisionX();keys.left=x>target+.025;keys.right=x<target-.025;
@@ -93,6 +94,11 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
         }
         ferry.push({index,stage,pixels:count,position:pose.index});
        }
+       if(typeof drawOrbitalWorkcell==='function'&&f%12===0){
+        if(index>480&&index<558)bays[0].push(visibleCraft('workbay'));
+        if(index>650&&index<744)bays[1].push(visibleCraft('workbay'));
+        if(index>1184&&index<1340)for(const crop of Object.keys(crops))crops[crop].push(visibleCraft(crop));
+       }
        if(index>1050&&index<1180&&f%18===0)eva.push({index,pixels:visibleCraft('eva')});
       }
      }
@@ -106,6 +112,12 @@ module.exports=async function assessOrbitalVisuals(browser,baseUrl,output){
       const counts=Object.fromEntries(['ramp','flight','pod'].map(stage=>[stage,ferry.filter(sample=>sample.stage===stage&&sample.pixels>70).length]));
       const earlyFlight=ferry.some(sample=>sample.stage==='flight'&&sample.index<ORBITAL_PAD&&sample.pixels>70);
       record('rescue-ferry-visible-on-ramp-in-flight-and-at-pod-'+turbo,Object.values(counts).every(count=>count>=3)&&earlyFlight,{counts,earlyFlight,samples:ferry});
+     }
+     if(bays[0].length){
+      const visible=values=>values.filter(pixels=>pixels>120).length;
+      const workcells=bays.map(visible);
+      const beds=Object.fromEntries(Object.entries(crops).map(([kind,values])=>[kind,visible(values)]));
+      record('visible-robotics-workcells-and-three-crops-'+turbo,[...workcells,...Object.values(beds)].every(count=>count>=3),{workcells,beds});
      }
      record('spacewalker-visible-through-glass-'+turbo,eva.filter(s=>s.pixels>20).length>=3,{samples:eva});
     }

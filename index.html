@@ -245,6 +245,9 @@ const ORBITAL_SECTIONS=[
 ];
 let orbitalProfiles=[],orbitalLaunchStart=null,orbitalFlybyStart=null;
 const orbitalArt=new Map();
+const ORBITAL_GROW_START=1184, ORBITAL_GROW_END=1360;
+const orbitalRobotBays=[[500,640],[688,800]];
+const orbitalCrops=['leafBed','tomatoBed','grainBed'];
 const orbitalFerry={kind:'evacFerry',size:1.28};
 const orbitalEvacuees=[
  [2546,-1.74],[2621,1.73],[2694,-1.72],[2740,1.8],
@@ -292,9 +295,21 @@ function makeOrbitalProfile(index){
  const section=ORBITAL_SECTIONS.find(s=>index<s.end)||ORBITAL_SECTIONS.at(-1),j=ORBITAL_SECTIONS.indexOf(section);
  let room=section.room,height=section.height;
  if(j>0&&index<section.start+55){const t=paradiseSmooth((index-section.start)/55),previous=ORBITAL_SECTIONS[j-1];room=previous.room+(room-previous.room)*t;height=previous.height+(height-previous.height)*t;}
+ // Open the side aisles gradually at each end so the prop bases sit inside their rooms.
+ const farm=index>=ORBITAL_GROW_START&&index<ORBITAL_GROW_END;
+ const robotBay=section.key==='service'&&orbitalRobotBays.find(([start,end])=>index>=start&&index<end);
+ const expansion=(start,end)=>paradiseSmooth(Math.min(index-start,end-index)/20);
+ if(farm){
+  const blend=expansion(ORBITAL_GROW_START,ORBITAL_GROW_END);
+  room+=2.48*blend;height+=650*blend;
+ }
+ if(robotBay){
+  const blend=expansion(...robotBay);
+  room+=2.86*blend;height+=880*blend;
+ }
  // The exterior roadway keeps only the narrow shoulders outside its rails.
  const pod=index>=ORBITAL_POD, gap=index>=ORBITAL_GAP&&!pod;
- return{...section,room:pod?2.52:room,height:pod?2400:height,gap,pod,exterior:index>=ORBITAL_OUTER_BRIDGE&&!pod};
+ return{...section,farm,robotBay:!!robotBay,room:pod?2.52:room,height:pod?2400:height,gap,pod,exterior:index>=ORBITAL_OUTER_BRIDGE&&!pod};
 }
 function orbitalProfile(index){return orbitalProfiles[index]||makeOrbitalProfile(index);}
 function buildOrbitalRoute(){
@@ -346,15 +361,23 @@ function buildOrbitalScenery(){
  add(ORBITAL_LANDING_INDEX,'freighter',-3.5,1.15,{motion:'landing'});add(135,'gantry',-4.2,.9);add(230,'cargo',-1.9,1.15);add(310,'loader',1.65,1.15);
  add(55,'crew',1.6,.9);add(157,'marshaller',-1.72,1,{delay:0});add(174,'marshaller',-2.20,.92,{delay:.6});add(350,'crew',-1.55,.9);
 
- add(565,'robot',1.7,.6);add(590,'cargo',2.0,.55);add(750,'robot',-1.7,.6);
+ add(532,'workbay',2.63,.96);add(556,'workbay',-2.58,1.1);add(592,'robot',2.16,1.08);
+ add(712,'workbay',-2.63,.96);add(742,'workbay',2.58,1.1);add(765,'robot',-2.10,1.06);
  add(945,'observation',-1.65,1);add(1010,'antenna',-3.45,1.7);add(1110,'satellite',3.6,1.6);add(1160,'eva',-2.35,.8,{lift:65});
- add(1215,'satellite',-3.1,1.3);add(1290,'observation',1.65,1);add(1320,'crew',-1.55,.8);
+ add(1207,'directory',0,.76,{caption:'CROP DECK',lift:65});
+ const allotments=[
+  [1212,-2.58,0],[1218,2.39,1],[1230,-2.67,2],[1237,2.45,0],[1244,2.58,0],
+  [1251,-2.42,1],[1263,2.65,2],[1275,-2.66,0],[1287,2.47,1],
+  [1300,-2.54,2],[1314,2.44,0],[1321,-2.47,0],[1327,-2.64,1],[1338,2.28,2]
+ ];
+ for(const [index,x,crop] of allotments)add(index,orbitalCrops[crop],x,1.09);
+ add(1291,'crew',-2.51,.8);
  add(1415,'cargo',-1.8,1.1);add(1490,'loader',1.65,1.15);add(1550,'workbay',-1.9,1.6);
  add(ORBITAL_SHUTTLE_INDEX,'shuttle',-3.53,1.55);
  add(1745,'crew',-1.55,1);add(1810,'cargo',-2.0,1.2);add(1885,'robot',1.65,1.1);
  add(2000,'pipes',1.7,1.35);add(2224,'reactor',3.8,2.8);add(2160,'crew',1.6,1);
  add(2330,'workbay',-1.9,1.35);add(2420,'pipes',1.8,1.45);add(2480,'robot',-1.6,1);
- add(2590,'observation',1.8,1.35);add(2660,'greenhouse',-1.9,1.25);add(2770,'courier',5.0,2.32);
+ add(2590,'observation',1.8,1.35);add(2660,'leafBed',-2.46,1.25);add(2770,'courier',5.0,2.32);
  add(2528,'gantry',4.65,.74);
  add(2528,'surveyship',2.62,1.55,{motion:'wreck'});
  const fires=[
@@ -368,7 +391,7 @@ function buildOrbitalScenery(){
  for(const [index,x] of [[2538,-2.2],[2612,2.3],[2704,-2.3],[2784,2.3],[2850,-2.2]])
   add(index,'directory',x,1.13,{wallPanel:true,lift:25});
  for(const index of [2560,2752])add(index,'directory',0,1.38,{caption:'ESCAPE POD ROUTE',lift:98});
- add(2810,'greenhouse',1.9,1.2);
+ add(2810,'tomatoBed',2.46,1.2);
  add(3038,'refugees',-1.81,1.05);add(3045,'moonrover',1.90,.86);
  add(3054,'refugees',1.86,.97);add(3063,'moonrover',-1.93,.85);
  add(3089,'refugees',-1.82,.95);
@@ -450,14 +473,15 @@ function drawOrbitalDeck(roads){
  for(let i=0;i<roads.length;){
   if(!roads[i].isVisible){i++;continue;}
   const first=i,profile=orbitalProfile(roads[i].segIdx);
-  while(i+1<roads.length&&roads[i+1].isVisible&&orbitalProfile(roads[i+1].segIdx).key===profile.key&&orbitalProfile(roads[i+1].segIdx).exterior===profile.exterior&&orbitalProfile(roads[i+1].segIdx).gap===profile.gap)i++;
+  while(i+1<roads.length&&roads[i+1].isVisible&&orbitalProfile(roads[i+1].segIdx).key===profile.key&&orbitalProfile(roads[i+1].segIdx).exterior===profile.exterior&&orbitalProfile(roads[i+1].segIdx).gap===profile.gap&&orbitalProfile(roads[i+1].segIdx).farm===profile.farm)i++;
   const last=i++;
   if(profile.gap)continue;
   if(profile.exterior)ribbon(first,last,-1.18,1.18,'#394353');
-  else if(profile.key!=='glass')ribbon(first,last,k=>-orbitalProfile(k).room,k=>orbitalProfile(k).room,profile.floor);
+  else if(profile.key!=='glass'||profile.farm)
+   ribbon(first,last,k=>-orbitalProfile(k).room,k=>orbitalProfile(k).room,profile.farm?'#2e4140':profile.floor);
   ribbon(first,last,-1.12,1.12,'#151f31');
   ribbon(first,last,-1,1,profile.road);
-  for(const side of[-1,1])ribbon(first,last,side*.985,side*1.025,profile.trim);
+  for(const side of[-1,1])ribbon(first,last,side*.985,side*1.025,profile.farm?'#a8d6a6':profile.trim);
  }
  const strip=(from,to,left,right,color)=>{
   const first=roads.findIndex(r=>r.segIdx>=from&&r.isVisible);
@@ -564,7 +588,7 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
   return;
  }
  for(const side of[-1,1]){
-  const windowed=(a.key==='arrival'&&side===-1&&index<300)||a.key==='glass'||a.key==='panorama'||(a.key==='launch'&&side===1)||(a.key==='reactor'&&side===-1)||(a.key==='service'&&((side===1&&index>=520&&index<625)||(side===-1&&index>=705&&index<790)));
+  const windowed=(a.key==='arrival'&&side===-1&&index<300)||a.key==='glass'||a.key==='panorama'||(a.key==='launch'&&side===1)||(a.key==='reactor'&&side===-1)||a.robotBay;
   if(a.key==='launch'&&side===1&&index>=1664&&index<1744){
    const open=paradiseSmooth((orbitalLaunchPhase()+.22)/.85);
    wall(side,0,.10,'#54455d');wall(side,.94,1,'#6c5865');
@@ -589,13 +613,26 @@ function drawOrbitalRoad(x1,y1,w1,x2,y2,w2,s1,s2,index,visible,endIndex=index+1)
   if(evacuationAge()>=0&&index>=ORBITAL_IMPACT&&index%48<24){
    wall(side,.44,.49,Math.cos(evacuationAge()*5)>.05?'#ff453e':'#7d2332');
   }
-  wall(side,.1,.12,'#647a89');wall(side,.72,.728,a.trim);
+  wall(side,.1,.12,'#647a89');wall(side,.72,.728,a.farm?'#b0dc9f':a.trim);
+  if(a.farm){
+   wall(side,.13,.31,'#3e6058');
+   wall(side,.29,.306,'#7fba9e');
+   if(index%24<10)wall(side,.82,.85,'#dfc9e2');
+  }
   if(a.key!=='service'&&index%72<16){wall(side,.25,.40,a.key==='launch'?'#72527b':a.key==='arrival'?'#715986':'#425a70');wall(side,.42,.45,a.trim);}
   if(a.key==='reactor'){wall(side,.35,.37,'#378b86');wall(side,.42,.44,'#7a618e');}
   if(index%24<2){wall(side,.02,.98,'#536477');}
  }
  if(a.key==='glass'||a.key==='panorama'){
-  if(index%24<2&&(index<2784||index%48<2)){roof(-1,1,'#49677e');}
+  if(index%24<2&&(index<2784||index%48<2)){roof(-1,1,a.farm?'#6d8980':'#49677e');}
+  if(a.farm){
+   for(const side of [-1,1]){
+    const lane=side*2.42;
+    band(lane-.32,lane+.32,lane-.32,lane+.32,'#506d68',.62);
+    const light=index%24<17?'#dbd8ed':'#8a978f';
+    band(lane-.10,lane+.10,lane-.10,lane+.10,light,.61);
+   }
+  }
  }else{
   roof(-1,1,a.key==='service'?'#161728':a.key==='reactor'?'#0d2027':'#1c1930');
   for(const lane of[-.65,.65])band(lane-.025,lane+.025,lane-.025,lane+.025,a.trim,.992);
@@ -772,6 +809,8 @@ function drawOrbitalSprite(s){
   const height=8+Math.sin(t*.65)*6;scenePoly([[-35,-18-height],[37,-18-height],[37,-67-height],[-35,-67-height]],'#b99769');sceneLine([[-31,-63-height],[33,-22-height]],'#e2c48d',3);
  }else if(s.item.kind==='robot'){
   const reach=Math.sin(t*.55)*12;sceneLine([[-5,-65],[19,-91],[48+reach,-70]],'#b8b2a3',9);sceneEllipse(48+reach,-70,7,7,'#83d5cd');
+ }else if(s.item.kind==='workbay'){
+  drawOrbitalWorkcell(t+s.segIdx*.055);
  }else if(s.item.kind==='directory'){
   const roof=orbitalProfile(s.segIdx).height*200/ROAD_WIDTH/s.item.size-(s.item.lift||0);
   if(s.item.wallPanel){
@@ -786,6 +825,35 @@ function drawOrbitalSprite(s){
   for(let j=0;j<3;j++){sceneEllipse(-60+j*60,-42,5,6,'#a8c3c9');sceneLine([[-60+j*60,-35],[-60+j*60,-13]],'#a0adb7',9);sceneLine([[-65+j*60,-14],[-70+j*60,0]],'#637b90',4);}
  }
  ctx.restore();
+}
+function drawOrbitalWorkcell(time){
+ // A loading arm sets a part down while the other arm checks the open chassis.
+ for(const side of [-1,1]){
+  const cycle=(time*.36+(side===1?.46:0))%1;
+  const reach=paradiseSmooth(Math.sin(cycle*Math.PI));
+  const x=side*129, elbowX=x-side*(26+38*reach), elbowY=-134-32*(1-reach);
+  const headX=x-side*(38+61*reach),headY=-126+51*reach;
+  const points=[[x,-57],[elbowX,elbowY],[headX,headY]];
+  sceneEllipse(x,-56,24,10,'#273946');
+  sceneLine(points,'#242d3a',24);sceneLine(points,side<0?'#e7a253':'#9dcad1',15);
+  sceneLine([[x,-63],[elbowX-side*5,elbowY+1]],'#f3c88e',4);
+  sceneEllipse(elbowX,elbowY,9,9,'#404d5c');
+  sceneEllipse(elbowX,elbowY,4,4,'#bdced1');
+  sceneLine([[headX,headY-5],[headX,headY+13]],'#647884',10);
+  if(side<0){
+   const spread=cycle>.38&&cycle<.62?8:16;
+   for(const jaw of [-1,1])sceneLine([[headX,headY+8],[headX+jaw*spread,headY+12],[headX+jaw*spread*.73,headY+22]],'#d3ddd9',4);
+   if(cycle>.16&&cycle<.62){
+    ctx.fillStyle='#b6cccb';ctx.fillRect(headX-10,headY+18,20,12);
+    ctx.fillStyle='#566f80';ctx.fillRect(headX-9,headY+19,15,3);
+   }
+  }else if(reach>.89){
+   for(let i=0;i<5;i++){
+    const flight=(time*3+i*.22)%1;
+    sceneLine([[headX+(i-2)*flight*12,headY+15+flight*9],[headX+(i-2)*flight*19,headY+17+flight*16]],i%2?'#ffe395':'#f1a46c',2);
+   }
+  }
+ }
 }
 function drawOrbitalFerryThrust(power,time){
  if(power<=0)return;
@@ -866,8 +934,11 @@ function drawOrbitalFire(age,index,impact){
 }
 function getOrbitalArt(kind){
  if(orbitalArt.has(kind))return orbitalArt.get(kind);
- const dims={evacFerry:[254,177,127,144],evacRunner:[65,127,33,125],surveyship:[706,302,353,288],refugees:[174,166,87,163],moonrover:[268,142,134,140],marshaller:[110,142,55,119],gantry:[600,500,300,499],eva:[260,260,130,250],exterior:[900,330,450,210],earth:[420,420,210,210],directory:[340,190,170,189],freighter:[720,300,360,289],courier:[720,300,360,289],shuttle:[560,240,280,219],cargo:[360,230,180,229],cabinet:[200,250,100,249],loader:[240,160,120,159],robot:[220,190,110,189],workbay:[460,300,230,299],pipes:[260,340,130,339],antenna:[460,400,230,399],satellite:[520,280,260,279],reactor:[340,600,170,599],observation:[400,220,200,219],crew:[260,200,130,199],greenhouse:[460,340,230,339]};
- const [w,h,ox,oy]=dims[kind]||[1,1,0,0],r=kind==='surveyship'?.4:kind==='evacFerry'||kind==='evacRunner'?.5:.6,canvas=document.createElement('canvas');canvas.width=Math.ceil(w*r);canvas.height=Math.ceil(h*r);
+ const dims={leafBed:[314,199,157,195],tomatoBed:[314,199,157,195],grainBed:[314,199,157,195],evacFerry:[254,177,127,144],evacRunner:[65,127,33,125],surveyship:[706,302,353,288],refugees:[174,166,87,163],moonrover:[268,142,134,140],marshaller:[110,142,55,119],gantry:[600,500,300,499],eva:[260,260,130,250],exterior:[900,330,450,210],earth:[420,420,210,210],directory:[340,190,170,189],freighter:[720,300,360,289],courier:[720,300,360,289],shuttle:[560,240,280,219],cargo:[360,230,180,229],cabinet:[200,250,100,249],loader:[240,160,120,159],robot:[220,190,110,189],workbay:[460,300,230,299],pipes:[260,340,130,339],antenna:[460,400,230,399],satellite:[520,280,260,279],reactor:[340,600,170,599],observation:[400,220,200,219],crew:[260,200,130,199]};
+ const [w,h,ox,oy]=dims[kind]||[1,1,0,0];
+ const crop=orbitalCrops.indexOf(kind);
+ const r=kind==='surveyship'?.4:crop>=0?.46:kind==='evacFerry'||kind==='evacRunner'?.5:.6;
+ const canvas=document.createElement('canvas');canvas.width=Math.ceil(w*r);canvas.height=Math.ceil(h*r);
  const g=canvas.getContext('2d');g.scale(r,r);g.translate(ox,oy);
  const poly=(p,c)=>{g.fillStyle=c;g.beginPath();p.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();};
  const rect=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
@@ -1039,9 +1110,20 @@ function getOrbitalArt(kind){
  }else if(kind==='robot'){
   oval(0,-4,55,9,'#3a566c');rect(-26,-67,52,64,'#889aa4');oval(0,-64,29,12,'#b5b9b1');rect(-19,-43,37,16,'#304f66');
  }else if(kind==='workbay'){
-  rect(-211,-250,420,250,'#465b70');rect(-194,-230,385,212,'#142c42');rect(-207,-249,415,10,'#a7bbbf');
-  for(const x of[-199,181])rect(x,-235,13,235,'#657f91');for(let j=0;j<5;j++){box(-161+j*63,-15,54,48,j%2?'#a98e79':'#6d899a');line([[-166+j*73,-187],[-149+j*73,-93]],'#839caa',6);}
-  text('SERVICE / ROBOTICS',0,-203,19);
+  rect(-211,-250,420,245,'#465b70');rect(-194,-231,385,218,'#1d3343');
+  rect(-207,-249,415,10,'#a7bbbf');
+  for(const x of [-199,181])rect(x,-235,13,230,'#798f9a');
+  for(const x of [-170,-108,104,160]){
+   rect(x,-179,37,67,'#435e6e');rect(x+8,-171,21,23,'#264c62');
+   rect(x+10,-167,17,3,'#84c9d4');
+  }
+  line([[-187,-193],[181,-193]],'#a4bec6',5);
+  poly([[-190,-52],[159,-52],[191,-22],[-184,-22]],'#697f8c');
+  rect(-184,-23,375,22,'#3d4e5c');
+  poly([[-75,-73],[47,-73],[79,-53],[62,-26],[-69,-26],[-92,-53]],'#8294a1');
+  poly([[-61,-67],[42,-67],[62,-53],[49,-38],[-62,-39],[-75,-53]],'#2e4558');
+  for(const x of [-64,-41,-18,6,29,52])rect(x,-49,7,9,'#b4a98b');
+  text('SERVICE / ROBOTICS',0,-207,21);
  }else if(kind==='pipes'){
   for(const [x,c]of[[-80,'#8aa4ae'],[-24,'#af9da8'],[38,'#7d9c9d']]){
    rect(x,-299,25,299,c);for(let j=0;j<5;j++)rect(x-4,-280+j*61,33,9,'#465f72');
@@ -1093,15 +1175,45 @@ function getOrbitalArt(kind){
    rect(x-22,-5,15,5,'#cad2cb');rect(x+10,-5,16,5,'#cad2cb');
   }
   line([[-42,-69],[-22,-73]],'#9ad6ce',4);
- }else if(kind==='greenhouse'){
-  box(-214,0,428,50,'#526b81');rect(-203,-287,11,237,'#96b5c0');rect(192,-287,11,237,'#96b5c0');rect(-204,-294,407,12,'#b6dbd4');
-  rect(-191,-281,379,225,'rgba(95,176,174,.13)');
-  for(let j=0;j<7;j++){
-   const x=-159+j*52,y=-53;line([[x,y],[x-9,y-80-j%3*24]],'#6eaaa0',5);
-   for(let k=0;k<3;k++){const h=32+k*25;poly([[x-6,y-h],[x-45,y-h-15],[x-31,y-h-32],[x-7,y-h-12]],'#6da590');poly([[x-7,y-h-8],[x+30,y-h-36],[x+32,y-h-15],[x-7,y-h+3]],'#8eb6a0');}
-   oval(x-9,y-88-j%3*24,9,6,j%2?'#e9a2cf':'#ba9bdf');
+ }else if(crop>=0){
+  // Raised, waist-high growing trays with nutrient lines, foliage and ripe produce.
+  const rim=['#a7bd92','#bcab93','#aeb59a'][crop];
+  for(const x of [-109,93])rect(x,-57,16,56,'#435a56');
+  poly([[-142,-65],[-129,-45],[131,-45],[146,-65],[126,-91],[-121,-91]],'#536652');
+  rect(-129,-48,260,29,'#657765');
+  rect(-127,-46,250,6,rim);
+  for(const x of [-91,-24,48,111])rect(x,-39,4,17,'#45594b');
+  oval(-104,-30,4,3,'#c6efaa');
+  for(let row=0;row<2;row++){
+   for(let j=0;j<7;j++){
+    const x=-111+j*36+(row?0:8),y=-75+row*12;
+    const offset=Math.sin(12.4*j+3*row),green=['#79b860','#5f9b57','#94b668'][(j+row)%3];
+    if(crop===0){
+     for(let i=0;i<5;i++){
+      const angle=Math.PI*(i/4),height=13+i%3*8+offset*4;
+      poly([[x,y],[x+Math.cos(angle)*23,y-height],[x+Math.cos(angle)*16,y-height-10],[x+Math.cos(angle)*7,y-13]],i%2?'#a6d782':green);
+     }
+     oval(x,y-10,8,6,'#c3e799');
+    }else if(crop===1){
+     const stem=49+offset*13-row*7;
+     line([[x+6,y+2],[x+6,y-stem-7]],'#a39377',2.5);
+     line([[x,y],[x-3,y-stem]],'#547e51',4);
+     for(let k=0;k<3;k++){
+      const side=k%2?1:-1,leafY=y-k*13-12;
+      poly([[x,leafY],[x+side*15,leafY-11],[x+side*19,leafY-6],[x+side*8,leafY]],green);
+      oval(x+side*(5+row*3),leafY+2,4.8+k*.55,5.4,k%3?'#df674e':'#f3a368');
+     }
+    }else{
+     for(const dx of [-8,3,12]){
+      const stem=32+offset*10+dx%11;
+      line([[x+dx*.3,y],[x+dx,y-stem]],green,2.5);
+      oval(x+dx,y-stem,3,9,(j+row)%2?'#e6cd83':'#d8ba69');
+     }
+     poly([[x,y-4],[x-13,y-26],[x-16,y-25],[x-6,y-5]],'#adc37d');
+    }
+   }
   }
-  text('BIOSPHERE / 06',0,-307,19);
+  line([[-126,-45],[128,-45]],rim,4);
  }else if(kind==='observation'){
   rect(-174,-102,347,102,'#5f788b');rect(-165,-91,330,61,'#18344d');
   for(let j=0;j<5;j++){rect(-150+j*64,-78,47,30,j%2?'#72b4ba':'#aa8fba');line([[-146+j*64,-45],[-110+j*64,-45]],'#a7c6c8',2);}text('OBSERVATION',0,-118,20);

@@ -13,7 +13,8 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
    Landefläche. Zwei Einweiser laufen an den Rand des Pads, signalisieren den
    Sinkflug mit Leuchtstäben und treten nach dem Aufsetzen zurück.
 2. **Service Spine:** enger Wartungsgang mit Wandkonsolen, Türen, Leitungen
-   und zwei verglasten Robotik-Arbeitsbuchten. Kurze Wechselkurven, Rampen
+   und zwei verglasten Robotik-Arbeitsbuchten. Greifarme setzen Bauteile ein,
+   während die Werkzeugseite am offenen Chassis arbeitet. Kurze Wechselkurven, Rampen
    und Senken führen durch den bernsteinfarben beleuchteten Gang.
 3. **Earth Observation:** Glasbrücke mit Blick auf Erde, Sterne, Satelliten
    und eine große Antenne. Ein Astronaut arbeitet mit Sicherungsleine außerhalb
@@ -24,7 +25,7 @@ gemeinsame Fahrzeugphysik, Turbo-Ladungen, Zeitnahme und das Scoreboard.
 5. **Helios Reactor:** hohe Halle mit einem einzelnen Fusionskern. Die Anfahrt gibt den Blick auf
    den kupfergefassten Ring frei. Der Kern pulsiert und speist Lichtbögen in
    die umlaufenden Spulen.
-6. **Panorama Terminal:** Beobachtungskonsolen, kleine Biosphärenbeete,
+6. **Panorama Terminal:** Beobachtungskonsolen, einzelne Hochbeete,
    Techniker und ein großes Delta-Shuttle, das von rechts nach links über das Glasdach gleitet.
    Bei 80 Prozent rammt ein landendes Forschungsschiff den Dockkran. Der Einschlag erschüttert
    das Bild eine Sekunde lang. Brände, Folgeexplosionen und fliehendes Personal
