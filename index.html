@@ -222,6 +222,608 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   </div>
 </div>
 <script>
+// Coast to Coast uses the shared race projection and point-to-point finish.
+const COAST_LENGTH=3830,COAST_DRAW_DISTANCE=215;
+const COAST_RIVER_START=535,COAST_RIVER_END=748,COAST_PASS_ARCH=1728;
+const COAST_DISTRICTS=[
+ {key:'nyc',start:0,ground:'#3b3445',road:'#373340',edge:'#b8a6a2',sky:['#39224d','#f0a186']},
+ {key:'river',start:510,ground:'#416b7e',road:'#424854',edge:'#e0c29d',sky:['#4d345b','#edac8d']},
+ {key:'plains',start:765,ground:'#666346',road:'#504a50',edge:'#ebcf94',sky:['#59406a','#ffbc8b']},
+ {key:'rockies',start:1300,ground:'#425357',road:'#414650',edge:'#d1c5a7',sky:['#493660','#f2a899']},
+ {key:'canyon',start:1990,ground:'#8b503b',road:'#544547',edge:'#ebbc89',sky:['#653351','#f89b75']},
+ {key:'vegas',start:2740,ground:'#52405a',road:'#373345',edge:'#deadd1',sky:['#211d44','#ce6b97']},
+ {key:'pacific',start:3240,ground:'#745160',road:'#413845',edge:'#f0b6a5',sky:['#322149','#f88b92']}
+];
+const COAST_BOOSTS=[155,455,785,1090,1370,1715,2060,2360,2670,3000,3320,3630];
+const coastScenery=new Map(),coastPanoramas=new Map();
+let coastRoadPalette=[];
+function coastDistrictIndex(index){
+ const next=COAST_DISTRICTS.findIndex(d=>d.start>index);
+ return next<0?COAST_DISTRICTS.length-1:Math.max(0,next-1);
+}
+function coastSurface(index){
+ return coastRoadPalette[index]||COAST_DISTRICTS[coastDistrictIndex(index)];
+}
+function coastSceneryNoise(seed){
+ const value=Math.sin(seed*34.438+11.761)*12531.432;
+ return value-Math.floor(value);
+}
+function buildCoastRoute(){
+ const corners=[
+  [56,175,.40],[184,302,-.56],[320,449,.58],[460,529,-.40],
+  [752,864,.50],[888,990,-.46],[1008,1116,.49],[1130,1242,-.66],[1250,1366,.55],
+  [1374,1510,-.74],[1524,1658,.70],[1755,1888,-.82],[1897,2019,.62],
+  [2020,2147,.58],[2170,2300,-.77],[2310,2444,.61],[2460,2510,-.52],[2517,2570,-.12],[2590,2712,.37],
+  [2758,2882,-.51],[2915,3050,.47],[3075,3198,-.54],[3250,3350,.68],[3370,3488,-.64],
+  [3498,3620,.58],[3639,3722,-.46]
+ ];
+ const rises=[
+  [380,875,815],[1140,1340,460],[1310,2008,2790],[1530,1720,940],
+  [1920,2160,-870],[2160,2585,1690],[2580,2820,-690],[3200,3565,2240]
+ ];
+ const altitude=index=>rises.reduce((height,[start,end,amount])=>
+  index<=start||index>=end?height:height+amount*Math.sin(Math.PI*(index-start)/(end-start))**2,0);
+ return Array.from({length:COAST_LENGTH},(_,index)=>{
+  const corner=corners.find(([start,end])=>index>start&&index<end);
+  let curve=0;
+  if(corner){
+   const [start,end,amount]=corner;
+   curve=amount*paradiseSmooth(Math.min(index-start,end-index)/26);
+  }
+  return {curve,hill:altitude(index+1)-altitude(index)};
+ });
+}
+function buildCoastScenery(){
+ coastRoadPalette=Array.from({length:COAST_LENGTH+200},(_,index)=>{
+  const region=coastDistrictIndex(index),district=COAST_DISTRICTS[region];
+  if(!region||index-district.start>=56)return district;
+  const previous=COAST_DISTRICTS[region-1];
+  const amount=paradiseSmooth(Math.floor((index-district.start)/7)/8);
+  return {
+   ground:interpolateColor(previous.ground,district.ground,amount),
+   road:interpolateColor(previous.road,district.road,amount),
+   edge:interpolateColor(previous.edge,district.edge,amount)
+  };
+ });
+ const add=(index,kind,lane,size=1,variant=0)=>{
+  const segment=segments[index];
+  (segment.coastItems??=[]).push({kind,lane,size,variant});
+  if(kind!=='palm')getCoastScenery(kind,variant);
+ };
+ for(let i=22;i<505;i+=16){
+  const variant=Math.floor(coastSceneryNoise(i)*5);
+  add(i,'tower',-(2.10+coastSceneryNoise(i+1)*.85),.92+coastSceneryNoise(i+2)*.48,variant);
+  add(i+7,'tower',2.25+coastSceneryNoise(i+4)*.72,.92+coastSceneryNoise(i+6)*.46,(variant+2)%5);
+  if(i%3===1)add(i+3,'streetlight',1.30,.8);
+ }
+ add(131,'waterTower',-4.9,1.2);add(455,'bridgeSign',-1.70,1);
+ add(615,'towboat',-3.02,1.65);add(703,'towboat',3.35,1.72,1);
+ for(const i of [766,794,835,880,1205,1255]){
+  add(i,'fields',i%2?3.1:-3.1,1.33,i%2);
+ }
+ add(810,'silo',3.15,1.25);add(869,'barn',-2.7,1.1);
+ add(894,'waterTower',-2.95,1.02,1);
+ add(939,'mainStreetSign',1.69,.83);
+ add(978,'diner',2.17,1.06);add(990,'pickup',-1.60,.77);
+ add(1006,'store',-2.10,1.1,0);add(1020,'store',2.12,1.05,1);
+ add(1036,'garage',-2.21,1.03);add(1042,'pickup',-1.52,.71,1);
+ add(972,'store',-2.42,.91,3);add(986,'store',2.49,.94,2);
+ add(995,'store',-2.45,.97,1);add(1014,'store',-2.54,.90,2);
+ add(1030,'store',2.43,.95,0);add(1048,'store',2.12,.98,1);
+ add(1066,'store',2.14,1.06,2);add(1080,'store',-2.10,1.07,3);
+ add(1093,'pickup',1.53,.75);add(1112,'barn',2.47,.96);
+ add(1189,'silo',-3.65,1.05);
+ for(let i=1272;i<2012;i+=12){
+  const seed=coastSceneryNoise(i),side=seed>.48?1:-1;
+  add(i,'pine',side*(1.51+seed*2.03),.64+seed*.44,Math.floor(seed*3));
+  if(i%5!==0)add(i+5,'pine',-side*(1.63+seed*2.0),.72+seed*.38,(Math.floor(seed*3)+1)%3);
+  if(i%3===0)add(i+2,'boulder',side*(1.50+seed*.59),.65+seed*.51,Math.floor(seed*3));
+ }
+ add(1560,'passSign',1.48,.69);
+ for(const [i,x,size,v] of [[1675,2.3,1.2,0],[1695,-2.5,1.4,1],[1721,-2.4,1.5,1],[1729,2.6,1.4,2],[1798,-2.4,1.0,0],[1915,2.9,1.2,2]])add(i,'boulder',x,size,v);
+ for(let i=1995;i<2738;i+=18){
+  const seed=coastSceneryNoise(i),side=seed>.55?-1:1;
+  add(i,'scrub',side*(1.47+seed*1.25),.57+seed*.34,Math.floor(seed*3));
+  if(i%5<3)add(i+5,'cactus',-side*(1.72+seed*1.95),.78+seed*.46,Math.floor(seed*3));
+ }
+ for(const [i,x,size,v] of [[2050,3.2,1.55,0],[2112,2.7,1.39,1],[2198,-4.6,1.65,2],[2280,3.45,1.6,2],[2375,-3.7,1.59,1],[2454,3.1,1.8,0]])add(i,'mesa',x,size,v);
+ add(2130,'canyonSign',-1.62,.75);
+ add(2539,'motelSign',1.72,1.40);add(2554,'motel',2.38,1.35);
+ add(2558,'pickup',1.62,.79,1);add(2568,'motel',2.48,1.13);
+ add(2581,'gas',-2.23,1.22);add(2603,'routeSign',1.58,.86);
+ add(2757,'vegasSign',-1.87,1.32);
+ add(2850,'casinoWheel',2.91,1.46);add(3070,'casinoWheel',-3.48,1.21,1);
+ for(let i=2770;i<3215;i+=24){
+  const v=Math.floor(coastSceneryNoise(i)*4);
+  add(i,'casino',-(2.40+coastSceneryNoise(i+7)*.52),1.02+coastSceneryNoise(i+1)*.45,v);
+  add(i+10,'casino',2.40+coastSceneryNoise(i+2)*.47,1.04+coastSceneryNoise(i+6)*.29,(v+1)%4);
+  if(i%5!==0)add(i+5,'streetlight',i%4===2?-1.30:1.30,.77);
+ }
+ for(let i=3230;i<COAST_LENGTH+110;i+=18){
+  const seed=coastSceneryNoise(i);
+  add(i,'palm',i%5===0?-1.60:1.62+seed*.60,.78+seed*.26,Math.floor(seed*200));
+  if(i<3660)add(i+6,'scrub',1.60+seed*.56,.57,2);
+ }
+ for(const [i,lane,size] of [[3302,2.25,1.0],[3446,2.25,.98],[3563,2.35,1.06],[3720,2.14,1.14]])add(i,'coastHouse',lane,size);
+ add(3330,'pacificSign',-1.65,.85);
+ for(const district of COAST_DISTRICTS)getCoastPanorama(district.key);
+}
+function getCoastScenery(kind,variant){
+ const key=kind+variant;
+ if(coastScenery.has(key))return coastScenery.get(key);
+ const dimensions={
+  tower:[320,520],streetlight:[110,201],bridgeSign:[240,147],towboat:[460,172],
+  fields:[490,105],silo:[383,260],barn:[360,231],waterTower:[210,324],
+  mainStreetSign:[225,144],diner:[366,207],pickup:[198,111],store:[300,256],garage:[315,164],
+  pine:[175,302],boulder:[290,195],passSign:[231,155],cactus:[150,213],scrub:[204,93],mesa:[460,352],
+  canyonSign:[238,154],motelSign:[235,266],motel:[395,210],gas:[332,198],routeSign:[185,156],
+  vegasSign:[252,240],casino:[349,398],casinoWheel:[374,410],coastHouse:[336,222],pacificSign:[242,150]
+ };
+ const [w,h]=dimensions[kind];
+ const image=document.createElement('canvas');
+ const density=kind==='tower'||kind==='casino'||kind==='mesa'?.52:.64;
+ image.width=Math.ceil(w*density);image.height=Math.ceil(h*density);
+ const g=image.getContext('2d');g.scale(density,density);g.translate(w/2,h-2);
+ const rect=(x,y,w,h,color)=>{g.fillStyle=color;g.fillRect(x,y,w,h);};
+ const poly=(points,color)=>{
+  g.fillStyle=color;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();
+ };
+ const line=(points,color,weight=2)=>{
+  g.strokeStyle=color;g.lineWidth=weight;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();
+ };
+ const oval=(x,y,rx,ry,color)=>{
+  g.fillStyle=color;g.beginPath();g.ellipse(x,y,rx,ry,0,0,Math.PI*2);g.fill();
+ };
+ const letters=(text,x,y,size,color,width=w*.80)=>{
+  g.textAlign='center';g.font='bold '+size+'px monospace';g.fillStyle=color;g.fillText(text,x,y,width);
+ };
+ const slab=(left,top,width,height,depth,face,shade,cap)=>{
+  rect(left,top,width,height,face);
+  poly([[left+width,top],[left+width+depth,top-depth*.5],[left+width+depth,top+height-depth*.5],[left+width,top+height]],shade);
+  poly([[left,top],[left+depth,top-depth*.5],[left+width+depth,top-depth*.5],[left+width,top]],cap);
+ };
+ const glass=(x,y,w,h,light)=>{
+  rect(x,y,w,h,'#263745');rect(x+3,y+3,w-6,h-6,light);
+  rect(x+w*.52,y+2,2,h-4,'#435061');rect(x+3,y+h*.52,w-6,2,'#5e5864');
+ };
+ const sign=(name,sub,face,accent)=>{
+  rect(-48,-74,8,74,'#70646b');rect(39,-74,8,74,'#70646b');
+  rect(-w*.45,-h+12,w*.90,75,'#d7bd94');
+  rect(-w*.43,-h+16,w*.86,67,face);
+  letters(name,0,-h+44,21,accent);
+  letters(sub,0,-h+67,12,'#f2e1bf');
+ };
+ if(kind==='tower'){
+  const top=-270-variant*43,left=-126,width=206+variant*5;
+  const face=['#534150','#4b495e','#665064','#55495c','#635063'][variant];
+  slab(left,top,width,-top,37,face,'#353147','#89707a');
+  if(variant%2===0){
+   slab(-82,top-29,126,29,20,'#6a5766','#3d344b','#9b7882');
+   rect(-19,top-64,6,36,'#9b7b7a');
+  }else{
+   rect(35,top-20,36,20,'#693e51');oval(53,top-22,18,6,'#a17075');
+  }
+  for(let y=top+21;y<-55;y+=25)for(let x=left+16;x<left+width-20;x+=26){
+   const lit=coastSceneryNoise(x+y*1.9+variant)>.56;
+   rect(x,y,12,15,lit?'#d8ad87':'#303549');
+   if(lit)rect(x+3,y+3,6,2,'#f6d3a4');
+  }
+  rect(left,-51,width,51,'#3b384b');
+  for(let x=left+9;x<left+width-20;x+=45)glass(x,-40,34,33,variant%2?'#bd746e':'#7593a2');
+  rect(left,-47,width,5,['#cf8786','#ca9aa7','#9bb0a8','#bd7391','#9398af'][variant]);
+ }else if(kind==='streetlight'){
+  line([[-42,0],[-42,-174],[-19,-192],[43,-192]],'#7d7277',6);
+  oval(36,-184,17,7,'#e8c998');oval(36,-181,12,3,'#fff0bc');
+ }else if(kind==='bridgeSign'){
+  sign('MISSISSIPPI','RIVER CROSSING','#2e5664','#f2dbad');
+ }else if(kind==='mainStreetSign'){
+  sign('MAIN STREET','CEDAR FALLS','#49604f','#ffdea8');
+ }else if(kind==='passSign'){
+  sign('ROCKY MOUNTAINS','SUMMIT PASS','#394d56','#f1dcb2');
+ }else if(kind==='canyonSign'){
+  sign('GRAND CANYON','SCENIC DRIVE','#633f3d','#ffd2a2');
+ }else if(kind==='pacificSign'){
+  sign('PACIFIC COAST','CALIFORNIA','#494068','#f9c4d5');
+ }else if(kind==='routeSign'){
+  poly([[-70,-132],[0,-144],[70,-132],[65,-81],[0,-59],[-65,-81]],'#ebd6a7');
+  poly([[-62,-127],[0,-136],[62,-127],[57,-86],[0,-68],[-57,-86]],'#473c4a');
+  rect(-4,-64,8,64,'#86737a');letters('ROUTE',0,-111,17,'#efd6a4');letters('66',0,-85,29,'#ffdca5');
+ }else if(kind==='towboat'){
+  oval(0,-11,219,11,'#668d97');oval(32,-5,171,4,'#85a5a9');
+  poly([[-219,-40],[-98,-38],[-82,-16],[-187,-17]],'#435a68');
+  poly([[-83,-43],[192,-43],[222,-35],[195,-14],[-91,-14]],'#554656');
+  for(let j=0;j<5;j++){
+   const x=-70+j*53;
+   slab(x,-65,45,27,12,j%2?'#a38a74':'#b27368','#78545a','#bd9b87');
+   line([[x+6,-61],[x+6,-42]],'#dbc1a6',2);
+  }
+  slab(-195,-86,91,50,18,'#9c9aa0','#565f70','#c4b9a7');
+  slab(-177,-120,54,34,14,'#cdc0ac','#746e7e','#decbb0');
+  glass(-170,-115,39,23,'#80bbc0');rect(-156,-147,4,26,'#c7b5aa');
+  oval(-149,-150,12,4,'#e9c97c');
+ }else if(kind==='fields'){
+  for(let row=0;row<9;row++){
+   const x=-222+row*54;
+   poly([[x,-2],[x+47,-2],[x+25,-83],[x+7,-87]],row%2?'#a0a65a':'#879550');
+   for(let j=0;j<4;j++){
+    const y=-14-j*15,v=j/5;
+    line([[x+17+v*8,y],[x+13+v*8,y-12],[x+23+v*8,y-9]],'#c3bd72',3);
+   }
+  }
+ }else if(kind==='barn'||kind==='silo'){
+  slab(-145,-111,215,111,64,kind==='barn'?'#985854':'#a3897a','#68525b','#c79a7c');
+  poly([[-153,-109],[-109,-161],[-57,-191],[-5,-161],[82,-109]],'#654c5a');
+  poly([[-56,-191],[9,-206],[80,-175],[141,-141],[82,-109]],'#866674');
+  rect(-89,-74,57,74,'#523f4b');line([[-88,-69],[-31,-6],[-31,-69],[-88,-6]],'#aa7b73',4);
+  rect(14,-75,23,24,'#d4bb83');
+  if(kind==='silo')for(const x of [83,126]){
+   slab(x,-198,36,198,12,'#b4aeb0','#786c78','#cbc2b6');
+   oval(x+18,-198,20,12,'#c3b7ac');
+   for(let y=-176;y<0;y+=17)rect(x,y,36,1.8,'#8c8191');
+  }
+ }else if(kind==='waterTower'){
+  for(const x of [-58,60])line([[x,0],[x*.54,-213]],'#88817c',9);
+  for(let y=0;y>-187;y-=61)line([[-54-y*.11,y],[52+y*.11,y-57],[-53-y*.11,y-57],[54+y*.11,y]],'#655965',4);
+  rect(-86,-283,172,78,variant?'#a6857a':'#77636e');
+  oval(0,-282,86,18,'#c0a092');oval(0,-206,86,13,'#76646e');
+  if(variant)letters('CEDAR FALLS',0,-240,16,'#f4dcaa',147);
+ }else if(kind==='pickup'){
+  const color=variant?'#b1a77b':'#9a575c';
+  oval(0,-4,91,8,'#423946');
+  poly([[-88,-32],[-72,-48],[-52,-48],[-39,-84],[18,-84],[43,-52],[83,-52],[91,-20],[-88,-20]],color);
+  poly([[-43,-49],[-34,-76],[15,-76],[32,-49]],'#476273');
+  rect(-77,-32,157,5,'#dab090');
+  for(const x of[-58,58]){oval(x,-15,17,15,'#282932');oval(x,-15,7,7,'#85828b');}
+  rect(-86,-31,14,8,'#e6cbb0');rect(81,-39,8,12,'#f37878');
+ }else if(kind==='store'||kind==='diner'||kind==='garage'||kind==='coastHouse'){
+  const diner=kind==='diner',garage=kind==='garage',home=kind==='coastHouse';
+  const left=-w*.42,width=w*.72,top=diner?-137:garage?-111:home?-124:-162-variant*11;
+  const face=diner?'#8aafb0':home?'#c49c9e':garage?'#9b8f81':['#9b6a68','#878686','#a29680','#726b84'][variant];
+  slab(left,top,width,-top,w*.12,face,'#625263','#c5a18d');
+  if(home)poly([[left-8,top],[left+width*.60,top-57],[left+width+28,top],[left+width,top+8]],'#69566e');
+  if(garage){
+   rect(left+15,-77,width*.61,77,'#424756');
+   for(let y=-68;y<-11;y+=10)rect(left+19,y,width*.57,2,'#747781');
+   letters('AUTO SERVICE',left+width*.5,-84,17,'#f0dfb3',width*.9);
+  }else{
+   for(let x=left+13;x<left+width-28;x+=50){
+    glass(x,-76,39,53,diner?'#edbba3':'#daad90');
+    if(!diner&&!home)glass(x,top+20,32,35,'#a2a5a1');
+   }
+   rect(left-5,-85,width+12,17,diner?'#a24f68':'#645167');
+   if(diner){
+    rect(left,-121,width,33,'#3c5967');letters('MOONLIGHT DINER',left+width/2,-98,21,'#ffc5c2',width*.92);
+   }else if(!home)letters(['GENERAL STORE','HARDWARE','POST OFFICE','BARBER'][variant],left+width/2,-91,14,'#f6dbad',width*.94);
+  }
+  rect(left-10,-11,width+17,11,'#93818a');
+ }else if(kind==='pine'){
+  const height=[246,289,268][variant];rect(-7,-height,14,height,'#765f57');
+  for(let i=0;i<5;i++){
+   const y=-height+i*43,spread=19+i*13;
+   poly([[0,y],[spread,y+70],[6,y+65],[-spread,y+76]],i%2?'#315952':'#294d4d');
+   poly([[0,y],[-spread,y+76],[-10,y+65],[2,y+38]],'#537365');
+  }
+ }else if(kind==='boulder'||kind==='mesa'){
+  const big=kind==='mesa',top=-h*(.75+variant*.075);
+  const left=-w*.49,right=w*.47,colors=big?['#b77a62','#966052','#724d55']:['#7b7b87','#626b7b','#535d6f'];
+  poly([[left,0],[left+w*.10,top*.58],[-w*.23,top],[-w*.06,top-13],[w*.31,top+10],[right,0]],colors[1]);
+  poly([[left,0],[left+w*.10,top*.58],[-w*.23,top],[-w*.06,top-13],[-w*.012,top*.60],[-w*.063,0]],colors[0]);
+  poly([[w*.31,top+10],[right,0],[w*.12,0],[w*.19,top*.58]],colors[2]);
+  for(let i=1;i<5;i++){
+   const y=top+(-top)*i/6;
+   line([[left+w*(.25-i*.025),y],[w*.04,y+7],[w*(.32+i*.017),y+4]],i%2?colors[2]:colors[0],big?6:3);
+  }
+ }else if(kind==='cactus'||kind==='scrub'){
+  if(kind==='cactus'){
+   const top=-134-variant*22;
+   for(const [x,y,side] of [[-33,-92,-1],[28,-113,1]]){
+    line([[0,y+42],[x,y+30],[x,y-15]],'#587962',17);
+    oval(x,y-14,8,9,'#6c906a');line([[x+side*2,y],[x+side*2,y+24]],'#83a679',2);
+   }
+   rect(-11,top,22,-top,'#668768');oval(0,top,11,11,'#759976');rect(1,top+8,3,-top-8,'#92af83');
+  }else for(let i=0;i<13;i++){
+   const x=-81+i*13,y=-28-coastSceneryNoise(i+variant)*41;
+   line([[0,-1],[x*.51,y*.57],[x,y]],i%2?'#a6965f':'#648364',3.2);
+  }
+ }else if(kind==='motelSign'||kind==='vegasSign'){
+  const vegas=kind==='vegasSign';
+  rect(-49,-198,9,198,'#b28b9d');rect(35,-198,9,198,'#b28b9d');
+  poly([[-w*.48,-147],[-w*.24,-212],[w*.26,-212],[w*.48,-172],[w*.23,-135],[-w*.29,-135]],vegas?'#3b3961':'#533b53');
+  line([[-w*.48,-147],[-w*.24,-212],[w*.26,-212],[w*.48,-172],[w*.23,-135],[-w*.29,-135],[-w*.48,-147]],vegas?'#ff91b8':'#ffbf85',5);
+  letters(vegas?'LAS VEGAS':'STARLITE',0,-174,25,'#ffead7');
+  letters(vegas?'NEVADA':'MOTEL',0,-151,19,vegas?'#ffd38a':'#f7aabf');
+  const direction=vegas?1:-1;
+  poly([[direction*-52,-112],[direction*32,-112],[direction*32,-130],[direction*88,-102],[direction*32,-72],[direction*32,-88],[direction*-52,-88]],vegas?'#75cddd':'#e38991');
+  for(let i=0;i<5;i++)oval(-47+i*24,-100,3,3,'#fff4c8');
+ }else if(kind==='motel'||kind==='gas'){
+  const motel=kind==='motel';
+  slab(-w*.44,motel?-123:-103,w*.73,motel?123:103,w*.13,motel?'#af8384':'#a39989','#69566d','#d4b5a1');
+  rect(-w*.45,motel?-133:-116,w*.83,17,motel?'#675775':'#90717a');
+  rect(-w*.44,motel?-124:-107,w*.81,4,motel?'#ed9bb4':'#f2b494');
+  for(let i=0;i<5;i++){
+   const x=-w*.39+i*w*.142;
+   glass(x,-80,w*.12,48,motel?'#dcaa9b':'#89adab');
+   if(motel)letters(String(i+1),x+w*.06,-85,12,'#efd1af',w*.10);
+  }
+  if(!motel){
+   rect(-w*.45,-142,w*.72,16,'#d78e91');letters('GAS & OIL',-15,-129,15,'#fff0bb');
+   for(const x of[-62,46]){
+    rect(x,-43,25,43,'#9c585f');rect(x+5,-35,15,17,'#cfd2b1');line([[x+26,-33],[x+35,-22],[x+29,-10]],'#4c4655',3);
+   }
+  }else letters('VACANCY',w*.2,-99,15,'#ffbbb6');
+ }else if(kind==='casinoWheel'){
+  const color=variant?'#dfa1dc':'#e8a0bd';
+  line([[-88,0],[-16,-220],[79,0]],'#756382',12);
+  g.strokeStyle=color;g.lineWidth=5;g.beginPath();g.arc(-7,-241,123,0,Math.PI*2);g.stroke();
+  g.strokeStyle='#865f91';g.lineWidth=3;g.beginPath();g.arc(-7,-241,106,0,Math.PI*2);g.stroke();
+  for(let i=0;i<16;i++){
+   const angle=i*Math.PI/8,x=-7+123*Math.cos(angle),y=-241+123*Math.sin(angle);
+   line([[-7,-241],[x,y]],'#886880',2);
+   rect(x-8,y-4,16,11,i%3?'#e4ae91':'#8fd5de');
+  }
+  oval(-7,-241,15,15,'#dab7df');
+  slab(-107,-29,206,29,23,'#645879','#413757','#987a96');
+ }else if(kind==='casino'){
+  const base=-203-variant*32,left=-140,width=224;
+  const face=['#58476b','#646180','#6e465b','#4e546b'][variant],neon=['#f08ab5','#7dd5d9','#f5ba7e','#baa4ee'][variant];
+  slab(left,base,width,-base,45,face,'#37334f','#847a97');
+  for(let x=left+14;x<left+width-5;x+=24){
+   rect(x,base+10,5,-base-59,neon);
+   for(let y=base+19;y<-87;y+=22)rect(x+8,y,9,8,'#c3a7ac');
+  }
+  rect(left-5,-89,width+20,51,'#3c344c');
+  line([[left-6,-91],[left+width+14,-91],[left+width+14,-41],[left-6,-41],[left-6,-91]],neon,3);
+  letters(['SUNDOWN','THE NOVA','GOLD DUST','MOON PALACE'][variant],left+width*.5,-59,22,'#fce0b9');
+  for(let x=left+17;x<left+width-10;x+=17)oval(x,-36,3,3,'#ffdc9a');
+  if(variant===1){
+   const x=-24,y=base-35;
+   oval(x,y,38,23,'#544965');line([[x-4,y-47],[x+8,y+35]],neon,4);
+   for(let i=0;i<10;i++){const a=i*.628;oval(x+Math.cos(a)*38,y+Math.sin(a)*24,3,3,neon);}
+  }
+ }
+ const art={image,w,h};
+ coastScenery.set(key,art);
+ return art;
+}
+function getCoastPanorama(key){
+ if(coastPanoramas.has(key))return coastPanoramas.get(key);
+ const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=448;
+ const g=canvas.getContext('2d');
+ const shape=(points,fill)=>{
+  g.fillStyle=fill;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();
+ };
+ const block=(x,y,w,h,color)=>{g.fillStyle=color;g.fillRect(x,y,w,h);};
+ const skyline=(count,heights,colors,windows)=>{
+  for(let i=0;i<count;i++){
+   const seed=coastSceneryNoise(i+85),x=i*1200/count-12,w=28+seed*42;
+   const base=365+seed*37,h=heights[0]+coastSceneryNoise(i+24)*(heights[1]-heights[0]),y=base-h;
+   block(x,y,w,h,colors[i%colors.length]);block(x+w*.70,y,w*.30,h,'rgba(31,28,49,.35)');
+   if(i%5===2){block(x+w*.25,y-18,w*.53,18,colors[(i+1)%colors.length]);block(x+w*.49,y-43,3,27,colors[i%colors.length]);}
+   if(windows)for(let floor=y+11;floor<base-10;floor+=15)for(let j=x+7;j<x+w-5;j+=12){
+    if(coastSceneryNoise(floor*4+j)>.51)block(j,floor,4,6,i%2?'#dfaa9b':'#e7bf8e');
+   }
+  }
+ };
+ const ridge=(points,color,offset=0)=>{
+  shape([...points.map(([x,y])=>[x,y+offset]),[1230,448],[-30,448]],color);
+ };
+ if(key==='nyc'){
+  skyline(25,[72,182],['#8d6d7f','#8b7289','#a67988'],false);
+  skyline(20,[78,225],['#58475d','#665368','#716071','#575368'],true);
+  const tower=662;
+  shape([[tower-30,370],[tower-30,173],[tower-15,165],[tower-15,132],[tower-8,126],[tower-3,75],[tower+3,75],[tower+8,126],[tower+16,132],[tower+16,165],[tower+32,173],[tower+32,370]],'#695368');
+  for(let y=183;y<361;y+=15)for(let x=tower-21;x<tower+27;x+=12)block(x,y,4,6,'#e3bb96');
+ }else if(key==='river'||key==='plains'){
+  ridge([[-30,327],[136,323],[244,312],[371,328],[510,304],[653,320],[810,312],[975,319],[1230,313]],key==='river'?'#725d74':'#988071');
+  ridge([[-30,365],[99,354],[280,340],[430,361],[568,337],[690,348],[840,328],[970,344],[1230,352]],key==='river'?'#566578':'#7a7860');
+  if(key==='plains'){
+   ridge([[-30,377],[212,356],[407,377],[675,360],[910,381],[1230,356]],'#858451');
+   for(const x of [188,820,860,1055]){
+    block(x,346,17,39,'#8b7d7c');
+    shape([[x,347],[x+8,335],[x+17,347]],'#b7a18b');
+    block(x-13,363,33,19,'#a2746d');
+   }
+   for(let i=0;i<6;i++)shape([[-20,403+i*5],[425,378+i],[972,381+i*1.8],[1220,406+i*5],[1220,409+i*5],[972,383+i*1.8],[425,379+i],[-20,405+i*5]],i%2?'#998451':'#a49356');
+  }else{
+   for(let i=0;i<45;i++){
+    const x=coastSceneryNoise(i)*1200,y=357+coastSceneryNoise(i+2)*80;
+    block(x,y,22+coastSceneryNoise(i+5)*56,1.1,'#809ba6');
+   }
+  }
+ }else if(key==='rockies'){
+  const peaks=[[-35,342],[85,268],[145,227],[239,128],[303,195],[368,155],[404,163],[505,78],[566,164],[627,205],[718,121],[783,176],[828,148],[963,211],[1049,145],[1115,229],[1230,305]];
+  ridge(peaks,'#858096',-15);
+  for(let i=2;i<peaks.length-1;i+=2){
+   const p=peaks[i],q=peaks[i+1],prev=peaks[i-1];
+   if(p[1]<224)shape([[prev[0]+18,prev[1]+4],[p[0],p[1]-15],[q[0]-3,q[1]-14],[p[0]+20,p[1]+12],[p[0]+9,p[1]+28],[p[0]-8,p[1]+20]],'#d4c3c1');
+  }
+  ridge([[-30,346],[85,320],[188,216],[283,285],[352,300],[518,234],[617,318],[755,254],[847,314],[963,260],[1066,221],[1230,339]],'#5b6479');
+  ridge([[-30,383],[109,357],[192,328],[276,353],[414,341],[527,374],[701,316],[820,343],[933,334],[1072,369],[1230,332]],'#465764');
+ }else if(key==='canyon'){
+  const mesas=[[-30,303],[85,267],[105,241],[227,251],[261,291],[349,318],[393,256],[432,223],[548,225],[577,273],[642,319],[711,273],[776,270],[801,226],[918,226],[957,279],[1046,278],[1079,258],[1182,263],[1230,317]];
+  ridge(mesas,'#ae796f');
+  ridge([[-30,391],[89,363],[166,323],[253,332],[337,381],[448,375],[501,329],[567,304],[661,309],[731,348],[788,355],[864,308],[990,318],[1096,365],[1230,347]],'#996060');
+  ridge([[-30,426],[141,389],[230,410],[353,398],[512,419],[666,394],[809,402],[910,371],[1005,383],[1230,401]],'#714a57');
+  for(let i=0;i<15;i++){
+   const x=coastSceneryNoise(i)*1200,y=311+coastSceneryNoise(i+3)*51;
+   block(x,y,30+coastSceneryNoise(i+2)*96,2,'rgba(236,171,129,.23)');
+  }
+ }else if(key==='vegas'){
+  ridge([[-30,365],[102,313],[208,335],[265,306],[393,333],[530,294],[679,332],[723,303],[889,316],[1024,291],[1133,319],[1230,355]],'#5b4a6a');
+  skyline(19,[26,125],['#594463','#543b61','#61556d'],true);
+  block(738,232,9,149,'#65556f');block(719,226,47,20,'#9a718c');block(735,205,4,27,'#ac87a0');
+  for(let i=0;i<37;i++)block(coastSceneryNoise(i+7)*1200,379+coastSceneryNoise(i+31)*24,3,2,i%2?'#e8a9a0':'#90cbd2');
+ }else{
+  ridge([[-30,330],[85,350],[269,359],[498,352],[622,343],[695,316],[748,303],[803,243],[861,267],[909,248],[985,269],[1098,222],[1230,283]],'#926c84');
+  ridge([[-30,381],[125,371],[346,364],[558,378],[711,353],[817,331],[906,313],[1057,339],[1123,313],[1230,329]],'#694f71');
+  for(let i=0;i<34;i++){
+   const x=760+i*13,y=357-coastSceneryNoise(i+31)*38;
+   const h=8+coastSceneryNoise(i+18)*38;
+   block(x,y-h,8,h,'#594b68');
+   if(i%3)block(x+2,y-h+5,2,3,'#e9af98');
+  }
+ }
+ coastPanoramas.set(key,canvas);return canvas;
+}
+function drawCoastBackdrop(horizon,index){
+ const region=coastDistrictIndex(index),district=COAST_DISTRICTS[region],previous=COAST_DISTRICTS[Math.max(0,region-1)];
+ const transition=region?paradiseSmooth((index-district.start)/100):1;
+ const sky=ctx.createLinearGradient(0,0,0,horizon+36);
+ sky.addColorStop(0,interpolateColor(previous.sky[0],district.sky[0],transition));
+ sky.addColorStop(1,interpolateColor(previous.sky[1],district.sky[1],transition));
+ ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+ const trip=clamp(index/COAST_LENGTH,0,1);
+ const radius=Math.min(W*(.156+trip*.05),H*.105);
+ const sx=W*(.66-.15*trip)+W*.22*Math.tanh(-bgOffset*.00023);
+ const sy=horizon-H*(.20-.12*trip);
+ ctx.save();
+ ctx.beginPath();ctx.arc(sx,sy,radius,0,Math.PI*2);ctx.clip();
+ ctx.fillStyle=region>=5?'#ffc0ad':'#ffe3a8';
+ for(let i=0;i<6;i++)ctx.fillRect(sx-radius,sy-radius+i*.40*radius,radius*2,radius*(i?.31:.50));
+ ctx.restore();
+ const panorama=(key,alpha)=>{
+  if(alpha<=0)return;
+  const art=getCoastPanorama(key),scale=Math.max(W/790,H/940);
+  const width=art.width*scale,height=art.height*scale;
+  const travel=.50+.48*Math.tanh(bgOffset*.00090);
+  const y=horizon-height*.87;
+  ctx.save();ctx.globalAlpha=alpha;
+  ctx.drawImage(art,-(width-W)*travel,y,width,height);
+  ctx.restore();
+ };
+ panorama(previous.key,1-transition);panorama(district.key,transition);
+}
+function drawCoastDeck(roads){
+ const ribbon=(first,last,left,right,color)=>{
+  const a=roads[first],b=roads[last];
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(a.rx1+left*a.w1,a.y1);
+  for(let j=first;j<=last;j++){const r=roads[j];ctx.lineTo(r.rx2+left*r.w2,r.y2);}
+  ctx.lineTo(b.rx2+right*b.w2,b.y2);
+  for(let j=last;j>=first;j--){const r=roads[j];ctx.lineTo(r.rx1+right*r.w1,r.y1);}
+  ctx.closePath();ctx.fill();
+ };
+ // Terrain reaches the canvas edges, including when the roadway is in a bend.
+ // Contiguous asphalt follows every projected slice without transversal seams.
+ for(let i=0;i<roads.length;){
+  if(!roads[i].isVisible){i++;continue;}
+  const first=i,index=roads[i].segIdx,palette=coastSurface(index);
+  const zone=coastDistrictIndex(index);
+  const river=index>=COAST_RIVER_START&&index<COAST_RIVER_END;
+  while(i+1<roads.length&&roads[i+1].isVisible){
+   const next=roads[i+1].segIdx;
+   if(coastSurface(next)!==palette||(next>=COAST_RIVER_START&&next<COAST_RIVER_END)!==river)break;
+   i++;
+  }
+  const last=i++;
+  const wide=roads[first].y1,far=roads[last].y2;
+  ctx.fillStyle=river?'#506e8b':palette.ground;
+  ctx.fillRect(0,far,W,wide-far+.65);
+  if(zone===4){
+   ribbon(first,last,-28,-2.38,'#714854');
+   ribbon(first,last,-7.8,-4.6,'#925861');
+   ribbon(first,last,-5.86,-5.10,'#54717f');
+   ribbon(first,last,-4.7,-3.35,'#865059');
+   ribbon(first,last,-3.35,-2.50,'#915c55');
+   ribbon(first,last,-2.50,-2.18,'#b27861');
+   ribbon(first,last,1.19,2.14,'#a0634d');
+  }else if(zone===6){
+   ribbon(first,last,-28,-1.62,'#506985');
+   ribbon(first,last,-4.0,-3.89,'#687f9c');
+   ribbon(first,last,-2.41,-2.33,'#8596ac');
+   ribbon(first,last,-1.76,-1.60,'#a7a6b4');
+   ribbon(first,last,-1.63,-1.13,'#ad7780');
+   ribbon(first,last,1.07,1.75,'#8b6670');
+  }else if(zone===2){
+   for(const side of [-1,1]){
+    ribbon(first,last,side*1.18,side*1.48,'#84744e');
+    ribbon(first,last,side*2.3,side*2.65,'#8a8454');
+    ribbon(first,last,side*3.38,side*3.82,'#96905c');
+   }
+  }
+  if(zone===2&&index>=932&&index<1120){
+   for(const side of [-1,1])ribbon(first,last,side*1.20,side*2.62,'#8d7978');
+  }
+  ribbon(first,last,-1.19,1.19,river?'#79838d':'#655763');
+  ribbon(first,last,-1,1,palette.road);
+  for(const side of [-1,1])ribbon(first,last,side*.956,side*.974,palette.edge);
+ }
+ for(let i=0;i<roads.length;){
+  const a=roads[i];
+  if(!a.isVisible||a.segIdx%14>=6){i++;continue;}
+  const first=i;
+  while(i+1<roads.length&&roads[i+1].isVisible&&roads[i+1].segIdx%14<6)i++;
+  const last=i++;
+  for(const side of [-1,1])ribbon(first,last,side/3-.009,side/3+.009,'#d0bbb0');
+ }
+ for(let i=0;i<roads.length;i++){
+  const {isVisible,segIdx}=roads[i];
+  if(isVisible&&(segIdx<2||segIdx>=COAST_LENGTH-3&&segIdx<COAST_LENGTH)){
+   for(let j=0;j<12;j++)ribbon(i,i,-1+j/6,-1+(j+1)/6,(segIdx+j)%2?'#eae1cf':'#504658');
+  }
+ }
+}
+function drawCoastStructure(road){
+ const {segIdx:index,rx1:x1,rx2:x2,y1,y2,w1,w2,p1Scale:s1,p2Scale:s2}=road;
+ const point=(far,lane,height)=>far?[x2+lane*w2,y2-height*s2*H/2]:[x1+lane*w1,y1-height*s1*H/2];
+ if(index>=COAST_RIVER_START&&index<COAST_RIVER_END){
+  const height=2600,width=1.27;
+  const span=(index-COAST_RIVER_START)%19,steel='#586271',light='#a7a7a6';
+  for(const side of [-1,1]){
+   const edge=side*width;
+   scenePoly([point(false,edge,16),point(true,edge,16),point(true,edge,102),point(false,edge,102)],'#54535e');
+   scenePoly([point(false,edge,100),point(true,edge,100),point(true,edge,130),point(false,edge,130)],'#b7aca5');
+   sceneLine([point(false,edge,height),point(true,edge,height)],steel,Math.max(.8,w2*.060));
+   const slope=span/19,next=(span+1)/19;
+   const ascending=(Math.floor((index-COAST_RIVER_START)/19)%2)===0;
+   const lift=t=>224+(height-224)*(ascending?t:1-t);
+   sceneLine([point(false,edge,lift(slope)),point(true,edge,lift(next))],steel,Math.max(.8,w2*.041));
+   if(span===0){
+    sceneLine([point(false,edge,100),point(false,edge,height+42)],light,Math.max(.9,w1*.056));
+    sceneLine([point(false,edge,100),point(false,edge,height+42)],steel,Math.max(.7,w1*.028));
+   }
+  }
+  if(span===0){
+   sceneLine([point(false,-width,height),point(false,width,height)],steel,Math.max(1,w1*.071));
+   sceneLine([point(false,-width,height+110),point(false,width,height+110)],light,Math.max(.7,w1*.023));
+   if(index===COAST_RIVER_START){
+    sceneLine([point(false,-width,height*.70),point(false,-.86,height)],light,Math.max(.9,w1*.07));
+    sceneLine([point(false,.86,height),point(false,width,height*.70)],light,Math.max(.9,w1*.07));
+   }
+  }
+ }else if(index===COAST_PASS_ARCH||index===COAST_PASS_ARCH+6){
+  const face=index===COAST_PASS_ARCH;
+  const hole=[[-1.22,0],[-1.22,490],[-.98,1460],[-.66,1950],[.55,2070],[.94,1720],[1.21,650],[1.21,0]];
+  const silhouette=[[-3.31,0],[-3.23,730],[-2.48,2050],[-1.55,2650],[1.05,2750],[1.98,2330],[2.67,1250],[3.26,0]];
+  for(let j=0;j<hole.length-1;j++){
+   const inner=point(false,...hole[j]),next=point(false,...hole[j+1]);
+   const outer=point(false,...silhouette[j]),nextOuter=point(false,...silhouette[j+1]);
+   scenePoly([inner,next,nextOuter,outer],(face?['#7d7883','#8c828a','#a39090','#b19d9b','#897985','#716a7b','#675f71']:['#5d5e71','#656476','#797383','#817585','#786e7e','#635f72','#57596a'])[j]);
+   sceneLine([inner,next],face?'#69616e':'#544e63',Math.max(.7,w1*.055));
+  }
+ }else if(index>2110&&index<2475){
+  const side=-1;
+  sceneLine([point(false,side*1.18,190),point(true,side*1.18,190)],'#b39a97',Math.max(.7,w2*.020));
+  if(index%8===0)sceneLine([point(false,side*1.18,0),point(false,side*1.18,205)],'#877480',Math.max(.7,w1*.022));
+ }
+}
+function drawCoastScenery(sprite){
+ const item=sprite.item;
+ const fade=1-paradiseSmooth((sprite.depth-160)/(COAST_DRAW_DISTANCE-160));
+ if(fade<=0||sprite.sc<.018)return;
+ const offset=item.kind==='towboat'?Math.sin(raceElapsed*.00035+item.variant*4)*sprite.sc*37:0;
+ if(item.kind==='palm'&&(sprite.x<-100||sprite.x>W+100))return;
+ ctx.save();ctx.globalAlpha=fade;
+ ctx.beginPath();ctx.rect(0,0,W,item.kind==='towboat'?H:Math.min(H,sprite.clipY));ctx.clip();
+ if(item.kind==='palm'){
+  drawPalmTreeSprite(sprite.x,sprite.y,sprite.sc*1.25,item.variant,raceElapsed,.27);
+ }else{
+  const {image,w,h}=getCoastScenery(item.kind,item.variant);
+  const left=sprite.x-w*sprite.sc/2+offset,top=sprite.y-(h-2)*sprite.sc;
+  if(left<W&&left+w*sprite.sc>0&&top<H)ctx.drawImage(image,left,top,w*sprite.sc,h*sprite.sc);
+ }
+ ctx.restore();
+}
+
 // Orbital Passage: a single continuous station interior, one-way, with a runout.
 const ORBITAL_LENGTH=3080,ORBITAL_SHUTTLE_INDEX=1700,ORBITAL_LANDING_INDEX=180,ORBITAL_DRAW_DISTANCE=220,ORBITAL_LAUNCH_TRIGGER=1596;
 const ORBITAL_OUTER_BRIDGE=2864, ORBITAL_IMPACT=2464, ORBITAL_PAD=2928, ORBITAL_GAP=2944, ORBITAL_POD=3024;
@@ -3035,7 +3637,7 @@ resize(); window.addEventListener('resize', resize);
 let SEGMENT_COUNT = 1150; const SEGMENT_LENGTH = 150; let TRACK_LENGTH = SEGMENT_COUNT * SEGMENT_LENGTH;
 let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
-const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8;
+const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150 },
   { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1250 },
@@ -3044,9 +3646,10 @@ const LEVELS = [
   { id: LEVEL_DREAM, name: 'DREAM ODYSSEY', tag: 'SURREAL WORLDS', color: '#00ffd2', segments: 2875 },
   { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350 },
   { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: PARADISE_LENGTH },
-  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH }
+  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH },
+  { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH }
 ];
-function isPointToPoint(){return currentLevel===LEVEL_DREAM||currentLevel===LEVEL_ORBITAL;}
+function isPointToPoint(){return currentLevel===LEVEL_DREAM||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST;}
 function raceLapCount(){return isPointToPoint()||currentLevel===LEVEL_PARADISE?1:3;}
 const HIGHWAY_CROSSINGS = [
   { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
@@ -3440,6 +4043,8 @@ function buildSegments() {
             ...makeSection(100, -0.4, -8),
             ...makeSection(110, 0, 0)
         ];
+    } else if (currentLevel === LEVEL_COAST) {
+        trackDef=buildCoastRoute();
     } else if (currentLevel === LEVEL_ORBITAL) {
         trackDef=buildOrbitalRoute();
     } else if (currentLevel === LEVEL_PARADISE) {
@@ -3663,7 +4268,7 @@ function buildSegments() {
                     }
                 }
             }
-        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL) {
+        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST) {
             // Space Wave keeps the track edges free of floating crystal spires.
         } else {
             // Level 1: Standard tree distribution
@@ -3713,12 +4318,14 @@ function buildSegments() {
     addPolishScenery();
     if(currentLevel===LEVEL_PARADISE)buildParadiseScenery();
     if(currentLevel===LEVEL_ORBITAL)buildOrbitalScenery();
+    if(currentLevel===LEVEL_COAST)buildCoastScenery();
     const laneOffsets = [-0.65, 0.65];
     
     // Adaptive Baustellen und Blitz-Items für die verschiedenen Strecken
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
+    if(currentLevel===LEVEL_COAST){siteIndices=[];freeBolts=COAST_BOOSTS;}
     if(currentLevel===LEVEL_ORBITAL){siteIndices=[];freeBolts=[145,475,805,1135,1465,1795,2125,2455,2785];}
     if(currentLevel===LEVEL_PARADISE){siteIndices=[];freeBolts=[150,550,950,1320,1760,2170,2550,2910,3270].map(paradiseIndex);}
     if (currentLevel === LEVEL_DREAM) {
@@ -12393,7 +13000,8 @@ function render(ts) {
   }
   if (currentLevel === 2) oceanRockPalette = OCEAN_ROCK_DAY.map((color, i) => interpolateColor(color, OCEAN_ROCK_NIGHT[i], progressRatio));
 
-  if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
+  if(currentLevel===LEVEL_COAST){drawCoastBackdrop(horizonY,startSegIdx);}
+  else if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
   else {
   const sunBuffer = sunR * 2, sunLoopW = W + sunBuffer * 2;
   let sunX = (W / 2) - (bgOffset * 0.15);
@@ -13102,7 +13710,7 @@ function render(ts) {
   // A distant return bend cannot be represented as an isolated road ribbon
   // above this hilly panorama. Fade its terrain and scenery together, before
   // that remote section, with a world-distance fade rather than a hard cutoff.
-  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:currentLevel===LEVEL_ORBITAL?ORBITAL_DRAW_DISTANCE:DRAW_DISTANCE;
+  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:currentLevel===LEVEL_ORBITAL?ORBITAL_DRAW_DISTANCE:currentLevel===LEVEL_COAST?COAST_DRAW_DISTANCE:DRAW_DISTANCE;
   const orbitalActors=currentLevel===LEVEL_ORBITAL?orbitalMovingActors(camZ/SEGMENT_LENGTH):null;
   const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
   const projectVehicle = (worldZ, laneX, seg, segmentZ, curveStart, curveEnd) => {
@@ -13119,9 +13727,9 @@ function render(ts) {
     const lapOffset = (!isPointToPoint() && segIdx < startSegIdx) ? TRACK_LENGTH : 0; const segWorldZ = seg.worldZ + lapOffset;
     
     // Die Projektion muss gemacht werden
-    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL, nearZ=camZ+64;
+    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST, nearZ=camZ+64;
     if(clippedRoad && segWorldZ+SEGMENT_LENGTH<=nearZ){
-      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL)&&n===0?1-percent:1;
+      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST)&&n===0?1-percent:1;
       curveDX+=seg.curve*5*step;curveOffset+=curveDX*step;curveDX*=Math.pow(.85,step);
       continue;
     }
@@ -13142,7 +13750,7 @@ function render(ts) {
     seg.curveOffset = curveOffset;
     
     // Immer Kurven-Mathematik fortführen
-    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL)&&n===0?1-percent:1;
+    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST)&&n===0?1-percent:1;
     curveDX+=seg.curve*5*curveStep;curveOffset+=curveDX*curveStep;curveDX*=Math.pow(.85,curveStep);
     seg.curveOffsetEnd=curveOffset;
 
@@ -13201,6 +13809,15 @@ function render(ts) {
         if(item.kind==='serviceModule')item={...item,hook:(actor.lift-1580)*H*200/(ROAD_WIDTH*W*item.size)};
         addOrbitalSprite(item,segIdx,actor.index-startSegIdx,projected.x,projected.y,projected.w,segmentClipY,
          actor.lift*H/(ROAD_WIDTH*W)*200/item.size,getCleanSpriteFromPool);
+      }
+    }
+    if(currentLevel===LEVEL_COAST&&seg.coastItems){
+      for(const item of seg.coastItems){
+        const sprite=getCleanSpriteFromPool();
+        sprite.type='coast';sprite.item=item;sprite.segIdx=segIdx;sprite.depth=n;
+        sprite.x=rx2+item.lane*p2.w;sprite.y=p2.y;
+        if(item.kind==='towboat')sprite.y+=p2.scale*H*.5*465;
+        sprite.sc=p2.w*item.size/200;sprite.clipY=segmentClipY;
       }
     }
     if(currentLevel===LEVEL_PARADISE)collectParadiseSprites(seg,n,rx2,p2,segmentClipY,getCleanSpriteFromPool);
@@ -13375,6 +13992,7 @@ function render(ts) {
 
   // Define the comprehensive helper to draw any sprite type
   function drawSprite(s) {
+    if(s.type==='coast'){drawCoastScenery(s);return;}
     if(s.type==='orbital'){drawOrbitalSprite(s);return;}
     if(s.type==='paradise'){drawParadiseSprite(s);return;}
     if(s.type==='paradise_oncoming'){
@@ -13670,6 +14288,7 @@ function render(ts) {
   }
 
   if(currentLevel===LEVEL_ORBITAL)drawOrbitalDeck(segmentsToDraw);
+  if(currentLevel===LEVEL_COAST)drawCoastDeck(segmentsToDraw);
 
   // Draw background sprites (farthest first)
   backgroundSprites.sort((a, b) => b.depth - a.depth);
@@ -13700,7 +14319,9 @@ function render(ts) {
     if(roadSeg.visibility<1){ctx.save();ctx.globalAlpha*=roadSeg.visibility;}
     
     // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
-    if(currentLevel===LEVEL_ORBITAL){
+    if(currentLevel===LEVEL_COAST){
+      drawCoastStructure(roadSeg);
+    }else if(currentLevel===LEVEL_ORBITAL){
       const end=roadSeg.orbitalEnd;
       if(end)drawOrbitalRoad(roadSeg.rx1,roadSeg.y1,roadSeg.w1,end.rx2,end.y2,end.w2,roadSeg.p1Scale,end.p2Scale,roadSeg.segIdx,roadSeg.isVisible||end.isVisible,end.segIdx+1);
     }else drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
@@ -14470,7 +15091,7 @@ function getPlayerCollisionX(){
   // Match the renderer's continuous road bend at the car's contact plane.
   for(let n=0;n<=Math.ceil(distance/SEGMENT_LENGTH)+1;n++){
     const z=first+n*SEGMENT_LENGTH,seg=getSeg(z),before=offset;
-    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
+    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
     delta+=seg.curve*5*step;offset+=delta*step;delta*=Math.pow(.85,step);
     if(z+SEGMENT_LENGTH>=worldZ){
       const bend=before+(offset-before)*clamp((worldZ-z)/SEGMENT_LENGTH,0,1);

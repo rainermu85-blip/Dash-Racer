@@ -1,6 +1,6 @@
 # Dash Racer
 
-Ein Arcade-Rennspiel im Retro-Neonstil mit acht Strecken, fünf Gegnern und
+Ein Arcade-Rennspiel im Retro-Neonstil mit neun Strecken, fünf Gegnern und
 Boosts. Es läuft vollständig im Browser mit Canvas 2D. Vite dient zum
 Entwickeln und Erstellen der statischen Ausgabe. Es gibt aktuell keinen
 Anwendungsserver und keine Gemini-Integration.
@@ -44,12 +44,14 @@ Level 8 **Orbital Passage** führt als lineares Rennen durch eine Raumstation:
 sechs Bereiche, eine Frachterlandung, ein Shuttle-Start und etwa 1:45 Minuten
 mit Turbos.
 [Strecke und Prüfung](docs/orbital-passage.md).
-Alle acht Strecken sind frei auswählbar. Medaillen,
-gespeicherter Fortschritt und Freischaltschwellen sind noch nicht implementiert.
+Level 9 **Coast to Coast** führt von New York über den Mississippi, Cedar Falls,
+die Rockies, den Grand Canyon und Las Vegas bis zum Pazifik. Die Fahrt dauert
+mit Turbo etwa 2:10 Minuten. [Strecke](docs/level-concepts/coast-to-coast.md).
 
-Weitere Entwürfe für **Macondo / Hundert Jahre Einsamkeit** und die USA-Reise
-**Coast to Coast** stehen in den [Levelkonzepten](docs/level-concepts/README.md).
-Orbital Passage ist aus diesem Katalog bereits spielbar.
+Alle neun Strecken sind frei auswählbar. Medaillen, gespeicherter Fortschritt
+und Freischaltschwellen sind noch nicht implementiert. Der Entwurf für
+**Macondo / Hundert Jahre Einsamkeit** steht in den
+[Levelkonzepten](docs/level-concepts/README.md).
 
 Der Highway hat eine getrennte Gegenfahrbahn und Leitplanken auf der Rennstrecke.
 Autos fahren über zwei Hochstraßen, und Schnellzüge werden bei der Annäherung

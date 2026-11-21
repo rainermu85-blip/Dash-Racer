@@ -47,20 +47,20 @@
       "workingTitle": "Coast to Coast",
       "inspiration": "Eine Reise durch die USA in zwei Minuten",
       "layout": "point-to-point",
-      "targetSecondsWithoutTurbo": [
-        115,
-        125
-      ],
-      "proposedSegments": 3400,
       "document": "coast-to-coast.md",
       "scenes": [
         "New York",
-        "Great Plains",
+        "Mississippi-Brücke",
+        "Great Plains und Cedar Falls",
         "Rocky Mountains",
-        "Route 66 / Arizona",
-        "Pazifikküste und Los Angeles"
+        "Grand Canyon und Starlite Motel",
+        "Las Vegas",
+        "Pazifikküste"
       ],
-      "status": "concept"
+      "status": "implemented",
+      "levelId": 9,
+      "targetSecondsWithTurbo": 130,
+      "segments": 3830
     }
   ]
 }
