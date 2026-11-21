@@ -226,13 +226,13 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 const COAST_LENGTH=3830,COAST_DRAW_DISTANCE=215;
 const COAST_RIVER_START=535,COAST_RIVER_END=748,COAST_PASS_ARCH=1728;
 const COAST_DISTRICTS=[
- {key:'nyc',start:0,ground:'#3b3445',road:'#373340',edge:'#b8a6a2',sky:['#39224d','#f0a186']},
+ {key:'nyc',start:0,ground:'#3b3445',road:'#373340',edge:'#b8a6a2',sky:['#121631','#e78b83']},
  {key:'river',start:510,ground:'#416b7e',road:'#424854',edge:'#e0c29d',sky:['#4d345b','#edac8d']},
- {key:'plains',start:765,ground:'#666346',road:'#504a50',edge:'#ebcf94',sky:['#59406a','#ffbc8b']},
- {key:'rockies',start:1300,ground:'#425357',road:'#414650',edge:'#d1c5a7',sky:['#493660','#f2a899']},
- {key:'canyon',start:1990,ground:'#8b503b',road:'#544547',edge:'#ebbc89',sky:['#653351','#f89b75']},
- {key:'vegas',start:2740,ground:'#52405a',road:'#373345',edge:'#deadd1',sky:['#211d44','#ce6b97']},
- {key:'pacific',start:3240,ground:'#745160',road:'#413845',edge:'#f0b6a5',sky:['#322149','#f88b92']}
+ {key:'plains',start:765,ground:'#666346',road:'#504a50',edge:'#ebcf94',sky:['#366a86','#ffd596']},
+ {key:'rockies',start:1300,ground:'#425357',road:'#414650',edge:'#d1c5a7',sky:['#29436a','#c1d3d7']},
+ {key:'canyon',start:1990,ground:'#8b503b',road:'#544547',edge:'#ebbc89',sky:['#712b63','#ffa258']},
+ {key:'vegas',start:2740,ground:'#52405a',road:'#373345',edge:'#deadd1',sky:['#090e28','#663575']},
+ {key:'pacific',start:3240,ground:'#745160',road:'#413845',edge:'#f0b6a5',sky:['#383378','#ffa98b']}
 ];
 const COAST_BOOSTS=[155,455,785,1090,1370,1715,2060,2360,2670,3000,3320,3630];
 const coastScenery=new Map(),coastPanoramas=new Map();
@@ -252,8 +252,8 @@ function buildCoastRoute(){
  const corners=[
   [56,175,.40],[184,302,-.56],[320,449,.58],[460,529,-.40],
   [752,864,.50],[888,990,-.46],[1008,1116,.49],[1130,1242,-.66],[1250,1366,.55],
-  [1374,1510,-.74],[1524,1658,.70],[1755,1888,-.82],[1897,2019,.62],
-  [2020,2147,.58],[2170,2300,-.77],[2310,2444,.61],[2460,2510,-.52],[2517,2570,-.12],[2590,2712,.37],
+  [1374,1492,-.92],[1501,1598,.96],[1606,1674,-.57],[1755,1858,-1.03],[1866,2008,.76],
+  [2020,2147,.52],[2162,2280,-.92],[2296,2426,.73],[2460,2510,-.52],[2517,2570,-.12],[2590,2712,.37],
   [2758,2882,-.51],[2915,3050,.47],[3075,3198,-.54],[3250,3350,.68],[3370,3488,-.64],
   [3498,3620,.58],[3639,3722,-.46]
  ];
@@ -296,6 +296,9 @@ function buildCoastScenery(){
   add(i+7,'tower',2.25+coastSceneryNoise(i+4)*.72,.92+coastSceneryNoise(i+6)*.46,(variant+2)%5);
   if(i%3===1)add(i+3,'streetlight',1.30,.8);
  }
+ add(3798,'pointLight',-3.25,1.72);
+ add(899,'cropPlane',0,1.10);
+ for(const [i,x,v] of [[3410,-3.2,0],[3558,-4.6,1],[3690,-3.6,1],[3790,-5.0,0]])add(i,'sailboat',x,1.22,v);
  add(131,'waterTower',-4.9,1.2);add(455,'bridgeSign',-1.70,1);
  add(615,'towboat',-3.02,1.65);add(703,'towboat',3.35,1.72,1);
  for(const i of [766,794,835,880,1205,1255]){
@@ -339,12 +342,12 @@ function buildCoastScenery(){
   add(i+10,'casino',2.40+coastSceneryNoise(i+2)*.47,1.04+coastSceneryNoise(i+6)*.29,(v+1)%4);
   if(i%5!==0)add(i+5,'streetlight',i%4===2?-1.30:1.30,.77);
  }
- for(let i=3230;i<COAST_LENGTH+110;i+=18){
+ for(let i=3230;i<3718;i+=18){
   const seed=coastSceneryNoise(i);
   add(i,'palm',i%5===0?-1.60:1.62+seed*.60,.78+seed*.26,Math.floor(seed*200));
   if(i<3660)add(i+6,'scrub',1.60+seed*.56,.57,2);
  }
- for(const [i,lane,size] of [[3302,2.25,1.0],[3446,2.25,.98],[3563,2.35,1.06],[3720,2.14,1.14]])add(i,'coastHouse',lane,size);
+ for(const [i,lane,size] of [[3302,2.25,1.0],[3446,2.25,.98],[3563,2.35,1.06]])add(i,'coastHouse',lane,size);
  add(3330,'pacificSign',-1.65,.85);
  addCoastRoadsideScenes(add);
  for(const district of COAST_DISTRICTS)getCoastPanorama(district.key);
@@ -386,10 +389,7 @@ function addCoastRoadsideScenes(add){
   [3555,'coastMarket',2.19,1.11,1],[3600,'lifeguard',-1.94,1.24,0],
   [3630,'beachShack',-2.28,1.09,1],[3648,'coastHouse',2.12,1.26,0],
   [3669,'coastMarket',2.25,1.11,0],[3706,'lifeguard',-2.03,1.23,1],
-  [3742,'beachShack',-2.18,1.18,0],[3762,'coastMarket',2.1,1.20,1],
-  [3802,'lifeguard',-2.15,1.27,0],[3815,'beachShack',-2.36,1.12,1],
-  [3465,'beachPier',-3.41,1.42,0],[3749,'beachPier',-3.13,1.35,1],
-  [3842,'coastHouse',2.24,1.09,0]
+  [3465,'beachPier',-3.41,1.42,0],[3809,'boardwalkRide',4.35,1.85,0]
  ];
  for(const item of locations)add(...item);
 
@@ -413,7 +413,7 @@ function addCoastRoadsideScenes(add){
   if(i%3===2)add(i,'mesa',side*(2.7+noise*.78),1.04+noise*.45,Math.floor(noise*3));
   else add(i,'rockCut',side*(2.16+noise*.35),.74+noise*.43,3);
  }
- for(let i=3244;i<3860;i+=13){
+ for(let i=3244;i<3718;i+=13){
   const noise=coastSceneryNoise(i+56);
   if(i%3===0)add(i,'pickup',1.57,.58+noise*.13,i%2);
   if(i%3===1)add(i,'shoreGroup',-1.72-noise*.32,.83+noise*.25,Math.floor(noise*3));
@@ -424,7 +424,7 @@ function getCoastScenery(kind,variant){
  const key=kind+variant;
  if(coastScenery.has(key))return coastScenery.get(key);
  const dimensions={
-  tower:[320,520],streetlight:[110,201],bridgeSign:[240,147],towboat:[460,172],
+  boardwalkRide:[590,300],pointLight:[400,395],cropPlane:[360,115],sailboat:[234,218],tower:[320,520],streetlight:[110,201],bridgeSign:[240,147],towboat:[460,172],
   cityBlock:[388,285],dock:[425,315],farmStand:[385,222],windmill:[285,318],
   pineGrove:[420,278],lodge:[365,241],rockCut:[419,360],lookout:[360,195],
   neonMarquee:[271,330],grainTrain:[538,200],casinoPyramid:[420,347],beachPier:[550,217],coastMarket:[358,245],beachShack:[364,200],lifeguard:[268,238],shoreGroup:[340,145],
@@ -476,7 +476,48 @@ function getCoastScenery(kind,variant){
   line([[x+7,y-26],[x+14,y-23-phase]],shirt,4);
   oval(x,y-37,6,7,'#ddb08c');line([[x-6,y-41],[x+6,y-41]],'#65545d',4);
  };
- if(kind==='cityBlock'){
+ if(kind==='boardwalkRide'){
+  // Timber coaster on its own piled pier, including the return below the lift.
+  const crest=x=>-108-139*Math.exp(-((x+147)**2)/3900)-68*Math.exp(-((x-83)**2)/3000);
+  for(let x=-266;x<264;x+=26){
+   const y=crest(x);
+   line([[x+9,-24],[x+9,y-5]],'#755665',5);
+   line([[x,-26],[x,y]],'#efd0ad',5);
+   line([[x,y+10],[x+26,-28],[x,-60],[x+26,crest(x+26)+13]],'#bc8c8a',3);
+   line([[x,-27],[x+26,-27]],'#f4c4a1',5);
+  }
+  const rails=[];
+  for(let x=-266;x<=280;x+=5)rails.push([x,crest(x)]);
+  line(rails,'#774761',9);line(rails.map(([x,y])=>[x,y-4]),'#ffbb8e',4);
+  for(let x=-260;x<272;x+=52)rect(x,-25,9,26,'#625068');
+  rect(-281,-36,563,12,'#b5817f');rect(-281,-38,563,3,'#f4c39d');
+ }else if(kind==='pointLight'){
+  poly([[-198,-4],[-168,-29],[-139,-33],[-115,-60],[-81,-46],[-34,-76],[37,-69],[88,-53],[132,-45],[160,-20],[197,-5]],'#604f66');
+  poly([[-185,-3],[-116,-47],[-132,-19],[-64,-37],[-89,-9]],'#8d747d');
+  poly([[-43,-58],[-25,-287],[12,-287],[40,-59]],'#ffdad0');
+  poly([[5,-285],[13,-285],[40,-59],[15,-59]],'#be8c99');
+  poly([[-36,-141],[-32,-196],[22,-196],[29,-141]],'#c05065');
+  rect(-30,-302,50,15,'#5b485d');rect(-22,-334,35,32,'#ffda8e');
+  for(let i=0;i<4;i++)rect(-23+i*12,-333,3,31,'#624958');
+  poly([[-36,-335],[-5,-359],[28,-335]],'#a04e67');rect(-6,-372,3,16,'#58485d');
+  rect(-14,-97,13,32,'#503e53');rect(-12,-247,8,11,'#5c5068');
+  slab(40,-100,85,46,15,'#f4c8ad','#b18286','#e9a092');
+  poly([[31,-97],[53,-120],[126,-120],[142,-97]],'#9c5264');
+ }else if(kind==='cropPlane'){
+  // Yellow agricultural taildragger, banked so both long wings read in silhouette.
+  poly([[-46,-49],[-143,-97],[-160,-95],[-103,-50]],'#b66534');
+  poly([[-105,-56],[-140,-82],[-152,-81],[-138,-45],[-81,-36],[77,-32],[113,-42],[96,-54],[0,-55]],'#f4b632');
+  poly([[-36,-55],[-22,-75],[2,-71],[19,-53]],'#304e65');
+  poly([[-39,-49],[9,-50],[-91,-7],[-124,-8]],'#ffdf60');
+  line([[75,-35],[74,-21],[47,-21],[40,-36]],'#493e4a',3);
+  oval(72,-21,8,8,'#272439');oval(111,-46,3,28,'#d8d4b0');
+ }else if(kind==='sailboat'){
+  poly([[-104,-21],[95,-24],[63,-3],[-72,-3]],'#383858');
+  line([[-99,-21],[90,-24]],'#ffe6bf',5);
+  line([[9,-25],[9,-198]],'#4f4660',3);
+  poly([[4,-189],[3,-36],[-89,-34]],variant?'#ffd798':'#ffe7cd');
+  poly([[17,-163],[85,-39],[17,-38]],variant?'#ea6e84':'#70c9cd');
+ }else if(kind==='cityBlock'){
   const brick=['#8a6265','#6d6979','#a0776c'][variant],recess=['#5c4856','#3f4457','#6c5359'][variant];
   slab(-177,-231,309,231,43,brick,recess,'#bea193');
   rect(-180,-232,318,9,'#b69a93');rect(-175,-108,308,6,'#725760');
@@ -895,6 +936,17 @@ function getCoastPanorama(key){
   g.fillStyle=fill;g.beginPath();points.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill();
  };
  const block=(x,y,w,h,color)=>{g.fillStyle=color;g.fillRect(x,y,w,h);};
+ // Long banks of cloud are baked behind the land. Warm lower faces pick
+ // up the prairie light; thin marine streaks open up the Pacific horizon.
+ if(['river','plains','pacific','canyon'].includes(key)){
+  const marine=key==='pacific',warm=key==='canyon';
+  for(let i=0;i<(marine?10:16);i++){
+   const x=coastSceneryNoise(i+43)*1250-55,y=85+coastSceneryNoise(i+91)*182;
+   const w=45+coastSceneryNoise(i+39)*144,h=(marine?3:7)+coastSceneryNoise(i+711)*(marine?4:11);
+   shape([[x-w,y],[x-w*.48,y-h*.45],[x-w*.17,y-h*.46],[x+w*.04,y-h],[x+w*.28,y-h*.85],[x+w*.45,y-h*.37],[x+w*.7,y-h*.25],[x+w,y]],warm?'rgba(230,133,142,.43)':marine?'rgba(255,196,184,.56)':'rgba(255,226,178,.62)');
+   shape([[x-w*.78,y],[x+w*.83,y],[x+w*.18,y+h*.25]],'rgba(255,211,166,.48)');
+  }
+ }
  const skyline=(count,heights,colors,windows)=>{
   for(let i=0;i<count;i++){
    const seed=coastSceneryNoise(i+85),x=i*1200/count-12,w=28+seed*42;
@@ -980,9 +1032,20 @@ function drawCoastBackdrop(horizon,index){
  const sy=horizon-H*(.20-.12*trip);
  ctx.save();
  ctx.beginPath();ctx.arc(sx,sy,radius,0,Math.PI*2);ctx.clip();
- ctx.fillStyle=region>=5?'#ffc0ad':'#ffe3a8';
+ ctx.globalAlpha=1-paradiseSmooth((index-2640)/180)*(1-paradiseSmooth((index-3220)/190));
+ ctx.fillStyle=index>3220?'#ffd5ab':index>2020?'#ffce80':'#ffe3aa';
  for(let i=0;i<6;i++)ctx.fillRect(sx-radius,sy-radius+i*.40*radius,radius*2,radius*(i?.31:.50));
  ctx.restore();
+ const night=paradiseSmooth((index-2640)/180)*(1-paradiseSmooth((index-3250)/180));
+ if(night>0){
+  ctx.save();ctx.globalAlpha=night;
+  for(let j=0;j<42;j++){
+   const x=(coastSceneryNoise(j+710)*1.3-.15)*W+(sx-W*.5)*.24;
+   const y=coastSceneryNoise(j+880)*horizon*.84;
+   ctx.fillStyle=j%4?'#9c91b4':'#ffdfc1';ctx.fillRect(x,y,j%4?1:2,j%4?1:2);
+  }
+  ctx.restore();
+ }
  const panorama=(key,alpha)=>{
   if(alpha<=0)return;
   const art=getCoastPanorama(key),scale=Math.max(W/790,H/940);
@@ -1011,16 +1074,16 @@ function drawCoastDeck(roads){
   const first=i,index=roads[i].segIdx,palette=coastSurface(index);
   const zone=coastDistrictIndex(index);
   const river=index>=COAST_RIVER_START&&index<COAST_RIVER_END;
-  const town=index>=932&&index<1120;
+  const town=index>=932&&index<1120,pier=index>=3722;
   while(i+1<roads.length&&roads[i+1].isVisible){
    const next=roads[i+1].segIdx;
    if(coastSurface(next)!==palette||(next>=COAST_RIVER_START&&next<COAST_RIVER_END)!==river||
-    (next>=932&&next<1120)!==town)break;
+    (next>=932&&next<1120)!==town||(next>=3722)!==pier)break;
    i++;
   }
   const last=i++;
   const wide=roads[first].y1,far=roads[last].y2;
-  ctx.fillStyle=river?'#506e8b':palette.ground;
+  ctx.fillStyle=pier?'#526e89':river?'#506e8b':palette.ground;
   ctx.fillRect(0,far,W,wide-far+.65);
   if(zone===4){
    ribbon(first,last,-28,-2.38,'#714854');
@@ -1030,6 +1093,10 @@ function drawCoastDeck(roads){
    ribbon(first,last,-3.35,-2.50,'#915c55');
    ribbon(first,last,-2.50,-2.18,'#b27861');
    ribbon(first,last,1.19,2.14,'#a0634d');
+  }else if(pier){
+   ribbon(first,last,-1.31,1.31,'#cd998c');
+   ribbon(first,last,-1.38,-1.31,'#795f72');
+   ribbon(first,last,1.31,1.38,'#795f72');
   }else if(zone===6){
    ribbon(first,last,-28,-1.62,'#506985');
    ribbon(first,last,-4.0,-3.89,'#687f9c');
@@ -1062,7 +1129,7 @@ function drawCoastDeck(roads){
    }
   }
   ribbon(first,last,-1.19,1.19,river?'#79838d':'#655763');
-  ribbon(first,last,-1,1,palette.road);
+  ribbon(first,last,-1,1,pier?'#6b5765':palette.road);
   for(const side of [-1,1])ribbon(first,last,side*.956,side*.974,palette.edge);
  }
  for(let i=0;i<roads.length;){
@@ -1075,14 +1142,154 @@ function drawCoastDeck(roads){
  }
  for(let i=0;i<roads.length;i++){
   const {isVisible,segIdx}=roads[i];
+  if(isVisible&&segIdx===3722)ribbon(i,i,-1.32,1.32,'#af9692');
   if(isVisible&&(segIdx<2||segIdx>=COAST_LENGTH-3&&segIdx<COAST_LENGTH)){
    for(let j=0;j<12;j++)ribbon(i,i,-1+j/6,-1+(j+1)/6,(segIdx+j)%2?'#eae1cf':'#504658');
   }
  }
 }
+function drawCoastSubway(x,y,w){
+ // A riveted cross-street viaduct with boxy stainless-steel subway cars.
+ const scale=w/120;
+ if(scale<.02)return;
+ const left=(-x-20)/scale,right=(W-x+20)/scale;
+ ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+ sceneRect(left,-169,right-left,19,'#37474a');
+ sceneRect(left,-167,right-left,2,'#b08c78');
+ sceneRect(left,-152,right-left,3,'#6d6962');
+ for(const side of [-1,1]){
+  const post=side*163;
+  sceneRect(post-5,-150,10,150,'#4b5351');
+  sceneLine([[post,-101],[post-side*39,-150]],'#64736c',5);
+ }
+ // Move on race time so the train keeps travelling independently of steering.
+ const lead=((raceElapsed*.092)%1540)-520;
+ for(let i=0;i<5;i++){
+  const car=lead-i*108;
+  if(car<left-5||car-106>right)continue;
+  sceneRect(car-103,-198,103,27,'#bcc2bc');sceneRect(car-97,-201,90,3,'#687880');
+  sceneRect(car-102,-179,100,3,'#956257');
+  for(let j=0;j<8;j++)sceneRect(car-97+j*12,-194,8,10,j%3?'#f9d699':'#72858a');
+  for(const dx of [-88,-13])sceneRect(car+dx,-171,10,3,'#242936');
+  if(!i)sceneRect(car-4,-181,4,4,'#fff2ba');
+ }
+ ctx.restore();
+}
+// Elevated railway in Manhattan, open-sided snow shed at the pass, then the
+// electric canopy on the Strip. The longitudinal faces use both projected
+// ends of each road slice, so the architecture follows the bend and the grade.
+function drawCoastGallery(index,point,w){
+ const city=index<510,pass=index>=1300&&index<1990;
+ const start=city?94:pass?1488:2888;
+ const step=(index-start)%(city?16:pass?14:12);
+ const lip=city?1730:pass?1960:1820;
+ const face=(laneA,heightA,laneB,heightB,color)=>scenePoly([
+  point(false,laneA,heightA),point(true,laneA,heightA),point(true,laneB,heightB),point(false,laneB,heightB)],color);
+ const beam=(a,b,color,width)=>sceneLine([point(false,...a),point(false,...b)],color,Math.max(.65,w*width));
+ if(city){
+  face(-1.31,lip,1.31,lip,'#292331');
+  for(const side of [-1,1]){
+   face(side*1.31,lip,side*1.31,lip+240,'#543c46');
+   face(side*.90,lip,side*.90,lip-100,'#382c38');
+   if(!step){
+    beam([side*1.27,0],[side*1.27,lip],'#624756',.10);
+    beam([side*1.27,lip*.68],[side*.93,lip],'#89635e',.049);
+   }
+  }
+  if(!step)beam([-1.32,lip],[1.32,lip],'#73565a',.077);
+ }else if(pass){
+  face(1.33,0,1.38,lip,'#595968');
+  face(-1.29,lip,1.38,lip,'#525765');
+  face(-1.29,lip+155,1.38,lip+430,'#c3bab1');
+  face(-1.29,lip,-1.29,lip+155,'#838590');
+  if(!step){
+   beam([-1.26,0],[-1.26,lip],'#898792',.14);
+   beam([-1.26,lip*.72],[-.95,lip],'#a59f9f',.10);
+   beam([-1.26,lip],[1.38,lip],'#676978',.075);
+   beam([.56,lip-32],[.80,lip-32],'#ffe0a0',.029);
+  }
+ }else{
+  const panel=Math.floor((index-start)/6);
+  const palette=['#403078','#553582','#783873','#874075','#723887','#3e4286','#295e83','#34587e'];
+  const light=['#e883da','#ffb25f','#79e7da'];
+  for(const side of [-1,1]){
+   face(side*1.53,lip,side*.83,lip+545,palette[panel%8]);
+   face(side*.83,lip+545,0,lip+690,palette[(panel+2)%8]);
+   face(side*1.53,lip,side*1.53,lip-36,'#ffab9d');
+   if(!step){
+    beam([side*1.52,0],[side*1.52,lip],'#544365',.07);
+    beam([side*1.52,lip],[side*.83,lip+545],light[Math.floor(panel/2)%3],.021);
+    beam([side*.83,lip+545],[0,lip+690],light[Math.floor(panel/2)%3],.015);
+    // A line of travelling stars on the vault, at marquee speed.
+    const p=point(false,side*.46,lip+594);
+    const glow=(1+Math.sin(panel*.8-raceElapsed*.002))*.5;
+    const r=w*.093;
+    scenePoly([[p[0],p[1]-r*.6],[p[0]+r*.20,p[1]-r*.12],[p[0]+r,p[1]],
+     [p[0]+r*.20,p[1]+r*.12],[p[0],p[1]+r*.6],[p[0]-r*.20,p[1]+r*.12],
+     [p[0]-r,p[1]],[p[0]-r*.20,p[1]-r*.12]],glow>.6?'#ffdc9d':'#cd8ab5');
+   }
+  }
+ }
+}
+function drawCoastCanyonWall(index,point){
+ // Eroded sandstone on the uphill side. Shared boundary samples keep every
+ // stratum connected when the camera rounds the cliff.
+ const strata=[0,.19,.27,.60,.67,.88,1];
+ const sunward=Math.cos((Math.floor(index/6)*6+3)*.11)>.18;
+ const colors=sunward?['#9b5046','#be755a','#b46550','#d18462','#be7056','#db926e']:['#965048','#b56d55','#aa5f4c','#c47b60','#b16a54','#d08b69'];
+ const profile=i=>{
+  const taper=Math.min(1,(i-2150)/24,(2370-i)/30);
+  const ledge=Math.sin(i*.037)+.36*Math.sin(i*.12);
+  return [1.52+.16*ledge+.09*Math.cos(i*.21),Math.max(0,taper)*(1770+530*ledge),i];
+ };
+ const a=profile(index),b=profile(index+1);
+ const vertex=(far,profile,j)=>{
+  const band=strata[j]+Math.sin(profile[2]*.065+j)*.027*strata[j];
+  return point(far,profile[0]+band*.52+(j%2)*.09,profile[1]*band);
+ };
+ for(let j=0;j<colors.length;j++)scenePoly([vertex(false,a,j),vertex(true,b,j),vertex(true,b,j+1),vertex(false,a,j+1)],colors[j]);
+}
 function drawCoastStructure(road){
  const {segIdx:index,rx1:x1,rx2:x2,y1,y2,w1,w2,p1Scale:s1,p2Scale:s2}=road;
  const point=(far,lane,height)=>far?[x2+lane*w2,y2-height*s2*H/2]:[x1+lane*w1,y1-height*s1*H/2];
+ if((index>=94&&index<210)||(index>=1488&&index<1584)||(index>=2888&&index<3072)){
+  drawCoastGallery(index,point,w1);
+ }
+ if(index>=2150&&index<2370&&road.isVisible)drawCoastCanyonWall(index,point);
+ if(index===288)drawCoastSubway(x1,y1,w1);
+ if(index===983||index===1095){
+  const left=point(false,-1.37,1430),mid=point(false,0,1170),right=point(false,1.37,1430);
+  for(const side of [-1,1])sceneLine([point(false,side*1.37,0),point(false,side*1.37,1460)],'#5e5764',Math.max(.8,w1*.028));
+  ctx.beginPath();ctx.moveTo(...left);ctx.quadraticCurveTo(mid[0],2*mid[1]-left[1],...right);
+  ctx.strokeStyle='#494250';ctx.lineWidth=Math.max(.8,w1*.01);ctx.stroke();
+  for(const lane of [-.52,.52]){
+   const [x,y]=point(false,lane,1205),size=w1*.095;
+   ctx.fillStyle='#be8e4b';ctx.fillRect(x-size*.5,y,size,size*2.45);
+   for(let j=0;j<3;j++)sceneEllipse(x,y+size*(.46+j*.74),size*.29,size*.29,j===2?'#7cf4bb':'#55454a');
+  }
+ }
+ if(index>=3722&&index<COAST_LENGTH+100&&road.isVisible){
+  for(const side of [-1,1]){
+   const edge=side*1.29;
+   scenePoly([point(false,edge,186),point(true,edge,186),point(true,edge,154),point(false,edge,154)],'#f2c3ad');
+   if((index-3722)%16===0){
+    sceneLine([point(false,edge,0),point(false,edge,199)],'#8b6777',Math.max(.8,w1*.039));
+    if((index-3722)%32===0){
+     sceneLine([point(false,edge,168),point(false,edge,825)],'#5e556b',Math.max(.9,w1*.028));
+     const [x,y]=point(false,edge,839),radius=Math.max(.8,w1*.042);
+     sceneEllipse(x,y,radius,radius*1.15,'#ffe9b1');
+    }
+   }
+  }
+ }
+ if(index>=3260&&index<COAST_LENGTH+60&&road.isVisible&&index%6===0){
+  const phase=index*.73+raceElapsed*.00083;
+  const lane=-1.8-((index%31)/11)-.12*Math.sin(phase);
+  const [x,y]=point(false,lane,0);
+  const shimmer=(1+Math.cos(phase))*.5;
+  ctx.fillStyle=shimmer>.62?'#d2b6b7':'#89a0ad';
+  ctx.fillRect(x,y,w1*(.14+.3*shimmer),Math.max(.55,w1*.008));
+ }
  if(index>=COAST_RIVER_START&&index<COAST_RIVER_END){
   const height=2600,width=1.27;
   const span=(index-COAST_RIVER_START)%19,steel='#586271',light='#a7a7a6';
@@ -1121,7 +1328,7 @@ function drawCoastStructure(road){
  }else if(road.isVisible){
   const ranch=(index>=774&&index<934)||(index>=1120&&index<1297);
   const canyon=index>2110&&index<2475;
-  const seafront=index>3280&&index<3800;
+  const seafront=index>3280&&index<3722;
   if(!ranch&&!canyon&&!seafront)return;
   const edge=ranch?1.38:-1.23;
   const height=ranch?172:canyon?190:145;
@@ -1147,13 +1354,21 @@ function drawCoastScenery(sprite){
  const offset=watercraft?Math.sin(time*.00035+item.variant*4)*sc*37:0;
  const art=item.kind==='palm'?null:getCoastScenery(item.kind,item.variant);
  const half=art?art.w*sc*.5:165*sc;
- const top=art?y-(art.h-2)*sc:y-420*sc;
- const left=x-half+offset, right=x+half+offset;
+ const plane=item.kind==='cropPlane',boat=item.kind==='sailboat';
+ const pass=plane?clamp((155-sprite.depth)/140,0,1):0;
+ const groundY=plane?y-(196+54*Math.sin(pass*Math.PI))*sc:boat?y+3*Math.sin(time*.0015+item.variant)*sc:y;
+ const top=art?groundY-(art.h-2)*sc:y-420*sc;
+ const motion=plane?(pass-.55)*2200*sc:boat?30*Math.sin(time*.00035+item.variant)*sc:0;
+ const left=x-half+offset+motion, right=left+2*half;
  const bottom=watercraft?H:Math.min(H,sprite.clipY);
  if(left>=W||right<=0||top>=bottom||y<-2)return;
  ctx.save();
  ctx.globalAlpha*=fade;
  ctx.beginPath();ctx.rect(0,0,W,bottom);ctx.clip();
+ if(item.kind==='pointLight'){
+  const lampX=x-5*sc,lampY=y-318*sc,reach=Math.sin(time*.00085)*210*sc;
+  scenePoly([[lampX,lampY],[lampX+reach,lampY-12*sc],[lampX+reach,lampY+7*sc]],'rgba(255,226,176,.22)');
+ }
  if(art)ctx.drawImage(art.image,left,top,art.w*sc,art.h*sc);
  else drawPalmTreeSprite(x,y,sc*1.25,item.variant,time,.27);
  ctx.restore();
