@@ -225,7 +225,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 // Coast to Coast uses the shared race projection and point-to-point finish.
 const COAST_LENGTH=3830,COAST_DRAW_DISTANCE=215;
 const COAST_RIVER_START=535,COAST_RIVER_END=748,COAST_PASS_ARCH=1728;
-const COAST_PIER_START=3722,COAST_PIER_RAIL_END=COAST_LENGTH+100;
+const COAST_PACIFIC_START=3240,COAST_PIER_START=3722,COAST_PIER_RAIL_END=COAST_LENGTH+100;
+const COAST_PACIFIC_WATER_EDGE=-1.62,COAST_PACIFIC_SURF_EDGE=-1.82,COAST_PIER_DECK_EDGE=1.38;
 const COAST_TOWN_START=932,COAST_TOWN_END=1120,COAST_TRUCK=1009;
 const COAST_SUBWAY=288,COAST_CROP_PLANE=899;
 const COAST_CLIFF_START=2150,COAST_CLIFF_END=2336;
@@ -261,7 +262,7 @@ const COAST_DISTRICTS=[
  {key:'rockies',start:1300,ground:'#425357',road:'#414650',edge:'#d1c5a7',sky:['#29436a','#c1d3d7']},
  {key:'canyon',start:1990,ground:'#8b503b',road:'#544547',edge:'#ebbc89',sky:['#712b63','#ffa258']},
  {key:'vegas',start:2740,ground:'#52405a',road:'#373345',edge:'#deadd1',sky:['#090e28','#663575']},
- {key:'pacific',start:3240,ground:'#745160',road:'#413845',edge:'#f0b6a5',sky:['#222652','#f4a5aa']}
+ {key:'pacific',start:COAST_PACIFIC_START,ground:'#745160',road:'#413845',edge:'#f0b6a5',sky:['#222652','#f4a5aa']}
 ];
 // Authored lanes keep pickups readable on entry and leave room to pass.
 const COAST_BOOSTS=new Map([
@@ -334,7 +335,7 @@ function buildCoastScenery(){
    const side=Math.sign(lane);
    let edge=coastFixedEdges(index)?.[side<0?0:1]??1;
    if(kind==='towboat')edge=COAST_RIVER_RAIL+.47;
-   if(kind==='sailboat')edge=index>=COAST_PIER_START?COAST_PIER_RAIL+.5:2.04;
+   if(kind==='sailboat')edge=(index>=COAST_PIER_START?COAST_PIER_DECK_EDGE:-COAST_PACIFIC_SURF_EDGE)+.72;
    // Lane units are based on the object's full width, including its wake,
    // palm crown or animated lamp. Anchoring only its center wasn't enough.
    const reach=kind==='palm'?185:kind==='pointLight'?225:art.w/2+(COAST_BOAT_DRIFT[kind]??0);
@@ -352,7 +353,7 @@ function buildCoastScenery(){
  add(3798,'pointLight',-3.25,1.72);
  add(3876,'pierPavilion',2.68,1.20);
  add(COAST_CROP_PLANE,'cropPlane',0,1.17);
- for(const [i,x,v] of [[3410,-3.2,0],[3558,-4.6,1],[3690,-3.6,1],[3790,-5.0,0]])add(i,'sailboat',x,1.22,v);
+ for(const [i,x,v] of [[3300,-10,0],[3608,-4.4,1],[3690,-4.78,1],[3790,-5.15,0]])add(i,'sailboat',x,1.04,v);
  add(131,'waterTower',-4.9,1.2);add(455,'bridgeSign',-1.70,1);
  add(605,'towboat',-3.42,2.02);add(716,'towboat',3.67,1.72,1);
  add(753,'silo',-3.7,1.65);add(758,'dock',-3.1,1.35,1);
@@ -1229,6 +1230,28 @@ function coastOutsideDeck(roads,margin){
  }
  return path;
 }
+function coastPacificWater(roads){
+ const surface=new Path2D();
+ let horizon=null,edge=COAST_PACIFIC_SURF_EDGE;
+ // Trace the open water from the same visible slices as the shore and pier.
+ for(let i=0;i<roads.length;){
+  const road=roads[i];
+  if(!road.isVisible||road.segIdx<COAST_PACIFIC_START){i++;continue;}
+  const first=i,pier=road.segIdx>=COAST_PIER_START;
+  while(i+1<roads.length&&roads[i+1].isVisible&&(roads[i+1].segIdx>=COAST_PIER_START)===pier)i++;
+  edge=pier?-COAST_PIER_DECK_EDGE:COAST_PACIFIC_SURF_EDGE;
+  horizon=roads[i];
+  traceCoastRibbon(surface,roads,first,i++,-28,edge);
+ }
+ const view=new Path2D(surface);
+ if(horizon&&horizon.y2>0){
+  // Allow masts above the distant waterline. Nearer terrain still masks
+  // the whole sprite, and the hull must be anchored on visible water.
+  const left=horizon.rx2-28*horizon.w2,right=horizon.rx2+edge*horizon.w2;
+  view.rect(left,0,right-left,horizon.y2);
+ }
+ return {surface,view};
+}
 function drawCoastDeck(roads){
  const ribbon=(first,last,left,right,color)=>{
   ctx.fillStyle=color;ctx.beginPath();
@@ -1265,14 +1288,14 @@ function drawCoastDeck(roads){
    ribbon(first,last,1.19,2.14,'#a0634d');
   }else if(pier){
    ribbon(first,last,-1.31,1.31,'#cd998c');
-   ribbon(first,last,-1.38,-1.31,'#795f72');
-   ribbon(first,last,1.31,1.38,'#795f72');
+   ribbon(first,last,-COAST_PIER_DECK_EDGE,-1.31,'#795f72');
+   ribbon(first,last,1.31,COAST_PIER_DECK_EDGE,'#795f72');
   }else if(zone===6){
-   ribbon(first,last,-28,-1.62,'#506985');
+   ribbon(first,last,-28,COAST_PACIFIC_WATER_EDGE,'#506985');
    ribbon(first,last,-4.0,-3.89,'#687f9c');
    ribbon(first,last,-2.41,-2.33,'#8596ac');
    ribbon(first,last,-1.73,-1.14,'#a88087');
-   ribbon(first,last,-1.82,-1.69,'#c5bcba');
+   ribbon(first,last,COAST_PACIFIC_SURF_EDGE,-1.69,'#c5bcba');
    ribbon(first,last,-1.53,-1.39,'#c5a6a1');
    ribbon(first,last,1.07,1.75,'#8b6670');
   }else if(zone===0||zone===5){
@@ -1577,7 +1600,7 @@ function drawCoastStructure(road){
   }
  }
 }
-function drawCoastScenery(sprite,outsideDeck){
+function drawCoastScenery(sprite,visibleArea,waterSurface){
  const item=sprite.item;
  const fade=1-paradiseSmooth((sprite.depth-160)/(COAST_DRAW_DISTANCE-160));
  if(fade<=0||sprite.sc<.018)return;
@@ -1597,9 +1620,10 @@ function drawCoastScenery(sprite,outsideDeck){
  const left=x-half+offset+motion, right=left+2*half;
  const bottom=Math.min(H,sprite.clipY+(watercraft||boat?Math.max(0,sprite.waterDrop):0));
  if(left>=W||right<=0||top>=bottom||y<-2)return;
+ if(waterSurface&&!ctx.isPointInPath(waterSurface,(left+right)/2,groundY-10*sc,'evenodd'))return;
  ctx.save();
  ctx.globalAlpha*=fade;
- if(!plane&&outsideDeck)ctx.clip(outsideDeck,'evenodd');
+ if(!plane&&visibleArea)ctx.clip(visibleArea,'evenodd');
  ctx.beginPath();ctx.rect(0,0,W,bottom);ctx.clip();
  if(item.kind==='pointLight'){
   const lampX=x-5*sc,lampY=y-318*sc,reach=Math.sin(time*.00085)*210*sc;
@@ -15124,9 +15148,13 @@ function render(ts) {
     coastRoadsideClip=coastOutsideDeck(deck,1.02);
     // The hulls sit out in the channel and the deck cuts off anything it
     // occludes in projection. Steelwork and railings are painted over boats.
-    if(coastBoats.length){
-      const outsideRail=coastOutsideDeck(deck,Math.max(COAST_RIVER_RAIL,COAST_PIER_RAIL)+.07);
-      for(let i=coastBoats.length-1;i>=0;i--)drawCoastScenery(coastBoats[i],outsideRail);
+    let riverView,pacificView;
+    for(let i=coastBoats.length-1;i>=0;i--){
+      const boat=coastBoats[i];
+      if(boat.item.kind==='sailboat'){
+        pacificView??=coastPacificWater(deck);
+        drawCoastScenery(boat,pacificView.view,pacificView.surface);
+      }else drawCoastScenery(boat,riverView??=coastOutsideDeck(deck,COAST_RIVER_RAIL+.09));
     }
   }
 
