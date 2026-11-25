@@ -20,7 +20,17 @@ Nach dem Rennen zeigt eine Tabelle alle sechs Fahrer mit Platzierung und
 Gesamtzeit (`mm:ss.cc`). Die eigene Zeile ist markiert; Gold-, Silber- und
 Bronzepokale kennzeichnen die ersten drei Plätze. Eigene Gesamtzeit und beste
 Runde stehen darunter. „Continue“ öffnet die Levelauswahl, mit der bisherigen
-Strecke ausgewählt. Ergebnislisten werden nicht dauerhaft gespeichert.
+Strecke ausgewählt. „High Scores“ öffnet die lokale Top 5 der gewählten Strecke. Jeder Zieleinlauf
+kann einen Eintrag mit dem damaligen Fahrerkürzel erhalten. Bei Punktgleichstand
+steht die schnellere Fahrt vorne. Die Ergebnistafel zeigt die Punkte je Kategorie
+und den Abstand zum bisherigen Streckenrekord.
+
+Ein eingesammelter Blitz gibt 100 Punkte, bei vorher voller Leiste 150.
+In Space Wave zählt auch das Vervollständigen einer Fünfergruppe Energiekugeln
+als eine Ladung. Ein Überholmanöver gibt 75 Punkte, sobald beide Wagen die
+Plätze mit klarem Abstand getauscht haben. Pro voller Sekunde in Führung gibt
+es 5 Punkte. Die Plätze eins bis sechs bringen 600, 400, 250, 150, 100 und 50
+Punkte. Der Zieleinlauf schließt die Wertung auch bei längerem Ausrollen ab.
 
 Die Rennuhr zählt aktive Simulationszeit ab „GO“, ohne Countdown und Pause.
 Zielübertritte werden nach den Kollisionen pro Wagen einmalig erfasst und

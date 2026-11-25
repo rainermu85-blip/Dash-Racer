@@ -148,6 +148,15 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .result-time{text-align:right;color:#f3e5fa;font-size:12px;letter-spacing:0}
 .result-notes{display:flex;justify-content:space-between;gap:10px;margin:18px 3px 22px;color:#b7a3cc;font-size:8px;line-height:1.8}
 .result-notes strong{display:block;color:#ded0ed;font-size:10px;margin-top:5px;font-weight:normal}
+.highscores{margin:16px 0 20px;border-top:1px solid #65406f}
+.highscores h2{color:#82edfb;font-size:15px;letter-spacing:2px;margin:16px 0 9px}
+.highscores ol{list-style:none;padding:0;margin:0}
+.highscores li{display:grid;grid-template-columns:2em 1fr auto;align-items:center;gap:8px;padding:7px 10px;text-align:left;border-bottom:1px solid #3b2348;color:#decde6;font-size:11px;font-variant-numeric:tabular-nums}
+.highscores li[aria-current]{background:#263046;color:#a4f8ff}
+.highscores b{letter-spacing:2px}
+.score-total{color:#ffe066;font-size:15px;margin:12px 0 6px}
+.score-detail{color:#cbb3d9;font-size:9px;line-height:1.7}
+.score-record{color:#8de9f1;font-size:11px;margin:5px 0}
 .results-loading{padding:35px 0;color:#b7dbe9;font-size:10px;line-height:2}
 .results-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media(max-width:350px){.profile-panel,.result-panel{padding:22px 13px}.result-position{width:57px}.results-table td{padding:10px 5px}.result-driver{font-size:15px}.result-time{font-size:11px}.result-notes{font-size:7px}}
@@ -15666,11 +15675,12 @@ function buildMainMenu() {
     <div class="otitle">TURBO DASH</div><div class="menu-kicker">CHASE THE LAST LIGHT</div>
     ${renderLevelSelection()}
     <button class="obtn menu-start" id="startBtn">START RACE</button>
-    <div class="menu-footer"><span>DRIVER<strong>${driverTag||'---'}</strong></span><button class="menu-options" id="optionsBtn" type="button">OPTIONS</button></div>
+    <div class="menu-footer"><span>DRIVER<strong>${driverTag||'---'}</strong></span><button class="menu-options" id="scoresBtn" type="button">HIGH SCORES</button><button class="menu-options" id="optionsBtn" type="button">OPTIONS</button></div>
     <div class="menu-hint">AUTO ACCELERATE · ◀ ▶ STEER · ⚡ BOOST</div>
   </div>`;
   bindLevelSelection();
   document.getElementById('startBtn').onclick = startRace;
+  document.getElementById('scoresBtn').onclick=showCourseScores;
   document.getElementById('optionsBtn').onclick=()=>showDriverName('options');
   selectLevel(currentLevel);
 }
@@ -15859,6 +15869,8 @@ function startRace() {
     player.wallContactSide = 0; player.wallHitCooldown = 0;
     player.cleanSpeedBonus = 0;
     resetNormalPace(player);
+    raceScore={pickups:0,overflow:0,passes:0,leadMs:0,behind:opponents.map(car=>
+        raceTimingPosition(car)-raceTimingPosition(player)>=COLLISION_Z_RANGE),result:null};
     resetPolishCar(player);opponents.forEach(resetPolishCar);
     bgOffset = 0; lastTime = 0; state = 'countdown'; cntVal = 3; cntTimer = 0; paused = false;
     document.getElementById('pauseOverlay').classList.add('hide');
@@ -15898,6 +15910,103 @@ function trophyIcon(rank){
     const label=['Gold','Silver','Bronze'][rank-1],id='podium-metal-'+rank;
     return `<svg class="trophy-icon" viewBox="0 0 24 28" role="img" aria-label="${label} trophy"><defs><linearGradient id="${id}" x2="1" y2="1"><stop stop-color="${colors[0]}"/><stop offset=".52" stop-color="${colors[1]}"/><stop offset="1" stop-color="${colors[2]}"/></linearGradient></defs><g fill="url(#${id})" stroke="${colors[2]}" stroke-width=".7"><path d="M5 3H1v5c0 5 4 7 8 7v-3C5 12 4 10 4 7V6h2zm14 0h4v5c0 5-4 7-8 7v-3c4 0 5-2 5-5V6h-2z"/><path d="M5 1h14v7c0 5-3 9-7 9S5 13 5 8zM10 17h4v6h-4zM6 24h12v3H6z"/></g><path d="M8 3h2v6l-2-1z" fill="${colors[0]}" opacity=".8"/></svg>`;
 }
+// One board per course. Keep earned entries usable if browser storage is unavailable.
+const sessionScores=new Map();
+const finishPoints=[600,400,250,150,100,50];
+let raceScore=null;
+function scoreKeyPrefix(level){return 'turboDash.scores.v1.'+level+'.';}
+function orderScores(a,b){return b.points-a.points||a.time-b.time||a.id.localeCompare(b.id);}
+function readCourseScores(level){
+    const prefix=scoreKeyPrefix(level);
+    const entries=new Map(sessionScores.get(level));
+    try{
+        for(let i=0;i<localStorage.length;i++){
+            const key=localStorage.key(i);
+            if(!key?.startsWith(prefix))continue;
+            let entry;
+            try{entry=JSON.parse(localStorage.getItem(key));}catch{continue;}
+            if(entry&&typeof entry.tag==='string'&&/^[A-Z0-9]{3}$/.test(entry.tag)&&
+                Number.isSafeInteger(entry.points)&&entry.points>=0&&Number.isFinite(entry.time)&&entry.time>=0){
+                entry.id=key.slice(prefix.length);
+                entries.set(entry.id,entry);
+            }
+        }
+    }catch{} // Blocked storage still supports a board for this session.
+    return [...entries.values()].sort(orderScores);
+}
+function awardTurboPickup(){
+    if(player.boosts<3){player.boosts++;raceScore.pickups++;}
+    else raceScore.overflow++;
+}
+function scoreRaceMovement(previousZ,previousOpponents,start,dt){
+    const currentZ=raceTimingPosition(player);
+    const duration=dt*1000;
+    const end=player.finishTime==null?1:clamp((player.finishTime-start)/duration,0,1);
+    let leadStart=0,leadEnd=end;
+    for(let i=0;i<opponents.length;i++){
+        const car=opponents[i];
+        if(car.finishTime!=null&&car.finishTime<=start){leadEnd=0;continue;}
+        const from=previousZ-previousOpponents[i].z,to=currentZ-raceTimingPosition(car);
+        const until=car.finishTime==null?end:Math.min(end,(car.finishTime-start)/duration);
+        const gap=from+(to-from)*until;
+        if(gap<=-COLLISION_Z_RANGE)raceScore.behind[i]=true;
+        if(gap>=COLLISION_Z_RANGE&&raceScore.behind[i]){
+            raceScore.passes++;
+            raceScore.behind[i]=false;
+        }
+        if(from<0&&to<0)leadEnd=0;
+        else if(from<0)leadStart=Math.max(leadStart,from/(from-to));
+        else if(to<0)leadEnd=Math.min(leadEnd,from/(from-to));
+        leadEnd=Math.min(leadEnd,until);
+    }
+    raceScore.leadMs+=Math.max(0,leadEnd-leadStart)*duration;
+}
+function saveRaceScore(){
+    if(raceScore.result||player.finishTime==null)return;
+    const place=getRaceStandings().indexOf(player);
+    const leadPoints=Math.floor(raceScore.leadMs/1000)*5;
+    const points=raceScore.pickups*100+raceScore.overflow*150+raceScore.passes*75+leadPoints+finishPoints[place];
+    const entry={tag:player.driverTag,points,time:player.finishTime,id:crypto.randomUUID?.()||String(Date.now())+'-'+raceRunId};
+    const board=readCourseScores(currentLevel);
+    const record=board[0]?.points??null;
+    board.push(entry);
+    board.sort(orderScores);
+    const dropped=board.splice(5);
+    const prefix=scoreKeyPrefix(currentLevel);
+    // Separate run keys keep simultaneous finishes in different tabs from overwriting each other.
+    try{
+        if(board.includes(entry))localStorage.setItem(prefix+entry.id,JSON.stringify(entry));
+        for(const old of dropped)localStorage.removeItem(prefix+old.id);
+    }catch{
+        const session=sessionScores.get(currentLevel)||new Map();
+        if(board.includes(entry))session.set(entry.id,entry);
+        sessionScores.set(currentLevel,session);
+    }
+    const session=sessionScores.get(currentLevel);
+    for(const old of dropped)session?.delete(old.id);
+    raceScore.result={entry,record,leadPoints,placePoints:finishPoints[place],board};
+}
+function courseScoreList(board,highlight){
+    const rows=board.slice(0,5).map((e,i)=>`<li${e===highlight?' aria-current="true"':''}><span>${i+1}</span><b>${e.tag}</b><span>${e.points} PTS</span></li>`).join('');
+    return `<section class="highscores"><h2>LOCAL TOP 5</h2>${rows?`<ol>${rows}</ol>`:'<p class="score-detail">Finish a race to set the first score.</p>'}</section>`;
+}
+function showCourseScores(){
+    const ov=document.getElementById('overlay'),level=LEVELS.find(item=>item.id===currentLevel);
+    ov.innerHTML=`<section class="result-panel"><div class="otitle">HIGH SCORES</div><div class="result-course">${level.name}</div>
+        ${courseScoreList(readCourseScores(currentLevel))}<button class="obtn" id="scoresBackBtn">BACK</button></section>`;
+    ov.scrollTop=0;
+    const back=document.getElementById('scoresBackBtn');
+    back.focus();
+    back.onclick=()=>{showMainMenu();document.getElementById('scoresBtn').focus();};
+}
+function raceScoreSummary(){
+    if(!raceScore?.result)return '';
+    const {entry,record,leadPoints,placePoints,board}=raceScore.result;
+    const status=record===null||entry.points>record?'NEW COURSE RECORD':entry.points===record?'COURSE RECORD MATCHED':`${record-entry.points} PTS TO RECORD`;
+    return `<div class="score-total">${entry.points} PTS</div><div class="score-record">${status}</div>
+      <div class="score-detail">Pickups +${raceScore.pickups*100} · Full meter +${raceScore.overflow*150}<br>
+      Passes +${raceScore.passes*75} · Lead +${leadPoints} · Finish +${placePoints}</div>${courseScoreList(board,entry)}`;
+}
 function renderScoreboard(){
     const level=LEVELS.find(level=>level.id===currentLevel),ov=document.getElementById('overlay');
     const rows=getRaceStandings().map((car,i)=>{
@@ -15912,6 +16021,7 @@ function renderScoreboard(){
       <div class="result-course">${level.name}</div>
       <table class="results-table"><caption class="results-sr">Race classification — total race time</caption><thead><tr><th scope="col">POS</th><th scope="col">DRIVER</th><th scope="col">TIME</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="result-notes"><span>YOUR TOTAL<strong>${formatRaceTime(player.finishTime??lapTimes.reduce((sum,t)=>sum+t,0))}</strong></span><span>BEST LAP<strong>${formatRaceTime(bestLapTime===Infinity?0:bestLapTime)}</strong></span></div>
+      ${raceScoreSummary()}
       <button class="obtn menu-start" type="button" id="continueBtn">CONTINUE</button>
     </section>`;
     ov.classList.remove('hide');ov.scrollTop=0;
@@ -16284,7 +16394,7 @@ function advanceRaceStep(dt){
       const object = contact.object;
       if (contact.type === 'lightning') {
         collectRacePickup(object);
-        if (player.boosts < 3) player.boosts++;
+        awardTurboPickup();
       } else if (contact.type === 'pylon') {
         object.active = false;
         if (currentLevel === LEVEL_SPACE) {
@@ -16300,7 +16410,7 @@ function advanceRaceStep(dt){
             spawnPopupText("4/5 Turbo", "#00ffd2");
           } else if (player.energyBallsCollected >= 5) {
             player.energyBallsCollected = 0;
-            if (player.boosts < 3) player.boosts++;
+            awardTurboPickup();
             spawnPopupText("Turbo Charged!", "#ff00ff");
           }
           activeFlyingPylons.push({
@@ -16408,6 +16518,7 @@ function advanceRaceStep(dt){
 
     recordRaceFinish(player,previousPlayerRaceZ,stepStart,dt);
     opponents.forEach((car,i)=>recordRaceFinish(car,previousOpponents[i].z,stepStart,dt));
+    if(!player.finished)scoreRaceMovement(previousPlayerRaceZ,previousOpponents,stepStart,dt);
     for (const opp of opponents) {
       if (opp.z >= TRACK_LENGTH) {
         if (isPointToPoint()) { if (opp.lap === 1) opp.lap++; }
@@ -16436,6 +16547,7 @@ function advanceRaceStep(dt){
       const maxLaps = raceLapCount();
       if (player.lap > maxLaps) {
         player.finished = true;currentLapTime=0;
+        saveRaceScore();
         const finalPlace = updateHUD(ts);
         if(currentLevel===LEVEL_ORBITAL){
           activePopups=activePopups.filter(popup=>popup.text!=='CATAPULT');

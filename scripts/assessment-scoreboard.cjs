@@ -198,13 +198,97 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
     });
     return { pass: actual.order.join(',') === '4,3,2,1,0,player' && actual.allCrossed && actual.sumMatches && actual.times.every((t, i) => !i || t > actual.times[i - 1]), ...actual };
   });
+  await run('highscores-scoring-contact-lead-and-clean-passes', async page => {
+    await name(page);
+    return page.evaluate(() => {
+      startRace();
+      // Collect real lightning contacts with two and then three charges.
+      player.boosts = 2;
+      for (const index of [50, 70]) {
+        player.z = index * SEGMENT_LENGTH - getPlayerContactDistance() + 5;
+        segments[index].lightning = { x: player.x, active: true };
+        advanceRaceStep(MAX_PHYSICS_STEP);
+      }
+      const pickups = [raceScore.pickups, raceScore.overflow, player.boosts];
+      // Four cars behind us, one close rival. No points for rocking side by side.
+      const rival = opponents[0];
+      opponents.forEach(o => { o.z = 0; });
+      player.z = 20000;
+      raceScore.leadMs = raceScore.passes = 0;
+      raceScore.behind.fill(false);
+      rival.z = player.z + 200;
+      for (const delta of [-200, 200, -15, 15, -15, 15, -200, 200]) {
+        const before = opponents.map(o => ({ z: o.z }));
+        rival.z = player.z - delta;
+        scoreRaceMovement(player.z, before, 0, 1);
+      }
+      const passes = raceScore.passes;
+      raceScore.leadMs = 0;
+      scoreRaceMovement(player.z, opponents.map(o => ({ z: o.z })), 0, 1);
+      player.finishTime = 1250;
+      scoreRaceMovement(player.z, opponents.map(o => ({ z: o.z })), 1000, 1);
+      return { pass: pickups.join() === '1,1,3' && passes === 2 && raceScore.leadMs === 1250,
+        pickups, passes, leadMs: raceScore.leadMs };
+    });
+  });
+  await run('highscores-finish-all-courses-persist-top-five', async page => {
+    await name(page, 'LAP');
+    const courses = await page.evaluate(() => {
+      const totals = [];
+      for (const level of LEVELS) {
+        selectLevel(level.id);
+        startRace();
+        const laps = raceLapCount();
+        player.lap = laps;
+        player.z = TRACK_LENGTH - 1 - (currentLevel === LEVEL_COAST ? getPlayerContactDistance() : 0);
+        player.speed = player.maxSpeed;
+        advanceRaceStep(MAX_PHYSICS_STEP);
+        const first = raceScore.result;
+        advanceRaceStep(MAX_PHYSICS_STEP);
+        saveRaceScore(); // Completion and redraw must be idempotent.
+        totals.push([level.id, first?.entry.tag, first?.placePoints, readCourseScores(level.id).length]);
+        exitRace();
+      }
+      selectLevel(1);
+      for (let i = 11; i <= 16; i++) {
+        startRace();
+        raceScore.pickups = i;
+        player.finishTime = 10000 + i;
+        saveRaceScore();
+      }
+      renderScoreboard();
+      return totals;
+    });
+    const result = await page.locator('.score-total').innerText();
+    await page.locator('#continueBtn').tap();
+    await page.reload();
+    await page.locator('#introBox.show').tap();
+    await page.locator('#scoresBtn').tap();
+    const read = () => page.locator('.highscores li').allTextContents();
+    const firstBoard = await read();
+    await page.locator('#scoresBackBtn').tap();
+    await page.locator('#lvl9Btn').tap();
+    await page.locator('#scoresBtn').tap();
+    const coast = await read();
+    const pass = courses.length === 9 && courses.every(([,tag,finish,count]) => tag === 'LAP' && finish === 600 && count === 1)
+      && result === '2200 PTS' && firstBoard.length === 5
+      && firstBoard.every((row,i) => row.endsWith('LAP' + (2200 - 100*i) + ' PTS'))
+      && coast.length === 1 && coast[0].includes('LAP');
+    return { pass, courses, result, firstBoard, coast };
+  });
   // localStorage can be unavailable in a private/embedded browser.
   await run('blocked-storage-still-allows-name-and-play', async page => {
     await page.evaluate(() => Storage.prototype.setItem = () => { throw new DOMException('Blocked', 'SecurityError'); });
     await name(page, 'R3D');
     await page.locator('#startBtn').tap();
     const playable = await page.evaluate(() => state === 'countdown' && driverTag === 'R3D' && new Set([player, ...opponents].map(c => c.driverTag)).size === 6);
-    return { pass: playable, playable };
+    const sessionBoard = await page.evaluate(() => {
+      player.finishTime = 12345;
+      saveRaceScore();
+      exitRace();
+      return readCourseScores(currentLevel).map(e => [e.tag,e.points]);
+    });
+    return { pass: playable && sessionBoard.length === 1 && sessionBoard[0].join() === 'R3D,600', playable, sessionBoard };
   });
   return results;
 };
