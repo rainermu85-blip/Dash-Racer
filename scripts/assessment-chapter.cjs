@@ -20,11 +20,13 @@ module.exports = async function runChapter(browser, baseUrl) {
       showMainMenu();
       const menu = document.getElementById('overlay');
       const menuCards = [...menu.querySelectorAll('.level-card')];
-      record('chapter-menu-six-levels', menuCards.length === 6 && menu.innerText.includes('NEON AFTERGLOW') && menuCards.slice(0, 4).map(b => b.id).join(',') === 'lvl1Btn,lvl2Btn,lvl3Btn,lvl4Btn', menuCards.map(b => b.textContent.trim()));
+      record('chapter-menu-levels', menuCards.length === LEVELS.length && menu.innerText.includes('NEON AFTERGLOW') && menuCards.slice(0, 4).map(b => b.id).join(',') === 'lvl1Btn,lvl2Btn,lvl3Btn,lvl4Btn', menuCards.map(b => b.textContent.trim()));
       for (const id of [3, 4, 5, 6, 1, 2]) {
         document.getElementById(`lvl${id}Btn`).click();
+        const title = document.getElementById('courseTitle').textContent;
+        document.getElementById('courseBackBtn').click();
         const selected = [...menu.querySelectorAll('[aria-pressed="true"]')].map(b => b.id);
-        record(`chapter-select-${id}`, currentLevel === id && selected.length === 1 && selected[0] === `lvl${id}Btn`, { level: currentLevel, selected });
+        record(`chapter-select-${id}`, currentLevel === id && title === LEVELS.find(level=>level.id===id).name && selected.length === 1 && selected[0] === `lvl${id}Btn`, { level: currentLevel, selected });
       }
       for (const level of [3, 4]) {
         reset(level);

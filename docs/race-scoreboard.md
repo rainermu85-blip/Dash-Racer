@@ -20,7 +20,11 @@ Nach dem Rennen zeigt eine Tabelle alle sechs Fahrer mit Platzierung und
 Gesamtzeit (`mm:ss.cc`). Die eigene Zeile ist markiert; Gold-, Silber- und
 Bronzepokale kennzeichnen die ersten drei Plätze. Eigene Gesamtzeit und beste
 Runde stehen darunter. „Continue“ öffnet die Levelauswahl, mit der bisherigen
-Strecke ausgewählt. „High Scores“ öffnet die lokale Top 5 der gewählten Strecke. Jeder Zieleinlauf
+Strecke ausgewählt. Ein Klick auf eine Strecke öffnet ihr Menü mit Spielbild, Kurzbeschreibung und
+drei lokalen Top-5-Listen. Sie werten Punkte, einzelne Runden und die gesamte
+Rennzeit abgeschlossener Fahrten getrennt. Bei Ein-Runden-Strecken entspricht
+die Rundenzeit der Rennzeit. Bereits gespeicherte Gesamtzeiten zählen mit.
+Rundensplits für ältere Mehr-Runden-Fahrten sind erst ab dieser Version verfügbar. Jeder Zieleinlauf
 kann einen Eintrag mit dem damaligen Fahrerkürzel erhalten. Bei Punktgleichstand
 steht die schnellere Fahrt vorne. Die Ergebnistafel zeigt die Punkte je Kategorie
 und den Abstand zum bisherigen Streckenrekord.

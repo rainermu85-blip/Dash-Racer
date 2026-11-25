@@ -26,7 +26,13 @@ fs.mkdirSync(output,{recursive:true});
     for(const id of[9,8,7,1,2,3,4,5,6,9]){
      const before=await page.evaluate(()=>__frames);
      await page.locator('#lvl'+id+'Btn').tap();
-     await page.waitForTimeout(250); // Menu preview must not kill the frame loop.
+     await page.locator('.course-hero').evaluate(img=>img.decode());
+     const menuReady=await page.evaluate(()=>{
+       const tiles=[...document.querySelectorAll('.record-tile')].map(b=>b.getBoundingClientRect());
+       const copy=document.querySelector('.course-copy').textContent;
+       return document.querySelector('.course-hero').naturalWidth>0 && copy.split('. ').length===3
+        && tiles.length===3 && tiles.every(t=>t.top===tiles[0].top && t.width>0);
+     });
      await page.locator('#startBtn').tap();await page.waitForFunction(()=>state==='playing',{},{timeout:12000});
      await page.waitForTimeout(150);
      const actual=await page.evaluate(()=>({level:currentLevel,state,z:player.z,frames:__frames,segments:SEGMENT_COUNT,lap:document.getElementById('lapVal').textContent}));
@@ -34,7 +40,7 @@ fs.mkdirSync(output,{recursive:true});
      await page.locator('#pauseButton').click();
      await page.locator('#exitRaceBtn').tap();
      const menu=await page.locator('#startBtn').isVisible();
-     const pass=actual.level===id&&actual.state==='playing'&&actual.z>0&&actual.frames>before+10&&menu&&!errors.length&&!missing.length;
+     const pass=menuReady&&actual.level===id&&actual.state==='playing'&&actual.z>0&&actual.frames>before+10&&menu&&!errors.length&&!missing.length;
      const row={hosting,id,pass,actual,errors:[...errors],missing:[...missing]};results.push(row);console.log(JSON.stringify(row));
     }
    }catch(error){const row={hosting,pass:false,error:error.message,errors,missing};results.push(row);console.log(JSON.stringify(row));}

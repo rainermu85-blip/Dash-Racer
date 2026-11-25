@@ -246,7 +246,7 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
         const first = raceScore.result;
         advanceRaceStep(MAX_PHYSICS_STEP);
         saveRaceScore(); // Completion and redraw must be idempotent.
-        totals.push([level.id, first?.entry.tag, first?.placePoints, readCourseScores(level.id).length]);
+        totals.push([level.id, first?.entry.tag, first?.placePoints, readCourseEntries(level.id).length]);
         exitRace();
       }
       selectLevel(1);
@@ -263,18 +263,55 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
     await page.locator('#continueBtn').tap();
     await page.reload();
     await page.locator('#introBox.show').tap();
-    await page.locator('#scoresBtn').tap();
+    await page.locator('#lvl1Btn').tap();
+    await page.locator('[data-record=points]').tap();
     const read = () => page.locator('.highscores li').allTextContents();
     const firstBoard = await read();
     await page.locator('#scoresBackBtn').tap();
+    await page.locator('#courseBackBtn').tap();
     await page.locator('#lvl9Btn').tap();
-    await page.locator('#scoresBtn').tap();
+    await page.locator('[data-record=points]').tap();
     const coast = await read();
     const pass = courses.length === 9 && courses.every(([,tag,finish,count]) => tag === 'LAP' && finish === 600 && count === 1)
       && result === '2200 PTS' && firstBoard.length === 5
       && firstBoard.every((row,i) => row.endsWith('LAP' + (2200 - 100*i) + ' PTS'))
       && coast.length === 1 && coast[0].includes('LAP');
     return { pass, courses, result, firstBoard, coast };
+  });
+  await run('course-menu-independent-records-and-legacy-times', async page => {
+    await name(page);
+    const data = await page.evaluate(() => {
+      // Simulate the previous version's score-only entries.
+      for (const id of [1, 9]) localStorage.setItem(scoreKeyPrefix(id)+'legacy',
+        JSON.stringify({tag:'OLD',points:9000,time:120000}));
+      selectLevel(1);
+      for (let i=0;i<8;i++){
+        startRace();raceScore.pickups=i;
+        lapTimes=[30000+i*1000,40000+i*1000,50000+i*1000];
+        player.finishTime=lapTimes.reduce((a,b)=>a+b,0);
+        saveRaceScore();
+      }
+      exitRace();
+      const board=rankCourseEntries(1,readCourseEntries(1));
+      return {score:board.points.map(e=>e.points),race:board.race.map(e=>e.time),lap:board.lap.map(e=>e.lapTime)};
+    });
+    await page.reload();await page.locator('#introBox.show').tap();
+    const overview=await page.locator('.level-card').count()===9 && await page.locator('#scoresBtn,[data-record]').count()===0;
+    await page.locator('#lvl1Btn').tap();
+    const seen={};
+    for(const type of ['points','lap','race']){
+      await page.locator('[data-record='+type+']').tap();
+      seen[type]=await page.locator('.highscores li').allTextContents();
+      await page.keyboard.press('Escape');
+    }
+    await page.locator('#courseBackBtn').tap();
+    await page.locator('#lvl9Btn').tap();await page.locator('[data-record=lap]').tap();
+    const legacy=await page.locator('.highscores li').innerText();
+    return {pass:overview && data.score.join()==='9000,1300,1200,1100,1000'
+      && data.lap.join()==='30000,31000,32000,33000,34000'
+      && data.race.join()==='120000,120000,123000,126000,129000'
+      && seen.points[0].includes('9000 PTS') && seen.lap[0].includes('00:30.00')
+      && seen.race[0].includes('02:00.00') && legacy.includes('OLD') && legacy.includes('02:00.00'),data,seen,legacy};
   });
   // localStorage can be unavailable in a private/embedded browser.
   await run('blocked-storage-still-allows-name-and-play', async page => {
@@ -286,7 +323,7 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
       player.finishTime = 12345;
       saveRaceScore();
       exitRace();
-      return readCourseScores(currentLevel).map(e => [e.tag,e.points]);
+      return readCourseEntries(currentLevel).map(e => [e.tag,e.points]);
     });
     return { pass: playable && sessionBoard.length === 1 && sessionBoard[0].join() === 'R3D,600', playable, sessionBoard };
   });

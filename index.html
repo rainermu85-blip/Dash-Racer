@@ -148,6 +148,18 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .result-time{text-align:right;color:#f3e5fa;font-size:12px;letter-spacing:0}
 .result-notes{display:flex;justify-content:space-between;gap:10px;margin:18px 3px 22px;color:#b7a3cc;font-size:8px;line-height:1.8}
 .result-notes strong{display:block;color:#ded0ed;font-size:10px;margin-top:5px;font-weight:normal}
+.result-panel.course-menu{text-align:left;padding:0;overflow:hidden}
+.course-body{padding:18px}
+.course-hero{display:block;width:100%;height:auto;aspect-ratio:760/430;border-bottom:2px solid var(--accent)}
+.course-menu .otitle{font-size:clamp(19px,5vw,27px);text-align:left;margin:7px 0 12px}
+.course-format{font-size:9px;color:var(--accent);letter-spacing:1px}
+.course-copy{color:#eadff0;font:15px/1.5 system-ui,sans-serif}
+.record-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:20px 0}
+.record-tile{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:9px;min-height:65px;padding:10px 6px;text-align:left;font:inherit;color:#e4daef;background:#170d27;border:1px solid #634971;border-radius:3px;cursor:pointer}
+.record-tile:hover,.record-tile:focus-visible{border-color:var(--accent)}
+.record-tile span{font-size:clamp(7px,1.9vw,9px);line-height:1.5}
+.record-tile strong{font-size:clamp(9px,2.6vw,12px);color:var(--accent);white-space:nowrap}
+.course-menu .profile-back{display:block;margin:8px auto 0;min-height:40px}
 .highscores{margin:16px 0 20px;border-top:1px solid #65406f}
 .highscores h2{color:#82edfb;font-size:15px;letter-spacing:2px;margin:16px 0 9px}
 .highscores ol{list-style:none;padding:0;margin:0}
@@ -230,6 +242,17 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
     </div>
   </div>
 </div>
+<template id="coursePictures">
+  <img data-course="1" src="./assets/courses/neon-city.webp" alt="Blue suspension cables frame the night skyline." width="760" height="430">
+  <img data-course="2" src="./assets/courses/ocean-drive.webp" alt="Sailboats and a beach hut beside the coastal road." width="760" height="430">
+  <img data-course="3" src="./assets/courses/sunset-hills.webp" alt="A palm-lined boulevard beneath the Sunset Hills sign." width="760" height="430">
+  <img data-course="4" src="./assets/courses/midnight-highway.webp" alt="Illuminated signs line the violet city expressway." width="760" height="430">
+  <img data-course="5" src="./assets/courses/dream-odyssey.webp" alt="A low red sun lights a road between surreal stone arches." width="760" height="430">
+  <img data-course="6" src="./assets/courses/space-wave.webp" alt="The road curves through space beneath Saturn-like rings and a distant Earth." width="760" height="430">
+  <img data-course="7" src="./assets/courses/paradise-circuit.webp" alt="A palm leans over the beach road near the island harbor." width="760" height="430">
+  <img data-course="8" src="./assets/courses/orbital-passage.webp" alt="Earth appears beyond the glass of the station observation deck." width="760" height="430">
+  <img data-course="9" src="./assets/courses/coast-to-coast.webp" alt="The highway passes desert rock formations on the way west." width="760" height="430">
+</template>
 <script>
 // Coast to Coast uses the shared race projection and point-to-point finish.
 const COAST_LENGTH=3830,COAST_DRAW_DISTANCE=215;
@@ -4458,18 +4481,27 @@ let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
 const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9;
 const LEVELS = [
-  { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150 },
-  { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1250 },
-  { id: LEVEL_HILLS, name: 'SUNSET HILLS', tag: 'CANYONS / GOLDEN HOUR', color: '#ffb17e', segments: 1200 },
-  { id: LEVEL_HIGHWAY, name: 'MIDNIGHT HIGHWAY', tag: 'VIOLET / AFTER HOURS', color: '#b88cff', segments: 1200 },
-  { id: LEVEL_DREAM, name: 'DREAM ODYSSEY', tag: 'SURREAL WORLDS', color: '#00ffd2', segments: 2875 },
-  { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350 },
-  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: PARADISE_LENGTH },
-  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH },
-  { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH }
+  { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150,
+    description: "The last light hangs between the towers. Electric palms flash past on the way to the river. Across the suspension bridge, the whole skyline fits between the cables." },
+  { id: 2, name: 'OCEAN DRIVE', tag: 'PALMS / COASTLINE', color: '#ff4fd8', segments: 1250,
+    description: "Sailboats rock in the lee of the cliffs. The road follows the beach until the headland swallows it whole. By the last lap the party lights are brighter than the sky." },
+  { id: LEVEL_HILLS, name: 'SUNSET HILLS', tag: 'CANYONS / GOLDEN HOUR', color: '#ffb17e', segments: 1200,
+    description: "The sun catches the shop windows on the boulevard. Up the hill, party guests lean over a pool terrace to watch the cars go by. A row of cones sends you down a lane barely wider than the villa gates." },
+  { id: LEVEL_HIGHWAY, name: 'MIDNIGHT HIGHWAY', tag: 'VIOLET / AFTER HOURS', color: '#b88cff', segments: 1200,
+    description: "Signs burn all night above the expressway. A bullet train cuts across the rooftops and is gone before the traffic below has cleared the bend. Beyond the tunnel, the apartment lights give way to the glow of the switchyard." },
+  { id: LEVEL_DREAM, name: 'DREAM ODYSSEY', tag: 'SURREAL WORLDS', color: '#00ffd2', segments: 2875,
+    description: "Loose stones give way to snow and dark pines. On the far side of the mountain, a clock drips from a branch onto the road. The last tunnel takes you down where the daylight runs out." },
+  { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350,
+    description: "Earth hangs over one shoulder and the rings of a giant planet sweep over the other. A little satellite drifts across the stars. Catch the chevrons and the next bend comes rushing out of the dark." },
+  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: PARADISE_LENGTH,
+    description: "Fishing boats crowd the harbor on the first island. The bridges carry you over open water, close enough to the airstrip to catch the shadow of a landing jumbo. Five islands later, the harbor comes back into view." },
+  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH,
+    description: "Dock crews wave a shuttle in as you roll onto the station. Earth slips past the windows on the way to the reactor. When the evacuation signs light up, follow the arrows to the escape pod." },
+  { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH,
+    description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." }
 ];
-function isPointToPoint(){return currentLevel===LEVEL_DREAM||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST;}
-function raceLapCount(){return isPointToPoint()||currentLevel===LEVEL_PARADISE?1:3;}
+function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
+function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE?1:3;}
 const HIGHWAY_CROSSINGS = [
   { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
@@ -5646,6 +5678,10 @@ bindTurboControl(turboButton);bindTurboControl(document.getElementById('boostCon
 pauseButton.addEventListener('click',togglePause);
 document.addEventListener('keydown',e=>{
   if(driverNameContext){if(e.key==='Escape'){e.preventDefault();if(driverNameContext!=='first')closeDriverName();}return;}
+  if(e.key==='Escape'&&state==='intro'){
+    const back=document.getElementById('scoresBackBtn')||document.getElementById('courseBackBtn');
+    if(back){e.preventDefault();if(!e.repeat)back.click();return;}
+  }
   if(e.target.closest('input,textarea'))return;
   if(e.key==='Escape'){e.preventDefault();if(!e.repeat)togglePause();return;}
   if(!canDriveInput())return;
@@ -15591,7 +15627,7 @@ function renderLevelSelection() {
 function bindLevelSelection() {
   for (const level of LEVELS) {
     const button = document.getElementById(`lvl${level.id}Btn`);
-    if (button) button.onclick = () => selectLevel(level.id);
+    if (button) button.onclick = () => {selectLevel(level.id);showCourseMenu();};
   }
 }
 
@@ -15675,12 +15711,11 @@ function buildMainMenu() {
     <div class="otitle">TURBO DASH</div><div class="menu-kicker">CHASE THE LAST LIGHT</div>
     ${renderLevelSelection()}
     <button class="obtn menu-start" id="startBtn">START RACE</button>
-    <div class="menu-footer"><span>DRIVER<strong>${driverTag||'---'}</strong></span><button class="menu-options" id="scoresBtn" type="button">HIGH SCORES</button><button class="menu-options" id="optionsBtn" type="button">OPTIONS</button></div>
+    <div class="menu-footer"><span>DRIVER<strong>${driverTag||'---'}</strong></span><button class="menu-options" id="optionsBtn" type="button">OPTIONS</button></div>
     <div class="menu-hint">AUTO ACCELERATE · ◀ ▶ STEER · ⚡ BOOST</div>
   </div>`;
   bindLevelSelection();
   document.getElementById('startBtn').onclick = startRace;
-  document.getElementById('scoresBtn').onclick=showCourseScores;
   document.getElementById('optionsBtn').onclick=()=>showDriverName('options');
   selectLevel(currentLevel);
 }
@@ -15915,8 +15950,10 @@ const sessionScores=new Map();
 const finishPoints=[600,400,250,150,100,50];
 let raceScore=null;
 function scoreKeyPrefix(level){return 'turboDash.scores.v1.'+level+'.';}
+const recordTypes={points:'High Score',lap:'Fastest Lap',race:'Fastest Race'};
+function recordValue(entry,type){return type==='points'?entry.points+' PTS':formatRaceTime(type==='lap'?entry.lapTime:entry.time);}
 function orderScores(a,b){return b.points-a.points||a.time-b.time||a.id.localeCompare(b.id);}
-function readCourseScores(level){
+function readCourseEntries(level){
     const prefix=scoreKeyPrefix(level);
     const entries=new Map(sessionScores.get(level));
     try{
@@ -15932,7 +15969,17 @@ function readCourseScores(level){
             }
         }
     }catch{} // Blocked storage still supports a board for this session.
-    return [...entries.values()].sort(orderScores);
+    return [...entries.values()];
+}
+function rankCourseEntries(level,entries){
+    const byTime=(a,b)=>a.time-b.time||a.id.localeCompare(b.id);
+    const race=[...entries].sort(byTime).slice(0,5);
+    // Older records contain the race time only. On one-lap courses this is also the lap.
+    const laps=raceLapCount(level)===1?race.map(e=>({...e,lapTime:e.time})):
+        entries.flatMap(e=>(Array.isArray(e.laps)?e.laps:[]).filter(t=>Number.isFinite(t)&&t>0)
+          .map(lapTime=>({...e,lapTime})));
+    return {points:[...entries].sort(orderScores).slice(0,5),race,
+        lap:laps.sort((a,b)=>a.lapTime-b.lapTime||byTime(a,b)).slice(0,5)};
 }
 function awardTurboPickup(){
     if(player.boosts<3){player.boosts++;raceScore.pickups++;}
@@ -15967,37 +16014,62 @@ function saveRaceScore(){
     const leadPoints=Math.floor(raceScore.leadMs/1000)*5;
     const points=raceScore.pickups*100+raceScore.overflow*150+raceScore.passes*75+leadPoints+finishPoints[place];
     const entry={tag:player.driverTag,points,time:player.finishTime,id:crypto.randomUUID?.()||String(Date.now())+'-'+raceRunId};
-    const board=readCourseScores(currentLevel);
-    const record=board[0]?.points??null;
-    board.push(entry);
-    board.sort(orderScores);
-    const dropped=board.splice(5);
+    entry.laps=lapTimes.slice(0,raceLapCount()).filter(time=>Number.isFinite(time)&&time>0);
+    const previous=readCourseEntries(currentLevel);
+    const record=previous.length?Math.max(...previous.map(e=>e.points)):null;
+    const entries=[...previous,entry];
+    const boards=rankCourseEntries(currentLevel,entries);
+    const keep=new Set(Object.values(boards).flat().map(e=>e.id));
+    const dropped=entries.filter(e=>!keep.has(e.id));
     const prefix=scoreKeyPrefix(currentLevel);
     // Separate run keys keep simultaneous finishes in different tabs from overwriting each other.
     try{
-        if(board.includes(entry))localStorage.setItem(prefix+entry.id,JSON.stringify(entry));
+        if(keep.has(entry.id))localStorage.setItem(prefix+entry.id,JSON.stringify(entry));
         for(const old of dropped)localStorage.removeItem(prefix+old.id);
     }catch{
         const session=sessionScores.get(currentLevel)||new Map();
-        if(board.includes(entry))session.set(entry.id,entry);
+        if(keep.has(entry.id))session.set(entry.id,entry);
         sessionScores.set(currentLevel,session);
     }
     const session=sessionScores.get(currentLevel);
     for(const old of dropped)session?.delete(old.id);
-    raceScore.result={entry,record,leadPoints,placePoints:finishPoints[place],board};
+    raceScore.result={entry,record,leadPoints,placePoints:finishPoints[place],board:boards.points};
 }
-function courseScoreList(board,highlight){
-    const rows=board.slice(0,5).map((e,i)=>`<li${e===highlight?' aria-current="true"':''}><span>${i+1}</span><b>${e.tag}</b><span>${e.points} PTS</span></li>`).join('');
-    return `<section class="highscores"><h2>LOCAL TOP 5</h2>${rows?`<ol>${rows}</ol>`:'<p class="score-detail">Finish a race to set the first score.</p>'}</section>`;
+function courseScoreList(board,highlight,type='points'){
+    const rows=board.slice(0,5).map((e,i)=>`<li${e===highlight?' aria-current="true"':''}><span>${i+1}</span><b>${e.tag}</b><span>${recordValue(e,type)}</span></li>`).join('');
+    return `<section class="highscores"><h2>LOCAL TOP 5</h2>${rows?`<ol>${rows}</ol>`:'<p class="score-detail">Finish a race to set a record.</p>'}</section>`;
 }
-function showCourseScores(){
+function showCourseMenu(focusType){
+    const level=LEVELS.find(item=>item.id===currentLevel),ov=document.getElementById('overlay');
+    const boards=rankCourseEntries(currentLevel,readCourseEntries(currentLevel));
+    const format=isPointToPoint()?'ONE WAY':raceLapCount()===1?'ONE LAP':'THREE LAPS';
+    const tiles=Object.entries(recordTypes).map(([type,label])=>{
+        const best=boards[type][0];
+        return `<button class="record-tile" data-record="${type}"><span>${label}</span><strong>${best?recordValue(best,type):'—'}</strong></button>`;
+    }).join('');
+    ov.innerHTML=`<section lang="en" class="result-panel course-menu" style="--accent:${level.color}" aria-labelledby="courseTitle">
+      <div class="course-body"><div class="course-format">${format}</div><h1 class="otitle" id="courseTitle" tabindex="-1">${level.name}</h1>
+      <p class="course-copy">${level.description}</p><div class="record-tiles">${tiles}</div>
+      <button class="obtn menu-start" id="startBtn">START RACE</button><button class="profile-back" id="courseBackBtn">BACK TO TRACKS</button></div></section>`;
+    const picture=document.getElementById('coursePictures').content.querySelector(`[data-course="${currentLevel}"]`).cloneNode();
+    picture.className='course-hero';
+    ov.firstElementChild.prepend(picture);
+    for(const button of ov.querySelectorAll('[data-record]'))button.onclick=()=>showCourseScores(button.dataset.record);
+    document.getElementById('startBtn').onclick=startRace;
+    document.getElementById('courseBackBtn').onclick=()=>{showMainMenu();document.getElementById('lvl'+currentLevel+'Btn').focus();};
+    (focusType?ov.querySelector(`[data-record="${focusType}"]`):document.getElementById('courseTitle')).focus({preventScroll:true});
+    ov.scrollTop=0;
+}
+function showCourseScores(type){
     const ov=document.getElementById('overlay'),level=LEVELS.find(item=>item.id===currentLevel);
-    ov.innerHTML=`<section class="result-panel"><div class="otitle">HIGH SCORES</div><div class="result-course">${level.name}</div>
-        ${courseScoreList(readCourseScores(currentLevel))}<button class="obtn" id="scoresBackBtn">BACK</button></section>`;
+    const board=rankCourseEntries(currentLevel,readCourseEntries(currentLevel))[type];
+    const note=type!=='points'&&raceLapCount()===1?'<p class="score-detail">On this course, one lap is the whole race.</p>':'';
+    ov.innerHTML=`<section class="result-panel" lang="en"><h1 class="otitle">${recordTypes[type].toUpperCase()}</h1><div class="result-course">${level.name}</div>
+        ${note}${courseScoreList(board,null,type)}<button class="obtn" id="scoresBackBtn">BACK TO TRACK</button></section>`;
     ov.scrollTop=0;
     const back=document.getElementById('scoresBackBtn');
-    back.focus();
-    back.onclick=()=>{showMainMenu();document.getElementById('scoresBtn').focus();};
+    back.focus({preventScroll:true});
+    back.onclick=()=>showCourseMenu(type);
 }
 function raceScoreSummary(){
     if(!raceScore?.result)return '';
@@ -16561,6 +16633,8 @@ function advanceRaceStep(dt){
 }
 
 function loop(ts) {
+  // Course details show captured artwork while the next track has no race geometry yet.
+  if(state==='intro'){requestAnimationFrame(loop);return;}
   if (lastTime === 0) lastTime = ts;
   let rawDt = Math.min((ts - lastTime) / 1000, 0.05);
   lastTime = ts;
