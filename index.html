@@ -301,7 +301,7 @@ const COAST_DISTRICTS=[
 ];
 // Authored lanes keep pickups readable on entry and leave room to pass.
 const COAST_BOOSTS=new Map([
- [155,-.60],[468,.59],[792,-.58],[1072,.60],[1370,-.63],[1715,.55],
+ [155,-.60],[468,.59],[792,-.58],[1072,-.48],[1370,-.63],[1715,.55],
  [2060,.56],[2356,-.54],[2670,.52],[3028,-.58],[3356,.50],[3710,-.54]
 ]);
 const coastScenery=new Map(),coastPanoramas=new Map();
@@ -321,18 +321,19 @@ function coastSceneryNoise(seed){
 }
 function buildCoastRoute(){
  const corners=[
-  [84,200,.47,31],[222,361,-.56,35],[397,469,.38,24],
+  [84,189,.47,31],[198,253,-.53,22],[300,363,-.36,24],[397,469,.38,24],
   [472,529,-.30,22],[725,829,.44,31],
   [1017,1144,.90,33],[1220,1350,-.47,34],
   [1370,1474,-.78,26],[1501,1598,.78,32],[1606,1668,-.46,22],
-  [1751,1818,-1.09,22],[1831,1948,.88,30],
+  [1755,1825,-1.14,23],[1841,1945,.84,32],
   [1980,2107,.55,43],[2140,2242,-.86,36],[2284,2410,.57,37],
-  [2432,2506,-.37,25],[2749,2878,-.55,35],[2914,3057,.68,34],
+  [2432,2506,-.37,25],[2569,2649,.47,26],[2664,2736,-.54,25],
+  [2756,2864,-.50,35],[2894,2968,.63,26],[3023,3068,.32,17],
   [3083,3165,-.41,29],[3265,3364,.48,32],[3400,3525,.69,40],[3600,3721,-.45,34]
  ];
  const rises=[
   [382,877,780],[1144,1337,420],[1306,2003,3170],[1540,1696,680],
-  [1871,2140,-1270],[2130,2450,1430],[2460,2718,-440],
+  [1683,1855,630],[1871,2140,-1270],[2130,2450,1430],[2488,2663,680],[2636,2798,-550],
   [3190,3722,2050],[3335,3580,1250]
  ];
  const altitude=index=>rises.reduce((height,[start,end,amount])=>
@@ -364,6 +365,10 @@ function buildCoastScenery(){
   const region=coastDistrictIndex(index),district=COAST_DISTRICTS[region];
   return (region&&transitions[region][Math.floor((index-district.start)/7)])||district;
  });
+ for(let i=COAST_DISTRICTS[4].start;i<=COAST_DISTRICTS[5].start;i++){
+  const bend=Math.sin((i-1990)*.033)+.46*Math.sin((i-2020)*.069);
+  segments[i].colorado={center:-7.15+1.9*bend,width:1.05+.30*Math.cos(i*.048)};
+ }
  const add=(index,kind,lane,size=1,variant=0)=>{
   const segment=segments[index];
   const art=kind==='palm'?null:getCoastScenery(kind,variant);
@@ -390,6 +395,10 @@ function buildCoastScenery(){
  add(3876,'pierPavilion',2.68,1.20);
  add(COAST_CROP_PLANE,'cropPlane',0,1.17);
  for(const [i,x,v] of [[3300,-10,0],[3608,-4.4,1],[3690,-4.78,1],[3790,-5.15,0]])add(i,'sailboat',x,1.04,v);
+ add(72,'taxiStand',-1.72,1.10);add(218,'theater',2.05,1.42);
+ for(const [at,side] of [[1744,1],[1762,1],[1780,1],[1830,-1],[1848,-1]])add(at,'passChevron',side*1.42,.79,side<0?1:0);
+ add(2998,'fountain',-2.86,1.75);
+ add(3847,'pierCrowd',2.37,1.24);
  add(131,'waterTower',-4.9,1.2);add(493,'bridgeSign',-1.70,1.28);
  add(605,'towboat',-3.42,2.02);add(716,'towboat',3.67,1.72,1);
  add(752,'riverElevator',-3.8,1.50);add(764,'dock',-4.7,1.03,1);
@@ -425,6 +434,8 @@ function buildCoastScenery(){
   if(i%3===0&&(i<1615||i>1750))add(i+2,'boulder',side*(1.50+seed*.59),.65+seed*.51,Math.floor(seed*3));
  }
  add(1468,'passSign',1.48,.75);
+ for(const [i,side,size] of [[1591,-1,.75],[1637,1,1.20],[1674,-1,1.04],[1709,1,.82],[1770,-1,.94],[1810,1,.78]])
+  add(i,'snowCut',side*2.0,size);
  for(const [i,x,size,v] of [[1675,2.3,1.2,0],[1695,-2.5,1.4,1],[1721,-2.4,1.5,1],[1729,2.6,1.4,2],[1798,-2.4,1.0,0],[1915,2.9,1.2,2]])add(i,'boulder',x,size,v);
  for(let i=1995;i<2738;i+=18){
   const seed=coastSceneryNoise(i),side=seed>.55?-1:1;
@@ -439,10 +450,10 @@ function buildCoastScenery(){
  add(2785,'vegasSign',-1.81,1.51);
  add(2838,'stripMarquee',-1.88,1.39);
  add(3104,'stripMarquee',2.12,1.24,1);
- add(2850,'casinoWheel',2.91,1.46);add(3070,'casinoWheel',-3.48,1.21,1);
+ add(2850,'casinoWheel',2.91,1.46);
  for(let i=2770;i<3215;i+=24){
   const v=Math.floor(coastSceneryNoise(i)*4);
-  if(i>2792)add(i,'casino',-(2.40+coastSceneryNoise(i+7)*.52),1.02+coastSceneryNoise(i+1)*.45,v);
+  if(i>2792&&(i<2960||i>3020))add(i,'casino',-(2.40+coastSceneryNoise(i+7)*.52),1.02+coastSceneryNoise(i+1)*.45,v);
   add(i+10,'casino',2.40+coastSceneryNoise(i+2)*.47,1.04+coastSceneryNoise(i+6)*.29,(v+1)%4);
   if(i%5!==0)add(i+5,'streetlight',i%4===2?-1.30:1.30,.77);
  }
@@ -491,7 +502,7 @@ function addCoastRoadsideScenes(add){
   [3555,'coastMarket',2.19,1.11,1],[3600,'lifeguard',-1.94,1.24,0],
   [3630,'beachShack',-2.28,1.09,1],[3648,'coastHouse',2.12,1.26,0],
   [3669,'coastMarket',2.25,1.11,0],[3706,'lifeguard',-2.03,1.23,1],
-  [3465,'beachPier',-3.41,1.42,0],[3809,'boardwalkRide',4.35,1.85,0]
+  [3465,'beachPier',-3.41,1.42,0],[3800,'boardwalkRide',3.62,1.64,0]
  ];
  for(const item of locations)add(...item);
 
@@ -506,8 +517,8 @@ function addCoastRoadsideScenes(add){
  }
  for(let i=1331;i<1975;i+=15){
   const noise=coastSceneryNoise(i+96),side=noise>.54?1:-1;
-  if(i<1708||i>1744)add(i,'pineGrove',side*(2.18+noise*.71),.91+noise*.31,Math.floor(noise*3));
-  if(i%4<2)add(i+7,'pineGrove',-side*(2.22+noise*.43),.94,Math.floor(noise*3));
+  if(i<1668||i>1830)add(i,'pineGrove',side*(2.18+noise*.71),.91+noise*.31,Math.floor(noise*3));
+  if(i%4<2&&(i<1685||i>1760))add(i+7,'pineGrove',-side*(2.22+noise*.43),.94,Math.floor(noise*3));
   if(i%5<2)add(i+3,'boulder',-side*1.76,.47+noise*.23,Math.floor(noise*3));
  }
  for(let i=2000;i<2500;i+=16){
@@ -523,10 +534,12 @@ function addCoastRoadsideScenes(add){
   if(i%3===2)add(i,'scrub',1.38+noise*.38,.69+noise*.32,2);
  }
 }
+function coastCoasterHeight(x){return -108-139*Math.exp(-((x+147)**2)/3900)-68*Math.exp(-((x-83)**2)/3000);}
 function getCoastScenery(kind,variant){
  const key=kind+variant;
  if(coastScenery.has(key))return coastScenery.get(key);
  const dimensions={
+  taxiStand:[350,152],theater:[415,374],passChevron:[110,164],snowCut:[375,112],fountain:[510,284],pierCrowd:[330,125],
   warehouse:[442,228],grainTruck:[232,225],grainMarket:[394,316],truckNotice:[218,260],
   shelterbelt:[416,142],pierPavilion:[374,245],stripMarquee:[235,395],
   boardwalkRide:[590,300],pointLight:[400,395],cropPlane:[360,115],sailboat:[234,218],tower:[320,520],streetlight:[110,201],bridgeSign:[240,147],riverElevator:[530,335],towboat:[460,172],
@@ -592,6 +605,42 @@ function getCoastScenery(kind,variant){
   }
   rect(-201,-14,374,14,'#8e7274');
   letters(variant?'GRAIN & SUPPLY':'RIVER FREIGHT',-35,-91,15,'#ffe2b6');
+ }else if(kind==='taxiStand'){
+  rect(-163,-6,324,6,'#937a76');
+  for(const x of [-97,43]){
+   oval(x,-6,61,5,'#594b51');rect(x-58,-35,114,24,'#dba333');
+   poly([[x-39,-35],[x-21,-56],[x+17,-57],[x+39,-35]],'#e6b343');
+   poly([[x-30,-36],[x-18,-51],[x+14,-51],[x+30,-36]],'#485467');rect(x-2,-52,3,16,'#c7a179');
+   rect(x-9,-61,18,6,'#ffe4aa');rect(x-55,-27,105,3,'#514653');
+   for(const dx of [-36,36]){oval(x+dx,-12,10,10,'#322e3c');oval(x+dx,-12,4,4,'#99929a');}
+  }
+  rect(132,-112,5,112,'#71646d');rect(110,-137,52,27,'#d3a14e');letters('TAXI',136,-118,14,'#382c39');
+ }else if(kind==='theater'){
+  slab(-152,-246,251,240,53,'#855b5e','#583e51','#bb8d7e');
+  for(let j=0;j<4;j++)glass(-128+j*52,-218,30,58,'#d5ad95');
+  rect(-132,-77,193,77,'#403344');
+  slab(-181,-130,301,53,57,'#f2d49e','#b9896c','#a96769');
+  letters('LATE SHOW',-38,-96,22,'#613e53');
+  for(let j=0;j<17;j++)oval(-173+j*17,-83,2.7,2.7,'#fff1c3');
+  rect(65,-354,64,222,'#604052');rect(69,-349,55,213,'#ab535d');
+  ['R','O','X','Y'].forEach((c,i)=>letters(c,96,-305+i*48,43,'#ffdc94'));
+ }else if(kind==='passChevron'){
+  rect(-4,-104,8,104,'#665b61');rect(-46,-152,92,65,'#4b4247');rect(-42,-148,84,57,'#ffc25c');
+  if(variant)g.scale(-1,1);
+  poly([[27,-142],[-3,-142],[-29,-120],[-4,-97],[25,-97],[-1,-120]],'#44383b');
+ }else if(kind==='snowCut'){
+  poly([[-176,0],[-140,-33],[-100,-45],[-55,-78],[-24,-96],[31,-85],[79,-54],[115,-46],[172,-9],[179,0]],'#74848c');
+  poly([[-151,-29],[-107,-46],[-56,-84],[-26,-99],[32,-88],[63,-65],[17,-75],[-11,-64],[-30,-70],[-60,-45],[-71,-54],[-104,-30]],'#e5dcd3');
+  line([[133,-4],[133,-90]],'#c46858',4);line([[133,-86],[133,-64]],'#f9d69c',4);
+ }else if(kind==='fountain'){
+  // A low oval reflecting pool in front of the open-air casino forecourt.
+  oval(0,-16,245,16,'#9f7690');oval(0,-21,239,13,'#74d7d9');oval(0,-22,228,8,'#346174');
+  for(let i=-3;i<=3;i++)oval(i*59,-22,9,2.5,'#fdd0e1');
+ }else if(kind==='pierCrowd'){
+  rect(-154,-8,308,8,'#a47a6b');
+  for(const [x,c,p] of [[-123,'#f28698',1],[-89,'#69c5ca',2],[-44,'#f5c478',0],[13,'#b096d3',1],[52,'#73c1c4',2],[107,'#ed917b',0]])figure(x,-8,c,p);
+  for(const x of [-141,-46,48,142])rect(x,-52,6,49,'#886c66');
+  line([[-141,-44],[144,-44]],'#e1b18f',5);
  }else if(kind==='truckNotice'){
   for(const x of [-72,66])rect(x,-182,8,182,'#544e56');
   poly([[0,-245],[105,-173],[0,-103],[-105,-173]],'#4b343b');
@@ -648,13 +697,18 @@ function getCoastScenery(kind,variant){
   for(let i=0;i<6;i++)rect(-14,-201+i*28,28,6,i%2?gold:'#f391b5');
  }else if(kind==='boardwalkRide'){
   // Timber coaster on its own piled pier, including the return below the lift.
-  const crest=x=>-108-139*Math.exp(-((x+147)**2)/3900)-68*Math.exp(-((x-83)**2)/3000);
+  const crest=coastCoasterHeight;
   for(let x=-266;x<264;x+=26){
    const y=crest(x);
    line([[x+9,-24],[x+9,y-5]],'#755665',5);
    line([[x,-26],[x,y]],'#efd0ad',5);
    line([[x,y+10],[x+26,-28],[x,-60],[x+26,crest(x+26)+13]],'#bc8c8a',3);
    line([[x,-27],[x+26,-27]],'#f4c4a1',5);
+  }
+  // Both turns drop into the covered return underneath the timber lift.
+  for(const side of [-1,1]){
+   slab(side<0?-287:226,-122,55,94,6,'#88606b','#684d60','#ba8a85');
+   rect(side<0?-241:225,-112,10,19,'#503e55');
   }
   const rails=[];
   for(let x=-266;x<=280;x+=5)rails.push([x,crest(x)]);
@@ -1196,7 +1250,21 @@ function getCoastPanorama(key){
  }else if(key==='canyon'){
   const mesas=[[-30,303],[85,267],[105,241],[227,251],[261,291],[349,318],[393,256],[432,223],[548,225],[577,273],[642,319],[711,273],[776,270],[801,226],[918,226],[957,279],[1046,278],[1079,258],[1182,263],[1230,317]];
   ridge(mesas,'#ae796f');
+  for(const [x,y,w,h] of [[108,242,114,55],[432,226,109,66],[802,228,109,57],[1081,261,95,42]]){
+   shape([[x,y],[x+w,y+2],[x+w*.73,y+10],[x+w*.77,y+h*.48],[x+w*.34,y+h],[x+w*.19,y+h*.77],[x+w*.12,y+12]],'#be8371');
+   shape([[x+w,y+2],[x+w+17,y+h*.69],[x+w*.76,y+h],[x+w*.70,y+h*.38],[x+w*.73,y+10]],'#91606a');
+   for(const [offset,length] of [[.22,.66],[.51,.49],[.65,.39]]){
+    const sy=y+h*offset;
+    shape([[x+w*.19,sy],[x+w*(length+.18),sy+1],[x+w*length,sy+4],[x+w*.2,sy+3]],'#d29278');
+   }
+  }
   ridge([[-30,391],[89,363],[166,323],[253,332],[337,381],[448,375],[501,329],[567,304],[661,309],[731,348],[788,355],[864,308],[990,318],[1096,365],[1230,347]],'#996060');
+  // The distant Colorado doubles back between terraces before disappearing behind the near rim.
+  const channel=[[0,370],[171,366],[298,371],[381,362],[321,354],[407,345],[614,339],[693,329],[627,324],[689,317],[821,316]];
+  for(const [width,color] of [[2.0,'#c08472'],[1,'#72a4a4']]){
+   const farBank=channel.map(([x,y],j)=>[x,y-width*(1-j/channel.length)*4.5]);
+   shape([...farBank,...channel.slice().reverse().map(([x,y])=>[x,y+1])],color);
+  }
   ridge([[-30,426],[141,389],[230,410],[353,398],[512,419],[666,394],[809,402],[910,371],[1005,383],[1230,401]],'#714a57');
   for(let i=0;i<15;i++){
    const x=coastSceneryNoise(i)*1200,y=311+coastSceneryNoise(i+3)*51;
@@ -1224,12 +1292,16 @@ function drawCoastBackdrop(horizon,index){
  const region=coastDistrictIndex(index),district=COAST_DISTRICTS[region],previous=COAST_DISTRICTS[Math.max(0,region-1)];
  const transition=region?paradiseSmooth((index-district.start)/100):1;
  const sky=ctx.createLinearGradient(0,0,0,horizon+36);
- sky.addColorStop(0,interpolateColor(previous.sky[0],district.sky[0],transition));
- sky.addColorStop(1,interpolateColor(previous.sky[1],district.sky[1],transition));
+ const vegasApproach=index>=2530&&index<COAST_PACIFIC_START;
+ for(let stop=0;stop<2;stop++){
+  const color=vegasApproach?interpolateColor(COAST_DISTRICTS[4].sky[stop],COAST_DISTRICTS[5].sky[stop],
+   paradiseSmooth(clamp((index-2530)/250,0,1))):interpolateColor(previous.sky[stop],district.sky[stop],transition);
+  sky.addColorStop(stop,color);
+ }
  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
  const trip=clamp(index/COAST_LENGTH,0,1);
  const radius=Math.min(W*(.156+trip*.05),H*.105);
- const sx=W*(.66-.15*trip)+W*.22*Math.tanh(-bgOffset*.00023);
+ const sx=W*(.66-.15*trip-.24*paradiseSmooth(clamp((index-3250)/310,0,1)))+W*.22*Math.tanh(-bgOffset*.00023);
  const dawn=paradiseSmooth(clamp((index-3300)/470,0,1));
  const dusk=paradiseSmooth(clamp((index-2590)/230,0,1));
  const sy=horizon-H*(.18-.065*trip)+H*(.035*dusk-.023*dawn);
@@ -1257,8 +1329,19 @@ function drawCoastBackdrop(horizon,index){
  const art=getCoastPanorama(district.key),scale=Math.max(W/790,H/940);
  const width=art.width*scale,height=art.height*scale;
  const travel=.50+.48*Math.tanh(bgOffset*.00090);
- ctx.drawImage(art,-(width-W)*travel,horizon-height*.87,width,height);
- if(boundary.start>0){
+ const stripStart=COAST_DISTRICTS[5].start;
+ if(index>=2550&&index<stripStart){
+  // Over the desert crest the far mesas sink below the valley skyline.
+  // Draw opaque silhouettes across the viewport, even on the outside of the S-bend.
+  const reveal=paradiseSmooth((index-2550)/(stripStart-2550));
+  const mesaHeight=height*(1-.94*reveal);
+  ctx.drawImage(art,-(width-W)*travel,horizon-mesaHeight*.87,width,mesaHeight);
+  if(reveal>0){
+   const cityHeight=height*reveal,cityWidth=W+(width-W)*(.32+.68*reveal);
+   ctx.drawImage(getCoastPanorama('vegas'),-(cityWidth-W)*travel,horizon-cityHeight*.87,cityWidth,cityHeight);
+  }
+ }else ctx.drawImage(art,-(width-W)*travel,horizon-height*.87,width,height);
+ if(boundary.start>0&&boundary.key!=='vegas'){
   const haze=(1-paradiseSmooth(clamp(Math.abs(index-boundary.start)/45,0,1)))*.85;
   if(haze>0){
    const wash=ctx.createLinearGradient(0,horizon-H*.53,0,horizon+40);
@@ -1358,13 +1441,36 @@ function drawCoastDeck(roads){
   }else if(zone===4){
    ribbon(first,last,-28,-2.38,'#714854');
    ribbon(first,last,-9.7,-3.85,'#925861');
-   ribbon(first,last,-7.65,-4.62,'#537982');
-   ribbon(first,last,-6.60,-5.05,'#699198');
-   ribbon(first,last,-4.64,-3.75,'#c08a71');
+   // A meandering channel lies beyond the rock shelf. All strips use
+   // common world-space bank points, including between visible hill slices.
+   for(const [outer,inner,color] of [[-1,1,'#b89179'],[-.86,.87,'#4e787e'],[-.30,.22,'#73999b']]){
+    ctx.fillStyle=color;ctx.beginPath();
+    for(let j=first;j<=last;j++){
+     const r=roads[j],bank=segments[r.segIdx].colorado,offset=bank.center+outer*bank.width;
+     if(j===first)ctx.moveTo(r.rx1+r.w1*offset,r.y1);else ctx.lineTo(r.rx1+r.w1*offset,r.y1);
+    }
+    const far=roads[last],end=segments[far.segIdx+1].colorado;
+    ctx.lineTo(far.rx2+far.w2*(end.center+outer*end.width),far.y2);
+    ctx.lineTo(far.rx2+far.w2*(end.center+inner*end.width),far.y2);
+    for(let j=last;j>=first;j--){
+     const r=roads[j],bank=segments[r.segIdx].colorado;ctx.lineTo(r.rx1+r.w1*(bank.center+inner*bank.width),r.y1);
+    }
+    ctx.closePath();ctx.fill();
+   }
    ribbon(first,last,-3.75,-2.50,'#9b665b');
    ribbon(first,last,-2.50,-2.18,'#b27861');
    ribbon(first,last,1.19,2.14,'#a0634d');
   }else if(pier){
+   // A connected timber apron supports the coaster, spectators and pavilion.
+   let apron=first;
+   while(apron<=last&&roads[apron].segIdx<3781)apron++;
+   let end=apron;
+   while(end<=last&&roads[end].segIdx<3900)end++;
+   if(apron<end){
+    ribbon(apron,end-1,1.26,6.72,'#ab8080');
+    ribbon(apron,end-1,6.60,6.72,'#e1b098');
+    for(let j=apron;j<end;j++)if(roads[j].segIdx%6===0)ribbon(j,j,1.38,6.60,'#b98e86');
+   }
    ribbon(first,last,-1.31,1.31,'#cd998c');
    ribbon(first,last,-COAST_PIER_DECK_EDGE,-1.31,'#795f72');
    ribbon(first,last,1.31,COAST_PIER_DECK_EDGE,'#795f72');
@@ -1450,6 +1556,10 @@ function drawCoastDeck(roads){
   if(segIdx>=COAST_TRUCK-36&&segIdx<COAST_TRUCK&&segIdx%6<3){
    const offset=(segIdx-COAST_TRUCK+36)/36;
    ribbon(i,i,.98-.63*offset,1.01-.63*offset,'#f0b576');
+  }
+  // Two side streets break the Manhattan blocks. A crosswalk is painted once per junction.
+  if((segIdx>=81&&segIdx<83)||(segIdx>=206&&segIdx<208)){
+   for(let stripe=-5;stripe<=5;stripe++)ribbon(i,i,stripe*.175-.045,stripe*.175+.045,'#c4a99f');
   }
   if(segIdx>=7&&segIdx<=9){
    for(const lane of [-2/3,0,2/3])ribbon(i,i,lane-.16,lane+.16,'#d6b7a4');
@@ -1644,7 +1754,7 @@ function drawCoastRiverSpan(road,point){
 function drawCoastStructure(road){
  const {segIdx:index,rx1:x1,rx2:x2,y1,y2,w1,w2,p1Scale:s1,p2Scale:s2}=road;
  const point=(far,lane,height)=>far?[x2+lane*w2,y2-height*s2*H/2]:[x1+lane*w1,y1-height*s1*H/2];
- if((index>=105&&index<186)||(index>=1510&&index<1552)||(index>=2888&&index<3072)){
+ if((index>=105&&index<186)||(index>=1510&&index<1552)||(index>=2888&&index<2952)){
   drawCoastGallery(index,point,w1);
  }
  if(index>=COAST_CLIFF_START&&index<COAST_CLIFF_END&&road.isVisible)drawCoastCanyonWall(index,point);
@@ -1749,7 +1859,32 @@ function drawCoastScenery(sprite,visibleArea,waterSurface){
   scenePoly([[lampX,lampY],[lampX+reach,lampY-12*sc],[lampX+reach,lampY+7*sc]],'rgba(255,226,176,.22)');
  }
  if(art)ctx.drawImage(art.image,left,top,art.w*sc,art.h*sc);
- else drawPalmTreeSprite(x,y,sc*1.25,item.variant,time,.27);
+ if(item.kind==='fountain'||item.kind==='boardwalkRide'){
+  ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);
+  if(item.kind==='fountain'){
+   const beat=time*.00185;
+   ctx.lineCap='round';
+   for(let i=-3;i<=3;i++){
+    const source=i*59,spread=i*9,lift=(153-20*Math.abs(i))*(.67+.30*Math.cos(beat-Math.abs(i)*.77));
+    for(const side of [-1,1]){
+     ctx.beginPath();ctx.moveTo(source,-22);ctx.quadraticCurveTo(source+spread*.6,-22-lift*2,source+spread+side*23,-22);
+     ctx.strokeStyle=i%2?'#b4dfe5':'#fac6e7';ctx.lineWidth=2.8;ctx.stroke();
+    }
+   }
+  }else{
+   const lead=-325+(time*.097)%710;
+   for(let j=0;j<3;j++){
+    const cx=lead-j*24;
+    if(cx< -244||cx>256)continue;
+    ctx.save();ctx.translate(cx,coastCoasterHeight(cx));ctx.rotate(Math.atan((coastCoasterHeight(cx+1)-coastCoasterHeight(cx-1))/2));
+    sceneRect(-11,-12,22,9,'#e87565');sceneRect(-10,-5,20,3,'#f7d390');
+    for(const dx of [-6,5])sceneEllipse(dx,-15,3.8,4.5,'#71516b');
+    ctx.restore();
+   }
+  }
+  ctx.restore();
+ }
+ if(!art)drawPalmTreeSprite(x,y,sc*1.25,item.variant,time,.27);
  ctx.restore();
 }
 
@@ -15159,6 +15294,10 @@ function render(ts) {
           if(scale>.025){
             ctx.drawImage(truck.image,s.x-truck.w*scale/2,s.y-(truck.h-2)*scale,truck.w*scale,truck.h*scale);
             ctx.save();ctx.translate(s.x,s.y);ctx.scale(scale,scale);
+            // The grain hauler itself indicates which side remains clear.
+            sceneRect(-66,-140,132,49,'#51443e');
+            const amber=Math.cos(raceElapsed*.006)>.05?'#ffdf85':'#bd935e';
+            for(const [ax,ay] of [[-44,-116],[-28,-128],[-28,-104],[-12,-116],[5,-116],[22,-116],[39,-116]])sceneEllipse(ax,ay,5,5,amber);
             // The co-op's auger reaches over the hopper. The last stretch is
             // intentionally open so the grain is visible falling into the truck.
             sceneLine([[251,-270],[137,-249],[73,-222]],'#5d514d',13);

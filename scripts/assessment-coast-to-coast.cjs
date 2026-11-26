@@ -31,7 +31,7 @@ module.exports = async function runCoastToCoast(browser, baseUrl) {
         const checks = [];
         try {
           for (const [index, subject] of [[548,'towboat'],[579,'towboat'],[668,'towboat'],[695,'towboat'],
-              [949,'land'],[1724,'land'],[2020,'land'],[2234,'land'],[2937,'land'],[3452,'land'],[3780,'land'],
+              [51,'land'],[197,'land'],[949,'land'],[1724,'land'],[1748,'land'],[2020,'land'],[2234,'land'],[2937,'land'],[2967,'land'],[3452,'land'],[3780,'land'],[3821,'land'],
               [3490,'sailboat'],[3497,'sailboat'],[3703,'sailboat'],[3717,'sailboat'],[3726,'sailboat']]) {
             player.z = (index + .35) * SEGMENT_LENGTH;
             player.x = 0;
