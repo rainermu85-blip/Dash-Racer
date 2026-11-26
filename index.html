@@ -262,6 +262,9 @@ const COAST_PACIFIC_WATER_EDGE=-1.62,COAST_PACIFIC_SURF_EDGE=-1.82,COAST_PIER_DE
 const COAST_TOWN_START=932,COAST_TOWN_END=1120,COAST_TRUCK=1009;
 const COAST_SUBWAY=288,COAST_CROP_PLANE=899;
 const COAST_CLIFF_START=2150,COAST_CLIFF_END=2336;
+// Heights of the upper chord at the panel joints. Two cantilever peaks mark the shipping channel.
+const COAST_TRUSS_START=COAST_RIVER_START+13,COAST_TRUSS_PANEL=15;
+const COAST_TRUSS_TOP=[1560,2020,2870,3970,2920,2090,1880,2090,2920,3970,2870,2020,1560];
 const COAST_RIVER_RAIL=1.27,COAST_PIER_RAIL=1.29,COAST_SHORE_RAIL=1.23;
 const COAST_ARCH_LEFT=1.22,COAST_ARCH_RIGHT=1.21;
 const COAST_SHED_LEFT=1.26,COAST_SHED_RIGHT=1.33;
@@ -289,7 +292,7 @@ function coastFixedEdges(index){
 let coastTrainStart=null,coastPlaneStart=null;
 const COAST_DISTRICTS=[
  {key:'nyc',start:0,ground:'#3b3445',road:'#373340',edge:'#b8a6a2',sky:['#121631','#e78b83']},
- {key:'river',start:510,ground:'#416b7e',road:'#424854',edge:'#e0c29d',sky:['#4d345b','#edac8d']},
+ {key:'river',start:477,ground:'#727759',road:'#424854',edge:'#e0c29d',sky:['#4d345b','#edac8d']},
  {key:'plains',start:765,ground:'#666346',road:'#504a50',edge:'#ebcf94',sky:['#366a86','#ffd596']},
  {key:'rockies',start:1300,ground:'#425357',road:'#414650',edge:'#d1c5a7',sky:['#29436a','#c1d3d7']},
  {key:'canyon',start:1990,ground:'#8b503b',road:'#544547',edge:'#ebbc89',sky:['#712b63','#ffa258']},
@@ -318,7 +321,8 @@ function coastSceneryNoise(seed){
 }
 function buildCoastRoute(){
  const corners=[
-  [84,200,.47,31],[222,361,-.56,35],[397,505,.38,27],
+  [84,200,.47,31],[222,361,-.56,35],[397,469,.38,24],
+  [472,529,-.30,22],[725,829,.44,31],
   [1017,1144,.90,33],[1220,1350,-.47,34],
   [1370,1474,-.78,26],[1501,1598,.78,32],[1606,1668,-.46,22],
   [1751,1818,-1.09,22],[1831,1948,.88,30],
@@ -386,9 +390,9 @@ function buildCoastScenery(){
  add(3876,'pierPavilion',2.68,1.20);
  add(COAST_CROP_PLANE,'cropPlane',0,1.17);
  for(const [i,x,v] of [[3300,-10,0],[3608,-4.4,1],[3690,-4.78,1],[3790,-5.15,0]])add(i,'sailboat',x,1.04,v);
- add(131,'waterTower',-4.9,1.2);add(455,'bridgeSign',-1.70,1);
+ add(131,'waterTower',-4.9,1.2);add(493,'bridgeSign',-1.70,1.28);
  add(605,'towboat',-3.42,2.02);add(716,'towboat',3.67,1.72,1);
- add(753,'silo',-3.7,1.65);add(758,'dock',-3.1,1.35,1);
+ add(752,'riverElevator',-3.8,1.50);add(764,'dock',-4.7,1.03,1);
  for(const i of [766,794,835,880,1205,1255]){
   add(i,'fields',i%2?3.1:-3.1,1.33,i%2);
  }
@@ -525,7 +529,7 @@ function getCoastScenery(kind,variant){
  const dimensions={
   warehouse:[442,228],grainTruck:[232,225],grainMarket:[394,316],truckNotice:[218,260],
   shelterbelt:[416,142],pierPavilion:[374,245],stripMarquee:[235,395],
-  boardwalkRide:[590,300],pointLight:[400,395],cropPlane:[360,115],sailboat:[234,218],tower:[320,520],streetlight:[110,201],bridgeSign:[240,147],towboat:[460,172],
+  boardwalkRide:[590,300],pointLight:[400,395],cropPlane:[360,115],sailboat:[234,218],tower:[320,520],streetlight:[110,201],bridgeSign:[240,147],riverElevator:[530,335],towboat:[460,172],
   cityBlock:[388,285],dock:[425,315],farmStand:[385,222],windmill:[285,318],
   pineGrove:[420,278],lodge:[365,241],rockCut:[419,360],lookout:[360,195],
   neonMarquee:[271,330],grainTrain:[538,200],casinoPyramid:[420,347],beachPier:[550,217],coastMarket:[358,245],beachShack:[364,200],lifeguard:[268,238],shoreGroup:[340,145],
@@ -931,8 +935,30 @@ function getCoastScenery(kind,variant){
   poly([[-70,-132],[0,-144],[70,-132],[65,-81],[0,-59],[-65,-81]],'#ebd6a7');
   poly([[-62,-127],[0,-136],[62,-127],[57,-86],[0,-68],[-57,-86]],'#473c4a');
   rect(-4,-64,8,64,'#86737a');letters('ROUTE',0,-111,17,'#efd6a4');letters('66',0,-85,29,'#ffdca5');
+ }else if(kind==='riverElevator'){
+  // The conveyor slopes down towards the berth from the headhouse.
+  rect(-252,-12,498,12,'#655653');
+  for(let j=0;j<5;j++){
+   const x=44+j*40,top=-136-(j%2)*7;
+   rect(x,top,39,-top-10,'#c5ae8f');
+   rect(x+27,top,12,-top-10,'#978980');rect(x+5,top,4,-top-10,'#e8cda4');
+   poly([[x-2,top],[x+19,top-13],[x+41,top]],'#796d72');
+  }
+  slab(-10,-238,60,231,19,'#b19386','#796b74','#dec4a0');
+  slab(-22,-269,83,36,19,'#947b73','#685c6b','#ecc7a0');
+  for(let j=0;j<5;j++)rect(-15+j*14,-261,8,12,'#504c59');
+  line([[50,-203],[220,-169]],'#655d63',9);
+  for(const x of [-200,-107]){line([[x,-6],[x,-98-(x+200)*.40]],'#77645f',7);}
+  poly([[-229,-99],[-9,-200],[-9,-180],[-229,-79]],'#907b74');
+  line([[-229,-100],[-8,-201]],'#eac99a',4);
+  for(let j=0;j<10;j++){
+   const x=-227+j*21,y=-98-j*9.65;
+   line([[x,y+16],[x+20,y-8],[x+20,y+7]],'#645865',3);
+  }
+  rect(-231,-81,14,39,'#78665e');
  }else if(kind==='towboat'){
-  oval(0,-11,219,11,'#668d97');oval(32,-5,171,4,'#85a5a9');
+  if(variant){g.scale(-1,1);}
+  oval(0,-11,219,11,'#699393');oval(32,-5,171,4,'#a4b5a8');
   poly([[-219,-40],[-98,-38],[-82,-16],[-187,-17]],'#435a68');
   poly([[-83,-43],[192,-43],[222,-35],[195,-14],[-91,-14]],'#554656');
   for(let j=0;j<5;j++){
@@ -1145,6 +1171,14 @@ function getCoastPanorama(key){
    }
    for(let i=0;i<6;i++)shape([[-20,403+i*5],[425,378+i],[972,381+i*1.8],[1220,406+i*5],[1220,409+i*5],[972,383+i*1.8],[425,379+i],[-20,405+i*5]],i%2?'#998451':'#a49356');
   }else{
+   // A low wooded levee frames the river below the open morning sky.
+   const bank=[];
+   for(let x=-30;x<=1230;x+=9){
+    const crown=4*Math.sin(x*.038)+5*coastSceneryNoise(x+80);
+    bank.push([x,344+6*Math.cos(x*.011)-crown]);
+   }
+   ridge(bank,'#495e63');
+   block(0,351,1200,97,'#59858b');
    for(let i=0;i<45;i++){
     const x=coastSceneryNoise(i)*1200,y=357+coastSceneryNoise(i+2)*80;
     block(x,y,22+coastSceneryNoise(i+5)*56,1.1,'#809ba6');
@@ -1307,9 +1341,21 @@ function drawCoastDeck(roads){
   }
   const last=i++;
   const wide=roads[first].y1,far=roads[last].y2;
-  ctx.fillStyle=pier?'#526e89':river?'#506e8b':palette.ground;
+  ctx.fillStyle=pier?'#526e89':river?'#548189':palette.ground;
   ctx.fillRect(0,far,W,wide-far+.65);
-  if(zone===4){
+  if(river){
+   // Broken current lines, locked to river segments. The deck is painted over them.
+   for(let j=first;j<=last;j++){
+    const r=roads[j],k=r.segIdx;
+    if(k%3!==0)continue;
+    const side=k%2?1:-1,w=r.w2;
+    const phase=Math.sin(k*.83+raceElapsed*.00065);
+    const x=r.rx2+side*w*(2.05+((k*7)%19)*.31+phase*.14);
+    const y=(r.y1+r.y2)*.5;
+    ctx.fillStyle=k%5===0?'#b6b3a0':'#78a0a1';
+    ctx.fillRect(x-w*.20,y,w*(.45+.18*phase),Math.max(.6,Math.min(2,(r.y1-r.y2)*.5)));
+   }
+  }else if(zone===4){
    ribbon(first,last,-28,-2.38,'#714854');
    ribbon(first,last,-9.7,-3.85,'#925861');
    ribbon(first,last,-7.65,-4.62,'#537982');
@@ -1353,7 +1399,8 @@ function drawCoastDeck(roads){
     ribbon(first,last,side*1.20,side*1.25,'#b7a0a0');
    }
   }
-  ribbon(first,last,-1.19,1.19,river?'#79838d':'#655763');
+  const shoulder=river?COAST_RIVER_RAIL:1.19;
+  ribbon(first,last,-shoulder,shoulder,river?'#79838d':'#655763');
  }
  // Paint the asphalt as one uninterrupted ribbon per viewable stretch.
  // A gradient carries regional tones through it without transverse joins.
@@ -1531,6 +1578,69 @@ function drawCoastCanyonWall(index,point){
  ctx.lineWidth=.55;
  for(let j=0;j<colors.length;j++)scenePoly([vertex(false,a,j),vertex(true,b,j),vertex(true,b,j+1),vertex(false,a,j+1)],colors[j],colors[j]);
 }
+function drawCoastRiverSpan(road,point){
+ const {segIdx:index,w1,w2}=road,rail=COAST_RIVER_RAIL;
+ const along=index-COAST_TRUSS_START,panel=Math.floor(along/COAST_TRUSS_PANEL);
+ const joint=along%COAST_TRUSS_PANEL===0,last=COAST_TRUSS_TOP.length-1;
+ // Side members have actual depth. Projecting each seam from the same world
+ // height avoids the widening strokes and gaps of a screen-space wireframe.
+ const member=(edge,h1,h2,depth,color)=>scenePoly([point(false,edge,h1),point(true,edge,h2),
+  point(true,edge,h2-depth),point(false,edge,h1-depth)],color);
+ for(const side of [-1,1]){
+  const edge=side*rail;
+  member(edge,135,135,135,'#514d57');
+  member(edge,145,145,30,'#e3b492');
+  if(panel<0||panel>last)continue;
+  const height=COAST_TRUSS_TOP[panel];
+  const tower=panel===3||panel===9;
+  if(joint){
+   const base=point(false,edge,135),top=point(false,edge,height);
+   sceneLine([base,top],tower?'#593e4d':'#754c52',Math.max(.85,w1*(tower?.094:.049)));
+   if(tower){
+    sceneLine([point(false,edge-side*.026,135),point(false,edge-side*.026,height)],'#c78166',Math.max(.7,w1*.019));
+    const [x,y]=point(false,edge,height+50),r=Math.max(1,w1*.025);
+    sceneEllipse(x,y,r,r,'#ffb78b');
+   }
+  }
+  if(panel===last)continue;
+  const u=(along%COAST_TRUSS_PANEL)/COAST_TRUSS_PANEL,v=u+1/COAST_TRUSS_PANEL;
+  const peak=COAST_TRUSS_TOP[panel+1],at=t=>height+(peak-height)*t;
+  const ascending=panel%2===0;
+  const brace=t=>ascending?175+(peak-175)*t:height+(175-height)*t;
+  const near=u+(v-u)*(segments[index].frameRoadT1||0);
+  member(edge,at(near),at(v),146,'#945756');
+  member(edge,at(near),at(v),31,'#d99479');
+  member(edge,brace(near),brace(v),105,'#734b53');
+ }
+ if(!joint||panel<0||panel>last||panel%3!==0)return;
+ const height=COAST_TRUSS_TOP[panel],tower=panel===3||panel===9;
+ // A builder's nameplate on the entry lintel identifies the crossing.
+ if(panel===0){
+  const left=point(false,-rail,height+260),right=point(false,rail,height+260);
+  const bottom=point(false,rail,height-36),h=bottom[1]-right[1],span=right[0]-left[0];
+  ctx.fillStyle='#4e3945';ctx.fillRect(left[0],left[1],span,h);
+  ctx.fillStyle='#cd8a70';ctx.fillRect(left[0],left[1],span,Math.max(.6,h*.12));
+  if(h>=5&&left[1]<H&&bottom[1]>0){
+   ctx.save();ctx.font='bold '+h*.76+'px monospace';ctx.fillStyle='#fae0b6';
+   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MISSISSIPPI',(left[0]+right[0])*.5,left[1]+h*.56,span*.80);ctx.restore();
+  }
+ }else{
+  const depth=tower?290:110;
+  scenePoly([point(false,-rail,height+46),point(false,rail,height+46),
+   point(false,rail,height+46-depth),point(false,-rail,height+46-depth)],'#744c51');
+  sceneLine([point(false,-rail,height+47),point(false,rail,height+47)],'#e6a17c',Math.max(.7,w1*.018));
+  if(tower){
+   for(let bay=0;bay<8;bay++){
+    const edge=-rail+2*rail*bay/8;
+    scenePoly([point(false,edge+.041,height+5),point(false,edge+rail/4-.038,height+5),
+     point(false,edge+rail/8,height-depth+99)],'#413544');
+   }
+  }
+ }
+ for(const side of [-1,1]){
+  sceneLine([point(false,side*rail,height-(tower?740:365)),point(false,side*.87,height-45)],'#996359',Math.max(.8,w2*.046));
+ }
+}
 function drawCoastStructure(road){
  const {segIdx:index,rx1:x1,rx2:x2,y1,y2,w1,w2,p1Scale:s1,p2Scale:s2}=road;
  const point=(far,lane,height)=>far?[x2+lane*w2,y2-height*s2*H/2]:[x1+lane*w1,y1-height*s1*H/2];
@@ -1579,30 +1689,7 @@ function drawCoastStructure(road){
   ctx.fillRect(x,y,w1*(.14+.3*shimmer),Math.max(.55,w1*.008));
  }
  if(index>=COAST_RIVER_START&&index<COAST_RIVER_END){
-  const height=2600,width=COAST_RIVER_RAIL;
-  const span=(index-COAST_RIVER_START)%19,steel='#586271',light='#a7a7a6';
-  for(const side of [-1,1]){
-   const edge=side*width;
-   scenePoly([point(false,edge,16),point(true,edge,16),point(true,edge,102),point(false,edge,102)],'#54535e');
-   scenePoly([point(false,edge,100),point(true,edge,100),point(true,edge,130),point(false,edge,130)],'#b7aca5');
-   sceneLine([point(false,edge,height),point(true,edge,height)],steel,Math.max(.8,w2*.060));
-   const slope=span/19,next=(span+1)/19;
-   const ascending=(Math.floor((index-COAST_RIVER_START)/19)%2)===0;
-   const lift=t=>224+(height-224)*(ascending?t:1-t);
-   sceneLine([point(false,edge,lift(slope)),point(true,edge,lift(next))],steel,Math.max(.8,w2*.041));
-   if(span===0){
-    sceneLine([point(false,edge,100),point(false,edge,height+42)],light,Math.max(.9,w1*.056));
-    sceneLine([point(false,edge,100),point(false,edge,height+42)],steel,Math.max(.7,w1*.028));
-   }
-  }
-  if(span===0){
-   sceneLine([point(false,-width,height),point(false,width,height)],steel,Math.max(1,w1*.071));
-   sceneLine([point(false,-width,height+110),point(false,width,height+110)],light,Math.max(.7,w1*.023));
-   if(index===COAST_RIVER_START){
-    sceneLine([point(false,-width,height*.70),point(false,-.86,height)],light,Math.max(.9,w1*.07));
-    sceneLine([point(false,.86,height),point(false,width,height*.70)],light,Math.max(.9,w1*.07));
-   }
-  }
+  drawCoastRiverSpan(road,point);
  }else if(index===COAST_PASS_ARCH||index===COAST_PASS_ARCH+6){
   const face=index===COAST_PASS_ARCH;
   const hole=[[-COAST_ARCH_LEFT,0],[-COAST_ARCH_LEFT,490],[-.98,1460],[-.66,1950],[.55,2070],[.94,1720],[COAST_ARCH_RIGHT,650],[COAST_ARCH_RIGHT,0]];
