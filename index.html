@@ -11,6 +11,9 @@
 body{background:#000;display:flex;align-items:center;justify-content:center;height:100dvh;overflow:hidden;font-family:'Gravity Pixel',monospace}
 #wrap{position:relative;width:100%;max-width:480px;height:100dvh;-webkit-tap-highlight-color:transparent}
 canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+#c[data-blackout]{filter:grayscale(1) url(#blackout-threshold)}
+#c[data-blackout="negative"]{filter:grayscale(1) url(#blackout-threshold) invert(1)}
+#wrap:has(#c[data-blackout]) > :is(#hud,#progBar,#timeBoard,#segmentBoard,#turboGauge,#btns,#cntWrap){filter:grayscale(1)}
 #hud{position:absolute;top:0;left:0;right:0;display:grid;grid-template-columns:1fr .85fr 1fr 44px;align-items:center;gap:10px;padding:max(10px,env(safe-area-inset-top)) 12px 14px;background:linear-gradient(to bottom,rgba(8,3,18,.85),rgba(8,3,18,.38) 70%,transparent);pointer-events:none;z-index:5}
 .hb{display:flex;flex-direction:column;gap:6px;min-width:0}
 .hl{font-size:7px;color:#a6c9e4;letter-spacing:1px;text-shadow:1px 1px 0 #000}
@@ -178,6 +181,11 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 <body>
 <div id="wrap">
   <canvas id="c"></canvas>
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <filter id="blackout-threshold" color-interpolation-filters="sRGB">
+      <feComponentTransfer><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    </filter>
+  </svg>
   <div id="hud">
     <div class="hb"><div class="hl">PLACE</div><div class="hv" id="placeVal">1ST</div></div>
     <div class="hb" style="text-align:center"><div class="hl">LAP</div><div class="hv" id="lapVal">1/3</div></div>
@@ -252,7 +260,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   <img data-course="7" src="./assets/courses/paradise-circuit.webp" alt="A palm leans over the beach road near the island harbor." width="760" height="430">
   <img data-course="8" src="./assets/courses/orbital-passage.webp" alt="Earth appears beyond the glass of the station observation deck." width="760" height="430">
   <img data-course="9" src="./assets/courses/coast-to-coast.webp" alt="The highway passes desert rock formations on the way west." width="760" height="430">
-  <img data-course="10" src="./assets/courses/blackout.webp" alt="A dashed white line bends between two pink edges in the dark." width="760" height="430">
+  <img data-course="10" src="./assets/courses/blackout.webp" alt="A white road winds around a black tower marked with white rings." width="760" height="430">
 </template>
 <script>
 // Coast to Coast uses the shared race projection and point-to-point finish.
@@ -4722,8 +4730,8 @@ const LEVELS = [
     description: "Dock crews wave a shuttle in as you roll onto the station. Earth slips past the windows on the way to the reactor. When the evacuation signs light up, follow the arrows to the escape pod." },
   { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH,
     description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." },
-  { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'AFTER DARK / THREE LAPS', color: '#ff409d', segments: 960,
-    description: "Two pink rails slip out of the dark. Count the white dashes through the long sweeper and catch the turn back. By the third lap your hands know the way." }
+  { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'TOWER SPIRAL / THREE LAPS', color: '#ffffff', segments: 960,
+    description: "The road screws its way up a tower that seems to have no top. The rails break at the crest, then the track dives back into the dark. Cross the line and the second lap turns the world inside out." }
 ];
 function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
 function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE?1:3;}
@@ -5120,13 +5128,7 @@ function buildSegments() {
             ...makeSection(110, 0, 0)
         ];
     } else if (currentLevel === LEVEL_BLACKOUT) {
-        // The broad opening arc teaches the sight distance before the double reversal.
-        const bends = [[50,200,.48], [220,335,-.64], [335,420,.55], [465,635,-.60],
-            [660,752,.67], [752,832,-.64], [832,912,.52]];
-        trackDef = makeSection(SEGMENT_COUNT,0,0);
-        for (const [start,end,peak] of bends) {
-            for (let i=start;i<end;i++) trackDef[i].curve = peak*Math.sin(Math.PI*(i-start)/(end-start))**2;
-        }
+        trackDef = buildBlackoutRoute();
     } else if (currentLevel === LEVEL_COAST) {
         trackDef=buildCoastRoute();
     } else if (currentLevel === LEVEL_ORBITAL) {
@@ -5408,7 +5410,7 @@ function buildSegments() {
     // Adaptive Baustellen und Blitz-Items für die verschiedenen Strecken
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
-    if(currentLevel===LEVEL_BLACKOUT){siteIndices=[];freeBolts=[145,360,620,858];}
+    if(currentLevel===LEVEL_BLACKOUT){siteIndices=[];freeBolts=[135,420,645,838];}
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
     if(currentLevel===LEVEL_COAST){siteIndices=[];freeBolts=[...COAST_BOOSTS.keys()];}
     if(currentLevel===LEVEL_ORBITAL){siteIndices=[];freeBolts=[145,475,805,1135,1465,1795,2125,2455,2785];}
@@ -8979,43 +8981,117 @@ function drawOceanBeachSpot(x,y,scale,kind,seed) {
     ctx.restore();
 }
 
-// A flat road in darkness. Projected paint, pickups and cars share a short
-// sight distance. One fill per ribbon keeps joins out of the neon edges.
-const BLACKOUT_SIGHT = 52, BLACKOUT_FULL_LIGHT = 22;
-function blackoutVisibility(distance){
-  const t=clamp((BLACKOUT_SIGHT-distance)/(BLACKOUT_SIGHT-BLACKOUT_FULL_LIGHT),0,1);
-  return t*t*(3-2*t);
-}
-function drawBlackoutMarkings(roads,horizonY){
-  const projection=(CAMERA_DEPTH+player.fovOffset)*CAMERA_HEIGHT*H/(2*SEGMENT_LENGTH);
-  const farY=horizonY+projection/BLACKOUT_SIGHT, nearY=horizonY+projection/BLACKOUT_FULL_LIGHT;
-  function ink(rgb,opacity){
-    const gradient=ctx.createLinearGradient(0,farY,0,nearY);
-    for(const distance of [BLACKOUT_SIGHT,44,37,32,27,BLACKOUT_FULL_LIGHT]){
-      const y=horizonY+projection/distance;
-      gradient.addColorStop(clamp((y-farY)/(nearY-farY),0,1),
-        'rgba('+rgb+','+opacity*blackoutVisibility(distance)+')');
-    }
-    return gradient;
+const BLACKOUT_SIGHT = 54;
+const BLACKOUT_TOWER_START = 108, BLACKOUT_TOWER_END = 522;
+const BLACKOUT_SPLICES = [535, 742];
+
+function buildBlackoutRoute(){
+  const route=makeSection(SEGMENT_COUNT,0,0);
+  const pulse=(index,start,end)=>Math.sin(Math.PI*clamp((index-start)/(end-start),0,1))**2;
+  const roll=(index,start,end)=>Math.sqrt(pulse(index,start,end));
+  const ascent=[BLACKOUT_TOWER_START,BLACKOUT_TOWER_END];
+  let height=0;
+  for(let i=0;i<route.length;i++){
+    // Sustain the same turning direction through all three decks.
+    const helix=roll(i,...ascent)**.35;
+    const rise=helix*(.77+.23*Math.cos((i-142)*2*Math.PI/138));
+    route[i].curve=-.52*pulse(i,28,108)+helix*(.69+.30*pulse(i,284,444))
+      -1.14*pulse(i,529,655)+.97*pulse(i,641,743)
+      -1.02*pulse(i,731,825)+.69*pulse(i,809,914);
+    const drop=roll(i,523,728), recovery=roll(i,708,879);
+    route[i].hill=rise*42-drop*81+recovery*24;
+    height+=route[i].hill;
   }
-  function strip(path,r,left,right){
-    path.moveTo(r.rx1+r.w1*left,r.y1);path.lineTo(r.rx2+r.w2*left,r.y2);
-    path.lineTo(r.rx2+r.w2*right,r.y2);path.lineTo(r.rx1+r.w1*right,r.y1);
+  // Close the vertical profile exactly without a discontinuity at the line.
+  const descent=route.map((_,i)=>pulse(i,550,728));
+  const weight=descent.reduce((sum,value)=>sum+value,0);
+  for(let i=0;i<route.length;i++)route[i].hill-=height*descent[i]/weight;
+  return route;
+}
+
+function drawBlackoutTower(index,camX,camY,horizon,look){
+  if(index<35||index>592)return;
+  const approach=clamp((BLACKOUT_TOWER_START-index)/(BLACKOUT_TOWER_START-35),0,1);
+  const exit=clamp((index-BLACKOUT_TOWER_END)/(592-BLACKOUT_TOWER_END),0,1);
+  const angle=(index-BLACKOUT_TOWER_START)*2*Math.PI/138;
+  const depth=9800+approach*23000+exit*29000;
+  const scale=(CAMERA_DEPTH+player.fovOffset)/depth;
+  const cx=W*(.89+.10*exit-.23*approach)+Math.sin(angle)*W*.024-camX*scale*W*.5-look*.45;
+  const radius=scale*W*.5*8400;
+  const ellipseHeight=radius*.21;
+  const y=height=>horizon+(camY-height)*scale*H*.5;
+  const crown=segments[BLACKOUT_TOWER_END].worldY+6100;
+  const point=(u,height)=>[cx+radius*Math.sin(u),y(height)+ellipseHeight*Math.cos(u)];
+  ctx.fillStyle='#000';
+  ctx.strokeStyle='#fff';
+  ctx.lineWidth=2;
+  ctx.beginPath();ctx.ellipse(cx,y(crown),radius,ellipseHeight,0,Math.PI,2*Math.PI);
+  ctx.lineTo(cx+radius,y(-6300));ctx.ellipse(cx,y(-6300),radius,ellipseHeight,0,0,Math.PI);
+  ctx.closePath();ctx.fill();ctx.stroke();
+  for(let height=-6300;height<=crown;height+=3150){
+    const cy=y(height),rim=radius+Math.min(8,radius*.13);
+    ctx.beginPath();ctx.ellipse(cx,cy,rim,ellipseHeight,0,0,Math.PI);
+    ctx.ellipse(cx,cy-5,rim,ellipseHeight,0,Math.PI,0,true);ctx.closePath();
+    ctx.fillStyle='#fff';ctx.fill();
+  }
+  ctx.beginPath();
+  for(let i=0;i<7;i++){
+    // The uprights cycle around the cylinder as we gain altitude.
+    const phase=((i/7+angle/(2*Math.PI))%1+1)%1;
+    const u=(phase-.5)*Math.PI;
+    const top=point(u,crown),base=point(u,-6300);
+    ctx.moveTo(...top);ctx.lineTo(...base);
+  }
+  ctx.lineWidth=1.25;ctx.stroke();
+  ctx.beginPath();ctx.ellipse(cx,y(crown),radius,ellipseHeight,0,0,Math.PI*2);ctx.stroke();
+}
+
+function drawBlackoutMarkings(roads){
+  const deck=new Path2D(),paint=new Path2D();
+  function strip(path,r,left,right,nearWidth=1,farWidth=1){
+    const center=(left+right)/2, half=(right-left)/2;
+    path.moveTo(r.rx1+r.w1*(center-half*nearWidth),r.y1);
+    path.lineTo(r.rx2+r.w2*(center-half*farWidth),r.y2);
+    path.lineTo(r.rx2+r.w2*(center+half*farWidth),r.y2);
+    path.lineTo(r.rx1+r.w1*(center+half*nearWidth),r.y1);
     path.closePath();
   }
-  const halo=new Path2D(),edges=new Path2D(),paint=new Path2D();
   for(const road of roads){
     if(!road.isVisible)continue;
-    for(const side of [-1,1]){
-      strip(halo,road,side-.032,side+.032);
-      strip(edges,road,side-.014,side+.014);
-    }
-    if(road.segIdx===0)strip(paint,road,-.985,.985);
-    else if(road.segIdx%10<4)strip(paint,road,-.012,.012);
+    const end=clamp((BLACKOUT_SIGHT-road.distance)/15,0,1);
+    if(!end)continue;
+    const near=clamp(end+1/15,0,1);
+    strip(deck,road,-1.03,1.03);
+    strip(paint,road,-1.024,-.976,near,end);
+    strip(paint,road,.976,1.024,near,end);
+    const index=road.segIdx;
+    if(index>=SEGMENT_COUNT-2||index<2){
+      for(let sq=index<2?0:1;sq<10;sq+=2)strip(paint,road,-1+sq*.2,-1+(sq+1)*.2);
+    }else if(index%8<4)strip(paint,road,-.021,.021,near,end);
   }
-  ctx.fillStyle=ink('255,35,142',.21);ctx.fill(halo);
-  ctx.fillStyle=ink('255,64,157',1);ctx.fill(edges);
-  ctx.fillStyle=ink('255,255,255',1);ctx.fill(paint);
+  ctx.fillStyle='#000';ctx.fill(deck);
+  ctx.fillStyle='#fff';ctx.fill(paint);
+}
+
+const blackoutReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+function drawBlackoutSplice(horizon){
+  if(state!=='playing'||player.finished||blackoutReducedMotion.matches)return;
+  const index=player.z/SEGMENT_LENGTH;
+  const cut=BLACKOUT_SPLICES.find(mark=>index>=mark&&index<mark+9);
+  if(cut===undefined)return;
+  const phase=(index-cut)/9, direction=cut===BLACKOUT_SPLICES[0]?1:-1;
+  const y=Math.round(horizon-H*.09), height=Math.max(3,Math.round(H*.018));
+  ctx.save();
+  ctx.resetTransform();
+  for(let band=0;band<4;band++){
+    const row=y+band*(height+7);
+    if(row<0||row+height>H)continue;
+    const shift=Math.round(W*.10*Math.sin(phase*Math.PI)*(band%2?-1:1)*direction);
+    if(!shift)continue;
+    ctx.drawImage(C,0,row,W,height,shift,row,W,height);
+    ctx.fillStyle='#000';ctx.fillRect(shift>0?0:W+shift,row,Math.abs(shift),height);
+  }
+  ctx.restore();
 }
 
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
@@ -9805,8 +9881,9 @@ function getCarExhausts(cx,cy,sc,isPlayer,lean=0){
 }
 function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=false,isBraking=false,isChevronBoosting=false){
   const {bw,bh,px,py,pivotY}=getCarGeometry(cx,cy,sc,isPlayer);if(bw<8)return;
-  const body=hit>0?'#ffd7d7':isPlayer?'#ffc521':color;
-  const bumper=hit>0?'#ffffff':isPlayer?'#efa619':shadeColor(color,-18);
+  const monochrome=currentLevel===LEVEL_BLACKOUT;
+  const body=monochrome?'#fff':hit>0?'#ffd7d7':isPlayer?'#ffc521':color;
+  const bumper=monochrome?'#fff':hit>0?'#ffffff':isPlayer?'#efa619':shadeColor(color,-18);
   const ports=getCarExhausts(cx,cy,sc,isPlayer);
   const screenPorts=getCarExhausts(cx,cy,sc,isPlayer,lean);
   const rect=(x,y,w,h)=>ctx.fillRect(px+bw*x,py+bh*y,bw*w,bh*h);
@@ -9820,7 +9897,7 @@ function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=
 
   // Four jets follow the four mouths. Turbo colors and duration stay as before.
   if(isBoosting||isChevronBoosting){
-    const flameColor=isChevronBoosting?(currentLevel===LEVEL_ORBITAL?'#c3d3e5':'#ff00ff'):'#21d4fd';
+    const flameColor=monochrome?'#fff':isChevronBoosting?(currentLevel===LEVEL_ORBITAL?'#c3d3e5':'#ff00ff'):'#21d4fd';
     const height=bh*(isChevronBoosting?1.6+Math.random()*.85:.6+Math.random()*.5);
     for(const port of ports){
       const halfWidth=port.radius*.95;
@@ -9850,7 +9927,7 @@ function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=
   ctx.fillStyle='#080611';rect(.09,.48,.24,.14);rect(.34,.48,.32,.14);rect(.67,.48,.24,.14);
   for(const start of[.108,.688]){
     for(let i=0;i<3;i++){
-      const x=start+i*.073,lampColor=isBraking?'#ff003c':i===1?'#ffb24a':'#ff66aa';
+      const x=start+i*.073,lampColor=monochrome?'#fff':isBraking?'#ff003c':i===1?'#ffb24a':'#ff66aa';
       if(isBraking&&bw>24)drawGlowRect(px+bw*x,py+bh*.51,bw*.058,bh*.078,lampColor,12,.55);
       ctx.fillStyle=lampColor;rect(x,.51,.058,.078);
     }
@@ -9867,7 +9944,12 @@ function drawCarSprite(cx,cy,sc,color,isPlayer,lean=0,thrust=0,hit=0,isBoosting=
   }
   // Wing is drawn last so the supports visibly meet the upper body.
   ctx.fillStyle='#080713';rect(.20,.075,.045,.18);rect(.755,.075,.045,.18);rect(.065,.015,.87,.085);
-  ctx.fillStyle='#302c43';rect(.065,.015,.87,.009);
+  ctx.fillStyle=monochrome?'#fff':'#302c43';rect(.065,.015,.87,monochrome?.055:.009);
+  if(monochrome){
+    ctx.fillStyle='#000';
+    if(isPlayer)rect(.476,.165,.048,.28);
+    else rect(.23+.095*Math.max(0,OPP_COLORS.indexOf(color)),.167,.058,.055);
+  }
   ctx.restore();
 
   if(isChevronBoosting){
@@ -14073,7 +14155,7 @@ function drawLightningSprite(cx, cy, sc) {
   ctx.lineTo(-w*0.3, h/2); ctx.lineTo(w*0.5, -h*0.1); ctx.lineTo(w*0.1, -h*0.2);
   ctx.closePath();
   ctx.fillStyle = currentLevel===LEVEL_BLACKOUT?'#fff':'#ffe066'; ctx.fill();
-  ctx.lineWidth = Math.max(1, sc * 4); ctx.strokeStyle = currentLevel===LEVEL_BLACKOUT?'#ff409d':'#ff6b35'; ctx.stroke();
+  ctx.lineWidth = Math.max(1, sc * 4); ctx.strokeStyle = currentLevel===LEVEL_BLACKOUT?'#000':'#ff6b35'; ctx.stroke();
   ctx.restore();
 }
 
@@ -14134,6 +14216,10 @@ function render(ts) {
   }
   if (currentLevel === 2) oceanRockPalette = OCEAN_ROCK_DAY.map((color, i) => interpolateColor(color, OCEAN_ROCK_NIGHT[i], progressRatio));
 
+  if(currentLevel===LEVEL_BLACKOUT){
+    const palette=player.lap===2?'negative':'positive';
+    if(C.dataset.blackout!==palette)C.dataset.blackout=palette;
+  }else if(C.hasAttribute('data-blackout'))C.removeAttribute('data-blackout');
   if(currentLevel===LEVEL_BLACKOUT){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);}
   else if(currentLevel===LEVEL_COAST){drawCoastBackdrop(horizonY,startSegIdx);}
   else if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
@@ -14910,7 +14996,7 @@ function render(ts) {
     const segmentClipY = maxY;
     
     // If the segment starts above screen, skip it completely
-    if (p1.y < 0) continue;
+    if (p1.y < 0 && currentLevel!==LEVEL_BLACKOUT) continue;
 
     // Is the road segment visible?
     const isVisible = p2.y < maxY;
@@ -14931,7 +15017,8 @@ function render(ts) {
       segIdx: segIdx,
       clipY:segmentClipY,
       isVisible: isVisible,
-      visibility:currentLevel===LEVEL_BLACKOUT?blackoutVisibility(n+1-percent):currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
+      distance:n+1-percent,
+      visibility:currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
     });
 
     if(currentLevel===LEVEL_ORBITAL){
@@ -15463,7 +15550,15 @@ function render(ts) {
     }
   }
 
-  if(currentLevel===LEVEL_BLACKOUT)drawBlackoutMarkings(segmentsToDraw,horizonY);
+  if(currentLevel===LEVEL_BLACKOUT){
+    ctx.save();
+    if(!blackoutReducedMotion.matches){
+      const bank=-.18*player.curveAheadSmooth;
+      ctx.translate(W*.5,H*.72);ctx.rotate(bank);ctx.translate(-W*.5,-H*.72);
+    }
+    drawBlackoutTower(startSegIdx,camX,camY,horizonY,lookOffset);
+    drawBlackoutMarkings(segmentsToDraw);
+  }
   if(currentLevel===LEVEL_ORBITAL)drawOrbitalDeck(segmentsToDraw);
   const coastSnowShed=currentLevel===LEVEL_COAST?segmentsToDraw.filter(road=>road.segIdx>=1510&&road.segIdx<1552):null;
   if(currentLevel===LEVEL_COAST){
@@ -15508,6 +15603,7 @@ function render(ts) {
   // Interleave Road Segments and Sprites back-to-front (Perfect painter's algorithm depth occlusion)
   for (let i = segmentsToDraw.length - 1; i >= 0; i--) {
     const roadSeg = segmentsToDraw[i];
+    if(currentLevel===LEVEL_BLACKOUT&&roadSeg.distance>BLACKOUT_SIGHT)continue;
     if(roadSeg.visibility<1){ctx.save();ctx.globalAlpha*=roadSeg.visibility;}
     
     // 1. Draw the road segment (underlying pavement, barriers, cliffs, ocean, flora etc.)
@@ -15540,6 +15636,7 @@ function render(ts) {
     if(roadSeg.visibility<1)ctx.restore();
   }
 
+  if(currentLevel===LEVEL_BLACKOUT)drawBlackoutSplice(horizonY);
   const playerPose=getPlayerRenderPose(),playerScreenX=playerPose.x;
   playerLastScreenX=playerScreenX;
   const lean=playerPose.lean,thrust=clamp(player.speed/player.maxSpeed,0,1),bounceY=playerPose.y-(H-76);
@@ -15621,7 +15718,7 @@ function render(ts) {
   }
 
   if (player.hitFlash > 0 && currentLevel!==LEVEL_BLACKOUT) { ctx.save(); ctx.globalAlpha = Math.min(0.3, player.hitFlash * 0.45); ctx.fillStyle = '#ff355e'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
-  ctx.fillStyle = vigGrad; ctx.fillRect(0, H*0.65, W, H*0.35);
+  if(currentLevel!==LEVEL_BLACKOUT){ctx.fillStyle = vigGrad; ctx.fillRect(0, H*0.65, W, H*0.35);}
 
   if (confettiParticles.length > 0) {
       for (let c of confettiParticles) {
@@ -15760,6 +15857,7 @@ function render(ts) {
       }
       ctx.restore();
   }
+  if(currentLevel===LEVEL_BLACKOUT)ctx.restore();
   drawLastLapBanner();
   drawDreamDistortion();
 }
