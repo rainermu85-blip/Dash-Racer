@@ -252,6 +252,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   <img data-course="7" src="./assets/courses/paradise-circuit.webp" alt="A palm leans over the beach road near the island harbor." width="760" height="430">
   <img data-course="8" src="./assets/courses/orbital-passage.webp" alt="Earth appears beyond the glass of the station observation deck." width="760" height="430">
   <img data-course="9" src="./assets/courses/coast-to-coast.webp" alt="The highway passes desert rock formations on the way west." width="760" height="430">
+  <img data-course="10" src="./assets/courses/blackout.webp" alt="A dashed white line bends between two pink edges in the dark." width="760" height="430">
 </template>
 <script>
 // Coast to Coast uses the shared race projection and point-to-point finish.
@@ -4701,7 +4702,7 @@ resize(); window.addEventListener('resize', resize);
 let SEGMENT_COUNT = 1150; const SEGMENT_LENGTH = 150; let TRACK_LENGTH = SEGMENT_COUNT * SEGMENT_LENGTH;
 let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
-const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9;
+const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9, LEVEL_BLACKOUT = 10;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150,
     description: "The last light hangs between the towers. Electric palms flash past on the way to the river. Across the suspension bridge, the whole skyline fits between the cables." },
@@ -4720,7 +4721,9 @@ const LEVELS = [
   { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH,
     description: "Dock crews wave a shuttle in as you roll onto the station. Earth slips past the windows on the way to the reactor. When the evacuation signs light up, follow the arrows to the escape pod." },
   { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH,
-    description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." }
+    description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." },
+  { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'AFTER DARK / THREE LAPS', color: '#ff409d', segments: 960,
+    description: "Two pink rails slip out of the dark. Count the white dashes through the long sweeper and catch the turn back. By the third lap your hands know the way." }
 ];
 function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
 function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE?1:3;}
@@ -5116,6 +5119,14 @@ function buildSegments() {
             ...makeSection(100, -0.4, -8),
             ...makeSection(110, 0, 0)
         ];
+    } else if (currentLevel === LEVEL_BLACKOUT) {
+        // The broad opening arc teaches the sight distance before the double reversal.
+        const bends = [[50,200,.48], [220,335,-.64], [335,420,.55], [465,635,-.60],
+            [660,752,.67], [752,832,-.64], [832,912,.52]];
+        trackDef = makeSection(SEGMENT_COUNT,0,0);
+        for (const [start,end,peak] of bends) {
+            for (let i=start;i<end;i++) trackDef[i].curve = peak*Math.sin(Math.PI*(i-start)/(end-start))**2;
+        }
     } else if (currentLevel === LEVEL_COAST) {
         trackDef=buildCoastRoute();
     } else if (currentLevel === LEVEL_ORBITAL) {
@@ -5341,7 +5352,7 @@ function buildSegments() {
                     }
                 }
             }
-        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST) {
+        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST || currentLevel===LEVEL_BLACKOUT) {
             // Space Wave keeps the track edges free of floating crystal spires.
         } else {
             // Level 1: Standard tree distribution
@@ -5397,6 +5408,7 @@ function buildSegments() {
     // Adaptive Baustellen und Blitz-Items für die verschiedenen Strecken
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
+    if(currentLevel===LEVEL_BLACKOUT){siteIndices=[];freeBolts=[145,360,620,858];}
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
     if(currentLevel===LEVEL_COAST){siteIndices=[];freeBolts=[...COAST_BOOSTS.keys()];}
     if(currentLevel===LEVEL_ORBITAL){siteIndices=[];freeBolts=[145,475,805,1135,1465,1795,2125,2455,2785];}
@@ -8965,6 +8977,45 @@ function drawOceanBeachSpot(x,y,scale,kind,seed) {
         ctx.strokeStyle='#ff637c';ctx.beginPath();ctx.arc(39,-45,13,0,1);ctx.arc(39,-45,13,Math.PI,Math.PI+1);ctx.stroke();
     }
     ctx.restore();
+}
+
+// A flat road in darkness. Projected paint, pickups and cars share a short
+// sight distance. One fill per ribbon keeps joins out of the neon edges.
+const BLACKOUT_SIGHT = 52, BLACKOUT_FULL_LIGHT = 22;
+function blackoutVisibility(distance){
+  const t=clamp((BLACKOUT_SIGHT-distance)/(BLACKOUT_SIGHT-BLACKOUT_FULL_LIGHT),0,1);
+  return t*t*(3-2*t);
+}
+function drawBlackoutMarkings(roads,horizonY){
+  const projection=(CAMERA_DEPTH+player.fovOffset)*CAMERA_HEIGHT*H/(2*SEGMENT_LENGTH);
+  const farY=horizonY+projection/BLACKOUT_SIGHT, nearY=horizonY+projection/BLACKOUT_FULL_LIGHT;
+  function ink(rgb,opacity){
+    const gradient=ctx.createLinearGradient(0,farY,0,nearY);
+    for(const distance of [BLACKOUT_SIGHT,44,37,32,27,BLACKOUT_FULL_LIGHT]){
+      const y=horizonY+projection/distance;
+      gradient.addColorStop(clamp((y-farY)/(nearY-farY),0,1),
+        'rgba('+rgb+','+opacity*blackoutVisibility(distance)+')');
+    }
+    return gradient;
+  }
+  function strip(path,r,left,right){
+    path.moveTo(r.rx1+r.w1*left,r.y1);path.lineTo(r.rx2+r.w2*left,r.y2);
+    path.lineTo(r.rx2+r.w2*right,r.y2);path.lineTo(r.rx1+r.w1*right,r.y1);
+    path.closePath();
+  }
+  const halo=new Path2D(),edges=new Path2D(),paint=new Path2D();
+  for(const road of roads){
+    if(!road.isVisible)continue;
+    for(const side of [-1,1]){
+      strip(halo,road,side-.032,side+.032);
+      strip(edges,road,side-.014,side+.014);
+    }
+    if(road.segIdx===0)strip(paint,road,-.985,.985);
+    else if(road.segIdx%10<4)strip(paint,road,-.012,.012);
+  }
+  ctx.fillStyle=ink('255,35,142',.21);ctx.fill(halo);
+  ctx.fillStyle=ink('255,64,157',1);ctx.fill(edges);
+  ctx.fillStyle=ink('255,255,255',1);ctx.fill(paint);
 }
 
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
@@ -14021,8 +14072,8 @@ function drawLightningSprite(cx, cy, sc) {
   ctx.moveTo(w*0.2, -h/2); ctx.lineTo(-w*0.5, 0); ctx.lineTo(-w*0.1, h*0.1);
   ctx.lineTo(-w*0.3, h/2); ctx.lineTo(w*0.5, -h*0.1); ctx.lineTo(w*0.1, -h*0.2);
   ctx.closePath();
-  ctx.fillStyle = '#ffe066'; ctx.fill();
-  ctx.lineWidth = Math.max(1, sc * 4); ctx.strokeStyle = '#ff6b35'; ctx.stroke();
+  ctx.fillStyle = currentLevel===LEVEL_BLACKOUT?'#fff':'#ffe066'; ctx.fill();
+  ctx.lineWidth = Math.max(1, sc * 4); ctx.strokeStyle = currentLevel===LEVEL_BLACKOUT?'#ff409d':'#ff6b35'; ctx.stroke();
   ctx.restore();
 }
 
@@ -14083,7 +14134,8 @@ function render(ts) {
   }
   if (currentLevel === 2) oceanRockPalette = OCEAN_ROCK_DAY.map((color, i) => interpolateColor(color, OCEAN_ROCK_NIGHT[i], progressRatio));
 
-  if(currentLevel===LEVEL_COAST){drawCoastBackdrop(horizonY,startSegIdx);}
+  if(currentLevel===LEVEL_BLACKOUT){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);}
+  else if(currentLevel===LEVEL_COAST){drawCoastBackdrop(horizonY,startSegIdx);}
   else if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
   else {
   const sunBuffer = sunR * 2, sunLoopW = W + sunBuffer * 2;
@@ -14793,7 +14845,7 @@ function render(ts) {
   // A distant return bend cannot be represented as an isolated road ribbon
   // above this hilly panorama. Fade its terrain and scenery together, before
   // that remote section, with a world-distance fade rather than a hard cutoff.
-  const currentDrawDistance = currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:currentLevel===LEVEL_ORBITAL?ORBITAL_DRAW_DISTANCE:currentLevel===LEVEL_COAST?COAST_DRAW_DISTANCE:DRAW_DISTANCE;
+  const currentDrawDistance = currentLevel===LEVEL_BLACKOUT ? BLACKOUT_SIGHT+1 : currentLevel === LEVEL_SPACE ? 450 : currentLevel===LEVEL_HILLS?155:currentLevel===LEVEL_PARADISE?210:currentLevel===LEVEL_ORBITAL?ORBITAL_DRAW_DISTANCE:currentLevel===LEVEL_COAST?COAST_DRAW_DISTANCE:DRAW_DISTANCE;
   const orbitalActors=currentLevel===LEVEL_ORBITAL?orbitalMovingActors(camZ/SEGMENT_LENGTH):null;
   const visibleHighwayTraffic = highwayPolice ? [...highwayTraffic, highwayPolice] : highwayTraffic;
   const projectVehicle = (worldZ, laneX, seg, segmentZ, curveStart, curveEnd) => {
@@ -14810,9 +14862,9 @@ function render(ts) {
     const lapOffset = (!isPointToPoint() && segIdx < startSegIdx) ? TRACK_LENGTH : 0; const segWorldZ = seg.worldZ + lapOffset;
     
     // Die Projektion muss gemacht werden
-    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST, nearZ=camZ+64;
+    const coastal=currentLevel===2, clippedRoad=coastal||currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST||currentLevel===LEVEL_BLACKOUT, nearZ=camZ+64;
     if(clippedRoad && segWorldZ+SEGMENT_LENGTH<=nearZ){
-      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST)&&n===0?1-percent:1;
+      const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST||currentLevel===LEVEL_BLACKOUT)&&n===0?1-percent:1;
       curveDX+=seg.curve*5*step;curveOffset+=curveDX*step;curveDX*=Math.pow(.85,step);
       continue;
     }
@@ -14833,7 +14885,7 @@ function render(ts) {
     seg.curveOffset = curveOffset;
     
     // Immer Kurven-Mathematik fortführen
-    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST)&&n===0?1-percent:1;
+    const curveStep=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST||currentLevel===LEVEL_BLACKOUT)&&n===0?1-percent:1;
     curveDX+=seg.curve*5*curveStep;curveOffset+=curveDX*curveStep;curveDX*=Math.pow(.85,curveStep);
     seg.curveOffsetEnd=curveOffset;
 
@@ -14879,7 +14931,7 @@ function render(ts) {
       segIdx: segIdx,
       clipY:segmentClipY,
       isVisible: isVisible,
-      visibility:currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
+      visibility:currentLevel===LEVEL_BLACKOUT?blackoutVisibility(n+1-percent):currentLevel===LEVEL_HILLS?hillsDistanceVisibility((segWorldZ+SEGMENT_LENGTH-camZ)/SEGMENT_LENGTH):1
     });
 
     if(currentLevel===LEVEL_ORBITAL){
@@ -15411,6 +15463,7 @@ function render(ts) {
     }
   }
 
+  if(currentLevel===LEVEL_BLACKOUT)drawBlackoutMarkings(segmentsToDraw,horizonY);
   if(currentLevel===LEVEL_ORBITAL)drawOrbitalDeck(segmentsToDraw);
   const coastSnowShed=currentLevel===LEVEL_COAST?segmentsToDraw.filter(road=>road.segIdx>=1510&&road.segIdx<1552):null;
   if(currentLevel===LEVEL_COAST){
@@ -15464,7 +15517,7 @@ function render(ts) {
     }else if(currentLevel===LEVEL_ORBITAL){
       const end=roadSeg.orbitalEnd;
       if(end)drawOrbitalRoad(roadSeg.rx1,roadSeg.y1,roadSeg.w1,end.rx2,end.y2,end.w2,roadSeg.p1Scale,end.p2Scale,roadSeg.segIdx,roadSeg.isVisible||end.isVisible,end.segIdx+1);
-    }else drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
+    }else if(currentLevel!==LEVEL_BLACKOUT)drawRoadSegment(roadSeg.rx1, roadSeg.y1, roadSeg.w1, roadSeg.rx2, roadSeg.y2, roadSeg.w2, roadSeg.color, roadSeg.isStart, roadSeg.isBridge, roadSeg.p1Scale, roadSeg.p2Scale, roadSeg.isPillar, roadSeg.segIdx, roadSeg.isVisible);
     
     if(roadSeg.isVisible)drawDreamSurfaces(roadSeg.rx1,roadSeg.y1,roadSeg.w1,roadSeg.rx2,roadSeg.y2,roadSeg.w2,roadSeg.segIdx);
     if(pierAnchor && roadSeg.segIdx>=OCEAN_PIER_INDEX && roadSeg.segIdx<OCEAN_PIER_INDEX+OCEAN_PIER_LENGTH){
@@ -15547,7 +15600,7 @@ function render(ts) {
           ctx.fill();
       }
       ctx.restore();
-  } else if (player.isBoosting) {
+  } else if (player.isBoosting && currentLevel!==LEVEL_BLACKOUT) {
       ctx.save();
       ctx.translate(W/2, H/2);
       for(let i=0; i<30; i++) {
@@ -15563,11 +15616,11 @@ function render(ts) {
           ctx.stroke();
       }
       ctx.restore();
-  } else {
+  } else if(currentLevel!==LEVEL_BLACKOUT) {
       drawCruisingSpeedStream(chapterTime);
   }
 
-  if (player.hitFlash > 0) { ctx.save(); ctx.globalAlpha = Math.min(0.3, player.hitFlash * 0.45); ctx.fillStyle = '#ff355e'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  if (player.hitFlash > 0 && currentLevel!==LEVEL_BLACKOUT) { ctx.save(); ctx.globalAlpha = Math.min(0.3, player.hitFlash * 0.45); ctx.fillStyle = '#ff355e'; ctx.fillRect(0, 0, W, H); ctx.restore(); }
   ctx.fillStyle = vigGrad; ctx.fillRect(0, H*0.65, W, H*0.35);
 
   if (confettiParticles.length > 0) {
@@ -16372,7 +16425,7 @@ function getPlayerCollisionX(){
   // Match the renderer's continuous road bend at the car's contact plane.
   for(let n=0;n<=Math.ceil(distance/SEGMENT_LENGTH)+1;n++){
     const z=first+n*SEGMENT_LENGTH,seg=getSeg(z),before=offset;
-    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
+    const step=(currentLevel===LEVEL_HILLS||currentLevel===LEVEL_PARADISE||currentLevel===LEVEL_ORBITAL||currentLevel===LEVEL_COAST||currentLevel===LEVEL_BLACKOUT)&&n===0?1-player.z%SEGMENT_LENGTH/SEGMENT_LENGTH:1;
     delta+=seg.curve*5*step;offset+=delta*step;delta*=Math.pow(.85,step);
     if(z+SEGMENT_LENGTH>=worldZ){
       const bend=before+(offset-before)*clamp((worldZ-z)/SEGMENT_LENGTH,0,1);
