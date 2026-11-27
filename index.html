@@ -9074,13 +9074,16 @@ function drawBlackoutMarkings(roads){
 }
 
 const blackoutReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
-function drawBlackoutSplice(horizon){
+function drawBlackoutSplice(roads,horizon,bank){
   if(state!=='playing'||player.finished||blackoutReducedMotion.matches)return;
   const index=player.z/SEGMENT_LENGTH;
   const cut=BLACKOUT_SPLICES.find(mark=>index>=mark&&index<mark+9);
   if(cut===undefined)return;
   const phase=(index-cut)/9, direction=cut===BLACKOUT_SPLICES[0]?1:-1;
-  const y=Math.round(horizon-H*.09), height=Math.max(3,Math.round(H*.018));
+  // Sample the projected road: after the drop it can sit well below the horizon.
+  const road=roads.find(r=>r.isVisible&&r.distance>=14);
+  const roadY=road?road.y2+Math.sin(bank)*(road.rx2-W*.5):horizon;
+  const y=Math.round(roadY-H*.045), height=Math.max(3,Math.round(H*.018));
   ctx.save();
   ctx.resetTransform();
   for(let band=0;band<4;band++){
@@ -15550,11 +15553,11 @@ function render(ts) {
     }
   }
 
+  const blackoutBank=currentLevel===LEVEL_BLACKOUT&&!blackoutReducedMotion.matches?-.18*player.curveAheadSmooth:0;
   if(currentLevel===LEVEL_BLACKOUT){
     ctx.save();
-    if(!blackoutReducedMotion.matches){
-      const bank=-.18*player.curveAheadSmooth;
-      ctx.translate(W*.5,H*.72);ctx.rotate(bank);ctx.translate(-W*.5,-H*.72);
+    if(blackoutBank){
+      ctx.translate(W*.5,H*.72);ctx.rotate(blackoutBank);ctx.translate(-W*.5,-H*.72);
     }
     drawBlackoutTower(startSegIdx,camX,camY,horizonY,lookOffset);
     drawBlackoutMarkings(segmentsToDraw);
@@ -15636,7 +15639,7 @@ function render(ts) {
     if(roadSeg.visibility<1)ctx.restore();
   }
 
-  if(currentLevel===LEVEL_BLACKOUT)drawBlackoutSplice(horizonY);
+  if(currentLevel===LEVEL_BLACKOUT)drawBlackoutSplice(segmentsToDraw,horizonY,blackoutBank);
   const playerPose=getPlayerRenderPose(),playerScreenX=playerPose.x;
   playerLastScreenX=playerScreenX;
   const lean=playerPose.lean,thrust=clamp(player.speed/player.maxSpeed,0,1),bounceY=playerPose.y-(H-76);
