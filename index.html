@@ -4731,7 +4731,7 @@ const LEVELS = [
   { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH,
     description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." },
   { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'TOWER SPIRAL / THREE LAPS', color: '#ffffff', segments: 960,
-    description: "The road spirals up a tower before diving back into the dark. The second lap turns the world inside out. The final lap goes cobalt, and your Countach turns yellow." }
+    description: "A narrow bridge cuts across the climb around the tower. The second lap turns the world inside out. The final lap goes cobalt, and your Countach turns yellow." }
 ];
 function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
 function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE?1:3;}
@@ -8984,7 +8984,7 @@ function drawOceanBeachSpot(x,y,scale,kind,seed) {
 
 const BLACKOUT_SIGHT = 54;
 const BLACKOUT_TOWER_START = 108, BLACKOUT_TOWER_END = 522;
-const BLACKOUT_SPLICES = [535, 742];
+const BLACKOUT_BRIDGE_START = 263, BLACKOUT_BRIDGE_END = 309;
 const BLACKOUT_COBALT = '#1325a0';
 const BLACKOUT_PLAYER_YELLOW = '#ffe066';
 
@@ -9000,12 +9000,20 @@ function buildBlackoutRoute(){
   const ascent=[BLACKOUT_TOWER_START,BLACKOUT_TOWER_END];
   let height=0;
   for(let i=0;i<route.length;i++){
-    // Sustain the same turning direction through all three decks.
     const helix=roll(i,...ascent)**.35;
-    const rise=helix*(.77+.23*Math.cos((i-142)*2*Math.PI/138));
-    route[i].curve=-.52*pulse(i,28,108)+helix*(.69+.30*pulse(i,284,444))
+    // The first climbing arc opens into a switchback and a level bridge.
+    // Two opposite turns bring the road back around the tower above it.
+    const lowerClimb=.86*roll(i,BLACKOUT_TOWER_START,186)
+      -.77*pulse(i,164,231)+.65*pulse(i,215,BLACKOUT_BRIDGE_START);
+    const upperClimb=-.79*pulse(i,BLACKOUT_BRIDGE_END,372)+.81*pulse(i,350,416)
+      +.82*roll(i,392,BLACKOUT_TOWER_END)**.55;
+    route[i].curve=-.52*pulse(i,28,108)+lowerClimb+upperClimb
       -1.14*pulse(i,529,655)+.97*pulse(i,641,743)
       -1.02*pulse(i,731,825)+.69*pulse(i,809,914);
+    const bridgeApproach=clamp((BLACKOUT_BRIDGE_START-i)/24,0,1);
+    const bridgeExit=clamp((i-BLACKOUT_BRIDGE_END)/24,0,1);
+    const ramp=bridgeApproach+bridgeExit;
+    const rise=helix*ramp*ramp*(3-2*ramp)*(.82+.18*Math.cos((i-142)*2*Math.PI/138));
     const drop=roll(i,523,728), recovery=roll(i,708,879);
     route[i].hill=rise*42-drop*81+recovery*24;
     height+=route[i].hill;
@@ -9055,7 +9063,7 @@ function drawBlackoutTower(index,camX,camY,horizon,look,background){
 }
 
 function drawBlackoutMarkings(roads,background){
-  const deck=new Path2D(),checker=new Path2D(),paint=new Path2D();
+  const deck=new Path2D(),checker=new Path2D(),paint=new Path2D(),rail=new Path2D();
   function strip(path,r,left,right,nearWidth=1,farWidth=1){
     const center=(left+right)/2, half=(right-left)/2;
     path.moveTo(r.rx1+r.w1*(center-half*nearWidth),r.y1);
@@ -9077,36 +9085,26 @@ function drawBlackoutMarkings(roads,background){
       strip(checker,road,-1,1);
       for(let sq=index<2?0:1;sq<10;sq+=2)strip(paint,road,-1+sq*.2,-1+(sq+1)*.2);
     }else if(index%8<4)strip(paint,road,-.021,.021,near,end);
+    if(index>=BLACKOUT_BRIDGE_START&&index<BLACKOUT_BRIDGE_END){
+      for(const side of [-1,1]){
+        const x1=road.rx1+side*1.055*road.w1, x2=road.rx2+side*1.055*road.w2;
+        const top1=road.y1-road.p1Scale*H*104, top2=road.y2-road.p2Scale*H*104;
+        rail.moveTo(x1,top1);rail.lineTo(x2,top2);
+        rail.lineTo(x2,top2+road.p2Scale*H*24*end);rail.lineTo(x1,top1+road.p1Scale*H*24*near);
+        rail.closePath();
+        if((index-BLACKOUT_BRIDGE_START)%4===0||index===BLACKOUT_BRIDGE_END-1){
+          const width=road.p2Scale*W*52*end;
+          rail.rect(x2-width/2,top2,width,road.y2-top2);
+        }
+      }
+    }
   }
   ctx.fillStyle=background;ctx.fill(deck);
   ctx.fillStyle='#000';ctx.fill(checker);
-  ctx.fillStyle='#fff';ctx.fill(paint);
+  ctx.fillStyle='#fff';ctx.fill(paint);ctx.fill(rail);
 }
 
 const blackoutReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
-function drawBlackoutSplice(roads,horizon,bank,background){
-  if(state!=='playing'||player.finished||blackoutReducedMotion.matches)return;
-  const index=player.z/SEGMENT_LENGTH;
-  const cut=BLACKOUT_SPLICES.find(mark=>index>=mark&&index<mark+9);
-  if(cut===undefined)return;
-  const phase=(index-cut)/9, direction=cut===BLACKOUT_SPLICES[0]?1:-1;
-  // Sample the projected road: after the drop it can sit well below the horizon.
-  const road=roads.find(r=>r.isVisible&&r.distance>=14);
-  const roadY=road?road.y2+Math.sin(bank)*(road.rx2-W*.5):horizon;
-  const y=Math.round(roadY-H*.045), height=Math.max(3,Math.round(H*.018));
-  ctx.save();
-  ctx.resetTransform();
-  for(let band=0;band<4;band++){
-    const row=y+band*(height+7);
-    if(row<0||row+height>H)continue;
-    const shift=Math.round(W*.10*Math.sin(phase*Math.PI)*(band%2?-1:1)*direction);
-    if(!shift)continue;
-    ctx.drawImage(C,0,row,W,height,shift,row,W,height);
-    ctx.fillStyle=background;ctx.fillRect(shift>0?0:W+shift,row,Math.abs(shift),height);
-  }
-  ctx.restore();
-}
-
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
     if(currentLevel===LEVEL_ORBITAL){drawOrbitalRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx,isVisible);return;}
     if(currentLevel===LEVEL_PARADISE){if(isVisible)drawParadiseRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);return;}
@@ -15653,7 +15651,6 @@ function render(ts) {
     if(roadSeg.visibility<1)ctx.restore();
   }
 
-  if(currentLevel===LEVEL_BLACKOUT)drawBlackoutSplice(segmentsToDraw,horizonY,blackoutBank,blackoutBackground);
   const playerPose=getPlayerRenderPose(),playerScreenX=playerPose.x;
   playerLastScreenX=playerScreenX;
   const lean=playerPose.lean,thrust=clamp(player.speed/player.maxSpeed,0,1),bounceY=playerPose.y-(H-76);
