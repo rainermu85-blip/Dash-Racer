@@ -261,6 +261,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   <img data-course="8" src="./assets/courses/orbital-passage.webp" alt="Earth appears beyond the glass of the station observation deck." width="760" height="430">
   <img data-course="9" src="./assets/courses/coast-to-coast.webp" alt="The highway passes desert rock formations on the way west." width="760" height="430">
   <img data-course="10" src="./assets/courses/blackout.webp" alt="A white road winds around a black tower marked with white rings." width="760" height="430">
+  <img data-course="11" src="./assets/courses/redline-rush.webp" alt="Red steel track drops toward the lights of a fairground." width="760" height="430">
 </template>
 <script>
 // Coast to Coast uses the shared race projection and point-to-point finish.
@@ -4710,7 +4711,8 @@ resize(); window.addEventListener('resize', resize);
 let SEGMENT_COUNT = 1150; const SEGMENT_LENGTH = 150; let TRACK_LENGTH = SEGMENT_COUNT * SEGMENT_LENGTH;
 let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
-const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9, LEVEL_BLACKOUT = 10;
+const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9, LEVEL_BLACKOUT = 10, LEVEL_COASTER = 11;
+const COASTER_LENGTH = 2240;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150,
     description: "The last light hangs between the towers. Electric palms flash past on the way to the river. Across the suspension bridge, the whole skyline fits between the cables." },
@@ -4731,10 +4733,12 @@ const LEVELS = [
   { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH,
     description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." },
   { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'TOWER SPIRAL / THREE LAPS', color: '#ffffff', segments: 960,
-    description: "A narrow bridge cuts across the climb around the tower. The second lap turns the world inside out. The final lap goes cobalt, and your Countach turns yellow." }
+    description: "A narrow bridge cuts across the climb around the tower. The second lap turns the world inside out. The final lap goes cobalt, and your Countach turns yellow." },
+  { id: LEVEL_COASTER, name: 'REDLINE RUSH', tag: 'FAIRGROUND / ONE LAP', color: '#ff746d', segments: COASTER_LENGTH,
+    description: "Red steel winds up to the high point of the fairground. Over the crest, the lights of the midway come rushing up to meet you. Leave the crowds behind for a quick run through the Ghost Train." }
 ];
 function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
-function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE?1:3;}
+function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE||level===LEVEL_COASTER?1:3;}
 const HIGHWAY_CROSSINGS = [
   { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
@@ -5128,6 +5132,8 @@ function buildSegments() {
             ...makeSection(100, -0.4, -8),
             ...makeSection(110, 0, 0)
         ];
+    } else if (currentLevel === LEVEL_COASTER) {
+        trackDef = buildCoasterRoute();
     } else if (currentLevel === LEVEL_BLACKOUT) {
         trackDef = buildBlackoutRoute();
     } else if (currentLevel === LEVEL_COAST) {
@@ -5355,7 +5361,7 @@ function buildSegments() {
                     }
                 }
             }
-        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST || currentLevel===LEVEL_BLACKOUT) {
+        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST || currentLevel===LEVEL_BLACKOUT || currentLevel===LEVEL_COASTER) {
             // Space Wave keeps the track edges free of floating crystal spires.
         } else {
             // Level 1: Standard tree distribution
@@ -5412,6 +5418,7 @@ function buildSegments() {
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
     if(currentLevel===LEVEL_BLACKOUT){siteIndices=[];freeBolts=[135,420,645,838];}
+    if(currentLevel===LEVEL_COASTER){siteIndices=[];freeBolts=[...COASTER_BOOSTS.keys()];}
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
     if(currentLevel===LEVEL_COAST){siteIndices=[];freeBolts=[...COAST_BOOSTS.keys()];}
     if(currentLevel===LEVEL_ORBITAL){siteIndices=[];freeBolts=[145,475,805,1135,1465,1795,2125,2455,2785];}
@@ -5457,7 +5464,8 @@ function buildSegments() {
         // Freie Booster auf der restlichen Strecke
         freeBolts.forEach(idx => {
             if (idx >= SEGMENT_COUNT) return;
-            const lane = currentLevel===LEVEL_COAST?COAST_BOOSTS.get(idx):laneOffsets[~~(Math.random() * 2)];
+            const lane = currentLevel===LEVEL_COAST?COAST_BOOSTS.get(idx)
+                :currentLevel===LEVEL_COASTER?COASTER_BOOSTS.get(idx):laneOffsets[~~(Math.random() * 2)];
             const s = segments[idx];
             if (s) s.lightning = { active: true, x: lane };
         });
@@ -9105,6 +9113,726 @@ function drawBlackoutMarkings(roads,background){
 }
 
 const blackoutReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+
+// Redline Rush: a closed world-space spline, sampled by distance for the race.
+const COASTER_HALF_WIDTH = 4.55;
+const COASTER_CAR_WIDTH = 1.94;
+const COASTER_RAIL_LIMIT = 0.98 - COASTER_CAR_WIDTH / (2 * COASTER_HALF_WIDTH);
+const COASTER_NEAR = 1.45;
+const COASTER_VIEW = 188;
+const COASTER_BOOSTS = new Map([[91,-.46],[311,.44],[685,-.45],[903,.31],[1128,-.43],
+  [1354,.41],[1588,-.42],[1916,.44]]);
+const COASTER_HOUSE = { x:50, entry:-63, exit:-20, half:10.5, floor:3.4, roof:11.5 };
+const COASTER_STEEL = { top:'#ee5864', red:'#c9344a', side:'#9c263c', brace:'#96283d', shade:'#551d32' };
+const COASTER_STATIONS = [
+  // x, z, elevation in metres. The helix crosses its own foot at x65, z150.
+  [50,6,3.4],[50,57,3.4],[57,105,5],[65,150,10],
+  [45,190,18],[-2,205,26],[-43,185,34],[-57,148,42],[-36,114,50],[4,102,58],[45,117,66],[65,150,74],
+  [67,177,77],[67,196,73],[68,221,53],[69,252,25],[65,285,8],
+  [49,319,7.5],[16,337,11],[-21,326,16],[-43,303,24],[-61,268,31],
+  [-83,235,18],[-119,217,8],[-145,201,6],[-151,174,6],[-131,151,12],[-95,134,19],
+  [-75,108,15],[-76,82,8],[-100,61,5],[-129,45,5],[-141,20,9],[-119,-6,15],[-82,-17,12],
+  [-50,-35,5],[-38,-64,3.4],[-20,-92,3.4],[11,-108,3.4],[37,-99,3.4],[50,-77,3.4],[50,-58,3.4],[50,-30,3.4]
+];
+let coasterCourse = null;
+
+function buildCoasterRoute() {
+  if (coasterCourse) return coasterCourse.track;
+  const knots = COASTER_STATIONS.map(([x,z,y]) => [x,y,z]);
+  const knot = index => knots[(index + knots.length) % knots.length];
+  const samples = [];
+  let distance = 0;
+  for (let i=0; i<knots.length; i++) {
+    const a=knot(i-1), b=knot(i), c=knot(i+1), d=knot(i+2);
+    for (let j=0; j<40; j++) {
+      const t=j/40, t2=t*t, t3=t2*t;
+      const point=b.map((value,k) => value + .5*((c[k]-a[k])*t +
+        (2*a[k]-5*value+4*c[k]-d[k])*t2 + (-a[k]+3*value-3*c[k]+d[k])*t3));
+      const previous=samples.at(-1)?.point;
+      if (previous) distance+=Math.hypot(point[0]-previous[0],point[1]-previous[1],point[2]-previous[2]);
+      samples.push({ point, distance });
+    }
+  }
+  const last=samples.at(-1).point, first=knots[0];
+  distance+=Math.hypot(first[0]-last[0],first[1]-last[1],first[2]-last[2]);
+  samples.push({point:first,distance});
+  const metresPerSegment=distance/COASTER_LENGTH;
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  let cursor=0;
+  const points=Array.from({length:COASTER_LENGTH},(_,i)=>{
+    const target=i*metresPerSegment;
+    while (samples[cursor+1].distance<target) cursor++;
+    const a=samples[cursor], b=samples[cursor+1];
+    const t=(target-a.distance)/(b.distance-a.distance);
+    return a.point.map((v,k)=>lerp(v,b.point[k],t));
+  });
+  const path=i=>points[(i+COASTER_LENGTH)%COASTER_LENGTH];
+  const heading=(a,b)=>Math.atan2(b[0]-a[0],b[2]-a[2]);
+  const frames=points.map((point,i)=>{
+    const before=path(i-6), after=path(i+6);
+    const yaw=heading(before,after);
+    const change=heading(point,after)-heading(before,point);
+    const curvature=Math.atan2(Math.sin(change),Math.cos(change))/(6*metresPerSegment);
+    const pitch=Math.atan2(after[1]-before[1],Math.hypot(after[0]-before[0],after[2]-before[2]));
+    // Outside rail rises into the corner. The high point of the banking
+    // is eased by the tangent window rather than by a screen rotation.
+    const bank=-.79*Math.tanh(curvature*49);
+    const cos=Math.cos(bank), sin=Math.sin(bank);
+    const right=[
+      Math.cos(yaw)*cos-Math.sin(yaw)*Math.sin(pitch)*sin,
+      Math.cos(pitch)*sin,
+      -Math.sin(yaw)*cos-Math.cos(yaw)*Math.sin(pitch)*sin
+    ];
+    return {point,right,bank,curve:1.12*Math.tanh(curvature*57)};
+  });
+  frames.push(frames[0]);
+  const track=points.map((point,i)=>({curve:frames[i].curve,hill:(frames[i+1].point[1]-point[1])*95}));
+  coasterCourse={frames,track,metresPerSegment,ground:[],meshes:[],props:[],visitors:[],rides:[]};
+  buildCoasterSteel(coasterCourse);
+  buildCoasterFair(coasterCourse);
+  return track;
+}
+
+function sampleCoaster(z) {
+  const sample=z/SEGMENT_LENGTH;
+  const n=Math.floor(sample), i=(n%COASTER_LENGTH+COASTER_LENGTH)%COASTER_LENGTH;
+  const a=coasterCourse.frames[i], b=coasterCourse.frames[i+1], t=sample-n;
+  return {
+    point:a.point.map((v,j)=>v+(b.point[j]-v)*t),
+    right:a.right.map((v,j)=>v+(b.right[j]-v)*t),
+    bank:a.bank+(b.bank-a.bank)*t
+  };
+}
+
+function coasterOffset(frame,across,height=0) {
+  const [x,y,z]=frame.point, [rx,ry,rz]=frame.right;
+  return [x+rx*across,y+ry*across+height,z+rz*across];
+}
+
+function coasterMesh(course,point,radius,layer=course.meshes) {
+  const mesh={point,radius,faces:[],beams:[]};
+  layer.push(mesh);
+  return mesh;
+}
+
+function coasterBox(mesh, x1,y1,z1, x2,y2,z2, front, side, top) {
+  const a=[x1,y1,z1],b=[x2,y1,z1],c=[x2,y1,z2],d=[x1,y1,z2];
+  const e=[x1,y2,z1],f=[x2,y2,z1],g=[x2,y2,z2],h=[x1,y2,z2];
+  mesh.faces.push([[a,b,f,e],front],[[d,h,g,c],front],[[a,e,h,d],side],[[b,c,g,f],side],[[e,f,g,h],top]);
+}
+
+function coasterDeckPlane(a,b) {
+  const [x,y,z]=a.point, [rx,ry,rz]=a.right;
+  const dx=b.point[0]-x,dy=b.point[1]-y,dz=b.point[2]-z;
+  const nx=dy*rz-dz*ry,ny=dz*rx-dx*rz,nz=dx*ry-dy*rx;
+  return [nx,ny,nz,nx*x+ny*y+nz*z];
+}
+
+function buildCoasterSteel(course) {
+  const {frames}=course, width=COASTER_HALF_WIDTH, steel=COASTER_STEEL, step=4;
+  for (let i=0; i<COASTER_LENGTH; i+=step) {
+    const a=frames[i], b=frames[Math.min(COASTER_LENGTH,i+step)];
+    const mesh=coasterMesh(course,a.point,8);
+    const strip=(left,right,height,color,bias=0,oneSided=true)=>{
+      const corners=[coasterOffset(a,left,height),coasterOffset(b,left,height),
+        coasterOffset(b,right,height),coasterOffset(a,right,height)];
+      mesh.faces.push([corners,color,oneSided,bias]);
+    };
+    // Full anthracite driving deck between two box girders, with the lower
+    // chords and diagonal web visible from the lower track and park.
+    // A single double-sided deck stays solid at the crest and from the lower helix.
+    strip(-width,width,0,(i/step)%2?'#343440':'#32323d',0,false);
+    if (i===0 || i===COASTER_LENGTH-step) {
+      for (let lane=0; lane<12; lane++) {
+        const edge=(lane/6-1)*width;
+        strip(edge,edge+width/6,.013,(lane+Number(i===0))%2?'#eae0d0':'#201e29',.025);
+      }
+    } else if (i>=150 && i<800) {
+      strip(-.28,.28,.009,'#232532',.025);
+      if (i%8===0) strip(-.19,.19,.021,'#747481',.047);
+    } else {
+      for (const side of [-1,1]) if (i%12===0) strip(side*1.48-.041,side*1.48+.041,.011,'#9e97a0',.025);
+    }
+    for (const side of [-1,1]) {
+      const edge=side*width, outer=edge+side*.13, inner=edge-side*.24;
+      strip(Math.min(outer,inner),Math.max(outer,inner),.24,steel.top,.035);
+      const topA=coasterOffset(a,outer,.24), topB=coasterOffset(b,outer,.24);
+      const footA=coasterOffset(a,outer,-.52), footB=coasterOffset(b,outer,-.52);
+      const outerFace=[topA,topB,footB,footA];
+      mesh.faces.push([side<0?outerFace.reverse():outerFace,steel.side,true]);
+      const innerFace=[coasterOffset(a,inner,.24),coasterOffset(b,inner,.24),
+        coasterOffset(b,inner,-.12),coasterOffset(a,inner,-.12)];
+      mesh.faces.push([side>0?innerFace.reverse():innerFace,steel.red,true]);
+      if (i%8===0) {
+        const lowA=coasterOffset(a,outer,-1.18), lowB=coasterOffset(b,outer,-1.18);
+        mesh.beams.push([lowA,lowB,.12,steel.red],[footA,lowB,.12,steel.brace]);
+      } else {
+        mesh.beams.push([coasterOffset(a,outer,-1.18),coasterOffset(b,outer,-1.18),.12,steel.red],
+          [coasterOffset(a,outer,-1.18),footB,.12,steel.brace]);
+      }
+    }
+    if (i%8===0) mesh.beams.push([
+      coasterOffset(a,-width-.15,-.67),coasterOffset(a,width+.15,-.67),.22,steel.red,coasterDeckPlane(a,b)
+    ]);
+  }
+
+  // Each trestle is fixed to the ground. Leave a wider opening wherever the
+  // bottom of the helix passes under the upper deck.
+  for (let i=10; i<COASTER_LENGTH; i+=16) {
+    const frame=frames[i], [cx,y,cz]=frame.point;
+    const house=COASTER_HOUSE;
+    if (Math.abs(cx-house.x)<2 && cz>=house.entry-4 && cz<=house.exit+4) continue;
+    const lowerDeck=frames.filter((candidate,j)=>j%4===0 && candidate.point[1]<y-3.8 &&
+      Math.hypot(candidate.point[0]-cx,candidate.point[2]-cz)<23);
+    const crossing=lowerDeck.length>0, shoulder=crossing?6.4:5.25;
+    const mesh=coasterMesh(course,[cx,y*.5,cz],Math.hypot(16,y*.5)+2);
+    const at=(a,b,f)=>a.map((v,k)=>v+(b[k]-v)*f);
+    const clearsDeck=(a,b)=>lowerDeck.every(({point:[x,h,z]})=>{
+      const t=clamp((h+1.55-a[1])/(b[1]-a[1]||1),0,1);
+      const [px,py,pz]=at(a,b,t);
+      return Math.abs(py-h-1.55)>3.8||Math.hypot(px-x,pz-z)>6.3;
+    });
+    const beam=(a,b,w,ink,plane)=>{if(clearsDeck(a,b))mesh.beams.push([a,b,w,ink,plane]);};
+    const topL=coasterOffset(frame,-shoulder,-.94), topR=coasterOffset(frame,shoulder,-.94);
+    const leftBracket=coasterOffset(frame,-width,-.94),rightBracket=coasterOffset(frame,width,-.94);
+    beam(topL,leftBracket,.32,steel.red);
+    beam(leftBracket,rightBracket,.32,steel.red,coasterDeckPlane(frame,frames[i+1]));
+    beam(rightBracket,topR,.32,steel.red);
+    const feet=[[-1,topL],[1,topR]].map(([side,top])=>{
+      for(let offset=crossing?7.5:6.6;offset<=15;offset+=1.25){
+        const foot=coasterOffset(frame,side*offset);
+        foot[1]=.26;
+        if(clearsDeck(foot,top))return foot;
+      }
+      return null;
+    });
+    const floors=Math.max(1,Math.ceil(y/9));
+    for(let side=0;side<feet.length;side++){
+      const foot=feet[side], top=side?topR:topL;
+      if(!foot)continue;
+      coasterBox(mesh,foot[0]-.54,0,foot[2]-.54,foot[0]+.54,.35,foot[2]+.54,'#4d424a','#3f383f','#807074');
+      for(let j=0;j<floors;j++){
+        beam(at(foot,top,j/floors),at(foot,top,(j+1)/floors),.36,side?steel.red:steel.side);
+      }
+    }
+    const [baseL,baseR]=feet;
+    if(!crossing&&y>6&&baseL&&baseR){
+      for(let j=0;j<floors;j++){
+        const h=j/floors, next=(j+1)/floors;
+        const left=at(baseL,topL,h),right=at(baseR,topR,h),topLeft=at(baseL,topL,next),topRight=at(baseR,topR,next);
+        beam(left,right,.20,steel.shade);
+        beam(j%2?left:right,j%2?topRight:topLeft,.20,steel.brace);
+      }
+    }
+  }
+}
+
+function buildCoasterFair(course) {
+  const plots=[
+    // Each plaza is below the racing deck and has its own small cluster of rides and stalls.
+    [31,7,46,78],[74,238,129,349],[2,235,61,319],
+    [-124,160,-83,215],[-128,69,-87,113],[-100,-1,-48,36],[-30,-88,24,-39],[-34,111,34,173]
+  ];
+  for (const [x1,z1,x2,z2] of plots) {
+    const mesh=coasterMesh(course,[(x1+x2)/2,0,(z1+z2)/2],Math.hypot(x2-x1,z2-z1)/2+1,course.ground);
+    mesh.faces.push([[[x1,.03,z1],[x2,.03,z1],[x2,.03,z2],[x1,.03,z2]],'#4d3b51']);
+    for(let z=z1+5; z<z2; z+=7)
+      mesh.beams.push([[x1+.5,.05,z],[x2-.5,.05,z],.095,'#745263']);
+    for(let x=x1+6; x<x2; x+=7)
+      mesh.beams.push([[x,.05,z1+.3],[x,.05,z2-.3],.074,'#65495f']);
+    const edge='#8f6170';
+    mesh.beams.push([[x1,.065,z1],[x1,.065,z2],.24,edge],[[x2,.065,z1],[x2,.065,z2],.24,edge]);
+  }
+  const booths = [
+    [35,18,'TICKETS','#b44d66'],[65,38,'PHOTO','#3c8390'],[35,60,'PRIZES','#c48169'],
+    [83,248,'POPCORN','#bb596a'],[86,266,'LEMONADE','#b98545'],[99,271,'RING TOSS','#51828f'],
+    [112,285,'CANDY','#c8627a'],[81,296,'CHURROS','#996197'],[112,334,'SODA','#45878b'],
+    [45,257,'HOT DOGS','#cc7d54'],[37,306,'MILKSHAKES','#4c8795'],[9,265,'ICE CREAM','#8b6594'],
+    [-100,177,'ARCADE','#66839f'],[-116,198,'DODGEMS','#c98058'],[-116,168,'TOKENS','#a45d8e'],
+    [-110,97,'LUCKY DUCKS','#b3915b'],[-91,73,'SNACKS','#bc556a'],[-96,19,'COTTON CANDY','#aa5f8f'],
+    [-59,31,'TICKETS','#5f95a0'],[5,-56,'PRIZES','#926285'],[27,-73,'CANDY','#a85872'],
+    [23,136,'SKEE BALL','#9b668e'],[-21,124,'PRETZELS','#ad755a'],[28,167,'PRIZES','#57848e']
+  ];
+  for (const [x,z,label,color] of booths) buildCoasterBooth(course,x,z,label,color);
+
+  const concourseLights=[[31,13],[31,45],[65,62],[78,246],[91,249],[80,282],[112,280],[88,314],[124,332],
+    [10,294],[38,291],[-113,179],[-92,204],[-122,85],[-107,108],[-94,9],[-53,25],[-12,-70],[16,-57],[65,-18]];
+  for (const [x,z] of concourseLights) {
+    const mesh=coasterMesh(course,[x,2.4,z],4.1);
+    mesh.beams.push([[x,0,z],[x,5,z],.15,'#4b4556'],[[x,4.65,z],[x+.9,5.05,z],.15,'#77718a']);
+    course.props.push({kind:'bulb',point:[x+.9,5.05,z],size:.29,color:'#ffd49a'});
+  }
+  // Strings of lights lead across the busiest promenades.
+  for (const [x,z,length] of [[31,31,15],[81,258,33],[80,282,32],[88,315,27],[24,297,23],[-121,183,24],[-95,19,25],[5,-61,30],[-18,118,36],[7,163,23]]) {
+    const mesh=coasterMesh(course,[x+length/2,3,z],length/2+7);
+    const cable=u=>[x+length*u,6-5*u*(1-u),z];
+    for (let j=0;j<10;j++) {
+      const a=cable(j/10), b=cable((j+1)/10);
+      mesh.beams.push([a,b,.064,'#8c6877']);
+      course.props.push({kind:'bulb',point:a,size:.14,color:j%2?'#fda374':'#ffe5b0'});
+    }
+    for (const [xx,y,zz] of [cable(0),cable(1)])
+      mesh.beams.push([[xx,0,zz],[xx,y,zz],.13,'#5a485d']);
+  }
+
+  for (let group=0;group<plots.length;group++) {
+    const [x1,z1,x2,z2]=plots[group];
+    for (let i=0;i<(group===1||group===2?42:25);i++) {
+      const seed=group*111+i*49;
+      const x=x1+2+(x2-x1-4)*coastSceneryNoise(seed+69);
+      const z=z1+2+(z2-z1-4)*coastSceneryNoise(seed+4);
+      if (course.frames.some((frame,j)=>j%6===0 && frame.point[1]<7 &&
+        Math.hypot(frame.point[0]-x,frame.point[2]-z)<8)) continue;
+      course.visitors.push({
+        x,z,phase:coastSceneryNoise(seed+20)*6.28,height:1.4+.5*coastSceneryNoise(seed+112),
+        color:['#fa927d','#81cecc','#dcaf79','#b79ac2','#cf5760','#789ab8'][i%6],
+        skin:['#efb998','#bb765e','#916259','#e6b093'][i%4],
+        walking:i%4!==0,balloon:i%9===1
+      });
+    }
+  }
+
+  const platform=coasterMesh(course,[42,1,40],30);
+  coasterBox(platform,38,0,16,44,2.26,62,'#725565','#4e4154','#9b7277');
+  platform.beams.push([[44,2.35,16],[44,2.35,62],.17,'#cb9d87']);
+  for(let i=0;i<16;i++){
+    const x=39.2+(i%3)*1.47, z=22+i*2.34;
+    course.visitors.push({x,z,elevation:2.27,phase:i*.67,height:1.53+i%4*.10,
+      color:['#db7779','#e9af74','#88c3c7','#b397cc'][i%4],skin:'#dfa680',walking:i%5===0,balloon:i%6===0});
+  }
+  // Colourful roofs matter from above the drop; low walls leave queues visible.
+  for(const [x,z,r,tint] of [[50,274,4.6,'#c57583'],[99,294,4.9,'#6c9ba1'],[112,313,4.9,'#b8815c'],
+      [42,290,4.4,'#758cae'],[-108,189,4.5,'#927ca3'],[-118,86,4.7,'#c28d5f'],[-78,22,4.5,'#ab697e']]){
+    const tent=coasterMesh(course,[x,3.2,z],r+2);
+    for(let i=0;i<8;i++){
+      const a=i*Math.PI/4,b=a+Math.PI/4;
+      const l=[x+Math.cos(a)*r,3.75,z+Math.sin(a)*r], q=[x+Math.cos(b)*r,3.75,z+Math.sin(b)*r];
+      tent.faces.push([[[x,5.8,z],l,q],i%2?tint:'#e7b3a0']);
+      tent.beams.push([l,q,.21,'#e2b08d']);
+      if(i%2===0)tent.beams.push([l,[l[0],0,l[2]],.12,'#7b6071']);
+    }
+  }
+  course.rides.push({kind:'wheel',point:[97,0,320],radius:19.5});
+  course.rides.push({kind:'carousel',point:[21,0,280],radius:10.5});
+  course.rides.push({kind:'swing',point:[-106,0,156],radius:7.4});
+  course.rides.push({kind:'ship',point:[-5,0,152],radius:14});
+  buildCoasterHouse(course);
+}
+
+function buildCoasterBooth(course,x,z,label,color) {
+  const mesh=coasterMesh(course,[x,2.2,z],6.5);
+  coasterBox(mesh,x-3.5,0,z-2.8,x+3.5,4.5,z+2.8,color,'#544056',color);
+  for (const side of [-1,1]) {
+    const front=z+side*2.825;
+    mesh.faces.push([[[x-2.5,1.02,front],[x+2.5,1.02,front],[x+2.5,3.15,front],[x-2.5,3.15,front]],'#251d31']);
+    for (let j=-1;j<=1;j++) {
+      const wx=x+j*1.55, f=front+side*.025;
+      mesh.faces.push([[[wx-.56,1.45,f],[wx+.56,1.45,f],[wx+.56,2.88,f],[wx-.56,2.88,f]],
+        ['#e59d68','#f5c081','#c68675'][j+1]]);
+    }
+    mesh.beams.push([[x-3.4,1.05,front],[x+3.4,1.05,front],.18,'#e3ab83']);
+    for(let j=0;j<8;j++){
+      const edge=x-3.68+j*.92;
+      mesh.faces.push([[[edge,3.96,front],[edge+.92,3.96,front],[edge+.92,3.29,front+side*1.32],[edge,3.29,front+side*1.32]],
+        j%2?'#f3c0a2':color]);
+    }
+    course.props.push({kind:'sign',point:[x,4.28,front+side*.09],size:.56,color:'#ffe4b9',label,side});
+  }
+}
+
+function buildCoasterHouse(course) {
+  const {x,entry,exit,half,floor,roof}=COASTER_HOUSE;
+  const portal=5.65, left=x-half, right=x+half;
+  // The straight enters through a real hole. Side rooms and a ceiling enclose
+  // the car, with the light from the exit always visible down the middle.
+  for (let z=entry;z<exit;z+=4) {
+    const end=Math.min(z+4,exit), mesh=coasterMesh(course,[x,roof/2,z],14);
+    coasterBox(mesh,left,0,z,x-portal,roof,end,'#32203a','#3f2b46','#382338');
+    coasterBox(mesh,x+portal,0,z,right,roof,end,'#392540','#492f4a','#382338');
+    mesh.faces.push([[[left,roof,z],[right,roof,z],[right,roof,end],[left,roof,end]],'#1d182a']);
+    for (const side of [-1,1]) {
+      if (z+1>=exit-2) continue;
+      const wx=x+side*(portal-.045);
+      mesh.beams.push([[wx,floor+.145,z],[wx,floor+.145,end],.12,'#81505b']);
+      if ((z-entry)%8===0) {
+        mesh.beams.push([[wx,floor+.28,z+.38],[wx,roof,z+.38],.28,'#694252']);
+        course.props.push({kind:'bulb',point:[wx-side*.14,floor+2.2,z+.38],size:.22,color:side>0?'#eca26e':'#88b9d3'});
+      }
+    }
+  }
+  for (const [z,front] of [[entry,true],[exit,false]]) {
+    const mesh=coasterMesh(course,[x,8,z],16);
+    const panel='#462d46', rim=front?'#a46b71':'#6a4c62';
+    mesh.faces.push([[[left,roof,z],[right,roof,z],[x+6,roof+4,z],[x-4.3,roof+4,z]],panel]);
+    mesh.faces.push([[[x-4.3,roof+4,z],[x+6,roof+4,z],[x+.7,roof+7,z]],'#211c32']);
+    mesh.beams.push([[x-portal,0,z],[x-portal,roof,z],.42,rim],[[x+portal,0,z],[x+portal,roof,z],.42,rim],
+      [[x-portal,roof,z],[x+portal,roof,z],.52,rim]);
+    const signZ=z+(front?-.11:.11);
+    if (front) course.props.push({kind:'sign',point:[x,roof+1.5,signZ],size:1.05,color:'#efb49b',label:'GHOST TRAIN',side:-1});
+    for (const side of [-1,1]) {
+      const towerX=x+side*(half-1.9);
+      coasterBox(mesh,towerX-2.04,0,z-1.3,towerX+2.04,roof+4.25,z+1.3,'#46324e','#29243b','#33223b');
+      mesh.faces.push([[[towerX-2.4,roof+4.1,z-1.4],[towerX+2.4,roof+4.1,z-1.4],[towerX-.45,roof+8,z]],'#29213a']);
+      course.props.push({kind:'bulb',point:[x+side*(portal+.46),floor+4.9,signZ],size:.46,color:'#f0ad71'});
+    }
+  }
+  for (const [offset,z,phase] of [[-4.95,-54,0],[4.98,-46,2.4],[-4.94,-35,4.1]]) {
+    course.props.push({kind:'ghost',point:[x+offset,floor+1.5,z],phase,size:1.75});
+  }
+}
+
+function getCoasterCamera() {
+  const metre = SEGMENT_LENGTH / coasterCourse.metresPerSegment;
+  const car = sampleCoaster(player.z);
+  const back = sampleCoaster(player.z - 7.1*metre);
+  const ahead = sampleCoaster(player.z + (5.1+1.9*clamp(player.speed/player.maxSpeed,0,1.4))*metre);
+  const eye = coasterOffset(back,player.x*COASTER_HALF_WIDTH*.78,4.25);
+  const dx=ahead.point[0]-back.point[0], dy=ahead.point[1]-back.point[1], dz=ahead.point[2]-back.point[2];
+  const yaw=Math.atan2(dx,dz);
+  const pitch=clamp(Math.atan2(dy,Math.hypot(dx,dz))-.19,-.88,.42);
+  const roll=car.bank*(coasterReducedMotion.matches?.14:.48);
+  const sy=Math.sin(yaw), cy=Math.cos(yaw), sp=Math.sin(pitch), cp=Math.cos(pitch);
+  const sr=Math.sin(roll), cr=Math.cos(roll);
+  const forward=[sy*cp,sp,cy*cp];
+  const right=[cy*cr-sy*sp*sr,cp*sr,-sy*cr-cy*sp*sr];
+  const up=[-sy*sp*cr-cy*sr,cp*cr,-cy*sp*cr+sy*sr];
+  const zoom=1+player.fovOffset*.16;
+  const focalX=W*.94*zoom, focalY=H*.57*zoom, centerY=H*.625;
+  function view(point) {
+    const x=point[0]-eye[0],y=point[1]-eye[1],z=point[2]-eye[2];
+    return {x:x*right[0]+y*right[1]+z*right[2],y:x*up[0]+y*up[1]+z*up[2],z:x*forward[0]+y*forward[1]+z*forward[2]};
+  }
+  function screen(point) {
+    return [W*.5+point.x/point.z*focalX,centerY-point.y/point.z*focalY];
+  }
+  function horizon(x) {
+    return centerY+focalY*(forward[1]+right[1]*(x-W*.5)/focalX)/up[1];
+  }
+  return {eye,car,yaw,focalX,focalY,view,screen,horizon};
+}
+
+const coasterReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function drawCoasterSky(camera) {
+  const at=camera.horizon(W*.5);
+  const top=Math.min(0,at-H*.62);
+  const sky=ctx.createLinearGradient(0,top,0,Math.max(H*.22,at+H*.15));
+  sky.addColorStop(0,'#242347');sky.addColorStop(.32,'#495286');
+  sky.addColorStop(.63,'#93658f');sky.addColorStop(.84,'#e39a84');sky.addColorStop(1,'#edd0a4');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  const [x,y,z]=camera.eye;
+  const sun=camera.view([x+404,y+82,z+740]);
+  if(sun.z>130) {
+    const [sx,sy]=camera.screen(sun), radius=W*.089;
+    if(sx>-radius&&sx<W+radius) {
+      ctx.save();
+      ctx.beginPath();ctx.arc(sx,sy,radius,0,Math.PI*2);ctx.clip();
+      ctx.fillStyle='#ffcf9b';ctx.fillRect(sx-radius,sy-radius,radius*2,radius*2);
+      ctx.fillStyle='#df9293';
+      for(let i=0;i<5;i++)ctx.fillRect(sx-radius,sy+radius*(.12+.19*i),radius*2,1+i*.7);
+      ctx.restore();
+    }
+  }
+  for (let j=0;j<12;j++) {
+    const angle=j*Math.PI/6+.14, cloud=camera.view([x+Math.sin(angle)*700,y+61+(j%3)*53,z+Math.cos(angle)*700]);
+    if(cloud.z<215)continue;
+    const [sx,sy]=camera.screen(cloud), width=W*(.055+.044*(j%4));
+    if(sx+width*1.7<0||sx-width>W)continue;
+    scenePoly([[sx-width,sy],[sx-width*.36,sy-3],[sx+width*.28,sy-6],[sx+width*1.4,sy-6],[sx+width*.67,sy-1]],'#bb829e');
+    scenePoly([[sx-width*.72,sy+4],[sx+width*.74,sy+1],[sx+width*.38,sy+6]],'#e9a393');
+  }
+  const left=camera.horizon(0), right=camera.horizon(W);
+  scenePoly([[0,left],[W,right],[W,H],[0,H]],'#332c45');
+  for (const [layer,color] of [[0,'#6c5475'],[1,'#4d405e']]) {
+    const ridge=[[0,left+4]];
+    for (let i=0;i<=29;i++) {
+      const px=i*W/29, angle=camera.yaw+Math.atan((px-W*.5)/camera.focalX);
+      const contour=(.52+.22*Math.sin(angle*13+layer)+.14*Math.sin(angle*29+layer*1.7)+.08*Math.sin(angle*77));
+      ridge.push([px,camera.horizon(px)-contour*H*(layer===0?.063:.038)]);
+    }
+    ridge.push([W,right+8],[0,left+8]);
+    scenePoly(ridge,color);
+  }
+}
+
+function coasterDepthQueue(camera) {
+  const queue=[];
+  // Clip to the near plane before perspective division. This keeps beams and
+  // deck sections attached even when the camera passes through their Z range.
+  function intersection(a,b) {
+    const t=(COASTER_NEAR-a.z)/(b.z-a.z);
+    return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:COASTER_NEAR};
+  }
+  function enqueuePolygon(viewPoints,color,depthBias) {
+    let clipped=viewPoints;
+    if (viewPoints.some(p=>p.z<COASTER_NEAR)) {
+      clipped=[];
+      for(let i=0;i<viewPoints.length;i++){
+        const a=viewPoints[i], b=viewPoints[(i+1)%viewPoints.length];
+        if (a.z>=COASTER_NEAR) clipped.push(a);
+        if ((a.z>=COASTER_NEAR)!==(b.z>=COASTER_NEAR)) clipped.push(intersection(a,b));
+      }
+    }
+    if(clipped.length<3)return;
+    const points=clipped.map(camera.screen);
+    if(points.every(p=>p[0]<0)||points.every(p=>p[0]>W)||points.every(p=>p[1]<0)||points.every(p=>p[1]>H))return;
+    const depth=clipped.reduce((sum,p)=>sum+p.z,0)/clipped.length-depthBias;
+    queue.push({kind:'face',points,depth,color});
+  }
+  function face(points,color,oneSided=false,depthBias=0) {
+    if(oneSided){
+      const [a,b,c]=points;
+      const [ux,uy,uz]=b.map((v,j)=>v-a[j]),[vx,vy,vz]=c.map((v,j)=>v-a[j]);
+      const [ex,ey,ez]=camera.eye.map((v,j)=>v-a[j]);
+      if((uy*vz-uz*vy)*ex+(uz*vx-ux*vz)*ey+(ux*vy-uy*vx)*ez<=0)return;
+    }
+    enqueuePolygon(points.map(camera.view),color,depthBias);
+  }
+  function beam(start,end,width,color,underDeck) {
+    // A crossmember can be seen from the midway, but the deck covers it when
+    // viewed from the driver's side of that same span.
+    if(underDeck){
+      const [nx,ny,nz,offset]=underDeck,[x,y,z]=camera.eye;
+      if(nx*x+ny*y+nz*z>offset)return;
+    }
+    let a=camera.view(start), b=camera.view(end);
+    if(a.z<COASTER_NEAR&&b.z<COASTER_NEAR)return;
+    if(a.z<COASTER_NEAR)a=intersection(a,b);
+    else if(b.z<COASTER_NEAR)b=intersection(b,a);
+    const p=camera.screen(a),q=camera.screen(b);
+    const dx=q[0]-p[0],dy=q[1]-p[1], length=Math.hypot(dx,dy);
+    if(length<.1)return;
+    const scale=width*(camera.focalX+camera.focalY)/4;
+    const aw=scale/a.z,bw=scale/b.z, nx=-dy/length,ny=dx/length;
+    if(Math.max(p[0]+aw,q[0]+bw)<0||Math.min(p[0]-aw,q[0]-bw)>W||
+       Math.max(p[1]+aw,q[1]+bw)<0||Math.min(p[1]-aw,q[1]-bw)>H)return;
+    const points=[[p[0]+nx*aw,p[1]+ny*aw],[q[0]+nx*bw,q[1]+ny*bw],
+                  [q[0]-nx*bw,q[1]-ny*bw],[p[0]-nx*aw,p[1]-ny*aw]];
+    queue.push({kind:'face',points,depth:(a.z+b.z)/2,color});
+  }
+  function sprite(object,point=object.point) {
+    const view=camera.view(point);
+    if(view.z<COASTER_NEAR || view.z>COASTER_VIEW+10)return;
+    const [x,y]=camera.screen(view), scaleX=camera.focalX/view.z, scaleY=camera.focalY/view.z;
+    if(x<-70||x>W+70||y<-80||y>H+30)return;
+    queue.push({...object,x,y,depth:view.z-(object.kind==='car'?1.8:0),scaleX,scaleY});
+  }
+  function mesh(batch) {
+    const p=camera.view(batch.point), r=batch.radius;
+    // Conservative bounds for the whole batch. Only faces touching the
+    // viewport enter the painter's queue after clipping.
+    if(p.z+r<COASTER_NEAR||p.z-r>COASTER_VIEW)return;
+    const xSlant=W/(2*camera.focalX);
+    const maxY=(H*.625)/camera.focalY, minY=(H*.375)/camera.focalY;
+    if(Math.abs(p.x)>p.z*xSlant+r*1.22||p.y>p.z*maxY+r*1.7||-p.y>p.z*minY+r*1.3)return;
+    for(const area of batch.faces)face(...area);
+    for(const member of batch.beams)beam(...member);
+  }
+  return {queue,face,beam,sprite,mesh};
+}
+
+function drawCoasterRides(painter,time,camera) {
+  for (const ride of coasterCourse.rides) {
+    const [x,,z]=ride.point, r=ride.radius, view=camera.view(ride.point);
+    if(view.z<-2*r||view.z>COASTER_VIEW+r||Math.abs(view.x)>view.z*.65+2*r)continue;
+    const {beam,face,sprite}=painter;
+    if(ride.kind==='wheel'){
+      const h=r+3;
+      for (const side of [-1,1]) {
+        beam([x+side*r*.56,0,z+1.2],[x,h,z+1.2],.76,'#807398');
+        beam([x+side*r*.56,0,z-1.2],[x,h,z-1.2],.59,'#a89bb8');
+      }
+      face([[x-12,.53,z-3],[x+12,.53,z-3],[x+12,.53,z+4],[x-12,.53,z+4]],'#8d667d');
+      beam([x-12,.6,z-3],[x+12,.6,z-3],.38,'#e4a986');
+      const rings=[];
+      for(let j=0;j<24;j++){
+        const t=j/24*Math.PI*2+time*.24;
+        rings.push([x+Math.cos(t)*r,h+Math.sin(t)*r,z]);
+      }
+      for(let j=0;j<rings.length;j++){
+        const p=rings[j], q=rings[(j+1)%rings.length];
+        beam(p,q,.33,'#d4b6c7');
+        const inner=a=>[x+(a[0]-x)*.92,h+(a[1]-h)*.92,z+.8];
+        beam(inner(p),inner(q),.20,'#9882ac');
+        beam(inner(p),p,.17,'#9d84a6');
+        if(j%2===0){
+          beam([x,h,z],p,.14,j%4?'#b36f94':'#8c94bf');
+          sprite({kind:'gondola',point:p,size:1.72,color:['#bd697f','#dea779','#78b7c6'][j/2%3]});
+        }else sprite({kind:'bulb',point:p,size:.25,color:'#ffdead'});
+      }
+      sprite({kind:'bulb',point:[x,h,z-.35],size:.87,color:'#ffd4ac'});
+    } else if(ride.kind==='ship'){
+      // The hull and its A-frames are inside the helix, with the midway below.
+      const pivot=[x,21,z], angle=Math.sin(time*1.16)*.86;
+      for(const side of [-1,1]){
+        beam([x-8,.3,z+side*5.4],[x,21,z+side*3.2],.51,'#9a7e9b');
+        beam([x+8,.3,z+side*5.4],[x,21,z+side*3.2],.51,'#785d83');
+        beam([x-6.8,.25,z+side*5.45],[x+6.8,.25,z+side*5.45],.47,'#d1a298');
+      }
+      const onShip=(u,v,dd)=>[x+u*Math.cos(angle)-v*Math.sin(angle),21+u*Math.sin(angle)+v*Math.cos(angle),z+dd];
+      for(const side of [-1,1]){
+        const railZ=side*2;
+        beam([pivot[0],pivot[1],z+railZ],onShip(0,-16,railZ),.38,'#b490a3');
+        const bow=onShip(-7,-15.4,railZ), stern=onShip(7,-15.4,railZ);
+        const hull=[bow,stern,onShip(4.9,-18,railZ),onShip(-4.9,-18,railZ)];
+        face(hull,side<0?'#a85973':'#75466b');
+        beam(bow,stern,.22,'#e9be93');
+        for(let j=-2;j<=2;j++)sprite({kind:'bulb',point:onShip(j*2,-16.45,railZ*1.01),size:.25,color:'#ffd598'});
+      }
+      beam(onShip(0,-15,0),onShip(0,-10.15,0),.16,'#a8859d');
+      face([onShip(0,-10.2,0),onShip(2.45,-11.72,0),onShip(0,-13.3,0)],'#d98983');
+    } else if(ride.kind==='swing') {
+      // A chair swing: the seats and chains fan out from the moving canopy.
+      beam([x,0,z],[x,12.6,z],.55,'#7c6b8b');
+      for(let j=0;j<10;j++) {
+        const a=time*.63+j*Math.PI/5, b=a+Math.PI/5;
+        const top=[x+Math.cos(a)*r*.69,11.4,z+Math.sin(a)*r*.69];
+        const end=[x+Math.cos(b)*r*.69,11.4,z+Math.sin(b)*r*.69];
+        face([[x,13.8,z],top,end],j%2?'#d78a8e':'#605c93');
+        beam(top,end,.24,'#daa594');
+        const seat=[x+Math.cos(a-.12)*r,7.1,z+Math.sin(a-.12)*r];
+        beam(top,seat,.08,'#a2a4c2');
+        sprite({kind:'gondola',point:seat,size:.62,color:j%2?'#83bcc0':'#dda579'});
+      }
+    } else {
+      for(let j=0;j<12;j++){
+        const a=j*Math.PI/6, b=a+Math.PI/6;
+        const ax=x+Math.cos(a)*r,az=z+Math.sin(a)*r,bx=x+Math.cos(b)*r,bz=z+Math.sin(b)*r;
+        face([[x,9.9,z],[ax,5.7,az],[bx,5.7,bz]],j%2?'#e5b1a0':'#658e9e');
+        beam([ax,5.7,az],[bx,5.7,bz],.21,'#e6ab82');
+        beam([ax,.08,az],[bx,.08,bz],.38,'#82627f');
+        if(j%2===0)beam([ax*.9+x*.1,.05,az*.9+z*.1],[ax*.9+x*.1,5.67,az*.9+z*.1],.13,'#9c6e80');
+        sprite({kind:'bulb',point:[ax,5.68,az],size:.18,color:'#ffde9d'});
+        const turn=a+time*.7;
+        const horse=[x+Math.cos(turn)*r*.59,2+.39*Math.sin(time*2.8+j),z+Math.sin(turn)*r*.59];
+        beam([horse[0],.16,horse[2]],[horse[0],5.62,horse[2]],.079,'#bba297');
+        sprite({kind:'horse',point:horse,size:1.25,color:j%2?'#d8af90':'#ac7aa1'});
+      }
+    }
+  }
+}
+
+function drawCoasterActor(actor,time) {
+  const {x,y,scaleX,scaleY,kind}=actor;
+  if (kind==='car') {
+    const {car,lean}=actor, isPlayer=car===player;
+    const sc=clamp(COASTER_CAR_WIDTH*scaleX/((isPlayer?164:136)*CAR_RENDER_WIDTH_SCALE),0,1.75);
+    const pivot=sc*(isPlayer?92:76)*.45;
+    const angle=clamp(lean+(car.steerLean||0)*.055,-.82,.82);
+    const cx=x+pivot*Math.sin(angle), cy=y+pivot*(1-Math.cos(angle));
+    if(isPlayer)playerLastScreenX=cx;
+    drawCarSprite(cx,cy,sc,car.color||'#ffe066',isPlayer,angle,clamp(car.speed/player.maxSpeed,0,1),car.hitFlash,
+      car.isBoosting,car.finished||state==='countdown');
+    if(isPlayer&&car.wallContactSide&&car.speed>80) {
+      const side=car.wallContactSide||Math.sign(car.x);
+      const strike=x+side*COASTER_CAR_WIDTH*scaleX*.57;
+      for(let i=0;i<6;i++){
+        const drift=(time*13+i*.163)%1;
+        sceneLine([[strike+side*drift*12,y+drift*9],[strike+side*(4+drift*22),y+drift*17+2]],'#ffc58b',1);
+      }
+    }
+    return;
+  }
+  if (kind==='lightning') {
+    drawLightningSprite(x,y,Math.min(.84,actor.size*scaleY/60));
+    return;
+  }
+  if (kind==='bulb') {
+    const size=actor.size*scaleX;
+    if(size<.35)return;
+    ctx.fillStyle='rgba(250,155,113,.19)';ctx.fillRect(x-size*2,y-size*2,size*4,size*4);
+    ctx.fillStyle=actor.color;ctx.fillRect(x-size,y-size,size*2,size*2);
+    return;
+  }
+  if (kind==='sign') {
+    const font=actor.size*scaleY;
+    if(font<4.8)return;
+    ctx.font='bold '+Math.min(32,font)+'px "Gravity Pixel", monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#2d2335';ctx.fillText(actor.label,x+1,y+1);
+    ctx.fillStyle=actor.color;ctx.fillText(actor.label,x,y);
+    return;
+  }
+  const size=actor.size*scaleY;
+  if(size<1.55)return;
+  ctx.save();ctx.translate(x,y);ctx.scale(size*.78,size);
+  if (kind==='visitor') {
+    const stride=actor.walking?Math.sin(time*6+actor.phase)*.13:.07;
+    ctx.fillStyle='#282336';ctx.beginPath();ctx.ellipse(0,.015,.24,.07,0,0,Math.PI*2);ctx.fill();
+    sceneLine([[-.06,-.42],[-.07-stride,-.015]],'#393345',.075);
+    sceneLine([[.06,-.42],[.07+stride,-.015]],'#332f42',.075);
+    scenePoly([[-.11,-.75],[.11,-.75],[.15,-.42],[-.14,-.42]],actor.color);
+    sceneLine([[-.1,-.69],[-.21-stride*.35,-.46]],actor.color,.069);
+    sceneLine([[.1,-.7],[.19+stride*.38,-.46]],actor.color,.069);
+    ctx.fillStyle=actor.skin;ctx.beginPath();ctx.ellipse(0,-.856,.088,.102,0,0,Math.PI*2);ctx.fill();
+    if (actor.balloon) {
+      sceneLine([[.19,-.49],[.27,-1.19]],'#d0ac96',.018);
+      ctx.fillStyle='#dc7689';ctx.beginPath();ctx.ellipse(.27,-1.29,.097,.118,.11,0,Math.PI*2);ctx.fill();
+    }
+  } else if (kind==='ghost') {
+    ctx.fillStyle='#cabcd8';ctx.beginPath();
+    ctx.moveTo(-.42,.4);ctx.lineTo(-.37,-.2);ctx.bezierCurveTo(-.36,-.86,.4,-.85,.37,-.18);
+    ctx.lineTo(.44,.4);ctx.lineTo(.19,.28);ctx.lineTo(-.04,.45);ctx.lineTo(-.25,.29);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#3b2b49';
+    for(const side of [-1,1]){ctx.beginPath();ctx.ellipse(side*.13,-.24,.053,.102,side*.16,0,Math.PI*2);ctx.fill();}
+  } else if (kind==='horse') {
+    scenePoly([[-.54,.21],[-.43,-.33],[.15,-.3],[.34,-.68],[.59,-.56],[.68,-.32],[.47,-.21],[.24,-.24],[.21,.18]],actor.color);
+    sceneLine([[-.37,.1],[-.49,.43]],'#5d3f62',.11);sceneLine([[.13,.08],[.33,.39]],'#5d3f62',.10);
+  } else if (kind==='gondola') {
+    scenePoly([[-.71,.11],[.71,.11],[.51,1.08],[-.46,1.08]],actor.color);
+    scenePoly([[-.67,.16],[-.41,-.17],[.41,-.17],[.68,.16]],'#ead1b2');
+    ctx.fillStyle='#ffe0a8';ctx.fillRect(-.36,.42,.72,.35);
+  }
+  ctx.restore();
+}
+
+function renderCoaster() {
+  const time=state==='countdown'?3-cntVal+cntTimer:4+raceElapsed/1000;
+  const camera=getCoasterCamera(), painter=coasterDepthQueue(camera);
+  drawCoasterSky(camera);
+  // The park is level. Paving belongs under the wheel, stands and visitors
+  // even when the camera is looking steeply down at an entire plaza.
+  for(const batch of coasterCourse.ground)painter.mesh(batch);
+  for(const item of painter.queue)scenePoly(item.points,item.color);
+  painter.queue.length=0;
+  for(const batch of coasterCourse.meshes)painter.mesh(batch);
+  drawCoasterRides(painter,time,camera);
+
+  for(const object of coasterCourse.props){
+    if(object.kind==='sign'&&(camera.eye[2]-object.point[2])*object.side<=0)continue;
+    if(object.kind==='ghost'){
+      const [x,y,z]=object.point;
+      painter.sprite(object,[x+Math.sin(time*1.4+object.phase)*.28,y+Math.cos(time*2.2+object.phase)*.45,z]);
+    }else painter.sprite(object);
+  }
+  for(const person of coasterCourse.visitors){
+    const phase=time*.82+person.phase, walk=person.walking?1:0;
+    painter.sprite({kind:'visitor',size:person.height,...person},
+      [person.x+walk*Math.sin(phase)*(person.elevation?.56:1.5),(person.elevation||0)+.05,person.z+walk*Math.cos(phase)*1.3]);
+  }
+  for(const [index] of COASTER_BOOSTS){
+    const item=segments[index].lightning;
+    if(!item.active)continue;
+    const frame=sampleCoaster((index+.5)*SEGMENT_LENGTH);
+    painter.sprite({kind:'lightning',size:1.35},coasterOffset(frame,item.x*COASTER_HALF_WIDTH,.1));
+  }
+  for(const car of [...opponents,player]){
+    const frame=car===player?camera.car:sampleCoaster(car.z);
+    const lane=car.x*COASTER_HALF_WIDTH;
+    const point=coasterOffset(frame,lane,.11);
+    if(camera.view(point).z<COASTER_NEAR)continue;
+    const left=camera.screen(camera.view(coasterOffset(frame,lane-1,.11)));
+    const right=camera.screen(camera.view(coasterOffset(frame,lane+1,.11)));
+    const lean=Math.atan2(right[1]-left[1],right[0]-left[0]);
+    painter.sprite({kind:'car',car,lean},point);
+  }
+  painter.queue.sort((a,b)=>b.depth-a.depth);
+  for(const item of painter.queue) {
+    if(item.kind==='face')scenePoly(item.points,item.color);
+    else drawCoasterActor(item,time);
+  }
+}
+
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
     if(currentLevel===LEVEL_ORBITAL){drawOrbitalRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx,isVisible);return;}
     if(currentLevel===LEVEL_PARADISE){if(isVisible)drawParadiseRoad(x1,y1,w1,x2,y2,w2,p1Scale,p2Scale,segIdx);return;}
@@ -14235,6 +14963,7 @@ function render(ts) {
     const palette=blackoutFinale?'cobalt':player.lap===2?'negative':'positive';
     if(C.dataset.blackout!==palette)C.dataset.blackout=palette;
   }else if(C.hasAttribute('data-blackout'))C.removeAttribute('data-blackout');
+  if(currentLevel===LEVEL_COASTER){renderCoaster();return;}
   if(currentLevel===LEVEL_BLACKOUT){ctx.fillStyle=blackoutBackground;ctx.fillRect(0,0,W,H);}
   else if(currentLevel===LEVEL_COAST){drawCoastBackdrop(horizonY,startSegIdx);}
   else if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
@@ -16521,6 +17250,7 @@ function getRaceDistance(car) {
 // Both drivers use the same viewport/projection; cosmetic lean and exhaust do
 // not enlarge the collider. Keep a two-percent arcade allowance at the edges.
 function getCarCollisionHalfWidth(car){
+  if(currentLevel===LEVEL_COASTER)return COASTER_CAR_WIDTH*(1-CAR_CONTACT_INSET)/(2*COASTER_HALF_WIDTH);
   const responsive=clamp(W/1000,.85,1),distance=getPlayerContactDistance();
   const projection=(CAMERA_DEPTH+player.fovOffset)/distance;
   const roadHalf=projection*ROAD_WIDTH*W/2;
@@ -16530,6 +17260,7 @@ function getCarCollisionHalfWidth(car){
 }
 function getCarCollisionRange(a,b){return getCarCollisionHalfWidth(a)+getCarCollisionHalfWidth(b);}
 function getPlayerCollisionX(){
+  if(currentLevel===LEVEL_COASTER)return player.x;
   const distance=getPlayerContactDistance(),worldZ=player.z+distance;
   const roadHalf=(CAMERA_DEPTH+player.fovOffset)/distance*ROAD_WIDTH*W/2;
   const first=Math.floor(player.z/SEGMENT_LENGTH)*SEGMENT_LENGTH;
@@ -16548,6 +17279,8 @@ function getPlayerCollisionX(){
 }
 
 function getPlayerContactDistance() {
+  // The coaster camera trails the player; z already belongs to the painted car.
+  if(currentLevel===LEVEL_COASTER)return 0;
   const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
   const playerScale = 1.64 * responsiveFactor;
   const horizonY = ~~(H * 0.5) + player.pitch * 1.5;
@@ -16585,6 +17318,7 @@ function sweepContact(x0, z0, x1, z1, halfWidth, minZ, maxZ) {
 }
 
 function getRoadLimits(z) {
+  if(currentLevel===LEVEL_COASTER)return {left:COASTER_RAIL_LIMIT,right:COASTER_RAIL_LIMIT};
   const segment = getSeg(z);
   const enclosed = segment.isBridge || isOceanRockTunnel(segment.index) || (currentLevel === LEVEL_DREAM && segment.isTunnel);
   let left = enclosed ? 1.05 : 1.45, right = left;
