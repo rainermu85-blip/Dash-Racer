@@ -9117,7 +9117,8 @@ const blackoutReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)'
 // Redline Rush: a closed world-space spline, sampled by distance for the race.
 const COASTER_HALF_WIDTH = 4.55;
 const COASTER_CAR_WIDTH = 1.94;
-const COASTER_RAIL_LIMIT = 0.98 - COASTER_CAR_WIDTH / (2 * COASTER_HALF_WIDTH);
+const COASTER_RAIL_INSET = .24;
+const COASTER_RAIL_LIMIT = 1 - (COASTER_RAIL_INSET + COASTER_CAR_WIDTH / 2) / COASTER_HALF_WIDTH;
 const COASTER_NEAR = 1.45;
 const COASTER_VIEW = 188;
 const COASTER_BOOSTS = new Map([[91,-.46],[311,.44],[685,-.45],[903,.31],[1128,-.43],
@@ -9254,7 +9255,7 @@ function buildCoasterSteel(course) {
       for (const side of [-1,1]) if (i%12===0) strip(side*1.48-.041,side*1.48+.041,.011,'#9e97a0',.025);
     }
     for (const side of [-1,1]) {
-      const edge=side*width, outer=edge+side*.13, inner=edge-side*.24;
+      const edge=side*width, outer=edge+side*.13, inner=edge-side*COASTER_RAIL_INSET;
       strip(Math.min(outer,inner),Math.max(outer,inner),.24,steel.top,.035);
       const topA=coasterOffset(a,outer,.24), topB=coasterOffset(b,outer,.24);
       const footA=coasterOffset(a,outer,-.52), footB=coasterOffset(b,outer,-.52);
