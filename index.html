@@ -9133,7 +9133,7 @@ const COASTER_STEEL = { top:'#ee5864', red:'#c9344a', side:'#9c263c', brace:'#96
 const COASTER_STATIONS = [
   // x, z, elevation in metres. The helix crosses its own foot at x65, z150.
   [50,6,3.4],[50,57,3.4],[57,105,5],[65,150,10],
-  [45,190,18],[-2,205,26],[-43,185,34],[-57,148,42],[-36,114,50],[4,102,58],[45,117,66],[65,150,74],
+  [45,190,18],[-2,205,35],[-43,185,47],[-64,164,44],[-62,139,37],[-36,114,44],[4,102,58],[45,117,66],[65,150,74],
   [67,177,77],[67,196,73],[68,221,53],[69,252,25],[65,285,8],
   [49,319,7.5],[16,337,11],[-21,326,16],[-43,303,24],[-61,268,31],
   [-83,235,18],[-119,217,8],[-145,201,6],[-151,174,6],[-131,151,12],[-95,134,19],
@@ -9433,7 +9433,7 @@ function buildCoasterFair(course) {
   }
   course.rides.push({kind:'wheel',point:[97,0,320],radius:19.5});
   course.rides.push({kind:'carousel',point:[21,0,280],radius:10.5});
-  course.rides.push({kind:'swing',point:[-106,0,156],radius:7.4});
+  course.rides.push({kind:'swing',point:[-122,0,104],radius:10});
   course.rides.push({kind:'ship',point:[-5,0,152],radius:14});
   buildCoasterHouse(course);
 }
@@ -9652,8 +9652,10 @@ function worldDepthQueue(camera,viewDistance) {
 
 function drawCoasterRides(painter,time,camera) {
   for (const ride of coasterCourse.rides) {
-    const [x,,z]=ride.point, r=ride.radius, view=camera.view(ride.point);
-    if(view.z<-2*r||view.z>COASTER_VIEW+r||Math.abs(view.x)>view.z*.65+2*r)continue;
+    const [x,,z]=ride.point, r=ride.radius;
+    const bound=ride.kind==='swing'?24:2*r;
+    const view=camera.view(ride.kind==='swing'?[x,21,z]:ride.point);
+    if(view.z<-bound||view.z>COASTER_VIEW+(ride.kind==='swing'?bound:r)||Math.abs(view.x)>view.z*.65+bound)continue;
     const {beam,face,sprite}=painter;
     if(ride.kind==='wheel'){
       const h=r+3;
@@ -9701,17 +9703,21 @@ function drawCoasterRides(painter,time,camera) {
       beam(onShip(0,-15,0),onShip(0,-10.15,0),.16,'#a8859d');
       face([onShip(0,-10.2,0),onShip(2.45,-11.72,0),onShip(0,-13.3,0)],'#d98983');
     } else if(ride.kind==='swing') {
-      // A chair swing: the seats and chains fan out from the moving canopy.
-      beam([x,0,z],[x,12.6,z],.55,'#7c6b8b');
-      for(let j=0;j<10;j++) {
-        const a=time*.63+j*Math.PI/5, b=a+Math.PI/5;
-        const top=[x+Math.cos(a)*r*.69,11.4,z+Math.sin(a)*r*.69];
-        const end=[x+Math.cos(b)*r*.69,11.4,z+Math.sin(b)*r*.69];
-        face([[x,13.8,z],top,end],j%2?'#d78a8e':'#605c93');
-        beam(top,end,.24,'#daa594');
-        const seat=[x+Math.cos(a-.12)*r,7.1,z+Math.sin(a-.12)*r];
-        beam(top,seat,.08,'#a2a4c2');
-        sprite({kind:'gondola',point:seat,size:.62,color:j%2?'#83bcc0':'#dda579'});
+      // The high swing anchors the midway sightline over the helix's first crest.
+      const mastTop=42, canopy=38;
+      face([[x-3,0,z-3],[x+3,0,z-3],[x+3,0,z+3],[x-3,0,z+3]],'#ae857d');
+      beam([x,.1,z],[x,mastTop,z],1.65,'#90738e');
+      for(let band=3;band<canopy;band+=4)beam([x,band,z],[x,band+.65,z],1.72,'#f0bb8e');
+      for(let j=0;j<12;j++) {
+        const a=time*.63+j*Math.PI/6, b=a+Math.PI/6;
+        const rim=t=>[x+Math.cos(t)*r*.73,canopy,z+Math.sin(t)*r*.73];
+        const top=rim(a), end=rim(b);
+        face([[x,mastTop,z],top,end],j%2?'#e89a91':'#746396');
+        beam(top,end,.28,'#eabe96');
+        sprite({kind:'bulb',point:top,size:.32,color:'#ffe2a8'});
+        const seat=[x+Math.cos(a-.14)*r,26,z+Math.sin(a-.14)*r];
+        beam(top,seat,.12,'#c3a9b6');
+        sprite({kind:'gondola',point:seat,size:1.12,color:j%2?'#83bcc0':'#dda579'});
       }
     } else {
       for(let j=0;j<12;j++){
@@ -9870,7 +9876,7 @@ const BACKYARD_STATIONS = [
 ];
 const BACKYARD_BOOSTS = new Map([[58,.39],[236,-.46],[471,-.38],[713,.45],[1007,-.42],[1297,.42],[1599,-.45]]);
 const BACKYARD_PADS = [
-  {start:104,lane:-.43},{start:312,lane:.44},{start:616,lane:.40},
+  {start:104,lane:-.43},{start:312,lane:.44},{start:676,lane:.40},
   {start:852,lane:-.43},{start:1148,lane:-.44},{start:1480,lane:.42},{start:1676,lane:.37}
 ];
 const BACKYARD_PAD_LENGTH = 12;
