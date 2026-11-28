@@ -74,20 +74,33 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .menu-panel{flex:none;width:90%;max-width:430px;margin:auto;padding:26px 0;display:flex;flex-direction:column;align-items:center;gap:18px}
 #overlay{overflow-y:auto;touch-action:pan-y;justify-content:flex-start;padding:0 8px;background:radial-gradient(ellipse at 50% 35%,rgba(59,15,89,.97),rgba(5,2,13,.98));}
 .menu-panel .otitle,#pauseOverlay .otitle{font-size:clamp(19px,5vw,25px);color:#f8e7ff;text-shadow:3px 3px 0 #7c2db2,0 0 20px #ff4fd8;letter-spacing:2px}
-.menu-kicker{font-size:6px;letter-spacing:2px;color:#fda8d5}
-.campaign-select{width:100%;text-align:left}
-.chapter-heading{border-left:3px solid #ff4fd8;padding:7px 10px;margin-bottom:10px;background:linear-gradient(90deg,rgba(255,79,216,.13),transparent)}
-.chapter-heading span{display:block;font-size:5px;letter-spacing:1px;color:#bba6d6;margin-bottom:8px}
-.chapter-heading strong{display:block;font-size:12px;line-height:1.5;color:#ffe3f8;text-shadow:0 0 12px #ff4fd8}
-.level-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.level-card{position:relative;min-height:72px;padding:12px 9px 10px 28px;background:rgba(5,3,18,.7);border:1px solid #46344f;border-radius:3px;text-align:left;color:#c5b8d2;font-family:inherit;cursor:pointer}
-.level-card.selected{border-color:var(--accent);color:var(--accent);background:linear-gradient(125deg,rgba(255,255,255,.09),rgba(17,5,28,.85));box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 0 15px rgba(255,255,255,.025)}
-.level-number{position:absolute;left:7px;top:12px;font-size:7px;opacity:.65}
-.level-name{display:block;font-size:8px;line-height:1.8;min-height:25px}
-.level-tag{display:block;font-size:5px;line-height:1.8;letter-spacing:.2px;opacity:.65;margin-top:5px}
-.worlds-heading{font-size:5px;line-height:1.8;letter-spacing:.7px;color:#94869f;margin:16px 0 8px}
+#overlay:has(>.menu-panel,>.course-menu){background:radial-gradient(ellipse at 50% 40%,#341449,#0a0614)}
+.campaign-select{display:grid;gap:14px;width:100%}
+.world-heading{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 10px;
+  padding:8px 10px;margin-bottom:6px;border-left:3px solid var(--world-accent);border-radius:3px;
+  background:linear-gradient(95deg,color-mix(in srgb,var(--world-accent) 17%,#1e102d),#1a1029);
+}
+.world-heading h2{font-size:clamp(13px,3.65vw,16px);line-height:1.25;color:var(--world-accent)}
+.world-track-count{font:600 11px/1.25 system-ui,sans-serif;letter-spacing:.6px;color:#ded0ec;white-space:nowrap}
+.level-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.level-card{
+  min-height:51px;padding:8px 10px;background:#130c21;border:1px solid #574067;border-radius:4px;
+  text-align:left;color:#f5eafa;font-family:inherit;cursor:pointer;
+}
+.level-card.selected{
+  border-color:var(--accent);
+  background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 16%,#160c25),#160c25);
+  box-shadow:0 0 9px color-mix(in srgb,var(--accent) 24%,transparent);
+}
+.level-card:focus-visible{outline:2px solid #f5eafa;outline-offset:2px}
+.level-name{
+  display:block;font-size:clamp(11px,3vw,13px);font-weight:700;line-height:1.35;
+  text-wrap:balance;overflow-wrap:anywhere;
+}
 .obtn.menu-start{width:100%;font-size:11px;padding:16px 12px;background:rgba(255,79,216,.12);border-color:#ff4fd8;color:#fff1fa;box-shadow:0 0 18px rgba(255,79,216,.25)}
-.menu-hint{font-size:5px;line-height:2;color:#a494b7;text-align:center}
+#quickStartTrack{display:block;margin-top:8px;font-size:8px;line-height:1.4;letter-spacing:.55px;color:#e8c8ed}
+.menu-hint{font:10px/1.5 system-ui,sans-serif;color:#bca9ce;text-align:center}
 #pauseOverlay{position:absolute;inset:0;z-index:16;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(0,0,0,.75)}
 #pauseOverlay.hide{display:none}
 #pauseOverlay .otitle{font-size:23.4px}
@@ -155,7 +168,8 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
 .course-body{padding:18px}
 .course-hero{display:block;width:100%;height:auto;aspect-ratio:760/430;border-bottom:2px solid var(--accent)}
 .course-menu .otitle{font-size:clamp(19px,5vw,27px);text-align:left;margin:7px 0 12px}
-.course-format{font-size:9px;color:var(--accent);letter-spacing:1px}
+.course-tag{font-size:9px;line-height:1.4;color:var(--accent);letter-spacing:.5px}
+.course-format{margin-bottom:8px;text-align:center;font-size:10px;line-height:1.4;color:#eadff0;letter-spacing:.6px}
 .course-copy{color:#eadff0;font:15px/1.5 system-ui,sans-serif}
 .record-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:20px 0}
 .record-tile{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:9px;min-height:65px;padding:10px 6px;text-align:left;font:inherit;color:#e4daef;background:#170d27;border:1px solid #634971;border-radius:3px;cursor:pointer}
@@ -4727,18 +4741,26 @@ const LEVELS = [
     description: "Loose stones give way to snow and dark pines. On the far side of the mountain, a clock drips from a branch onto the road. The last tunnel takes you down where the daylight runs out." },
   { id: LEVEL_SPACE, name: 'SPACE WAVE', tag: 'COSMIC SPEED', color: '#ff00ff', segments: 1350,
     description: "Earth hangs over one shoulder and the rings of a giant planet sweep over the other. A little satellite drifts across the stars. Catch the chevrons and the next bend comes rushing out of the dark." },
-  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS / ONE LAP', color: '#58f3cf', segments: PARADISE_LENGTH,
+  { id: LEVEL_PARADISE, name: 'PARADISE CIRCUIT', tag: 'FIVE ISLANDS', color: '#58f3cf', segments: PARADISE_LENGTH,
     description: "Fishing boats crowd the harbor on the first island. The bridges carry you over open water, close enough to the airstrip to catch the shadow of a landing jumbo. Five islands later, the harbor comes back into view." },
-  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR / ONE WAY', color: '#87e3ef', segments: ORBITAL_LENGTH,
+  { id: LEVEL_ORBITAL, name: 'ORBITAL PASSAGE', tag: 'STATION INTERIOR', color: '#87e3ef', segments: ORBITAL_LENGTH,
     description: "Dock crews wave a shuttle in as you roll onto the station. Earth slips past the windows on the way to the reactor. When the evacuation signs light up, follow the arrows to the escape pod." },
   { id: LEVEL_COAST, name: 'COAST TO COAST', tag: 'NEW YORK / PACIFIC', color: '#f6aa90', segments: COAST_LENGTH,
     description: "Manhattan wakes up in the rearview mirror. Across the Mississippi, grain silos give way to mountain passes and red canyon walls. One more night in Vegas, then the Pacific is waiting at the end of the pier." },
-  { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'TOWER SPIRAL / THREE LAPS', color: '#ffffff', segments: 960,
+  { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'TOWER SPIRAL', color: '#ffffff', segments: 960,
     description: "A narrow bridge cuts across the climb around the tower. The second lap turns the world inside out. The final lap goes cobalt, and your Countach turns yellow." },
-  { id: LEVEL_COASTER, name: 'REDLINE RUSH', tag: 'FAIRGROUND / ONE LAP', color: '#ff746d', segments: COASTER_LENGTH,
+  { id: LEVEL_COASTER, name: 'REDLINE RUSH', tag: 'FAIRGROUND', color: '#ff746d', segments: COASTER_LENGTH,
     description: "Red steel winds up to the high point of the fairground. Over the crest, the lights of the midway come rushing up to meet you. Leave the crowds behind for a quick run through the Ghost Train." },
-  { id: LEVEL_BACKYARD, name: 'BACKYARD BLAST', tag: 'TOY CIRCUIT / ONE LAP', color: '#ff9952', segments: BACKYARD_LENGTH,
+  { id: LEVEL_BACKYARD, name: 'BACKYARD BLAST', tag: 'TOY CIRCUIT', color: '#ff9952', segments: BACKYARD_LENGTH,
     description: "Someone snapped an orange track together across the lawn. Duck under the laundry and climb to the treehouse porch. Hit the last set of arrows and blast under the picnic table." }
+];
+
+const TRACKS_PER_WORLD = 4;
+const LEVEL_WORLDS = [
+  { id: 'night-run', name: 'NIGHT RUN', color: '#ff9dde', levels: [1, LEVEL_HIGHWAY] },
+  { id: 'road-trip', name: 'ROAD TRIP', color: '#ffbd85', levels: [2, LEVEL_HILLS, LEVEL_PARADISE, LEVEL_COAST] },
+  { id: 'dreamland', name: 'DREAMLAND', color: '#cbb4ff', levels: [LEVEL_BACKYARD, LEVEL_COASTER, LEVEL_DREAM, LEVEL_BLACKOUT] },
+  { id: 'deep-space', name: 'DEEP SPACE', color: '#8ae7fb', levels: [LEVEL_SPACE, LEVEL_ORBITAL] }
 ];
 function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
 function isWorldCourse(level=currentLevel){return level===LEVEL_COASTER||level===LEVEL_BACKYARD;}
@@ -17417,21 +17439,29 @@ function selectLevel(lvl) {
     button.classList.toggle('selected', active);
     button.setAttribute('aria-pressed', String(active));
   }
+  const quickStartTrack = document.getElementById('quickStartTrack');
+  if (quickStartTrack) quickStartTrack.textContent = level.name;
 }
 
 function renderLevelSelection() {
-  const cards = levels => levels.map(level => `
-    <button class="level-card ${level.id === currentLevel ? 'selected' : ''}" id="lvl${level.id}Btn"
-      style="--accent:${level.color}" aria-pressed="${level.id === currentLevel}">
-      <span class="level-number">${String(level.id).padStart(2, '0')}</span>
-      <span class="level-name">${level.name}</span><span class="level-tag">${level.tag}</span>
-    </button>`).join('');
-  return `<div class="campaign-select">
-    <div class="chapter-heading"><span>CHAPTER 01 / FOUR NIGHTS</span><strong>NEON AFTERGLOW</strong></div>
-    <div class="level-grid">${cards(LEVELS.slice(0, 4))}</div>
-    <div class="worlds-heading">BEYOND THE NEON / EXTRA WORLDS</div>
-    <div class="level-grid">${cards(LEVELS.slice(4))}</div>
-  </div>`;
+  const worlds = LEVEL_WORLDS.map(world => {
+    const cards = world.levels.map(id => {
+      const level = LEVELS.find(item => item.id === id);
+      const selected = id === currentLevel;
+      return `<button type="button" class="level-card${selected ? ' selected' : ''}" id="lvl${id}Btn"
+        style="--accent:${level.color}" aria-pressed="${selected}">
+        <span class="level-name">${level.name}</span>
+      </button>`;
+    }).join('');
+    return `<section class="track-world" aria-labelledby="${world.id}-heading" style="--world-accent:${world.color}">
+      <header class="world-heading">
+        <h2 id="${world.id}-heading">${world.name}</h2>
+        <span class="world-track-count">${world.levels.length} / ${TRACKS_PER_WORLD} TRACKS</span>
+      </header>
+      <div class="level-grid">${cards}</div>
+    </section>`;
+  }).join('');
+  return `<div class="campaign-select">${worlds}</div>`;
 }
 
 function bindLevelSelection() {
@@ -17517,13 +17547,13 @@ function showDriverName(context='options'){
 function buildMainMenu() {
   const ov = document.getElementById('overlay');
   ov.style.background = '';
-  ov.innerHTML = `<div class="menu-panel">
-    <div class="otitle">TURBO DASH</div><div class="menu-kicker">CHASE THE LAST LIGHT</div>
+  ov.innerHTML = `<main class="menu-panel" lang="en">
+    <h1 class="otitle">TURBO DASH</h1>
     ${renderLevelSelection()}
-    <button class="obtn menu-start" id="startBtn">START RACE</button>
+    <button class="obtn menu-start" id="startBtn" type="button">START RACE<span id="quickStartTrack"></span></button>
     <div class="menu-footer"><span>DRIVER<strong>${driverTag||'---'}</strong></span><button class="menu-options" id="optionsBtn" type="button">OPTIONS</button></div>
     <div class="menu-hint">AUTO ACCELERATE · ◀ ▶ STEER · ⚡ BOOST</div>
-  </div>`;
+  </main>`;
   bindLevelSelection();
   document.getElementById('startBtn').onclick = startRace;
   document.getElementById('optionsBtn').onclick=()=>showDriverName('options');
@@ -17852,15 +17882,18 @@ function courseScoreList(board,highlight,type='points'){
 function showCourseMenu(focusType){
     const level=LEVELS.find(item=>item.id===currentLevel),ov=document.getElementById('overlay');
     const boards=rankCourseEntries(currentLevel,readCourseEntries(currentLevel));
-    const format=isPointToPoint()?'ONE WAY':raceLapCount()===1?'ONE LAP':'THREE LAPS';
+    const laps = raceLapCount();
+    const format = isPointToPoint() ? 'POINT TO POINT' : `${laps} ${laps === 1 ? 'LAP' : 'LAPS'}`;
     const tiles=Object.entries(recordTypes).map(([type,label])=>{
         const best=boards[type][0];
         return `<button class="record-tile" data-record="${type}"><span>${label}</span><strong>${best?recordValue(best,type):'—'}</strong></button>`;
     }).join('');
     ov.innerHTML=`<section lang="en" class="result-panel course-menu" style="--accent:${level.color}" aria-labelledby="courseTitle">
-      <div class="course-body"><div class="course-format">${format}</div><h1 class="otitle" id="courseTitle" tabindex="-1">${level.name}</h1>
+      <div class="course-body"><div class="course-tag">${level.tag}</div><h1 class="otitle" id="courseTitle" tabindex="-1">${level.name}</h1>
       <p class="course-copy">${level.description}</p><div class="record-tiles">${tiles}</div>
-      <button class="obtn menu-start" id="startBtn">START RACE</button><button class="profile-back" id="courseBackBtn">BACK TO TRACKS</button></div></section>`;
+      <div class="course-format" id="courseFormat">${format}</div>
+      <button class="obtn menu-start" id="startBtn" type="button" aria-describedby="courseFormat">START RACE</button>
+      <button class="profile-back" id="courseBackBtn" type="button">BACK TO TRACKS</button></div></section>`;
     const picture=document.getElementById('coursePictures').content.querySelector(`[data-course="${currentLevel}"]`).cloneNode();
     picture.className='course-hero';
     ov.firstElementChild.prepend(picture);
@@ -17909,7 +17942,7 @@ function renderScoreboard(){
     ov.classList.remove('hide');ov.scrollTop=0;
     document.getElementById('continueBtn').onclick=()=>{
         raceRunId++;clearTimeout(resultTimer);resultTimer=null;clearTimeout(fieldCompletionTimer);fieldCompletionTimer=null;
-        state='intro';showMainMenu();updateControlUI();document.getElementById('startBtn').focus();
+        state='intro';showMainMenu();updateControlUI();document.getElementById(`lvl${currentLevel}Btn`).focus();
     };
 }
 function showResult(){
@@ -18545,6 +18578,7 @@ function showMainMenu() {
   const ov = document.getElementById('overlay');
   buildMainMenu();
   ov.classList.remove('hide');
+  ov.scrollTop = 0;
 }
 
 initBackground(); buildSegments(); initOpponents();

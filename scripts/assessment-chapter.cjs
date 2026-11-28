@@ -19,8 +19,18 @@ module.exports = async function runChapter(browser, baseUrl) {
       const tick = count => { for (let i = 0; i < count; i++) { ts += 1000 / 60; loop(ts); } };
       showMainMenu();
       const menu = document.getElementById('overlay');
-      const menuCards = [...menu.querySelectorAll('.level-card')];
-      record('chapter-menu-levels', menuCards.length === LEVELS.length && menu.innerText.includes('NEON AFTERGLOW') && menuCards.slice(0, 4).map(b => b.id).join(',') === 'lvl1Btn,lvl2Btn,lvl3Btn,lvl4Btn', menuCards.map(b => b.textContent.trim()));
+      const worlds = [...menu.querySelectorAll('.track-world')].map(world => [
+        world.querySelector('h2').textContent,
+        world.querySelector('.world-track-count').textContent,
+        [...world.querySelectorAll('.level-card')].map(card => card.id)
+      ]);
+      const expected = [
+        ['NIGHT RUN', '2 / 4 TRACKS', ['lvl1Btn', 'lvl4Btn']],
+        ['ROAD TRIP', '4 / 4 TRACKS', ['lvl2Btn', 'lvl3Btn', 'lvl7Btn', 'lvl9Btn']],
+        ['DREAMLAND', '4 / 4 TRACKS', ['lvl12Btn', 'lvl11Btn', 'lvl5Btn', 'lvl10Btn']],
+        ['DEEP SPACE', '2 / 4 TRACKS', ['lvl6Btn', 'lvl8Btn']]
+      ];
+      record('world-menu-order-and-capacity', JSON.stringify(worlds) === JSON.stringify(expected), worlds);
       for (const id of [3, 4, 5, 6, 1, 2]) {
         document.getElementById(`lvl${id}Btn`).click();
         const title = document.getElementById('courseTitle').textContent;
@@ -162,10 +172,12 @@ module.exports = async function runChapter(browser, baseUrl) {
         reset(level);
         record(`preserved-world-${level}`, level === 5 ? segments.length === 3075 && getDreamZone(1750) === 'dali' && getDreamWorld(SEGMENT_COUNT + 40) === 'underwater' : segments.length === 1350 && segments.some(s => s.pylon?.active) && getComputedStyle(document.getElementById('energyBoard')).display !== 'none', { count: segments.length, energy: getComputedStyle(document.getElementById('energyBoard')).display });
       }
-      reset(3); showResult(1);
-      record('result-has-six-level-cards', document.getElementById('overlay').querySelectorAll('.level-card').length === 6, { count: document.getElementById('overlay').querySelectorAll('.level-card').length });
+      reset(3);
       exitRace();
-      record('exit-rebuilds-chapter-menu', state === 'intro' && Boolean(document.getElementById('startBtn')) && !document.getElementById('rb') && document.getElementById('overlay').querySelectorAll('.level-card').length === 6, { state, start: Boolean(document.getElementById('startBtn')) });
+      const count = menu.querySelectorAll('.level-card').length;
+      const selected = menu.querySelector('.level-card.selected')?.id;
+      record('exit-rebuilds-world-menu', state === 'intro' && Boolean(document.getElementById('startBtn'))
+        && count === LEVELS.length && selected === 'lvl3Btn', { state, count, selected });
       return checks;
     });
     return results.map(result => ({ ...result, errors, pass: result.pass && errors.length === 0 }));

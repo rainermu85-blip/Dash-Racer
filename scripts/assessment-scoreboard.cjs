@@ -233,6 +233,7 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
   });
   await run('highscores-finish-all-courses-persist-top-five', async page => {
     await name(page, 'LAP');
+    const trackCount = await page.locator('.level-card').count();
     const courses = await page.evaluate(() => {
       const totals = [];
       for (const level of LEVELS) {
@@ -272,7 +273,7 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
     await page.locator('#lvl9Btn').tap();
     await page.locator('[data-record=points]').tap();
     const coast = await read();
-    const pass = courses.length === 9 && courses.every(([,tag,finish,count]) => tag === 'LAP' && finish === 600 && count === 1)
+    const pass = courses.length === trackCount && courses.every(([,tag,finish,count]) => tag === 'LAP' && finish === 600 && count === 1)
       && result === '2200 PTS' && firstBoard.length === 5
       && firstBoard.every((row,i) => row.endsWith('LAP' + (2200 - 100*i) + ' PTS'))
       && coast.length === 1 && coast[0].includes('LAP');
@@ -296,7 +297,8 @@ module.exports = async function assessScoreboard(browser, baseUrl, output) {
       return {score:board.points.map(e=>e.points),race:board.race.map(e=>e.time),lap:board.lap.map(e=>e.lapTime)};
     });
     await page.reload();await page.locator('#introBox.show').tap();
-    const overview=await page.locator('.level-card').count()===9 && await page.locator('#scoresBtn,[data-record]').count()===0;
+    const trackCount = await page.evaluate(() => LEVELS.length);
+    const overview = await page.locator('.level-card').count() === trackCount && await page.locator('#scoresBtn,[data-record]').count() === 0;
     await page.locator('#lvl1Btn').tap();
     const seen={};
     for(const type of ['points','lap','race']){
