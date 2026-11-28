@@ -262,6 +262,7 @@ canvas{position:absolute;top:0;left:0;width:100%;height:100%}
   <img data-course="9" src="./assets/courses/coast-to-coast.webp" alt="The highway passes desert rock formations on the way west." width="760" height="430">
   <img data-course="10" src="./assets/courses/blackout.webp" alt="A white road winds around a black tower marked with white rings." width="760" height="430">
   <img data-course="11" src="./assets/courses/redline-rush.webp" alt="Red steel track drops toward the lights of a fairground." width="760" height="430">
+  <img data-course="12" src="./assets/courses/backyard-blast.webp" alt="Orange toy track runs across the lawn of a suburban backyard." width="760" height="430">
 </template>
 <script>
 // Coast to Coast uses the shared race projection and point-to-point finish.
@@ -4711,8 +4712,8 @@ resize(); window.addEventListener('resize', resize);
 let SEGMENT_COUNT = 1150; const SEGMENT_LENGTH = 150; let TRACK_LENGTH = SEGMENT_COUNT * SEGMENT_LENGTH;
 let panelStarts = [180, 380, 540, 700, 840, 1020];
 const LANES = 3; const ROAD_WIDTH = 2250; const CAMERA_HEIGHT = 700; const CAMERA_DEPTH = 0.84; const DRAW_DISTANCE = 300; 
-const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9, LEVEL_BLACKOUT = 10, LEVEL_COASTER = 11;
-const COASTER_LENGTH = 2240;
+const LEVEL_HILLS = 3, LEVEL_HIGHWAY = 4, LEVEL_DREAM = 5, LEVEL_SPACE = 6, LEVEL_PARADISE = 7, LEVEL_ORBITAL = 8, LEVEL_COAST = 9, LEVEL_BLACKOUT = 10, LEVEL_COASTER = 11, LEVEL_BACKYARD = 12;
+const COASTER_LENGTH = 2240, BACKYARD_LENGTH = 1800;
 const LEVELS = [
   { id: 1, name: 'NEON CITY', tag: 'DOWNTOWN / 1989', color: '#ffe066', segments: 1150,
     description: "The last light hangs between the towers. Electric palms flash past on the way to the river. Across the suspension bridge, the whole skyline fits between the cables." },
@@ -4735,10 +4736,13 @@ const LEVELS = [
   { id: LEVEL_BLACKOUT, name: 'BLACKOUT', tag: 'TOWER SPIRAL / THREE LAPS', color: '#ffffff', segments: 960,
     description: "A narrow bridge cuts across the climb around the tower. The second lap turns the world inside out. The final lap goes cobalt, and your Countach turns yellow." },
   { id: LEVEL_COASTER, name: 'REDLINE RUSH', tag: 'FAIRGROUND / ONE LAP', color: '#ff746d', segments: COASTER_LENGTH,
-    description: "Red steel winds up to the high point of the fairground. Over the crest, the lights of the midway come rushing up to meet you. Leave the crowds behind for a quick run through the Ghost Train." }
+    description: "Red steel winds up to the high point of the fairground. Over the crest, the lights of the midway come rushing up to meet you. Leave the crowds behind for a quick run through the Ghost Train." },
+  { id: LEVEL_BACKYARD, name: 'BACKYARD BLAST', tag: 'TOY CIRCUIT / ONE LAP', color: '#ff9952', segments: BACKYARD_LENGTH,
+    description: "Someone snapped an orange track together across the lawn. Duck under the laundry and climb to the treehouse porch. Hit the last set of arrows and blast under the picnic table." }
 ];
 function isPointToPoint(level=currentLevel){return level===LEVEL_DREAM||level===LEVEL_ORBITAL||level===LEVEL_COAST;}
-function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE||level===LEVEL_COASTER?1:3;}
+function isWorldCourse(level=currentLevel){return level===LEVEL_COASTER||level===LEVEL_BACKYARD;}
+function raceLapCount(level=currentLevel){return isPointToPoint(level)||level===LEVEL_PARADISE||isWorldCourse(level)?1:3;}
 const HIGHWAY_CROSSINGS = [
   { index: 32, kind: 'train', countdown: true }, { index: 215, kind: 'road' },
   { index: 735, kind: 'road' }, { index: 995, kind: 'train' }
@@ -5132,6 +5136,8 @@ function buildSegments() {
             ...makeSection(100, -0.4, -8),
             ...makeSection(110, 0, 0)
         ];
+    } else if (currentLevel === LEVEL_BACKYARD) {
+        trackDef = buildBackyardRoute();
     } else if (currentLevel === LEVEL_COASTER) {
         trackDef = buildCoasterRoute();
     } else if (currentLevel === LEVEL_BLACKOUT) {
@@ -5361,7 +5367,7 @@ function buildSegments() {
                     }
                 }
             }
-        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST || currentLevel===LEVEL_BLACKOUT || currentLevel===LEVEL_COASTER) {
+        } else if (currentLevel === LEVEL_SPACE || currentLevel===LEVEL_PARADISE || currentLevel===LEVEL_ORBITAL || currentLevel===LEVEL_COAST || currentLevel===LEVEL_BLACKOUT || isWorldCourse()) {
             // Space Wave keeps the track edges free of floating crystal spires.
         } else {
             // Level 1: Standard tree distribution
@@ -5418,7 +5424,7 @@ function buildSegments() {
     let siteIndices = [250, 600, 950];
     let freeBolts = [150, 800];
     if(currentLevel===LEVEL_BLACKOUT){siteIndices=[];freeBolts=[135,420,645,838];}
-    if(currentLevel===LEVEL_COASTER){siteIndices=[];freeBolts=[...COASTER_BOOSTS.keys()];}
+    if(isWorldCourse()){siteIndices=[];freeBolts=[...activeWorldCourse().boosts.keys()];}
     if(currentLevel===LEVEL_HILLS)siteIndices=[250,900];
     if(currentLevel===LEVEL_COAST){siteIndices=[];freeBolts=[...COAST_BOOSTS.keys()];}
     if(currentLevel===LEVEL_ORBITAL){siteIndices=[];freeBolts=[145,475,805,1135,1465,1795,2125,2455,2785];}
@@ -5465,7 +5471,7 @@ function buildSegments() {
         freeBolts.forEach(idx => {
             if (idx >= SEGMENT_COUNT) return;
             const lane = currentLevel===LEVEL_COAST?COAST_BOOSTS.get(idx)
-                :currentLevel===LEVEL_COASTER?COASTER_BOOSTS.get(idx):laneOffsets[~~(Math.random() * 2)];
+                :isWorldCourse()?activeWorldCourse().boosts.get(idx):laneOffsets[~~(Math.random() * 2)];
             const s = segments[idx];
             if (s) s.lightning = { active: true, x: lane };
         });
@@ -9116,10 +9122,9 @@ const blackoutReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)'
 
 // Redline Rush: a closed world-space spline, sampled by distance for the race.
 const COASTER_HALF_WIDTH = 4.55;
-const COASTER_CAR_WIDTH = 1.94;
+const WORLD_CAR_WIDTH = 1.94;
 const COASTER_RAIL_INSET = .24;
-const COASTER_RAIL_LIMIT = 1 - (COASTER_RAIL_INSET + COASTER_CAR_WIDTH / 2) / COASTER_HALF_WIDTH;
-const COASTER_NEAR = 1.45;
+const WORLD_NEAR = 1.45;
 const COASTER_VIEW = 188;
 const COASTER_BOOSTS = new Map([[91,-.46],[311,.44],[685,-.45],[903,.31],[1128,-.43],
   [1354,.41],[1588,-.42],[1916,.44]]);
@@ -9135,11 +9140,15 @@ const COASTER_STATIONS = [
   [-75,108,15],[-76,82,8],[-100,61,5],[-129,45,5],[-141,20,9],[-119,-6,15],[-82,-17,12],
   [-50,-35,5],[-38,-64,3.4],[-20,-92,3.4],[11,-108,3.4],[37,-99,3.4],[50,-77,3.4],[50,-58,3.4],[50,-30,3.4]
 ];
-let coasterCourse = null;
+let coasterCourse = null, backyardCourse = null;
 
-function buildCoasterRoute() {
-  if (coasterCourse) return coasterCourse.track;
-  const knots = COASTER_STATIONS.map(([x,z,y]) => [x,y,z]);
+function activeWorldCourse(){
+  return currentLevel===LEVEL_BACKYARD?backyardCourse:coasterCourse;
+}
+
+function makeWorldCourse(stations, settings) {
+  const {length,halfWidth,railInset}=settings;
+  const knots = stations.map(([x,z,y]) => [x,y,z]);
   const knot = index => knots[(index + knots.length) % knots.length];
   const samples = [];
   let distance = 0;
@@ -9157,17 +9166,17 @@ function buildCoasterRoute() {
   const last=samples.at(-1).point, first=knots[0];
   distance+=Math.hypot(first[0]-last[0],first[1]-last[1],first[2]-last[2]);
   samples.push({point:first,distance});
-  const metresPerSegment=distance/COASTER_LENGTH;
+  const metresPerSegment=distance/length;
   const lerp=(a,b,t)=>a+(b-a)*t;
   let cursor=0;
-  const points=Array.from({length:COASTER_LENGTH},(_,i)=>{
+  const points=Array.from({length},(_,i)=>{
     const target=i*metresPerSegment;
     while (samples[cursor+1].distance<target) cursor++;
     const a=samples[cursor], b=samples[cursor+1];
     const t=(target-a.distance)/(b.distance-a.distance);
     return a.point.map((v,k)=>lerp(v,b.point[k],t));
   });
-  const path=i=>points[(i+COASTER_LENGTH)%COASTER_LENGTH];
+  const path=i=>points[(i+length)%length];
   const heading=(a,b)=>Math.atan2(b[0]-a[0],b[2]-a[2]);
   const frames=points.map((point,i)=>{
     const before=path(i-6), after=path(i+6);
@@ -9177,7 +9186,7 @@ function buildCoasterRoute() {
     const pitch=Math.atan2(after[1]-before[1],Math.hypot(after[0]-before[0],after[2]-before[2]));
     // Outside rail rises into the corner. The high point of the banking
     // is eased by the tangent window rather than by a screen rotation.
-    const bank=-.79*Math.tanh(curvature*49);
+    const bank=-settings.maxBank*Math.tanh(curvature*49);
     const cos=Math.cos(bank), sin=Math.sin(bank);
     const right=[
       Math.cos(yaw)*cos-Math.sin(yaw)*Math.sin(pitch)*sin,
@@ -9188,16 +9197,25 @@ function buildCoasterRoute() {
   });
   frames.push(frames[0]);
   const track=points.map((point,i)=>({curve:frames[i].curve,hill:(frames[i+1].point[1]-point[1])*95}));
-  coasterCourse={frames,track,metresPerSegment,ground:[],meshes:[],props:[],visitors:[],rides:[]};
-  buildCoasterSteel(coasterCourse);
-  buildCoasterFair(coasterCourse);
-  return track;
+  const railLimit=1-(railInset+WORLD_CAR_WIDTH/2)/halfWidth;
+  return {...settings,frames,track,metresPerSegment,railLimit,ground:[],meshes:[],props:[],visitors:[],rides:[]};
 }
 
-function sampleCoaster(z) {
-  const sample=z/SEGMENT_LENGTH;
-  const n=Math.floor(sample), i=(n%COASTER_LENGTH+COASTER_LENGTH)%COASTER_LENGTH;
-  const a=coasterCourse.frames[i], b=coasterCourse.frames[i+1], t=sample-n;
+function buildCoasterRoute(){
+  if(!coasterCourse){
+    coasterCourse=makeWorldCourse(COASTER_STATIONS,{length:COASTER_LENGTH,halfWidth:COASTER_HALF_WIDTH,
+      railInset:COASTER_RAIL_INSET,viewDistance:COASTER_VIEW,boosts:COASTER_BOOSTS,maxBank:.79,
+      cameraGap:7.1,cameraHeight:4.25,cameraDip:.19});
+    buildCoasterSteel(coasterCourse);
+    buildCoasterFair(coasterCourse);
+  }
+  return coasterCourse.track;
+}
+
+function sampleWorldCourse(course,z) {
+  const sample=z/SEGMENT_LENGTH, length=course.length;
+  const n=Math.floor(sample), i=(n%length+length)%length;
+  const a=course.frames[i], b=course.frames[i+1], t=sample-n;
   return {
     point:a.point.map((v,j)=>v+(b.point[j]-v)*t),
     right:a.right.map((v,j)=>v+(b.right[j]-v)*t),
@@ -9482,16 +9500,16 @@ function buildCoasterHouse(course) {
   }
 }
 
-function getCoasterCamera() {
-  const metre = SEGMENT_LENGTH / coasterCourse.metresPerSegment;
-  const car = sampleCoaster(player.z);
-  const back = sampleCoaster(player.z - 7.1*metre);
-  const ahead = sampleCoaster(player.z + (5.1+1.9*clamp(player.speed/player.maxSpeed,0,1.4))*metre);
-  const eye = coasterOffset(back,player.x*COASTER_HALF_WIDTH*.78,4.25);
+function getWorldRaceCamera(course) {
+  const metre = SEGMENT_LENGTH / course.metresPerSegment;
+  const car = sampleWorldCourse(course,player.z);
+  const back = sampleWorldCourse(course,player.z - course.cameraGap*metre);
+  const ahead = sampleWorldCourse(course,player.z + (5.1+1.9*clamp(player.speed/player.maxSpeed,0,1.4))*metre);
+  const eye = coasterOffset(back,player.x*course.halfWidth*.78,course.cameraHeight);
   const dx=ahead.point[0]-back.point[0], dy=ahead.point[1]-back.point[1], dz=ahead.point[2]-back.point[2];
   const yaw=Math.atan2(dx,dz);
-  const pitch=clamp(Math.atan2(dy,Math.hypot(dx,dz))-.19,-.88,.42);
-  const roll=car.bank*(coasterReducedMotion.matches?.14:.48);
+  const pitch=clamp(Math.atan2(dy,Math.hypot(dx,dz))-course.cameraDip,-.88,.42);
+  const roll=car.bank*(worldReducedMotion.matches?.14:.48);
   const sy=Math.sin(yaw), cy=Math.cos(yaw), sp=Math.sin(pitch), cp=Math.cos(pitch);
   const sr=Math.sin(roll), cr=Math.cos(roll);
   const forward=[sy*cp,sp,cy*cp];
@@ -9512,7 +9530,7 @@ function getCoasterCamera() {
   return {eye,car,yaw,focalX,focalY,view,screen,horizon};
 }
 
-const coasterReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const worldReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function drawCoasterSky(camera) {
   const at=camera.horizon(W*.5);
@@ -9556,22 +9574,22 @@ function drawCoasterSky(camera) {
   }
 }
 
-function coasterDepthQueue(camera) {
+function worldDepthQueue(camera,viewDistance) {
   const queue=[];
   // Clip to the near plane before perspective division. This keeps beams and
   // deck sections attached even when the camera passes through their Z range.
   function intersection(a,b) {
-    const t=(COASTER_NEAR-a.z)/(b.z-a.z);
-    return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:COASTER_NEAR};
+    const t=(WORLD_NEAR-a.z)/(b.z-a.z);
+    return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:WORLD_NEAR};
   }
   function enqueuePolygon(viewPoints,color,depthBias) {
     let clipped=viewPoints;
-    if (viewPoints.some(p=>p.z<COASTER_NEAR)) {
+    if (viewPoints.some(p=>p.z<WORLD_NEAR)) {
       clipped=[];
       for(let i=0;i<viewPoints.length;i++){
         const a=viewPoints[i], b=viewPoints[(i+1)%viewPoints.length];
-        if (a.z>=COASTER_NEAR) clipped.push(a);
-        if ((a.z>=COASTER_NEAR)!==(b.z>=COASTER_NEAR)) clipped.push(intersection(a,b));
+        if (a.z>=WORLD_NEAR) clipped.push(a);
+        if ((a.z>=WORLD_NEAR)!==(b.z>=WORLD_NEAR)) clipped.push(intersection(a,b));
       }
     }
     if(clipped.length<3)return;
@@ -9597,9 +9615,9 @@ function coasterDepthQueue(camera) {
       if(nx*x+ny*y+nz*z>offset)return;
     }
     let a=camera.view(start), b=camera.view(end);
-    if(a.z<COASTER_NEAR&&b.z<COASTER_NEAR)return;
-    if(a.z<COASTER_NEAR)a=intersection(a,b);
-    else if(b.z<COASTER_NEAR)b=intersection(b,a);
+    if(a.z<WORLD_NEAR&&b.z<WORLD_NEAR)return;
+    if(a.z<WORLD_NEAR)a=intersection(a,b);
+    else if(b.z<WORLD_NEAR)b=intersection(b,a);
     const p=camera.screen(a),q=camera.screen(b);
     const dx=q[0]-p[0],dy=q[1]-p[1], length=Math.hypot(dx,dy);
     if(length<.1)return;
@@ -9613,7 +9631,7 @@ function coasterDepthQueue(camera) {
   }
   function sprite(object,point=object.point) {
     const view=camera.view(point);
-    if(view.z<COASTER_NEAR || view.z>COASTER_VIEW+10)return;
+    if(view.z<WORLD_NEAR || view.z>viewDistance+10)return;
     const [x,y]=camera.screen(view), scaleX=camera.focalX/view.z, scaleY=camera.focalY/view.z;
     if(x<-70||x>W+70||y<-80||y>H+30)return;
     queue.push({...object,x,y,depth:view.z-(object.kind==='car'?1.8:0),scaleX,scaleY});
@@ -9622,7 +9640,7 @@ function coasterDepthQueue(camera) {
     const p=camera.view(batch.point), r=batch.radius;
     // Conservative bounds for the whole batch. Only faces touching the
     // viewport enter the painter's queue after clipping.
-    if(p.z+r<COASTER_NEAR||p.z-r>COASTER_VIEW)return;
+    if(p.z+r<WORLD_NEAR||p.z-r>viewDistance)return;
     const xSlant=W/(2*camera.focalX);
     const maxY=(H*.625)/camera.focalY, minY=(H*.375)/camera.focalY;
     if(Math.abs(p.x)>p.z*xSlant+r*1.22||p.y>p.z*maxY+r*1.7||-p.y>p.z*minY+r*1.3)return;
@@ -9717,16 +9735,17 @@ function drawCoasterActor(actor,time) {
   const {x,y,scaleX,scaleY,kind}=actor;
   if (kind==='car') {
     const {car,lean}=actor, isPlayer=car===player;
-    const sc=clamp(COASTER_CAR_WIDTH*scaleX/((isPlayer?164:136)*CAR_RENDER_WIDTH_SCALE),0,1.75);
+    const sc=clamp(WORLD_CAR_WIDTH*scaleX/((isPlayer?164:136)*CAR_RENDER_WIDTH_SCALE),0,1.75);
     const pivot=sc*(isPlayer?92:76)*.45;
     const angle=clamp(lean+(car.steerLean||0)*.055,-.82,.82);
     const cx=x+pivot*Math.sin(angle), cy=y+pivot*(1-Math.cos(angle));
     if(isPlayer)playerLastScreenX=cx;
-    drawCarSprite(cx,cy,sc,car.color||'#ffe066',isPlayer,angle,clamp(car.speed/player.maxSpeed,0,1),car.hitFlash,
+    if(currentLevel===LEVEL_BACKYARD)drawBackyardCar(cx,cy,sc,car,angle,time);
+    else drawCarSprite(cx,cy,sc,car.color||'#ffe066',isPlayer,angle,clamp(car.speed/player.maxSpeed,0,1),car.hitFlash,
       car.isBoosting,car.finished||state==='countdown');
     if(isPlayer&&car.wallContactSide&&car.speed>80) {
       const side=car.wallContactSide||Math.sign(car.x);
-      const strike=x+side*COASTER_CAR_WIDTH*scaleX*.57;
+      const strike=x+side*WORLD_CAR_WIDTH*scaleX*.57;
       for(let i=0;i<6;i++){
         const drift=(time*13+i*.163)%1;
         sceneLine([[strike+side*drift*12,y+drift*9],[strike+side*(4+drift*22),y+drift*17+2]],'#ffc58b',1);
@@ -9787,41 +9806,45 @@ function drawCoasterActor(actor,time) {
   ctx.restore();
 }
 
-function renderCoaster() {
+function renderWorldCourse(course) {
   const time=state==='countdown'?3-cntVal+cntTimer:4+raceElapsed/1000;
-  const camera=getCoasterCamera(), painter=coasterDepthQueue(camera);
-  drawCoasterSky(camera);
+  const camera=getWorldRaceCamera(course), painter=worldDepthQueue(camera,course.viewDistance);
+  const backyard=currentLevel===LEVEL_BACKYARD;
+  if(backyard)drawBackyardSky(camera);
+  else drawCoasterSky(camera);
   // The park is level. Paving belongs under the wheel, stands and visitors
   // even when the camera is looking steeply down at an entire plaza.
-  for(const batch of coasterCourse.ground)painter.mesh(batch);
+  for(const batch of course.ground)painter.mesh(batch);
   for(const item of painter.queue)scenePoly(item.points,item.color);
   painter.queue.length=0;
-  for(const batch of coasterCourse.meshes)painter.mesh(batch);
-  drawCoasterRides(painter,time,camera);
+  for(const batch of course.meshes)painter.mesh(batch);
+  if(backyard)drawBackyardMotion(painter,time,camera);
+  else drawCoasterRides(painter,time,camera);
 
-  for(const object of coasterCourse.props){
+  for(const object of course.props){
     if(object.kind==='sign'&&(camera.eye[2]-object.point[2])*object.side<=0)continue;
     if(object.kind==='ghost'){
       const [x,y,z]=object.point;
       painter.sprite(object,[x+Math.sin(time*1.4+object.phase)*.28,y+Math.cos(time*2.2+object.phase)*.45,z]);
     }else painter.sprite(object);
   }
-  for(const person of coasterCourse.visitors){
+  for(const person of course.visitors){
     const phase=time*.82+person.phase, walk=person.walking?1:0;
     painter.sprite({kind:'visitor',size:person.height,...person},
       [person.x+walk*Math.sin(phase)*(person.elevation?.56:1.5),(person.elevation||0)+.05,person.z+walk*Math.cos(phase)*1.3]);
   }
-  for(const [index] of COASTER_BOOSTS){
+  for(const [index] of course.boosts){
     const item=segments[index].lightning;
     if(!item.active)continue;
-    const frame=sampleCoaster((index+.5)*SEGMENT_LENGTH);
-    painter.sprite({kind:'lightning',size:1.35},coasterOffset(frame,item.x*COASTER_HALF_WIDTH,.1));
+    const frame=sampleWorldCourse(course,(index+.5)*SEGMENT_LENGTH);
+    const kind=backyard?'toyTurbo':'lightning';
+    painter.sprite({kind,size:1.35},coasterOffset(frame,item.x*course.halfWidth,.1));
   }
   for(const car of [...opponents,player]){
-    const frame=car===player?camera.car:sampleCoaster(car.z);
-    const lane=car.x*COASTER_HALF_WIDTH;
+    const frame=car===player?camera.car:sampleWorldCourse(course,car.z);
+    const lane=car.x*course.halfWidth;
     const point=coasterOffset(frame,lane,.11);
-    if(camera.view(point).z<COASTER_NEAR)continue;
+    if(camera.view(point).z<WORLD_NEAR)continue;
     const left=camera.screen(camera.view(coasterOffset(frame,lane-1,.11)));
     const right=camera.screen(camera.view(coasterOffset(frame,lane+1,.11)));
     const lean=Math.atan2(right[1]-left[1],right[0]-left[0]);
@@ -9830,8 +9853,668 @@ function renderCoaster() {
   painter.queue.sort((a,b)=>b.depth-a.depth);
   for(const item of painter.queue) {
     if(item.kind==='face')scenePoly(item.points,item.color);
-    else drawCoasterActor(item,time);
+    else if(!backyard||!drawBackyardActor(item,time))drawCoasterActor(item,time);
   }
+}
+
+// Backyard Blast: scene units keep the cars small next to domestic objects.
+const BACKYARD_STATIONS = [
+  [60,4,2.5],[60,33,2.5],[63,60,2.7],[83,86,4.4],[112,95,8],[134,113,13],
+  [133,146,18],[111,172,16],[81,187,8],[49,183,3.1],[27,165,3],[5,150,3.3],[-30,153,3.3],
+  [-63,165,3.2],[-87,154,4.3],[-100,130,11],[-103,110,23],[-103,91,38],[-103,73,40],[-104,57,38],
+  [-113,39,24],[-141,26,10],[-165,33,4.2],[-184,61,4.2],[-174,95,3],[-160,122,2.6],
+  [-168,153,2.3],[-182,183,3.1],[-162,209,8],[-131,211,13],[-106,194,17],[-80,174,18],[-52,183,18],
+  [-28,214,15],[4,231,9],[35,226,3.6],[62,222,2.6],[90,231,3.8],[124,226,7],[154,201,12],
+  [174,174,14],[179,135,12],[169,108,7],[170,81,5],[190,55,4.5],[191,24,4],[168,7,6],
+  [147,-3,12],[126,-13,12],[101,-18,8],[78,-29,4],[62,-27,2.5],[59,-14,2.5]
+];
+const BACKYARD_BOOSTS = new Map([[58,.39],[236,-.46],[471,-.38],[713,.45],[1007,-.42],[1297,.42],[1599,-.45]]);
+const BACKYARD_PADS = [
+  {start:104,lane:-.43},{start:312,lane:.44},{start:616,lane:.40},
+  {start:852,lane:-.43},{start:1148,lane:-.44},{start:1480,lane:.42},{start:1676,lane:.37}
+];
+const BACKYARD_PAD_LENGTH = 12;
+const BACKYARD_PAD_HALF = .365;
+const BACKYARD_CHEVRON_TIME = 1.35;
+
+function buildBackyardRoute(){
+  if(!backyardCourse){
+    backyardCourse=makeWorldCourse(BACKYARD_STATIONS,{length:BACKYARD_LENGTH,halfWidth:4.18,
+      railInset:.20,viewDistance:245,boosts:BACKYARD_BOOSTS,maxBank:.62,
+      cameraGap:6.65,cameraHeight:3.10,cameraDip:.15});
+    buildBackyardGarden(backyardCourse);
+    buildBackyardTrack(backyardCourse);
+  }
+  return backyardCourse.track;
+}
+
+function triggerBackyardChevron(car,from,to){
+  if(racerFinished(car))return;
+  // Overlap more than a third of the car with the visible red panel. Sweep
+  // both axes so crossing the panel at full boost cannot skip the contact.
+  const width=BACKYARD_PAD_HALF+WORLD_CAR_WIDTH/(6*backyardCourse.halfWidth)-1e-6;
+  for(const pad of BACKYARD_PADS){
+    if(car.lastChevronPanelIdx===pad.start&&car.lastChevronPanelLap===car.lap)continue;
+    const start=((car.lap-1)*BACKYARD_LENGTH+pad.start)*SEGMENT_LENGTH;
+    const end=start+BACKYARD_PAD_LENGTH*SEGMENT_LENGTH;
+    if(to.z<start||from.z>=end)continue;
+    if(!sweepContact(from.x-pad.lane,from.z,to.x-pad.lane,to.z,width,start,end))continue;
+    car.lastChevronPanelIdx=pad.start;
+    car.lastChevronPanelLap=car.lap;
+    car.isChevronBoosting=true;
+    car.chevronBoostTimer=BACKYARD_CHEVRON_TIME;
+    if(car!==player)car.randomTurboReadyAt=Math.max(car.randomTurboReadyAt||0,car.raceAge+BACKYARD_CHEVRON_TIME+OPP_RANDOM_TURBO.cooldown);
+    return;
+  }
+}
+
+function buildBackyardTrack(course) {
+  const {frames,halfWidth:width,railInset}=course, stride=4;
+  const launchers=new Map();
+  for(const pad of BACKYARD_PADS){
+    for(let i=pad.start;i<pad.start+BACKYARD_PAD_LENGTH;i+=stride)launchers.set(i,pad);
+  }
+  for(let i=0;i<course.length;i+=stride){
+    const a=frames[i], b=frames[i+stride], mesh=coasterMesh(course,a.point,8);
+    function strip(left,right,height,color,bias=0){
+      mesh.faces.push([[coasterOffset(a,left,height),coasterOffset(b,left,height),
+        coasterOffset(b,right,height),coasterOffset(a,right,height)],color,false,bias]);
+    }
+    strip(-width,width,0,i%8===0?'#ff750f':'#fa6e0b');
+    strip(-width+.34,-width+.46,.012,'#ff9525',.035);
+    strip(width-.46,width-.34,.012,'#ff9525',.035);
+    for(const side of [-1,1]){
+      const edge=side*width, inner=edge-side*railInset;
+      // Low moulded lips at the same inset used by the collision boundary.
+      strip(Math.min(edge,inner),Math.max(edge,inner),.24,'#ffa62c',.055);
+      const topA=coasterOffset(a,edge,.24),topB=coasterOffset(b,edge,.24);
+      const bottomA=coasterOffset(a,edge,-.23),bottomB=coasterOffset(b,edge,-.23);
+      const face=[topA,topB,bottomB,bottomA];
+      mesh.faces.push([side<0?face.reverse():face,'#d94c0b',true]);
+      const near=coasterOffset(a,inner,.24), far=coasterOffset(b,inner,.24);
+      const edgeFace=[near,far,coasterOffset(b,inner,.024),coasterOffset(a,inner,.024)];
+      mesh.faces.push([side>0?edgeFace.reverse():edgeFace,'#df5009',true]);
+      if(i%16===0){
+        const offset=side*(width+.24);
+        mesh.beams.push([coasterOffset(a,offset,-.24),coasterOffset(frames[i+2],offset,-.24),.52,'#3993c4']);
+      }
+    }
+    if(i===0||i+stride===course.length){
+      for(let cell=0;cell<10;cell++){
+        const left=(cell/5-1)*width;
+        strip(left,left+width/5,.025,(cell+Number(i===0))%2===0?'#fff7de':'#282b37',.07);
+      }
+      continue;
+    }
+    const pad=launchers.get(i);
+    if(pad){
+      const lane=pad.lane*width, half=BACKYARD_PAD_HALF*width;
+      strip(lane-half,lane+half,.04,'#b92620',.065);
+      strip(lane-half,lane-half+.12,.047,'#ffc34a',.095);
+      strip(lane+half-.12,lane+half,.047,'#ffc34a',.095);
+      const wing=half*.79;
+      const vertex=(segment,lateral)=>coasterOffset(frames[i+segment],lane+lateral,.058);
+      mesh.faces.push([[
+        vertex(0,-wing),vertex(2,0),vertex(0,wing),
+        vertex(1,wing),vertex(4,0),vertex(1,-wing)
+      ],'#fff4d2',false,.11]);
+    }else if(i%16===0){
+      const end=frames[i+1];
+      mesh.beams.push([coasterOffset(end,-width+.13,.014),coasterOffset(end,width-.13,.014),.043,'#e25b0e']);
+    }
+  }
+  for(let i=23;i<course.length;i+=23){
+    const frame=frames[i], [x,y,z]=frame.point;
+    // Low track has a single plug under each joint. Tall ramps lean on
+    // separate braces, with both upper ends below the outside rail.
+    if(x>-111&&x<-97&&z>55&&z<96&&y>32)continue;
+    if(y<4.5){
+      // Paint the lowest blocks under the deck, with the lawn.
+      const block=coasterMesh(course,[x,y/2,z],4,course.ground);
+      const [bx,by,bz]=coasterOffset(frame,0,-.80);
+      coasterBox(block,bx-1.1,0,bz-.82,bx+1.1,by,bz+.82,'#558cb1','#396e9a','#7fb0c7');
+      continue;
+    }
+    const support=coasterMesh(course,[x,y/2,z],y/2+11);
+    const lower=frames.filter((p,j)=>j%5===0&&p.point[1]<y-5&&Math.hypot(p.point[0]-x,p.point[2]-z)<16);
+    const arms=[];
+    for(const side of [-1,1]){
+      const head=coasterOffset(frame,side*(width+.19),-.59);
+      const foot=coasterOffset(frame,side*(width+(lower.length?3.05:1.1)));
+      foot[1]=.26;
+      const obstructed=lower.some(({point:[px,py,pz]})=>{
+        const t=clamp((py+1.1-foot[1])/(head[1]-foot[1]),0,1);
+        return py<head[1]+1&&Math.hypot(px-(foot[0]+(head[0]-foot[0])*t),pz-(foot[2]+(head[2]-foot[2])*t))<width+1.3;
+      });
+      if(obstructed)continue;
+      arms.push(head);
+      support.beams.push([foot,head,.66,side>0?'#478cb4':'#65a2c0']);
+      coasterBox(support,foot[0]-.72,.03,foot[2]-.75,foot[0]+.72,.32,foot[2]+.75,'#547fa5','#427697','#90b9c7');
+    }
+    if(arms.length===2)support.beams.push([arms[0],arms[1],.39,'#5393b7',coasterDeckPlane(frame,frames[i+1])]);
+  }
+}
+
+function buildBackyardGarden(course){
+  const plot=coasterMesh(course,[0,0,118],320,course.ground);
+  for(let z=-38,i=0;z<262;z+=20,i++){
+    plot.faces.push([[[-217,.025,z],[221,.025,z],[221,.025,z+20],[-217,.025,z+20]],
+      i%2?'#67a64b':'#70ae50']);
+  }
+  const paving=coasterMesh(course,[52,0,-12],155,course.ground);
+  const patio=[[-76,.04,-42],[185,.04,-42],[185,.04,15],[-76,.04,15]];
+  paving.faces.push([patio,'#c5aaa0']);
+  for(let x=-72;x<185;x+=11){
+    paving.beams.push([[x,.06,-42],[x,.06,15],.32,'#ae9389']);
+  }
+  for(let z=-36;z<15;z+=8){
+    paving.beams.push([[-76,.06,z],[185,.06,z],.34,'#e3c7ac']);
+  }
+  for(let i=0;i<10;i++){
+    const z=22+i*8.5,x=111+Math.sin(i*.61)*4;
+    paving.faces.push([[[x-4,.09,z-2.55],[x+4,.09,z-2.4],[x+4.7,.09,z+2.4],[x-5,.09,z+2.2]],'#c1b7a0']);
+  }
+  const treeShade=coasterMesh(course,[-137,.1,87],75,course.ground);
+  for(const [x,z,w,d,ink] of [[-147,90,54,44,'#5b924d'],[-127,94,45,55,'#568d49'],[-157,72,34,32,'#568c48']]){
+    const oval=Array.from({length:15},(_,i)=>{
+      const t=i/15*Math.PI*2;
+      return [x+Math.cos(t)*w,.10,z+Math.sin(t)*d];
+    });
+    treeShade.faces.push([oval,ink]);
+  }
+
+  buildBackyardFence(course);
+  buildBackyardHouse(course);
+  buildBackyardTreehouse(course);
+  buildBackyardTable(course);
+  buildBackyardLawnProps(course);
+
+  // Grass clumps sit alongside low stretches; their bases stay in one patch
+  // of lawn as the camera goes past at the height of the wheels.
+  for(let i=20;i<course.length;i+=8){
+    const frame=course.frames[i], [,,z]=frame.point;
+    if(frame.point[1]>7.5||z<19)continue;
+    for(const side of [-1,1]){
+      const seed=i*5+side*23;
+      const spread=coastSceneryNoise(seed),distance=7.3+spread*6.15;
+      const [x,,zz]=coasterOffset(frame,side*distance);
+      if(Math.abs(x)>210||zz>257)continue;
+      course.props.push({kind:'grass',point:[x,.12,zz],size:.92+coastSceneryNoise(seed+2)*1.6,seed,flowers:i%11===0});
+    }
+  }
+  for(const [x,z,r] of [[-197,144,9],[-197,218,10],[-168,226,8],[-16,247,9],[188,235,8],[205,87,7],
+     [-97,-32,10],[-59,-35,7],[39,-39,6],[170,-39,8],[26,41,5],[-153,120,6]]){
+    const mesh=coasterMesh(course,[x,4,z],r+11);
+    backyardFoliage(mesh,x,r*.58,z,r,r*.72,r*.92,x,0);
+    backyardFoliage(mesh,x-r*.49,r*.37,z+r*.50,r*.72,r*.58,r*.61,z,0);
+  }
+}
+
+function buildBackyardFence(course){
+  const segments=[[-218,-42,-218,260],[222,-42,222,260],[-218,260,222,260]];
+  for(const [x1,z1,x2,z2] of segments){
+    const length=Math.hypot(x2-x1,z2-z1),dx=(x2-x1)/length,dz=(z2-z1)/length;
+    const board=(u,y)=>[x1+dx*u,y,z1+dz*u];
+    for(let s=0;s<length;s+=30){
+      const end=Math.min(s+30,length), mesh=coasterMesh(course,board((s+end)/2,13),26);
+      for(const y of [9,23])mesh.beams.push([board(s,y),board(end,y),2.8,'#c8ceba']);
+      for(let u=s+.8;u<end-.7;u+=5){
+        const a=u-.88,b=u+2.48;
+        const top=28+(Math.round(u)%4===0?.72:0);
+        mesh.faces.push([[board(a,1),board(b,1),board(b,top-3),board(u+.76,top),board(a,top-3)],
+          Math.floor(u/5)%3===0?'#ebebd5':'#f7f1dc']);
+        mesh.beams.push([board(a+.08,1.05),board(a+.08,top-3.1),.63,'#b3bda5']);
+      }
+      const [x,,z]=board(s,0);
+      coasterBox(mesh,x-1.2,0,z-1.2,x+1.2,30,z+1.2,'#eee7cd','#bec6b1','#ffffe9');
+    }
+  }
+  // Only the roofs and upper windows of the neighbouring houses show over the fence.
+  for(const [x,z,wall,roof] of [[-145,309,'#e3dcbb','#777b89'],[18,323,'#b4cad0','#606b84'],[165,313,'#e7c5b3','#8d6e6a'],
+                               [-277,96,'#d4dbbf','#738081'],[276,118,'#e4ddc4','#7b7586']]){
+    const mesh=coasterMesh(course,[x,37,z],90);
+    coasterBox(mesh,x-49,0,z-31,x+49,55,z+31,wall,'#c4cbbc',wall);
+    mesh.faces.push([[[x-53,55,z-36],[x+53,55,z-36],[x+53,77,z],[x-53,77,z]],roof],
+      [[[x-53,55,z+36],[x-53,77,z],[x+53,77,z],[x+53,55,z+36]],roof],
+      [[[x-48,55,z-31],[x-48,77,z],[x-48,55,z+31]],wall],
+      [[[x+48,55,z-31],[x+48,55,z+31],[x+48,77,z]],wall]);
+    for(const dx of [-24,24]){
+      const a=x+dx-7,b=x+dx+7, front=z-31.15;
+      mesh.faces.push([[[a-2,28,front],[b+2,28,front],[b+2,46,front],[a-2,46,front]],'#f2e7cf',false,.08],
+        [[[a,29,front-.12],[b,29,front-.12],[b,45,front-.12],[a,45,front-.12]],'#8aaab2',false,.12]);
+      mesh.beams.push([[a,37,front-.28],[b,37,front-.28],.77,'#f3e7cd']);
+    }
+  }
+}
+
+function buildBackyardHouse(course){
+  const x0=-97,x1=187,z0=-163,z1=-43,body=92;
+  const house=coasterMesh(course,[45,58,-105],185);
+  coasterBox(house,x0,0,z0,x1,body,z1,'#f3e7c9','#e1d4bb','#ded8c0');
+  // Asphalt shingles, gable ends and a pale gutter.
+  const ridge=-105,roof=137;
+  house.faces.push([[[x0-5,90,z1+6],[x1+5,90,z1+6],[x1+5,roof,ridge],[x0-5,roof,ridge]],'#546777'],
+    [[[x0-5,90,z0-6],[x0-5,roof,ridge],[x1+5,roof,ridge],[x1+5,90,z0-6]],'#3f5366'],
+    [[[x0,90,z0],[x0,roof,ridge],[x0,90,z1]],'#ddd2b5'],[[[x1,90,z1],[x1,roof,ridge],[x1,90,z0]],'#e9dfc3']);
+  house.beams.push([[x0-5,91,z1+6.3],[x1+5,91,z1+6.3],1.6,'#f6ecd5']);
+  for(let y=6;y<body;y+=4.4){
+    house.beams.push([[x0+.2,y,z1+.10],[x1-.2,y,z1+.10],.31,'#d6c6a9']);
+    house.beams.push([[x0-.1,y,z0+.2],[x0-.1,y,z1-.2],.29,'#c8b99d']);
+    house.beams.push([[x1+.13,y,z0+.2],[x1+.13,y,z1-.2],.29,'#d7c7ac']);
+  }
+  for(let i=1;i<9;i++){
+    const f=i/9, y=90+47*f,z=(z1+6)*(1-f)+ridge*f;
+    house.beams.push([[x0-4.9,y+.24,z],[x1+4.9,y+.24,z],.42,'#667889']);
+  }
+  coasterBox(house,x0+27,103,-122,x0+43,145,-108,'#a27060','#805b53','#ba8b77');
+  coasterBox(house,x0+25,144,-124,x0+45,147,-106,'#ccb09a','#a88b78','#e4c4a9');
+  function rect(left,bottom,right,top,z,color,bias=.14){
+    house.faces.push([[[left,bottom,z],[right,bottom,z],[right,top,z],[left,top,z]],color,false,bias]);
+  }
+  function windowAt(x,y,w,h){
+    rect(x-w/2-5,y-2,x+w/2+5,y+h+2,z1+.26,'#497775');
+    rect(x-w/2-1.6,y-1.4,x+w/2+1.6,y+h+1.4,z1+.39,'#fff3da',.22);
+    rect(x-w/2,y,x+w/2,y+h,z1+.47,'#629cba',.29);
+    rect(x-w/2,y+h*.68,x+w/2,y+h,z1+.53,'#aecfd8',.38);
+    const z=z1+.69;
+    house.beams.push([[x,y,z],[x,y+h,z],.91,'#fbf1d6'],[[x-w/2,y+h*.51,z],[x+w/2,y+h*.51,z],.84,'#eddcc3']);
+    house.beams.push([[x-w/2-2.6,y-1.2,z+.84],[x+w/2+2.6,y-1.2,z+.84],1.25,'#fff2d2']);
+  }
+  for(const x of [-56,13,81,149])windowAt(x,59,22,22);
+  for(const x of [-57,15,156])windowAt(x,18,24,23);
+  rect(92,0,131,48,z1+.17,'#fff0d8');
+  rect(94,2,129,46,z1+.33,'#507e91',.30);
+  rect(100,27,127,44,z1+.46,'#77aabb',.37);
+  house.beams.push([[111.5,2,z1+.68],[111.5,46,z1+.68],1.0,'#faf4dd']);
+  coasterBox(house,90,0,z1,133,2.8,z1+8,'#b49486','#a78778','#ddc3ad');
+  for(const x of [-92,183])house.beams.push([[x,1,z1+.65],[x,90,z1+.65],1.9,'#fff0d4']);
+  // The side shed makes the first lawn straight look out from beside the garden.
+  const shed=coasterMesh(course,[-4,19,52],42);
+  coasterBox(shed,-25,0,40,18,30,64,'#bfd1b6','#9fb19f','#b7c9be');
+  shed.faces.push([[[-27,30,38],[20,30,38],[20,41,53],[-27,41,53]],'#6b7e75'],
+    [[[-27,41,53],[20,41,53],[20,30,66],[-27,30,66]],'#5f736c'],
+    [[[18,30,40],[18,41,53],[18,30,64]],'#cee0c0'],
+    [[[-25,30,40],[-25,30,64],[-25,41,53]],'#aec3ad']);
+  for(const x of [-16,7]){
+    shed.faces.push([[[x-6,.6,64.6],[x+6,.6,64.6],[x+6,24,64.6],[x-6,24,64.6]],'#7d9a80',false,.09]);
+    shed.beams.push([[x-5.5,2,64.85],[x+5.5,23,64.85],.77,'#c6d3b5']);
+  }
+}
+
+function backyardFoliage(mesh,x,y,z,rx,ry,rz,seed,light){
+  const ring=[];
+  for(let i=0;i<7;i++){
+    const a=i*Math.PI*2/7, scale=.82+coastSceneryNoise(seed*11+i)*.23;
+    ring.push([x+Math.cos(a)*rx*scale,y+(coastSceneryNoise(seed+i+3)-.5)*ry*.56,z+Math.sin(a)*rz*scale]);
+  }
+  const crown=[x+rx*.13,y+ry,z-rz*.14], base=[x-rx*.11,y-ry*.72,z];
+  const top=light?['#a0c561','#84b851','#8db95a','#6fa448']:['#89b459','#76a951','#6d9e50','#96ba5c'];
+  const low=['#538948','#4c8448','#629247','#558349'];
+  for(let i=0;i<ring.length;i++){
+    const a=ring[i],b=ring[(i+1)%ring.length];
+    mesh.faces.push([[crown,a,b],top[(i+Math.abs(Math.floor(seed)))%4]],[[base,b,a],low[i%4]]);
+  }
+}
+
+function buildBackyardTreehouse(course){
+  const x=-136,z=84, size=8.15;
+  const bark=coasterMesh(course,[x,47,z],59);
+  const levels=[[0,0,0,1.38],[-1,22,.3,1.08],[.45,48,1,.84],[1.75,69,1.0,.65],[-2,96,0,.44]];
+  const rim=(j,k)=>{
+    const [dx,y,dz,r]=levels[j], angle=k*Math.PI/4;
+    return [x+dx+Math.cos(angle)*size*r,y,z+dz+Math.sin(angle)*size*r];
+  };
+  for(let j=0;j<levels.length-1;j++){
+    for(let side=0;side<8;side++)bark.faces.push([[rim(j,side),rim(j,side+1),rim(j+1,side+1),rim(j+1,side)],
+      ['#8e6746','#755537','#9b744f','#78543a'][side%4]]);
+  }
+  for(const [end,mid,width] of [[[x-38,89,z+18],[x-11,74,z+8],8],[[x+37,85,z+16],[x+14,73,z+6],7],
+    [[x+21,103,z-30],[x+9,87,z-10],6.8],[[x-25,119,z-13],[x-10,92,z-8],6.2]]){
+    bark.beams.push([[x,64,z],mid,width,'#795536'],[mid,end,width*.70,'#8a6847']);
+  }
+  const clusters=[
+    [-172,91,98,31,21,29],[-150,101,122,34,23,30],[-122,102,119,34,26,31],
+    [-102,93,105,30,17,29],[-96,95,66,32,18,25],[-129,103,60,35,23,29],
+    [-149,109,81,35,22,29],[-170,103,72,28,17,25],[-145,135,99,29,20,29],
+    [-106,112,104,24,22,27],[-131,135,73,23,19,29],[-156,120,114,26,18,25],
+    [-94,106,83,25,17,23]
+  ];
+  for(const [cx,y,cz,rx,ry,rz] of clusters){
+    const crown=coasterMesh(course,[cx,y,cz],Math.max(rx,ry,rz)+4);
+    backyardFoliage(crown,cx,y,cz,rx,ry,rz,cx+cz,y>105);
+  }
+  const porch=coasterMesh(course,[-120,38,74],51);
+  for(const [left,right] of [[-153,-110],[-96.5,-88]]){
+    coasterBox(porch,left,34.3,55,right,36.7,96,'#b28a60','#95704c','#bc956b');
+    for(let z=57;z<96;z+=4.4)porch.beams.push([[left+.2,36.75,z],[right-.2,36.75,z],.22,'#9f7958']);
+  }
+  // A slot in the platform leaves room for the actual ramp at both ends.
+  porch.beams.push([[-144,4,57],[-144,34,67],2.9,'#8d6a47'],[[-91,2,88],[-91,34,78],2.6,'#986e47'],
+    [[-91,2,61],[-91,34,69],2.6,'#8c6444'],[[-112,35,76],[-94,35,76],1.15,'#9d7755']);
+  // Trasse runs along the open part of the porch beside the cabin.
+  coasterBox(porch,-148,36.7,62,-114,66,90,'#ce936b','#af7854','#d39c77');
+  porch.faces.push([[[-151,65,59],[-111,65,59],[-111,76,76],[-151,76,76]],'#547d70'],
+    [[[-151,76,76],[-111,76,76],[-111,65,93],[-151,65,93]],'#496c63'],
+    [[[-114,65,62],[-114,65,90],[-114,75,76]],'#c38a61']);
+  porch.faces.push([[[-113.56,44.4,70.1],[-113.56,44.4,84.7],[-113.56,60.8,84.7],[-113.56,60.8,70.1]],'#f0c496',false,.13],
+    [[[-113.08,46,71.5],[-113.08,46,83.1],[-113.08,59.3,83.1],[-113.08,59.3,71.5]],'#577a7d',false,.21]);
+  porch.beams.push([[-112.94,46,77.3],[-112.94,59.4,77.3],.65,'#f7d3ab'],
+    [[-112.91,52.2,71.5],[-112.91,52.2,83],.61,'#f7d3ab']);
+  for(const x of [-89,-149]){
+    for(let z=58;z<96;z+=7.5)porch.beams.push([[x,36.75,z],[x,45,z],.95,'#cfab80']);
+    porch.beams.push([[x,44.4,56],[x,44.4,95],1.23,'#d9b894']);
+  }
+  for(const side of [-1,1]){
+    const x=-145+side*3.2;
+    porch.beams.push([[x,.15,51],[x,36.6,57],.97,'#8c693e']);
+  }
+  for(let y=2;y<36;y+=3.15){
+    const z=51+y/6.1;
+    porch.beams.push([[-148.3,y,z],[-141.8,y,z],.76,'#c49867']);
+  }
+}
+
+function buildBackyardTable(course){
+  const table=coasterMesh(course,[135,18,-12],47);
+  const left=105,right=166,front=-27,back=5,top=37.5;
+  coasterBox(table,left,top-3.1,front,right,top,back,'#a56c53','#8a5946','#c17f5d');
+  const underside=top-3.15;
+  table.faces.push([[[left,underside,front],[right,underside,front],[right,underside,back],[left,underside,back]],'#93604c',true]);
+  // The gingham is one-sided on the top and drapes over the side.
+  for(let col=0;col<8;col++){
+    const l=left+col*(right-left)/8,r=left+(col+1)*(right-left)/8;
+    for(let row=0;row<5;row++){
+      const a=front+row*(back-front)/5,b=front+(row+1)*(back-front)/5;
+      table.faces.push([[[l,top+.09,a],[l,top+.09,b],[r,top+.09,b],[r,top+.09,a]],
+        (col+row)%2?'#fff0cf':row%2?'#d45a57':'#e57c72',true,.05]);
+    }
+    table.faces.push([[[l,top-.04,front-.11],[r,top-.04,front-.11],[r,top-6,front-.18],[l,top-6,front-.18]],
+      col%2?'#fff0cf':'#d7605a']);
+  }
+  for(const x of [110,161]){
+    table.beams.push([[x,0,-31],[x,top-2,-23],2.65,'#a27258'],[[x,0,17],[x,top-2,4],2.65,'#a27258']);
+  }
+  for(const z of [-33.2,13.6]){
+    coasterBox(table,103,17.4,z-3.2,169,19.4,z+3.2,'#a46b50','#8e5947','#c18562');
+    table.beams.push([[110,17.5,z],[161,17.5,z],1.4,'#875d4a']);
+  }
+  for(const [x,z,color] of [[119,-23,'#ce5d57'],[153,-18,'#e48c58'],[151,1,'#578eb1']]){
+    const cup=coasterMesh(course,[x,top+3,z],6);
+    const rim=(i,y,r)=>[x+Math.cos(i*Math.PI/4)*r,y,z+Math.sin(i*Math.PI/4)*r];
+    for(let j=0;j<8;j++)cup.faces.push([[rim(j,top,1.9),rim(j+1,top,1.9),rim(j+1,top+6,2.55),rim(j,top+6,2.55)],color]);
+    cup.faces.push([Array.from({length:8},(_,i)=>rim(i,top+6,2.46)),'#fbebd2']);
+    cup.beams.push([[x,top+5.9,z],[x+.9,top+9.2,z+.25],.44,'#b5d5cf']);
+  }
+  // Covered charcoal grill beside the patio door.
+  const grill=coasterMesh(course,[163,14,-35],21);
+  for(const [x,z] of [[159,-37],[169,-37],[164,-30]])grill.beams.push([[x,0,z],[164,17,-35],1.2,'#656b68']);
+  const hull=(i,y,r)=>[164+Math.cos(i*Math.PI/6)*r,y,-35+Math.sin(i*Math.PI/6)*r];
+  for(let j=0;j<12;j++){
+    const a=hull(j,21,8.1),b=hull(j+1,21,8.1);
+    grill.faces.push([[a,b,[164,29,-35]],j%3?'#35484b':'#526361'],
+      [[a,[164,13,-35],b],j%3?'#3a4d49':'#2c403e']);
+    grill.beams.push([a,b,.64,'#66756c']);
+  }
+  grill.beams.push([[161,30,-35],[167,30,-35],1.3,'#665a46']);
+}
+
+const BACKYARD_SPRINKLER = [94,0,116];
+const BACKYARD_LINES = [
+  {x:17,start:115,end:196,clothes:[
+    {z:126,width:18,height:19,color:'#ebcc9f',style:'towel'},
+    {z:150,width:22,height:29,color:'#faf0d6',style:'towel'},
+    {z:175,width:16,height:19,color:'#bb6672',style:'shirt'}]},
+  {x:-17,start:122,end:206,clothes:[
+    {z:137,width:16,height:22,color:'#6690b9',style:'shirt'},
+    {z:160,width:25,height:31,color:'#9fc5bd',style:'towel'},
+    {z:185,width:15,height:17,color:'#e2a797',style:'towel'}]}
+];
+
+function backyardLineHeight(line,z){
+  const t=(z-line.start)/(line.end-line.start);
+  return 44-14*t*(1-t);
+}
+
+function buildBackyardLawnProps(course){
+  const [sx,,sz]=BACKYARD_SPRINKLER;
+  const sprinkler=coasterMesh(course,[sx,3,sz],26);
+  coasterBox(sprinkler,sx-3.3,0,sz-2.8,sx+3.3,.65,sz+2.8,'#b75d43','#9b4b3a','#e38756');
+  sprinkler.beams.push([[sx,.38,sz],[sx,4.7,sz],1.06,'#8b7758']);
+  let last=[sx,.28,sz];
+  for(let i=0;i<=32;i++){
+    const a=i/32*Math.PI*3.65,r=6.8+i*.09;
+    const next=[sx-10+Math.cos(a)*r,.28,sz+4+Math.sin(a)*r];
+    sprinkler.beams.push([last,next,.72,'#459a5d']);
+    last=next;
+  }
+  sprinkler.beams.push([last,[sx-25,.26,sz+17],.72,'#46905a'],[[sx-25,.26,sz+17],[sx-42,.26,sz+26],.72,'#529b52']);
+
+  for(const line of BACKYARD_LINES){
+    const {x,start,end}=line;
+    const stand=coasterMesh(course,[x,24,(start+end)/2],52);
+    for(const z of [start,end]){
+      stand.beams.push([[x,0,z],[x,46,z],1.16,'#a49d86'],[[x-2.4,46,z],[x+2.4,46,z],.91,'#d8cbb1']);
+    }
+    for(let i=0;i<13;i++){
+      const a=start+(end-start)*i/13,b=start+(end-start)*(i+1)/13;
+      stand.beams.push([[x,backyardLineHeight(line,a),a],[x,backyardLineHeight(line,b),b],.28,'#ede1c0']);
+    }
+  }
+  const px=105,pz=145,r=14;
+  const pool=coasterMesh(course,[px,2.4,pz],r+3);
+  const rim=(i,y,rad)=>[px+Math.cos(i*Math.PI/9)*rad,y,pz+Math.sin(i*Math.PI/9)*rad];
+  pool.faces.push([Array.from({length:18},(_,i)=>rim(i,2.62,r-.83)),'#7cc7d7']);
+  for(let i=0;i<18;i++){
+    pool.faces.push([[rim(i,.07,r),rim(i+1,.07,r),rim(i+1,3.4,r),rim(i,3.4,r)],i%3?'#579fc7':'#67afd1']);
+    pool.beams.push([rim(i,3.4,r),rim(i+1,3.4,r),.88,'#a5dbdd']);
+  }
+  course.props.push({kind:'ball',point:[108,5,pz+3],size:4.8,color:'#ffb263',stripe:'#faf1c8'});
+  course.props.push({kind:'ball',point:[181,3.1,38],size:5.9,color:'#e78440',stripe:'#80553b'});
+
+  // A raised vegetable box, a few terracotta planters, and flowers near the path.
+  const planter=coasterMesh(course,[-152,4,139],25);
+  coasterBox(planter,-151,0,126,-135,6.8,152,'#b48862','#99734e','#947348');
+  for(let i=0;i<11;i++){
+    const x=-148.5+(i%3)*5.5,z=129+Math.floor(i/3)*6;
+    backyardFoliage(planter,x,7.3,z,2.3,2.8,2.35,i,1);
+  }
+  for(const [x,z,h] of [[79,22,5.2],[135,15,7.0],[-83,-13,6.1],[-145,112,4.3],[-23,97,5.9],[191,212,5.1]]){
+    const pot=coasterMesh(course,[x,h*.5,z],h*2);
+    const rim=(i,y,r)=>[x+Math.cos(i*Math.PI/4)*r,y,z+Math.sin(i*Math.PI/4)*r];
+    for(let i=0;i<8;i++){
+      pot.faces.push([[rim(i,0,h*.53),rim(i+1,0,h*.53),rim(i+1,h,h*.78),rim(i,h,h*.78)],i%2?'#bd7651':'#ce8c5e']);
+      pot.beams.push([rim(i,h,h*.78),rim(i+1,h,h*.78),.59,'#e1a779']);
+    }
+    backyardFoliage(pot,x,h+1.0,z,h*.83,h*.77,h*.83,z,1);
+    course.props.push({kind:'grass',point:[x,h+2,z],size:h*.75,seed:z+59,flowers:true});
+  }
+}
+
+function drawBackyardSky(camera){
+  const center=camera.horizon(W*.5), top=Math.min(0,center-H*.69);
+  const sky=ctx.createLinearGradient(0,top,0,Math.max(H*.22,center+H*.13));
+  sky.addColorStop(0,'#5aaddb');sky.addColorStop(.50,'#83c5e6');sky.addColorStop(1,'#d4e8e0');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+
+  const [x,y,z]=camera.eye;
+  for(const [angle,high,wide] of [[-.15,.30,.15],[.63,.37,.20],[1.6,.21,.16],[2.36,.29,.22],[3.12,.32,.16],[4.02,.41,.22],[5.2,.26,.15]]){
+    const view=camera.view([x+Math.sin(angle)*700,y+high*700,z+Math.cos(angle)*700]);
+    if(view.z<160)continue;
+    const [sx,sy]=camera.screen(view),rx=W*wide;
+    if(sx+rx*1.7<0||sx-rx>W)continue;
+    scenePoly([[sx-rx,sy+4],[sx-rx*.75,sy-2],[sx-rx*.29,sy-3],[sx-rx*.07,sy-13],
+      [sx+rx*.52,sy-15],[sx+rx*.93,sy-6],[sx+rx*1.35,sy-4],[sx+rx*1.58,sy+2],[sx+rx*.8,sy+7]],'#f8f7e5');
+    scenePoly([[sx-rx*.64,sy+5],[sx+rx*.67,sy+5],[sx+rx*1.37,sy+1],[sx+rx*1.04,sy+8],[sx-rx*.31,sy+10]],'#d9e8e5');
+  }
+  const left=camera.horizon(0),right=camera.horizon(W);
+  const hills=[[0,left+3]];
+  for(let j=0;j<=27;j++){
+    const px=W*j/27, a=camera.yaw+Math.atan((px-W*.5)/camera.focalX);
+    const height=.039+.014*Math.sin(a*24)+.018*Math.sin(a*9)+.008*Math.cos(a*47);
+    hills.push([px,camera.horizon(px)-height*H]);
+  }
+  hills.push([W,right+5],[0,left+5]);
+  scenePoly(hills,'#81aa88');
+  scenePoly([[0,left],[W,right],[W,H],[0,H]],'#69a14f');
+}
+
+function drawBackyardMotion(painter,time,camera){
+  for(const line of BACKYARD_LINES){
+    const viewer=camera.view([line.x,32,(line.start+line.end)/2]);
+    if(viewer.z<-57||viewer.z>220||Math.abs(viewer.x)>.65*viewer.z+72)continue;
+    for(const cloth of line.clothes){
+      const {z,width,height,color,style}=cloth;
+      const count=12;
+      function point(i,drop){
+        const t=i/count, zz=z+(t-.5)*width;
+        const neck=style==='shirt'&&drop===0&&Math.abs(t-.5)<.16?2.5:0;
+        const length=style==='shirt'&&Math.abs(t-.5)>.28?.49:1;
+        const y=backyardLineHeight(line,zz)-neck-(height*length+Math.cos(t*5.6)*.9)*drop;
+        const billow=worldReducedMotion.matches?.15:1;
+        const x=line.x+drop*(Math.sin(time*2.3+t*8+z)*1.6+Math.cos(time*1.23+t*9)*.6)*billow;
+        return [x,y,zz];
+      }
+      for(let i=0;i<count;i++){
+        const top=point(i,0), next=point(i+1,0), end=point(i+1,1), edge=point(i,1);
+        painter.face([top,next,end,edge],i%4===0?shadeColor(color,-8):color);
+        if(style==='towel'){
+          painter.face([point(i,.79),point(i+1,.79),point(i+1,.88),point(i,.88)],shadeColor(color,-33),false,.05);
+        }
+      }
+      for(const q of [1,count-2]){
+        const [x,y,zz]=point(q,0);
+        painter.beam([x,y-1.8,zz],[x,y+1.32,zz],.58,'#b09068');
+      }
+    }
+  }
+
+  const [sx,,sz]=BACKYARD_SPRINKLER, pivot=[sx,4.8,sz];
+  const water=camera.view(pivot);
+  if(water.z<-31||water.z>113||Math.abs(water.x)>water.z*.62+32)return;
+  const angle=time*1.86;
+  for(let side=0;side<3;side++){
+    const dir=angle+side*Math.PI*2/3, dx=Math.cos(dir),dz=Math.sin(dir);
+    const tip=[sx+dx*4.1,4.2,sz+dz*4.1];
+    painter.beam(pivot,tip,.81,'#ceb17b');
+    for(let j=0;j<10;j++){
+      const t=(time*1.68+j/10)%1;
+      const target=[sx+dx*(4.05+t*16),4.2+33*t*(1-t)-3.9*t,sz+dz*(4.05+t*16)];
+      painter.sprite({kind:'waterDrop',size:.17+(1-t)*.12},target);
+    }
+  }
+}
+
+const BACKYARD_LIVERIES = [
+  ['#dc4d44','#ffd198',.25,.31],['#4f9ac2','#f1e3bf',.34,.27],
+  ['#c6853c','#3a6477',.26,.24],['#63a268','#f5e4c2',.31,.30],
+  ['#977bb3','#f0d9a4',.24,.32]
+];
+
+function drawBackyardCar(cx,cy,scale,car,angle,time){
+  const playerCar=car===player, {bw,bh,px,py,pivotY}=getCarGeometry(cx,cy,scale,playerCar);
+  if(bw<7)return;
+  const [body,stripe,roof,camber]=playerCar?['#ffcc3e','#3b6492',.20,.30]:BACKYARD_LIVERIES[car.oppIdx];
+  const rect=(x,y,w,h)=>ctx.fillRect(px+x*bw,py+y*bh,w*bw,h*bh);
+  const shape=(points,color)=>scenePoly(points.map(([x,y])=>[px+x*bw,py+y*bh]),color);
+  ctx.save();ctx.translate(cx,pivotY);ctx.rotate(angle);ctx.translate(-cx,-pivotY);
+  ctx.fillStyle='rgba(88,42,26,.27)';rect(.07,.91,.86,.085);
+
+  if(car.isChevronBoosting||car.isBoosting){
+    for(const sign of [-1,1]){
+      const wobble=Math.sin(time*32+sign*1.67), x=.5+sign*.26;
+      const length=(car.isChevronBoosting?.52:.37)+wobble*.10;
+      const hot=car.isChevronBoosting?'#f14d1b':'#e94d21';
+      shape([[x-.058,.78],[x+.061,.78],[x+.052,.94],[x+wobble*.04,.85+length],[x-.038,1.05]],hot);
+      shape([[x-.028,.82],[x+.036,.82],[x+.023,.96],[x+wobble*.02,.84+length*.68],[x-.024,.95]],'#ffb13d');
+      shape([[x-.019,.81],[x+.021,.81],[x+.014,.92],[x,.84+length*.36],[x-.015,.92]],'#fff3b2');
+    }
+  }
+
+  for(const x of [.071,.743]){
+    ctx.fillStyle='#202530';rect(x,.52,.185,.435);
+    ctx.fillStyle='#414654';rect(x+.018,.55,.041,.355);
+    ctx.fillStyle='#59616a';rect(x+.116,.84,.043,.063);
+  }
+  const shoulder=.18+(camber-.25)*.36;
+  shape([[shoulder,roof+.04],[1-shoulder,roof+.04],[.87,.41],[.961,.465],[.950,.69],[.05,.69],[.039,.465],[.13,.41]],
+    car.hitFlash>0?'#ffdd9f':body);
+  shape([[shoulder+.028,roof+.043],[1-shoulder-.028,roof+.043],[.81,.37],[.19,.37]],shadeColor(body,23));
+  shape([[.32,roof+.105],[.68,roof+.105],[.734,.407],[.264,.407]],'#243e53');
+  shape([[.331,roof+.11],[.668,roof+.11],[.687,roof+.145],[.32,roof+.145]],'#83afbc');
+  shape([[.126,.415],[.87,.415],[.944,.485],[.058,.485]],shadeColor(body,28));
+  ctx.fillStyle=shadeColor(body,-36);rect(.076,.64,.848,.122);
+  ctx.fillStyle='#363744';rect(.12,.526,.76,.092);
+
+  // Printed stripes and lamp lenses mimic a few layers of tampo on cast metal.
+  ctx.fillStyle=stripe;rect(.444,roof+.041,.044,.081);rect(.513,roof+.041,.044,.081);
+  rect(.44,.416,.052,.117);rect(.508,.416,.051,.117);
+  for(const x of [.12,.726]){
+    ctx.fillStyle='#a72f31';rect(x,.526,.154,.088);
+    ctx.fillStyle='#f26945';rect(x+.012,.534,.124,.040);
+    ctx.fillStyle='#ffc28e';rect(x+.017,.54,.038,.022);
+  }
+  ctx.fillStyle='#aaa798';rect(.11,.716,.78,.046);
+  ctx.fillStyle='#202730';rect(.388,.561,.224,.057);
+  ctx.fillStyle='#f7edc8';rect(.425,.575,.149,.031);
+  for(const sign of [-1,1]){
+    const x=.5+sign*.26;
+    ctx.fillStyle='#afa7a0';rect(x-.044,.787,.088,.067);
+    ctx.fillStyle='#242630';rect(x-.033,.808,.065,.029);
+  }
+  if(playerCar||car.oppIdx===1){
+    ctx.fillStyle='#383d4b';rect(.167,.237,.04,.202);rect(.793,.237,.04,.202);
+    ctx.fillStyle=shadeColor(body,-17);rect(.067,.173,.866,.086);
+    ctx.fillStyle=shadeColor(body,24);rect(.077,.174,.846,.027);
+  }
+  ctx.restore();
+}
+
+function drawBackyardActor(actor,time){
+  const {kind,x,y,scaleX,scaleY,size}=actor;
+  if(kind==='waterDrop'){
+    const r=clamp(size*scaleX,.25,1.6);
+    ctx.fillStyle='#cfedeb';ctx.fillRect(x-r*.5,y-r,r*1.7,r*2.5);
+    return true;
+  }
+  if(kind==='toyTurbo'){
+    const r=size*scaleX*.53;
+    if(r<1.5)return true;
+    const cy=y-r*(1.3+.12*Math.sin(time*4+actor.depth));
+    ctx.fillStyle='#2762a1';ctx.beginPath();ctx.arc(x,cy,r*1.08,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#5fd1e9';ctx.beginPath();ctx.arc(x,cy,r*.85,0,Math.PI*2);ctx.fill();
+    scenePoly([[x+r*.18,cy-r*.68],[x-r*.54,cy+.015*r],[x-r*.11,cy+.04*r],[x-r*.21,cy+r*.64],
+      [x+r*.54,cy-r*.14],[x+r*.11,cy-r*.12]],'#fff3c9');
+    return true;
+  }
+  if(kind==='ball'){
+    const r=size*scaleX*.5;
+    if(r<1.5)return true;
+    ctx.fillStyle=actor.color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.save();ctx.clip();
+    ctx.strokeStyle=actor.stripe;ctx.lineWidth=Math.max(.55,r*.12);
+    ctx.beginPath();ctx.ellipse(x-r*.1,y,r*.86,r*.47,.9,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x-r,y-r*.21);ctx.quadraticCurveTo(x,y-r*.4,x+r,y+r*.32);ctx.stroke();
+    ctx.restore();
+    return true;
+  }
+  if(kind!=='grass')return false;
+  if(scaleY*size<2.2)return true;
+  const amount=actor.depth<52?6:3, sway=worldReducedMotion.matches?0:Math.sin(time*2.8+actor.seed)*.09;
+  const width=size*scaleX*.95, high=size*scaleY;
+  for(let i=0;i<amount;i++){
+    const seed=actor.seed+i*17;
+    const off=(coastSceneryNoise(seed)-.5)*width, peak=high*(.42+coastSceneryNoise(seed+9)*.68);
+    const slope=(coastSceneryNoise(seed+47)-.44+sway)*width;
+    scenePoly([[x+off-width*.12,y],[x+off+slope,y-peak],[x+off+width*.10,y]],
+      ['#4f9149','#619d4e','#84b34d','#53944a','#77ac50','#94b957'][i]);
+  }
+  if(actor.flowers){
+    const fx=x+width*.26+sway*width,fy=y-high*.78,r=high*.10;
+    sceneLine([[fx-width*.12,y],[fx,fy]],'#588542',Math.max(.6,width*.065));
+    ctx.fillStyle='#f2d3a1';ctx.beginPath();ctx.arc(fx,fy,r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e4a54d';ctx.beginPath();ctx.arc(fx,fy,r*.41,0,Math.PI*2);ctx.fill();
+  }
+  return true;
 }
 
 function drawRoadSegment(x1, y1, w1, x2, y2, w2, isAlt, isStart, isBridge, p1Scale, p2Scale, isPillar, segIdx, isVisible = true) {
@@ -14964,7 +15647,7 @@ function render(ts) {
     const palette=blackoutFinale?'cobalt':player.lap===2?'negative':'positive';
     if(C.dataset.blackout!==palette)C.dataset.blackout=palette;
   }else if(C.hasAttribute('data-blackout'))C.removeAttribute('data-blackout');
-  if(currentLevel===LEVEL_COASTER){renderCoaster();return;}
+  if(isWorldCourse()){renderWorldCourse(activeWorldCourse());return;}
   if(currentLevel===LEVEL_BLACKOUT){ctx.fillStyle=blackoutBackground;ctx.fillRect(0,0,W,H);}
   else if(currentLevel===LEVEL_COAST){drawCoastBackdrop(horizonY,startSegIdx);}
   else if(currentLevel===LEVEL_ORBITAL){drawOrbitalBackdrop(horizonY);}
@@ -17251,7 +17934,7 @@ function getRaceDistance(car) {
 // Both drivers use the same viewport/projection; cosmetic lean and exhaust do
 // not enlarge the collider. Keep a two-percent arcade allowance at the edges.
 function getCarCollisionHalfWidth(car){
-  if(currentLevel===LEVEL_COASTER)return COASTER_CAR_WIDTH*(1-CAR_CONTACT_INSET)/(2*COASTER_HALF_WIDTH);
+  if(isWorldCourse())return WORLD_CAR_WIDTH*(1-CAR_CONTACT_INSET)/(2*activeWorldCourse().halfWidth);
   const responsive=clamp(W/1000,.85,1),distance=getPlayerContactDistance();
   const projection=(CAMERA_DEPTH+player.fovOffset)/distance;
   const roadHalf=projection*ROAD_WIDTH*W/2;
@@ -17261,7 +17944,7 @@ function getCarCollisionHalfWidth(car){
 }
 function getCarCollisionRange(a,b){return getCarCollisionHalfWidth(a)+getCarCollisionHalfWidth(b);}
 function getPlayerCollisionX(){
-  if(currentLevel===LEVEL_COASTER)return player.x;
+  if(isWorldCourse())return player.x;
   const distance=getPlayerContactDistance(),worldZ=player.z+distance;
   const roadHalf=(CAMERA_DEPTH+player.fovOffset)/distance*ROAD_WIDTH*W/2;
   const first=Math.floor(player.z/SEGMENT_LENGTH)*SEGMENT_LENGTH;
@@ -17280,8 +17963,8 @@ function getPlayerCollisionX(){
 }
 
 function getPlayerContactDistance() {
-  // The coaster camera trails the player; z already belongs to the painted car.
-  if(currentLevel===LEVEL_COASTER)return 0;
+  // These tracks use a chase camera. Progress already belongs to the painted car.
+  if(isWorldCourse())return 0;
   const responsiveFactor = clamp(W / 1000, 0.85, 1.0);
   const playerScale = 1.64 * responsiveFactor;
   const horizonY = ~~(H * 0.5) + player.pitch * 1.5;
@@ -17319,7 +18002,10 @@ function sweepContact(x0, z0, x1, z1, halfWidth, minZ, maxZ) {
 }
 
 function getRoadLimits(z) {
-  if(currentLevel===LEVEL_COASTER)return {left:COASTER_RAIL_LIMIT,right:COASTER_RAIL_LIMIT};
+  if(isWorldCourse()){
+    const limit=activeWorldCourse().railLimit;
+    return {left:limit,right:limit};
+  }
   const segment = getSeg(z);
   const enclosed = segment.isBridge || isOceanRockTunnel(segment.index) || (currentLevel === LEVEL_DREAM && segment.isTunnel);
   let left = enclosed ? 1.05 : 1.45, right = left;
@@ -17576,6 +18262,7 @@ function advanceRaceStep(dt){
     if(currentLevel===LEVEL_COAST&&Math.abs(player.z/SEGMENT_LENGTH-COAST_TRUCK)<10)nextContact.collisionX=getPlayerCollisionX();
 
     checkPolishContacts(player,previousPlayer,nextContact);
+    if(currentLevel===LEVEL_BACKYARD)triggerBackyardChevron(player,previousPlayer,nextContact);
 
     // Use the same projected paint as rendering, against the visible car footprint.
     if(currentLevel===LEVEL_ORBITAL)launchOrbitalCar(player,previousPlayer.z,nextContact.z);
@@ -17684,6 +18371,7 @@ function advanceRaceStep(dt){
 
       const nextOpponent = { x: opp.x, z: getRaceDistance(opp) + opp.speed * dt };
       if(currentLevel===LEVEL_ORBITAL)launchOrbitalCar(opp,previousOpponents[oppIndex].z,nextOpponent.z);
+      if(currentLevel===LEVEL_BACKYARD)triggerBackyardChevron(opp,previousOpponents[oppIndex],nextOpponent);
       let opponentTravel = opp.speed * dt;
       for (const contact of getTrackContacts(previousOpponents[oppIndex], nextOpponent, currentLevel===LEVEL_SPACE?['barrier']:['pylon','barrier'],opp)) {
         const object = contact.object;
